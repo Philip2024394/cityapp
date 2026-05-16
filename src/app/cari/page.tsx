@@ -1,0 +1,217 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronLeft, Search, MapPin, Crosshair, ArrowDown } from 'lucide-react'
+import RiderMap from '@/components/map/RiderMapDynamic'
+import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
+import { useHaptic } from '@/hooks/useHaptic'
+import { haversineKm } from '@/lib/geo/haversine'
+
+export default function PlanTripPage() {
+  const router = useRouter()
+  const geo = useGeolocation(true)
+  const haptic = useHaptic()
+
+  const [pickup, setPickup] = useState<GeoPoint | null>(null)
+  const [dropoff, setDropoff] = useState<GeoPoint | null>(null)
+  const [pickupLabel, setPickupLabel] = useState('')
+  const [dropoffLabel, setDropoffLabel] = useState('')
+
+  // Auto-fill pickup with customer GPS on grant
+  useEffect(() => {
+    if (geo.coords && !pickup) {
+      setPickup(geo.coords)
+      if (!pickupLabel) setPickupLabel('Lokasi saya')
+    }
+  }, [geo.coords, pickup, pickupLabel])
+
+  const tripKm = pickup && dropoff ? haversineKm(pickup, dropoff) : null
+  const canSearch = !!pickup && !!dropoff
+
+  const mapCenter = pickup ?? geo.coords ?? { lat: -7.7928, lng: 110.3657, accuracyM: 0 }
+
+  function handleUseLocation() {
+    haptic.tap()
+    geo.request()
+    if (geo.coords) {
+      setPickup(geo.coords)
+      setPickupLabel('Lokasi saya')
+    }
+  }
+
+  function handleSearch() {
+    if (!canSearch) return
+    haptic.impact()
+    const params = new URLSearchParams({
+      pLat: pickup!.lat.toString(),
+      pLng: pickup!.lng.toString(),
+      pName: pickupLabel || 'Lokasi saya',
+      dLat: dropoff!.lat.toString(),
+      dLng: dropoff!.lng.toString(),
+      dName: dropoffLabel || 'Tujuan',
+    })
+    router.push(`/cari/rider?${params.toString()}`)
+  }
+
+  return (
+    <>
+      <Header />
+
+      <main className="min-h-screen pb-32">
+        <div className="max-w-xl mx-auto px-4 pt-3 space-y-4">
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-muted">
+            <StepDot n={1} active />
+            <span className="text-brand">Plan trip</span>
+            <span className="text-line">→</span>
+            <StepDot n={2} />
+            <span>Pilih rider</span>
+            <span className="text-line">→</span>
+            <StepDot n={3} />
+            <span>WhatsApp</span>
+          </div>
+
+          <h1 className="text-2xl font-extrabold leading-tight">
+            Mau kirim dari mana ke mana?
+          </h1>
+
+          {/* Small map preview at top */}
+          <div>
+            <RiderMap
+              center={mapCenter}
+              zoom={13}
+              pickup={pickup}
+              dropoff={dropoff}
+              showRoute={canSearch}
+              onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
+              height="220px"
+            />
+            <p className="text-[12px] text-dim mt-2 text-center">
+              Tap di peta untuk set <span className="text-online font-bold">lokasi antar</span>
+            </p>
+          </div>
+
+          {/* Pickup */}
+          <div className="card p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex flex-col items-center pt-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-brand shadow-glow" />
+                <div className="w-px h-8 bg-line my-1" />
+                <div className="w-2.5 h-2.5 rounded-sm bg-online" />
+              </div>
+              <div className="flex-1 min-w-0 space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="label !mb-0">Jemput</label>
+                    <button
+                      onClick={handleUseLocation}
+                      className="text-brand text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal"
+                    >
+                      <Crosshair className="w-3 h-3" />
+                      {geo.status === 'requesting' ? 'Mencari…' : 'Lokasi saya'}
+                    </button>
+                  </div>
+                  <input
+                    className="input"
+                    placeholder={pickup ? 'Nama tempat (opsional)' : 'Tap "Lokasi saya" atau ketik alamat'}
+                    value={pickupLabel}
+                    onChange={e => setPickupLabel(e.target.value)}
+                  />
+                  {pickup && (
+                    <div className="text-[12px] text-dim mt-1.5 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {pickup.lat.toFixed(4)}, {pickup.lng.toFixed(4)}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="label !mb-0">Antar</label>
+                    <span className="text-dim text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal">
+                      <ArrowDown className="w-3 h-3" />
+                      Tap di peta
+                    </span>
+                  </div>
+                  <input
+                    className="input"
+                    placeholder="Alamat tujuan (mis. Jl. Sudirman 120)"
+                    value={dropoffLabel}
+                    onChange={e => setDropoffLabel(e.target.value)}
+                  />
+                  {dropoff && (
+                    <div className="text-[12px] text-dim mt-1.5 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {dropoff.lat.toFixed(4)}, {dropoff.lng.toFixed(4)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {geo.status === 'denied' && (
+              <div className="mt-3 p-3 rounded-xl bg-danger/10 border border-danger/30 text-[13px] text-danger">
+                GPS ditolak. Tap di peta untuk set lokasi jemput juga.
+              </div>
+            )}
+
+            {tripKm != null && (
+              <div className="mt-4 pt-3 border-t border-line flex items-center justify-between">
+                <span className="text-[12px] text-dim uppercase tracking-wider font-extrabold">Jarak</span>
+                <span className="text-brand font-extrabold text-[16px]">~{tripKm.toFixed(1)} km</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* Sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
+        <div className="max-w-xl mx-auto px-4 pb-3">
+          <div className="glass-strong rounded-2xl p-3">
+            <button
+              onClick={handleSearch}
+              disabled={!canSearch}
+              className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Search className="w-4 h-4" />
+              {canSearch ? 'Cari Driver' : 'Lengkapi jemput & antar dulu'}
+              {canSearch && <ChevronLeft className="w-4 h-4 rotate-180" />}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function Header() {
+  return (
+    <header className="sticky top-0 z-40 glass-strong pt-safe">
+      <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink">
+          <ChevronLeft className="w-4 h-4" />
+          Kembali
+        </Link>
+        <div className="text-[14px] font-extrabold">
+          City <span className="gradient-text">Rider</span>
+        </div>
+        <div className="w-12" />
+      </div>
+    </header>
+  )
+}
+
+function StepDot({ n, active }: { n: number; active?: boolean }) {
+  return (
+    <span
+      className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[11px] font-extrabold"
+      style={{
+        background: active ? '#FACC15' : 'rgba(255,255,255,0.08)',
+        color: active ? '#0A0A0A' : 'rgba(255,255,255,0.5)',
+      }}
+    >
+      {n}
+    </span>
+  )
+}

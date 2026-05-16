@@ -1,0 +1,38 @@
+import type { Metadata, Viewport } from 'next'
+import './globals.css'
+
+export const metadata: Metadata = {
+  title: 'City Rider — Marketplace kurir motor Indonesia',
+  description:
+    'Platform bisnis untuk rider motor independen. Profil rider, harga sendiri, kontak langsung via WhatsApp. Tidak ada komisi.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'City Rider',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: { telephone: false },
+  // Browser translate (Google Translate, Microsoft Edge translate) rewrites
+  // the DOM after SSR which breaks React hydration. Native Bahasa serves
+  // Indonesian users directly; we will add real i18n with next-intl later.
+  other: { google: 'notranslate' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0A0A0A',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // suppressHydrationWarning: Browser translate (Google Translate, etc.) and
+  // some extensions rewrite <html>/<body> attributes after SSR. Suppressing the
+  // warning here lets React continue with a client re-render instead of bailing.
+  return (
+    <html lang="id" translate="no" className="notranslate" suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
+    </html>
+  )
+}
