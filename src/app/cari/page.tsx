@@ -149,9 +149,14 @@ export default function PlanTripPage() {
                 {!pitstopOpen ? (
                   <button
                     onClick={() => { setPitstopOpen(true); haptic.tap() }}
-                    className="w-full flex items-center gap-2 pl-3 pr-2 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[13px] font-bold text-muted min-h-[48px]"
+                    className="w-full flex items-center gap-2.5 pl-2 pr-2 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[13px] font-bold text-muted min-h-[48px]"
                   >
-                    <Plus className="w-3.5 h-3.5 text-brand shrink-0" />
+                    <span
+                      className="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-brand to-brand2 text-bg flex items-center justify-center shadow-[0_4px_12px_rgba(250,204,21,0.45)]"
+                      aria-hidden
+                    >
+                      <Plus className="w-4 h-4" strokeWidth={3} />
+                    </span>
                     <span className="flex-1">Add a pit stop on the way</span>
                     <img
                       src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
