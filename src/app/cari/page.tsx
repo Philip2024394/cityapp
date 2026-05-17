@@ -125,46 +125,45 @@ export default function PlanTripPage() {
             })}
           </div>
 
-          {/* Trip preview map — frosted brand-bordered container.
-              Height kept tight so the full booking flow fits on one screen. */}
+          {/* UNIFIED TRIP CARD — map on top, pickup → pit stop → drop-off
+              fields below, all inside one frosted brand-bordered container.
+              Saves a row of padding + border vs. two separate cards, lets
+              the map breathe taller, and reads as a single "plan your trip"
+              widget. The map keeps its own rounded inner corners via the
+              RiderMap component's borderRadius. */}
           <div
-            className="rounded-[18px] p-1.5 border"
+            className="rounded-[20px] border overflow-hidden"
             style={{
               borderColor: 'rgba(250,204,21,0.28)',
-              background: 'rgba(10,10,12,0.55)',
-              backdropFilter: 'blur(14px) saturate(1.3)',
-              WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
-              boxShadow:
-                '0 0 0 1px rgba(250,204,21,0.10), 0 16px 32px rgba(0,0,0,0.55)',
-            }}
-          >
-            <RiderMap
-              center={mapCenter}
-              zoom={13}
-              pickup={pickup}
-              dropoff={dropoff}
-              showRoute={canSearch}
-              onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-              height="150px"
-            />
-          </div>
-
-          {/* Pickup → (optional) Pit stop → Drop off — all in one frosted
-              card. The left-side dot column dynamically grows a 3rd dot
-              when pit stop is active so the visual route reads top-to-bottom.
-              Tightened paddings + reduced internal spacing so the full
-              booking flow fits on one screen without scrolling. */}
-          <div
-            className="rounded-[18px] p-3 border"
-            style={{
-              borderColor: 'rgba(255,255,255,0.10)',
               background: 'rgba(17,17,22,0.72)',
               backdropFilter: 'blur(14px) saturate(1.3)',
               WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
-              boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
+              boxShadow:
+                '0 0 0 1px rgba(250,204,21,0.10), 0 18px 38px rgba(0,0,0,0.55)',
             }}
           >
-            <div className="flex items-start gap-2.5">
+            {/* Map — flush at the top, no inner padding so it spans corner
+                to corner. RiderMap has its own border-radius which we
+                neutralise by sitting it inside an overflow-hidden parent. */}
+            <div className="relative">
+              <RiderMap
+                center={mapCenter}
+                zoom={13}
+                pickup={pickup}
+                dropoff={dropoff}
+                showRoute={canSearch}
+                onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
+                height="200px"
+              />
+            </div>
+
+            {/* Divider between map and fields */}
+            <div className="h-px bg-line/60" />
+
+            {/* Pickup → (optional) Pit stop → Drop off fields. The left
+                route-dot column grows a 3rd dot when pit stop is active. */}
+            <div className="p-3">
+              <div className="flex items-start gap-2.5">
               {/* Left-side route dots */}
               <div className="flex flex-col items-center pt-2 shrink-0">
                 <div className="w-2.5 h-2.5 rounded-full bg-brand shadow-glow" />
@@ -298,11 +297,12 @@ export default function PlanTripPage() {
             )}
 
             {tripKm != null && (
-              <div className="mt-4 pt-3 border-t border-line flex items-center justify-between">
+              <div className="mt-3 pt-2 border-t border-line flex items-center justify-between">
                 <span className="text-[12px] text-dim uppercase tracking-wider font-extrabold">Distance</span>
                 <span className="text-brand font-extrabold text-[16px]">~{tripKm.toFixed(1)} km</span>
               </div>
             )}
+            </div>
           </div>
 
           {/* Inline disclaimer (compact) above the sticky CTA */}
