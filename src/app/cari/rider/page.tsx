@@ -34,7 +34,14 @@ function DriverResults() {
   const pitstopNote = sp.get('stop') ?? null   // null = no pit stop requested
 
   const [sort, setSort] = useState<'cheapest' | 'nearest'>('cheapest')
-  const [filter, setFilter] = useState<ServiceType | 'all'>('all')
+  // Read service choice from URL — set by /cari when customer picks one of
+  // the 3 service cards. Defaults to 'all' if the param is missing or invalid.
+  const initialFilter = (() => {
+    const f = sp.get('filter')
+    if (f === 'person' || f === 'parcel' || f === 'food') return f
+    return 'all' as const
+  })()
+  const [filter, setFilter] = useState<ServiceType | 'all'>(initialFilter)
 
   // If trip missing, bounce to /cari
   if (!pickup || !dropoff) {

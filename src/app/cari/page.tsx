@@ -7,6 +7,25 @@ import RiderMap from '@/components/map/RiderMapDynamic'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
+import type { ServiceType } from '@/types/rider'
+
+// Brand images for the 3 service categories — same imagekit PNGs as the
+// selling page so the visual identity is consistent end-to-end.
+const SERVICE_OPTIONS: Array<{ id: ServiceType; label: string; sub: string; img: string }> = [
+  { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png' },
+  { id: 'parcel', label: 'Bike Parcel', sub: 'Package · Courier',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961' },
+  { id: 'food',   label: 'Bike Food',   sub: 'Resto · Warung',
+    img: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890' },
+]
+
+// Per-service placeholder text — tailors the inputs to the picked service
+const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
+  person: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
+  parcel: { pickup: 'Where to pick up the package?',      dropoff: 'Destination address' },
+  food:   { pickup: 'Restaurant or warung name',           dropoff: 'Drop-off address' },
+}
 
 export default function PlanTripPage() {
   const router = useRouter()
@@ -19,6 +38,9 @@ export default function PlanTripPage() {
   const [dropoffLabel, setDropoffLabel] = useState('')
   const [pitstopOpen, setPitstopOpen] = useState(false)
   const [pitstopNote, setPitstopNote] = useState('')
+  // Default to Parcel — the platform's primary focus per Services page.
+  // Most common kurir use case in Indonesia + covers documents/small food.
+  const [service, setService] = useState<ServiceType>('parcel')
 
   // Auto-fill pickup with customer GPS on grant
   useEffect(() => {
@@ -56,6 +78,7 @@ export default function PlanTripPage() {
     if (pitstopOpen && pitstopNote.trim()) {
       params.set('stop', pitstopNote.trim())
     }
+    params.set('filter', service)
     router.push(`/cari/rider?${params.toString()}`)
   }
 
@@ -80,6 +103,40 @@ export default function PlanTripPage() {
           <h1 className="text-2xl font-extrabold leading-tight">
             Where do you need to ship from and to?
           </h1>
+
+          {/* SERVICE TYPE — 3 image cards. Default Parcel. Active card gets
+              brand-yellow ring + raised. Customer can change with one tap. */}
+          <div>
+            <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim mb-2">Service</div>
+            <div className="grid grid-cols-3 gap-2">
+              {SERVICE_OPTIONS.map(opt => {
+                const active = service === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => { setService(opt.id); haptic.tap() }}
+                    className="card p-2.5 text-center transition relative"
+                    style={{
+                      borderColor: active ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.06)',
+                      background:  active ? 'rgba(250,204,21,0.06)' : 'rgba(255,255,255,0.03)',
+                      transform:   active ? 'translateY(-2px)' : 'translateY(0)',
+                      boxShadow:   active ? '0 0 0 1px rgba(250,204,21,0.22), 0 10px 24px rgba(250,204,21,0.10)' : 'none',
+                    }}
+                    aria-pressed={active}
+                  >
+                    <img src={opt.img} alt="" aria-hidden loading="lazy"
+                         className="h-12 w-auto object-contain mx-auto"
+                         style={{ filter: active ? 'drop-shadow(0 4px 10px rgba(250,204,21,0.35))' : 'none' }} />
+                    <div className="text-[13px] font-extrabold mt-1.5 leading-tight"
+                         style={{ color: active ? '#FACC15' : '#fff' }}>
+                      {opt.label}
+                    </div>
+                    <div className="text-[11px] text-dim mt-0.5 leading-tight">{opt.sub}</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {/* Small map preview at top */}
           <div>
@@ -130,7 +187,7 @@ export default function PlanTripPage() {
                   </div>
                   <input
                     className="input"
-                    placeholder={pickup ? 'Place name (optional)' : 'Tap "My location" or type an address'}
+                    placeholder={pickup ? 'Place name (optional)' : PLACEHOLDERS[service].pickup}
                     value={pickupLabel}
                     onChange={e => setPickupLabel(e.target.value)}
                   />
@@ -214,7 +271,7 @@ export default function PlanTripPage() {
                   </div>
                   <input
                     className="input"
-                    placeholder="Destination address (e.g. Jl. Sudirman 120)"
+                    placeholder={PLACEHOLDERS[service].dropoff}
                     value={dropoffLabel}
                     onChange={e => setDropoffLabel(e.target.value)}
                   />
