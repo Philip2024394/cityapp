@@ -107,20 +107,28 @@ export default function MapBackground() {
 // transparent and this shows through, so the app always has a
 // recognisable dark-map look with pulsing rider pings.
 // ─────────────────────────────────────────────────────────────────────
-function StaticFallback() {
-  // 42 pings in the same golden-angle scatter as the Maplibre riders,
-  // but positioned in viewport percentages (no map projection needed).
-  const pings = Array.from({ length: 42 }, (_, i) => {
+// Pre-computed once at module load — module-level constants are evaluated
+// the same way on Node SSR + the browser, eliminating any chance of float
+// rounding drift between environments. All numeric values are pre-stringified
+// with fixed precision so React's hydrator sees byte-identical style strings.
+const STATIC_PINGS: ReadonlyArray<{
+  i: number; left: string; top: string; delay: string
+}> = (() => {
+  const out: { i: number; left: string; top: string; delay: string }[] = []
+  for (let i = 0; i < 42; i++) {
     const angle = i * 2.39996323
     const radiusPct = 6 + (i / 42) * 36
-    return {
+    out.push({
       i,
-      x: 50 + Math.cos(angle) * radiusPct,
-      y: 50 + Math.sin(angle) * radiusPct,
-      delay: (i * 0.06) % 2.6,
-    }
-  })
+      left:  (50 + Math.cos(angle) * radiusPct).toFixed(3) + '%',
+      top:   (50 + Math.sin(angle) * radiusPct).toFixed(3) + '%',
+      delay: ((i * 0.06) % 2.6).toFixed(3) + 's',
+    })
+  }
+  return out
+})()
 
+function StaticFallback() {
   return (
     <div
       className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
@@ -157,17 +165,19 @@ function StaticFallback() {
       />
 
       {/* 42 pulsing rider pings — same animation + delay pattern as the
-          Maplibre markers, positioned in % so they fill the viewport. */}
-      {pings.map((p) => (
+          Maplibre markers, positioned in % so they fill the viewport.
+          All values are pre-stringified module constants → SSR + client
+          render byte-identical inline styles (no hydration mismatch). */}
+      {STATIC_PINGS.map((p) => (
         <div
           key={p.i}
           className="absolute"
           style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
+            left: p.left,
+            top: p.top,
             transform: 'translate(-50%, -50%)',
-            width: 12,
-            height: 12,
+            width: '12px',
+            height: '12px',
           }}
         >
           <div
@@ -176,7 +186,7 @@ function StaticFallback() {
               inset: 0,
               borderRadius: '50%',
               background: 'rgba(250,204,21,0.55)',
-              animation: `ridePing 2.6s ease-out ${p.delay}s infinite`,
+              animation: `ridePing 2.6s ease-out ${p.delay} infinite`,
             }}
           />
           <div
@@ -184,8 +194,8 @@ function StaticFallback() {
               position: 'absolute',
               left: '50%',
               top: '50%',
-              width: 8,
-              height: 8,
+              width: '8px',
+              height: '8px',
               transform: 'translate(-50%, -50%)',
               borderRadius: '50%',
               background: '#FACC15',
