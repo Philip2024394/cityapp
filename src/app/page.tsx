@@ -46,6 +46,7 @@ function buildHeroRiders(count: number): Rider[] {
 type Locale = 'id' | 'en'
 const STRINGS: Record<Locale, {
   loginNav: string
+  signupNav: string
   pill: string
   h1Line1: string
   h1Line2: string
@@ -53,16 +54,10 @@ const STRINGS: Record<Locale, {
   enter: string
   freeNote: string
   trust: { commission: string; whatsapp: string; verified: string }
-  rider: {
-    kicker: string
-    title: string
-    sub: string
-    signupCta: string
-    loginCta: string
-  }
 }> = {
   id: {
-    loginNav: 'Login Rider',
+    loginNav: 'Login',
+    signupNav: 'Daftar',
     pill: '42 rider online di Yogyakarta',
     h1Line1: 'Komunitas motor,',
     h1Line2: 'Indonesia.',
@@ -70,16 +65,10 @@ const STRINGS: Record<Locale, {
     enter: 'Masuk',
     freeNote: 'Gratis · langsung kontak rider',
     trust: { commission: '0% komisi', whatsapp: 'WhatsApp', verified: 'Rider terverifikasi' },
-    rider: {
-      kicker: 'Untuk rider',
-      title: 'Punya motor? Dapat customer lewat City Rider.',
-      sub: 'Daftar gratis · setelah aktivasi Rp 30.000/bulan · keep 100% pendapatan.',
-      signupCta: 'Daftar sebagai rider',
-      loginCta: 'Login',
-    },
   },
   en: {
-    loginNav: 'Rider login',
+    loginNav: 'Login',
+    signupNav: 'Sign up',
     pill: '42 riders online in Yogyakarta',
     h1Line1: 'Motorbike community,',
     h1Line2: 'Indonesia.',
@@ -87,13 +76,6 @@ const STRINGS: Record<Locale, {
     enter: 'Enter',
     freeNote: 'Free · direct rider contact',
     trust: { commission: '0% commission', whatsapp: 'WhatsApp', verified: 'Verified riders' },
-    rider: {
-      kicker: 'For riders',
-      title: 'Got a bike? Get customers through City Rider.',
-      sub: 'Sign up free · activate for Rp 30,000/month · keep 100% of earnings.',
-      signupCta: 'Sign up as a rider',
-      loginCta: 'Login',
-    },
   },
 }
 
@@ -167,9 +149,14 @@ export default function LandingPage() {
               City <span className="gradient-text">Rider</span>
             </div>
           </Link>
-          <Link href="/login" className="text-[13px] font-bold text-muted hover:text-ink px-3 py-1.5 rounded-lg hover:bg-white/5">
-            {t.loginNav}
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <Link href="/signup" className="text-[13px] font-extrabold text-bg bg-brand hover:bg-brand2 px-3 py-1.5 rounded-lg transition">
+              {t.signupNav}
+            </Link>
+            <Link href="/login" className="text-[13px] font-bold text-muted hover:text-ink px-3 py-1.5 rounded-lg hover:bg-white/5">
+              {t.loginNav}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -201,31 +188,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section className="relative z-20 px-4 pb-10">
+      {/* Trust strip — small, last thing on the page */}
+      <section className="relative z-20 px-4 pb-6">
         <div className="max-w-xl mx-auto grid grid-cols-3 gap-3">
           <TrustPill icon={<Wallet className="w-4 h-4" />}        label={t.trust.commission} />
           <TrustPill icon={<MessageCircle className="w-4 h-4" />} label={t.trust.whatsapp} />
           <TrustPill icon={<Shield className="w-4 h-4" />}        label={t.trust.verified} />
-        </div>
-      </section>
-
-      {/* For riders CTA */}
-      <section className="relative z-20 px-4 pb-12">
-        <div className="max-w-xl mx-auto">
-          <div className="card p-5 backdrop-blur-xl bg-bg2/70">
-            <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">{t.rider.kicker}</div>
-            <div className="text-[17px] font-extrabold mt-1">{t.rider.title}</div>
-            <div className="text-muted text-[13px] mt-1.5">{t.rider.sub}</div>
-            <div className="flex gap-2 mt-4">
-              <Link href="/signup" className="btn-primary flex-1 !text-[14px] !py-3">
-                {t.rider.signupCta}
-              </Link>
-              <Link href="/login" className="btn-secondary !text-[14px] !py-3 !px-4">
-                {t.rider.loginCta}
-              </Link>
-            </div>
-          </div>
         </div>
       </section>
     </main>

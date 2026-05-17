@@ -97,15 +97,26 @@ export default function PlanTripPage() {
             </p>
           </div>
 
-          {/* Pickup */}
+          {/* Pickup → (optional) Pit stop → Drop off — all in one card.
+              The left-side dot column dynamically grows a 3rd dot when pit
+              stop is active so the visual route reads top-to-bottom. */}
           <div className="card p-4">
             <div className="flex items-start gap-3">
-              <div className="flex flex-col items-center pt-3">
+              {/* Left-side route dots */}
+              <div className="flex flex-col items-center pt-3 shrink-0">
                 <div className="w-2.5 h-2.5 rounded-full bg-brand shadow-glow" />
                 <div className="w-px h-8 bg-line my-1" />
+                {pitstopOpen && (
+                  <>
+                    <div className="w-2.5 h-2.5 rounded-full bg-brand/80" style={{ border: '2px solid #FACC15' }} />
+                    <div className="w-px h-8 bg-line my-1" />
+                  </>
+                )}
                 <div className="w-2.5 h-2.5 rounded-sm bg-online" />
               </div>
+
               <div className="flex-1 min-w-0 space-y-3">
+                {/* Pickup */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="label !mb-0">Pick up</label>
@@ -130,6 +141,48 @@ export default function PlanTripPage() {
                     </div>
                   )}
                 </div>
+
+                {/* PIT STOP — inline between pickup and dropoff. Collapsed
+                    button when off; reveals a textarea when active. */}
+                {!pitstopOpen ? (
+                  <button
+                    onClick={() => { setPitstopOpen(true); haptic.tap() }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[13px] font-bold text-muted min-h-[40px]"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-brand" />
+                    Add a pit stop on the way
+                  </button>
+                ) : (
+                  <div className="animate-[fadeUp_0.3s_ease-out_both]">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="label !mb-0 flex items-center gap-1.5">
+                        <StopCircle className="w-3 h-3 text-brand" />
+                        Pit stop
+                      </label>
+                      <button
+                        onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
+                        className="text-dim hover:text-ink text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal"
+                        aria-label="Remove pit stop"
+                      >
+                        <X className="w-3 h-3" />
+                        Remove
+                      </button>
+                    </div>
+                    <textarea
+                      className="input"
+                      rows={2}
+                      maxLength={140}
+                      placeholder='e.g. "Stop at warung depan, buy 1 pack Marlboro Lights"'
+                      value={pitstopNote}
+                      onChange={e => setPitstopNote(e.target.value)}
+                    />
+                    <p className="text-[12px] text-dim mt-1.5 leading-relaxed">
+                      💡 Rider sets their own pit-stop fee (Rp 0–25K). For item costs, transfer the rider via GoPay/QRIS upfront.
+                    </p>
+                  </div>
+                )}
+
+                {/* Drop off */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="label !mb-0">Drop off</label>
@@ -167,54 +220,6 @@ export default function PlanTripPage() {
               </div>
             )}
           </div>
-
-          {/* PIT STOP — optional, collapsed by default */}
-          {!pitstopOpen ? (
-            <button
-              onClick={() => { setPitstopOpen(true); haptic.tap() }}
-              className="card card-interactive w-full p-3.5 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0">
-                  <Plus className="w-4 h-4 text-brand" />
-                </div>
-                <div>
-                  <div className="text-[14px] font-extrabold">Add a pit stop</div>
-                  <div className="text-[12px] text-muted mt-0.5">
-                    Need the rider to buy/pick up something on the way?
-                  </div>
-                </div>
-              </div>
-              <span className="text-brand text-[18px] font-extrabold shrink-0">+</span>
-            </button>
-          ) : (
-            <div className="card p-4 animate-[fadeUp_0.3s_ease-out_both]" style={{ borderColor: 'rgba(250,204,21,0.35)' }}>
-              <div className="flex items-start justify-between mb-2.5">
-                <div className="flex items-center gap-2">
-                  <StopCircle className="w-4 h-4 text-brand" />
-                  <span className="label !mb-0">Pit stop request</span>
-                </div>
-                <button
-                  onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
-                  className="text-dim hover:text-ink p-1 -m-1"
-                  aria-label="Remove pit stop"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <textarea
-                className="input"
-                rows={2}
-                maxLength={140}
-                placeholder='e.g. "Stop at warung depan, buy 1 pack Marlboro Lights"'
-                value={pitstopNote}
-                onChange={e => setPitstopNote(e.target.value)}
-              />
-              <p className="text-[12px] text-dim mt-2 leading-relaxed">
-                💡 Rider sets their own pit-stop fee (Rp 0-25K). For item costs (cigarettes, snacks, ATM, etc.) — transfer the rider via GoPay/QRIS upfront, settle on arrival.
-              </p>
-            </div>
-          )}
         </div>
       </main>
 
