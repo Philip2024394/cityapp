@@ -85,22 +85,28 @@ export default function PlanTripPage() {
 
   return (
     <>
-      <main className="pb-28 pt-safe">
-        <div className="max-w-xl mx-auto px-3 pt-2 space-y-2.5">
-          {/* Brand row — logo + wordmark on the left. No sticky header
-              container; the brand sits inline at the top of the page. */}
-          <Link href="/" className="flex items-center gap-2 hover:opacity-85 transition" aria-label="City Rider home">
+      {/* Header — matches the landing page's brand row exactly. No
+          background container, just safe-area spacing + the logo +
+          wordmark on the left. Same logo size (h-11), same wordmark
+          size (text-[16px]), same gap (2.5) as the landing. */}
+      <header className="relative z-20 pt-safe">
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center">
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
               alt=""
-              className="h-9 w-auto"
+              className="h-11 w-auto"
               loading="eager"
             />
-            <div className="text-[15px] font-extrabold tracking-tight">
+            <div className="font-extrabold tracking-tight text-[16px]">
               City <span className="gradient-text">Rider</span>
             </div>
           </Link>
+        </div>
+      </header>
 
+      <main className="pb-28">
+        <div className="max-w-xl mx-auto px-3 pt-1 space-y-2.5">
           {/* SERVICE TYPE — 3 image cards. Default Parcel.
               Active card gets brand-yellow ring + raised. */}
           <div className="grid grid-cols-3 gap-2">
