@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, MessageCircle, Shield, Wallet } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import type { Rider } from '@/types/rider'
 
 // Landing-background map — dimmed Yogyakarta view so the hero pops.
@@ -107,7 +107,7 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen relative overflow-hidden bg-bg">
+    <main className="min-h-[100dvh] relative overflow-hidden bg-bg flex flex-col">
       {/* Background map — dark, roads-only, label-free, slowly panning */}
       <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: 1 }}>
         <LandingMap
@@ -160,9 +160,10 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative z-20 px-4 pt-4 sm:pt-8 pb-14">
-        <div className="max-w-xl mx-auto text-center space-y-5">
+      {/* Hero — flex-1 so it fills the viewport between header and the
+          bottom edge. Inner content vertically centered. */}
+      <section className="relative z-20 px-4 py-8 flex-1 flex items-center">
+        <div className="max-w-xl mx-auto text-center space-y-5 w-full">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/25">
             <span className="dot-online !w-2 !h-2" />
             <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider">
@@ -188,24 +189,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust strip — small, last thing on the page */}
-      <section className="relative z-20 px-4 pb-6">
-        <div className="max-w-xl mx-auto grid grid-cols-3 gap-3">
-          <TrustPill icon={<Wallet className="w-4 h-4" />}        label={t.trust.commission} />
-          <TrustPill icon={<MessageCircle className="w-4 h-4" />} label={t.trust.whatsapp} />
-          <TrustPill icon={<Shield className="w-4 h-4" />}        label={t.trust.verified} />
-        </div>
-      </section>
     </main>
-  )
-}
-
-function TrustPill({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="card p-3 text-center backdrop-blur-xl bg-bg2/60">
-      <div className="text-brand inline-flex">{icon}</div>
-      <div className="text-[13px] font-extrabold mt-1.5 text-ink/90">{label}</div>
-    </div>
   )
 }
 

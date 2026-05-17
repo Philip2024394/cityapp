@@ -1,28 +1,45 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Clock, MessageCircle, X, Check, AlertCircle, ChevronRight } from 'lucide-react'
+import { idr } from '@/lib/format/idr'
 
 export type WaitingStatus = 'pending' | 'accepted' | 'declined' | 'expired'
+
+export type RiderSuggestion = {
+  riderId: string
+  name: string
+  photoUrl: string
+  bikeLabel: string            // "Honda BeAT"
+  distanceKm: number           // from customer's pickup
+  fare: number                 // total fare for this trip
+}
 
 type Props = {
   riderName: string
   riderPhotoUrl: string
   status: WaitingStatus
-  startedAt: number          // ms timestamp the order was created
-  timeoutSec?: number        // default 300 (5 min)
-  whatsappLink: string       // already-built wa.me URL
+  startedAt: number            // ms timestamp the order was created
+  timeoutSec?: number          // default 300 (5 min)
+  whatsappLink: string         // already-built wa.me URL
   onCancel: () => void
   onSeeOthers: () => void
+  /** When status is 'expired' or 'declined', a list of nearest online
+   *  riders for the customer to one-tap re-send to. Brand-coherent
+   *  "soft suggest" — never auto-dispatch. */
+  suggestions?: RiderSuggestion[]
+  onPickSuggestion?: (riderId: string) => void
 }
 
 // Customer-side companion to the driver's IncomingOrderModal.
-// Shows "Waiting for {rider} to accept" with a synced countdown,
-// flips to "Accepted!" or "Declined" or "Timed out" based on status.
+// 4 states: pending (countdown), accepted (green), declined (muted),
+// expired (red). Declined + expired states render a soft-suggest list
+// of 3 nearby online riders the customer can one-tap re-send to.
 export default function CustomerWaitingState({
   riderName, riderPhotoUrl, status, startedAt, timeoutSec = 300,
   whatsappLink, onCancel, onSeeOthers,
+  suggestions = [], onPickSuggestion,
 }: Props) {
-  // Tick once a second so the countdown stays live
+  // Tick once a second so the countdown stays live (pending only)
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     if (status !== 'pending') return
@@ -61,43 +78,80 @@ export default function CustomerWaitingState({
     )
   }
 
-  // ── DECLINED ──
-  if (status === 'declined') {
+  // ── DECLINED & EXPIRED — share suggestions block ──
+  if (status === 'declined' || status === 'expired') {
+    const isExpired = status === 'expired'
     return (
-      <div className="card p-5 border-line bg-white/3 animate-[fadeUp_0.3s_ease-out_both]">
+      <div
+        className="card p-5 animate-[fadeUp_0.3s_ease-out_both]"
+        style={{
+          borderColor: isExpired ? 'rgba(239,68,68,0.30)' : 'rgba(255,255,255,0.10)',
+          background:  isExpired ? 'rgba(239,68,68,0.05)' : 'rgba(255,255,255,0.03)',
+        }}
+      >
+        {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-            <X className="w-5 h-5 text-muted" />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: isExpired ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)' }}
+          >
+            {isExpired ? <AlertCircle className="w-5 h-5 text-danger" /> : <X className="w-5 h-5 text-muted" />}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] uppercase tracking-wider font-extrabold text-muted">Declined</div>
-            <div className="font-extrabold text-[15px] mt-0.5">{riderName} can&apos;t take this one</div>
+            <div
+              className="text-[12px] uppercase tracking-wider font-extrabold"
+              style={{ color: isExpired ? '#EF4444' : 'rgba(255,255,255,0.55)' }}
+            >
+              {isExpired ? 'Timed out' : 'Declined'}
+            </div>
+            <div className="font-extrabold text-[15px] mt-0.5">
+              {isExpired ? `${riderName} didn’t respond` : `${riderName} can’t take this one`}
+            </div>
           </div>
         </div>
-        <button onClick={onSeeOthers} className="btn-primary w-full mt-4">
-          See other riders <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-    )
-  }
 
-  // ── EXPIRED ──
-  if (status === 'expired') {
-    return (
-      <div className="card p-5 border-danger/30 bg-danger/5 animate-[fadeUp_0.3s_ease-out_both]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-danger/15 flex items-center justify-center">
-            <AlertCircle className="w-5 h-5 text-danger" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[12px] uppercase tracking-wider font-extrabold text-danger">Timed out</div>
-            <div className="font-extrabold text-[15px] mt-0.5">{riderName} didn&apos;t respond</div>
-            <div className="text-[13px] text-muted mt-0.5">Try a different rider</div>
-          </div>
-        </div>
-        <button onClick={onSeeOthers} className="btn-primary w-full mt-4">
-          See other riders <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Suggestions block — soft auto-suggest, customer still picks */}
+        {suggestions.length > 0 && onPickSuggestion ? (
+          <>
+            <div className="text-[13px] font-bold text-muted mt-4 mb-2.5">
+              These riders are online now:
+            </div>
+            <div className="space-y-2">
+              {suggestions.map(s => (
+                <button
+                  key={s.riderId}
+                  onClick={() => onPickSuggestion(s.riderId)}
+                  className="w-full card card-interactive p-3 flex items-center gap-3 text-left"
+                >
+                  <img src={s.photoUrl} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-extrabold text-[14px] truncate">{s.name}</div>
+                    <div className="text-[12px] text-muted truncate">
+                      {s.bikeLabel} · ~{s.distanceKm.toFixed(1)} km
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-[15px] font-extrabold gradient-text leading-none whitespace-nowrap">
+                      {idr(s.fare)}
+                    </div>
+                    <div className="text-[12px] text-online font-bold mt-1 flex items-center gap-1 justify-end">
+                      <MessageCircle className="w-3 h-3" />
+                      Send
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={onSeeOthers}
+                    className="w-full mt-3 px-3 py-2 rounded-xl border border-line text-[13px] font-bold text-muted hover:text-ink hover:border-brand/40 transition min-h-[40px] flex items-center justify-center gap-1">
+              See all nearby riders <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        ) : (
+          <button onClick={onSeeOthers} className="btn-primary w-full mt-4">
+            See other riders <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
     )
   }

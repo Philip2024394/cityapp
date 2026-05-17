@@ -6,8 +6,8 @@ import { ChevronLeft, MapPin, Box, Bike as BikeIcon, MessageCircle } from 'lucid
 import RiderRadar from '@/components/rider/RiderRadar'
 import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
 import OfflineFallback from '@/components/rider/OfflineFallback'
-import CustomerWaitingState, { type WaitingStatus } from '@/components/rider/CustomerWaitingState'
-import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
+import CustomerWaitingState, { type WaitingStatus, type RiderSuggestion } from '@/components/rider/CustomerWaitingState'
+import { findRiderBySlug, getOnlineRiders, MOCK_RIDERS } from '@/data/mockRiders'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
@@ -37,13 +37,30 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     maybeRider?.services[0] ?? null,
   )
 
+  const pricing = useMemo(() => {
+    if (!maybeRider || !service) {
+      return { pricePerKm: maybeRider?.pricePerKm ?? 0, minFee: maybeRider?.minFee ?? 0 }
+    }
+    return rateFor(maybeRider, service)
+  }, [maybeRider, service])
+
+  const quote = useMemo(() => {
+    if (!maybeRider || !pickup || !dropoff) return null
+    const distanceKm = haversineKm(pickup, dropoff)
+    const { final, minApplied } = quoteBreakdown(distanceKm, pricing)
+    return { distanceKm, fare: final, minApplied }
+  }, [pickup, dropoff, maybeRider, pricing])
+
   // Real-time waiting state — once customer taps WhatsApp, we broadcast
   // a pending order, the rider's dashboard receives it, and the rider's
   // accept/decline broadcasts back. UI flips through pending → accepted/
-  // declined/expired. Cross-tab today via BroadcastChannel; swap for
-  // Supabase Realtime channel in Phase 3 to enable cross-device.
+  // declined/expired. `waiting.rider` is the rider we're CURRENTLY
+  // waiting for — may differ from the page's profile rider after the
+  // customer picks a suggestion. Cross-tab today via BroadcastChannel;
+  // swap for Supabase Realtime channel in Phase 3.
   const [waiting, setWaiting] = useState<{
     orderId: string
+    rider: { id: string; name: string; photoUrl: string; whatsappE164: string }
     startedAt: number
     status: WaitingStatus
     whatsappLink: string
@@ -67,24 +84,80 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     return () => clearTimeout(t)
   }, [waiting])
 
+  // Compute 3 nearest online riders (excluding the currently-waiting one)
+  // for the soft-suggest list shown in declined/expired states.
+  const suggestions: RiderSuggestion[] = useMemo(() => {
+    if (!waiting || !pickup || !quote) return []
+    if (waiting.status !== 'expired' && waiting.status !== 'declined') return []
+    return getOnlineRiders(waiting.rider.id)
+      .filter(r => !service || r.services.includes(service))
+      .map(r => {
+        const rPricing = service ? rateFor(r, service) : { pricePerKm: r.pricePerKm, minFee: r.minFee }
+        const { final } = quoteBreakdown(quote.distanceKm, rPricing)
+        return {
+          rider: r,
+          fare: final,
+          distanceFromCustomer: haversineKm(pickup, { lat: r.lat, lng: r.lng }),
+        }
+      })
+      .sort((a, b) => a.distanceFromCustomer - b.distanceFromCustomer)
+      .slice(0, 3)
+      .map(({ rider: r, fare, distanceFromCustomer }) => ({
+        riderId:    r.id,
+        name:       r.name,
+        photoUrl:   r.photoUrl,
+        bikeLabel:  `${r.bike.make} ${r.bike.model}`,
+        distanceKm: distanceFromCustomer,
+        fare,
+      }))
+  }, [waiting, pickup, quote, service])
+
+  // Re-send the same trip to a different rider when customer picks a suggestion
+  function onPickSuggestion(newRiderId: string) {
+    const newRider = MOCK_RIDERS.find(r => r.id === newRiderId)
+    if (!newRider || !pickup || !dropoff || !quote) return
+    const newPricing = service ? rateFor(newRider, service) : { pricePerKm: newRider.pricePerKm, minFee: newRider.minFee }
+    const { final: newFare } = quoteBreakdown(quote.distanceKm, newPricing)
+    const newLink = buildWhatsAppLink({
+      riderName: newRider.name,
+      riderWhatsAppE164: newRider.whatsappE164,
+      pickup: { lat: pickup.lat, lng: pickup.lng, label: pickupLabel || undefined },
+      dropoff: { lat: dropoff.lat, lng: dropoff.lng, label: dropoffLabel || undefined },
+      distanceKm: quote.distanceKm,
+      pricePerKm: newPricing.pricePerKm,
+      fare: newFare,
+    })
+    beep.play()
+    haptic.buzz()
+    window.open(newLink, '_blank', 'noopener,noreferrer')
+    const newOrderId = 'o_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
+    broadcast({
+      type: 'created',
+      order: {
+        id: newOrderId,
+        customerSession: getCustomerSessionId(),
+        riderId: newRider.id,
+        riderName: newRider.name,
+        pickupLabel: pickupLabel || 'My location',
+        dropoffLabel: dropoffLabel || 'Destination',
+        distanceKm: quote.distanceKm,
+        fare: newFare,
+        createdAt: Date.now(),
+      },
+    })
+    setWaiting({
+      orderId: newOrderId,
+      rider: { id: newRider.id, name: newRider.name, photoUrl: newRider.photoUrl, whatsappE164: newRider.whatsappE164 },
+      startedAt: Date.now(),
+      status: 'pending',
+      whatsappLink: newLink,
+    })
+  }
+
   // Auto-fill pickup with customer GPS on grant
   useMemo(() => {
     if (geo.coords && !pickup) setPickup(geo.coords)
   }, [geo.coords, pickup])
-
-  const pricing = useMemo(() => {
-    if (!maybeRider || !service) {
-      return { pricePerKm: maybeRider?.pricePerKm ?? 0, minFee: maybeRider?.minFee ?? 0 }
-    }
-    return rateFor(maybeRider, service)
-  }, [maybeRider, service])
-
-  const quote = useMemo(() => {
-    if (!maybeRider || !pickup || !dropoff) return null
-    const distanceKm = haversineKm(pickup, dropoff)
-    const { final, minApplied } = quoteBreakdown(distanceKm, pricing)
-    return { distanceKm, fare: final, minApplied }
-  }, [pickup, dropoff, maybeRider, pricing])
 
   if (!maybeRider) {
     notFound()
@@ -130,7 +203,13 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         createdAt: Date.now(),
       },
     })
-    setWaiting({ orderId, startedAt: Date.now(), status: 'pending', whatsappLink: link })
+    setWaiting({
+      orderId,
+      rider: { id: rider.id, name: rider.name, photoUrl: rider.photoUrl, whatsappE164: rider.whatsappE164 },
+      startedAt: Date.now(),
+      status: 'pending',
+      whatsappLink: link,
+    })
   }
 
   // OFFLINE fallback view
@@ -277,11 +356,13 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         <div className="max-w-2xl mx-auto px-4 pb-3">
           {waiting ? (
             <CustomerWaitingState
-              riderName={rider.name}
-              riderPhotoUrl={rider.photoUrl}
+              riderName={waiting.rider.name}
+              riderPhotoUrl={waiting.rider.photoUrl}
               status={waiting.status}
               startedAt={waiting.startedAt}
               whatsappLink={waiting.whatsappLink}
+              suggestions={suggestions}
+              onPickSuggestion={onPickSuggestion}
               onCancel={() => setWaiting(null)}
               onSeeOthers={() => { setWaiting(null); window.location.href = '/cari' }}
             />
