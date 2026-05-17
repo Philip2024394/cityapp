@@ -8,7 +8,6 @@ import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
 import type { ServiceType } from '@/types/rider'
-import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
 // Per-service placeholder text — tailors the inputs to the picked service.
 // Service is picked on the LANDING page now (3 landscape tiles) and arrives
@@ -280,9 +279,6 @@ function PlanTripPageInner() {
                 {canSearch && <ChevronLeft className="w-4 h-4 rotate-180" />}
               </button>
             </div>
-
-            {/* Compact disclaimer — legal anchor kept on every booking page */}
-            <PlatformDisclaimer variant="compact" />
           </div>
         </div>
       </div>
