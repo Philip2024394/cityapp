@@ -44,7 +44,8 @@ function buildHeroRiders(count: number): Rider[] {
 // root layout, fixed to the viewport, so it underlays every page
 // without re-initialising on navigation.
 //
-// Two layers below the readability overlay:
+// Two stacked layers, no global dim overlay (content uses per-element
+// glass for legibility, so the map shows through fully):
 //   1. StaticFallback — pure CSS+inline-SVG, ALWAYS renders, zero network.
 //      Identical visual identity (dark base + pulsing pings) so the page
 //      looks the same when the device is offline.
@@ -52,9 +53,6 @@ function buildHeroRiders(count: number): Rider[] {
 //      The canvas is transparent until Maplibre processes the style, so
 //      the fallback shows through during load and stays visible if the
 //      network never delivers the style/tiles.
-//
-// Overlay gradient on top keeps content readable on every page (forms,
-// dashboards, lists). Heavier dim than the original landing-only overlay.
 export default function MapBackground() {
   const heroRiders = useMemo(() => buildHeroRiders(42), [])
   return (
@@ -83,18 +81,10 @@ export default function MapBackground() {
         />
       </div>
 
-      {/* Layer 3 — readability overlay. Global, tuned heavier than
-          landing-only so form pages + dashboards stay legible. */}
-      <div
-        className="fixed inset-0 z-[1] pointer-events-none"
-        aria-hidden
-        style={{
-          background: [
-            'radial-gradient(ellipse 80% 50% at 50% 35%, rgba(250,204,21,0.08) 0%, transparent 60%)',
-            'linear-gradient(to bottom, rgba(10,10,10,0.65) 0%, rgba(10,10,10,0.78) 50%, rgba(10,10,10,0.92) 100%)',
-          ].join(', '),
-        }}
-      />
+      {/* No global readability overlay — the background map shows through
+          fully on every page. Per-element glass (.glass-strong on AppNav,
+          .card on content blocks, the frosted /cari containers) handles
+          text legibility on a per-component basis. */}
     </>
   )
 }
