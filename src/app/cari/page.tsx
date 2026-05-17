@@ -85,12 +85,24 @@ export default function PlanTripPage() {
 
   return (
     <>
-      <Header />
-
-      <main className="pb-28">
+      <main className="pb-28 pt-safe">
         <div className="max-w-xl mx-auto px-3 pt-2 space-y-2.5">
-          {/* SERVICE TYPE — 3 image cards, right under the header. Default
-              Parcel. Active card gets brand-yellow ring + raised. */}
+          {/* Brand row — logo + wordmark on the left. No sticky header
+              container; the brand sits inline at the top of the page. */}
+          <Link href="/" className="flex items-center gap-2 hover:opacity-85 transition" aria-label="City Rider home">
+            <img
+              src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
+              alt=""
+              className="h-9 w-auto"
+              loading="eager"
+            />
+            <div className="text-[15px] font-extrabold tracking-tight">
+              City <span className="gradient-text">Rider</span>
+            </div>
+          </Link>
+
+          {/* SERVICE TYPE — 3 image cards. Default Parcel.
+              Active card gets brand-yellow ring + raised. */}
           <div className="grid grid-cols-3 gap-2">
             {SERVICE_OPTIONS.map(opt => {
               const active = service === opt.id
@@ -125,44 +137,48 @@ export default function PlanTripPage() {
             })}
           </div>
 
-          {/* UNIFIED TRIP CARD — map on top, pickup → pit stop → drop-off
-              fields below, all inside one frosted brand-bordered container.
-              Saves a row of padding + border vs. two separate cards, lets
-              the map breathe taller, and reads as a single "plan your trip"
-              widget. The map keeps its own rounded inner corners via the
-              RiderMap component's borderRadius. */}
+          {/* UNIFIED TRIP CARD — map fills the container, pickup → pit stop
+              → drop-off fields FLOAT on top of the map as a glass panel at
+              the bottom (Uber / Grab style). The map breathes through the
+              top portion while the controls stay anchored over the lower
+              half. The whole thing reads as one trip-planning surface. */}
           <div
-            className="rounded-[20px] border overflow-hidden"
+            className="relative rounded-[20px] border overflow-hidden"
             style={{
               borderColor: 'rgba(250,204,21,0.28)',
               background: 'rgba(17,17,22,0.72)',
-              backdropFilter: 'blur(14px) saturate(1.3)',
-              WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
               boxShadow:
                 '0 0 0 1px rgba(250,204,21,0.10), 0 18px 38px rgba(0,0,0,0.55)',
             }}
           >
-            {/* Map — flush at the top, no inner padding so it spans corner
-                to corner. RiderMap has its own border-radius which we
-                neutralise by sitting it inside an overflow-hidden parent. */}
-            <div className="relative">
-              <RiderMap
-                center={mapCenter}
-                zoom={13}
-                pickup={pickup}
-                dropoff={dropoff}
-                showRoute={canSearch}
-                onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-                height="200px"
-              />
-            </div>
+            {/* Map — fills the entire container so the floating panel below
+                can sit on top of it. Tall enough that the visible portion
+                above the panel still shows the route + pickup pin. */}
+            <RiderMap
+              center={mapCenter}
+              zoom={13}
+              pickup={pickup}
+              dropoff={dropoff}
+              showRoute={canSearch}
+              onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
+              height="460px"
+            />
 
-            {/* Divider between map and fields */}
-            <div className="h-px bg-line/60" />
-
-            {/* Pickup → (optional) Pit stop → Drop off fields. The left
-                route-dot column grows a 3rd dot when pit stop is active. */}
-            <div className="p-3">
+            {/* Floating fields panel — absolute-positioned glass panel,
+                bottom-anchored, sits OVER the map's lower half. The map
+                stays visible above (route + markers); the panel handles
+                input. Pointer-events default so the map remains tappable
+                in the area above the panel. */}
+            <div
+              className="absolute left-2 right-2 bottom-2 rounded-[16px] p-3"
+              style={{
+                background: 'rgba(10,10,12,0.78)',
+                backdropFilter: 'blur(18px) saturate(1.4)',
+                WebkitBackdropFilter: 'blur(18px) saturate(1.4)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.5)',
+              }}
+            >
               <div className="flex items-start gap-2.5">
               {/* Left-side route dots */}
               <div className="flex flex-col items-center pt-2 shrink-0">
@@ -327,30 +343,6 @@ export default function PlanTripPage() {
         </div>
       </div>
     </>
-  )
-}
-
-function Header() {
-  return (
-    <header className="sticky top-0 z-40 glass-strong pt-safe">
-      <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="shrink-0" aria-label="City Rider home">
-          <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
-            alt=""
-            className="h-9 w-auto hover:opacity-85 transition"
-            loading="eager"
-          />
-        </Link>
-        <div className="text-[14px] font-extrabold">
-          City <span className="gradient-text">Rider</span>
-        </div>
-        <Link href="/" className="flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink">
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </Link>
-      </div>
-    </header>
   )
 }
 
