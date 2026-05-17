@@ -6,6 +6,7 @@ import { ChevronLeft, Search, MapPin, Plus, X } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
+import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
 import type { Rider, ServiceType } from '@/types/rider'
@@ -87,6 +88,12 @@ function PlanTripPageInner() {
   const canSearch = !!pickup && !!dropoff
 
   const mapCenter = pickup ?? geo.coords ?? { lat: -7.7928, lng: 110.3657, accuracyM: 0 }
+
+  // Detect the user's country from their GPS so the place autocomplete
+  // only surfaces local results. Null while GPS is pending or detection
+  // fails → autocomplete falls back to global search (no harm).
+  const userCountry = useCountryFromCoords(geo.coords ?? null)
+  const countryCodes = userCountry ? [userCountry] : []
 
   // Nearby rider pings recompute when the map centre changes (after GPS
   // grant or pickup edit). useMemo so the array reference is stable
@@ -246,6 +253,7 @@ function PlanTripPageInner() {
               placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
               className="flex-1 min-w-0 bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
               near={geo.coords ?? null}
+              countryCodes={countryCodes}
               ariaLabel="Pick up location"
               rightSlot={
                 <button
@@ -341,6 +349,7 @@ function PlanTripPageInner() {
               placeholder={PLACEHOLDERS[service].dropoff}
               className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
               near={pickup ?? geo.coords ?? null}
+              countryCodes={countryCodes}
               ariaLabel="Drop off location"
             />
           </div>

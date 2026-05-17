@@ -14,6 +14,10 @@ type Props = {
   rightSlot?: React.ReactNode
   /** Bias suggestions around this point (e.g. customer GPS). */
   near?: { lat: number; lng: number } | null
+  /** Restrict suggestions to these ISO-3166 country codes (e.g. ['id']).
+   *  Empty / undefined = global. Wire to the user's detected country
+   *  so they only see local results. */
+  countryCodes?: string[]
   /** Aria-label for the input. */
   ariaLabel?: string
 }
@@ -23,10 +27,10 @@ type Props = {
 // AND any other market. Suggestions render in a dropdown ABOVE the
 // input (the input lives in the bottom sheet so down would clip).
 export default function PlaceAutocomplete({
-  value, onChange, onSelect, placeholder, className, rightSlot, near, ariaLabel,
+  value, onChange, onSelect, placeholder, className, rightSlot, near, countryCodes, ariaLabel,
 }: Props) {
   const [focused, setFocused] = useState(false)
-  const { suggestions, loading } = usePlaceSearch(value, { near })
+  const { suggestions, loading } = usePlaceSearch(value, { near, countryCodes })
   const wrapRef = useRef<HTMLDivElement>(null)
 
   // Close the dropdown when clicking outside the wrapper. Pointerdown
