@@ -197,115 +197,107 @@ function PlanTripPageInner() {
           the landing's bold yellow energy into the booking page without
           sacrificing form-input legibility (the sheet body stays dark
           glass, the CTA keeps its primary-yellow standout). */}
+      {/* BOTTOM STACK — three separate brand-yellow tile cards (Pickup,
+          Pit stop, Drop off), styled like the landing's service tiles
+          so the booking page carries the same bold visual language.
+          The CTA flips to a DARK tile so it stands out as the action
+          terminus against the three yellow controls. */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
-        <div className="mx-auto max-w-xl px-3 pb-2">
+        <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
+          {/* PICKUP TILE */}
           <div
-            className="rounded-[24px] p-3 space-y-2.5"
-            style={{
-              background: 'rgba(10,10,12,0.88)',
-              backdropFilter: 'blur(22px) saturate(1.4)',
-              WebkitBackdropFilter: 'blur(22px) saturate(1.4)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderTop: '3px solid #FACC15',
-              boxShadow:
-                '0 -10px 28px rgba(250,204,21,0.22), 0 -2px 8px rgba(250,204,21,0.18), 0 -14px 40px rgba(0,0,0,0.55)',
-            }}
+            className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
           >
-            {/* Drag handle — brand gradient mini pill for premium accent */}
-            <div
-              className="mx-auto w-12 h-1 rounded-full"
-              style={{ background: 'linear-gradient(90deg, #FACC15, #EAB308)' }}
-            />
-
-            {/* Route field group — left dot column, right field column */}
-            <div className="flex items-start gap-2.5">
-              <div className="flex flex-col items-center pt-2.5 shrink-0">
-                <div className="w-2.5 h-2.5 rounded-full bg-brand shadow-glow" />
-                <div className="w-px h-7 bg-line my-1" />
-                {pitstopOpen && (
-                  <>
-                    <div className="w-2.5 h-2.5 rounded-full bg-brand/80" style={{ border: '2px solid #FACC15' }} />
-                    <div className="w-px h-7 bg-line my-1" />
-                  </>
-                )}
-                <div className="w-2.5 h-2.5 rounded-sm bg-online" />
-              </div>
-
-              <div className="flex-1 min-w-0 space-y-2">
-                {/* Pickup — input + inline GPS button */}
-                <div className="relative">
-                  <input
-                    className="input pr-11"
-                    placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
-                    value={pickupLabel}
-                    onChange={e => setPickupLabel(e.target.value)}
-                  />
-                  <button
-                    onClick={handleUseLocation}
-                    aria-label="Use my GPS location"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-brand hover:bg-white/5 transition"
-                  >
-                    <Crosshair className={`w-4 h-4 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Pit stop — compact collapsed button, expands to textarea */}
-                {!pitstopOpen ? (
-                  <button
-                    onClick={() => { setPitstopOpen(true); haptic.tap() }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[12px] font-bold text-muted"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-brand" strokeWidth={3} />
-                    Add a pit stop on the way
-                  </button>
-                ) : (
-                  <div className="animate-[fadeUp_0.3s_ease-out_both] relative">
-                    <textarea
-                      className="input pr-9"
-                      rows={2}
-                      maxLength={140}
-                      placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
-                      value={pitstopNote}
-                      onChange={e => setPitstopNote(e.target.value)}
-                    />
-                    <button
-                      onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
-                      aria-label="Remove pit stop"
-                      className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg flex items-center justify-center text-dim hover:text-ink hover:bg-white/5"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Drop off */}
-                <input
-                  className="input"
-                  placeholder={PLACEHOLDERS[service].dropoff}
-                  value={dropoffLabel}
-                  onChange={e => setDropoffLabel(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* CTA row — optional distance chip + Find driver primary */}
-            <div className="flex items-stretch gap-2 pt-1">
-              {tripKm != null && (
-                <span className="shrink-0 inline-flex items-center text-[12px] font-extrabold text-brand bg-brand/10 border border-brand/25 px-2.5 rounded-xl">
-                  ~{tripKm.toFixed(1)} km
-                </span>
-              )}
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
               <button
-                onClick={handleSearch}
-                disabled={!canSearch}
-                className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={handleUseLocation}
+                aria-label="Use my GPS location"
+                className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider hover:opacity-80 transition"
               >
-                <Search className="w-4 h-4" />
-                {canSearch ? 'Find driver' : 'Set pickup & drop off'}
-                {canSearch && <ChevronLeft className="w-4 h-4 rotate-180" />}
+                <Crosshair className={`w-3.5 h-3.5 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} />
+                {geo.status === 'requesting' ? 'Searching' : 'My location'}
               </button>
             </div>
+            <input
+              className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/25 transition"
+              placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
+              value={pickupLabel}
+              onChange={e => setPickupLabel(e.target.value)}
+            />
           </div>
+
+          {/* PIT STOP TILE — collapsed: solid yellow CTA tile; expanded:
+              brand-yellow tile with textarea + close button. */}
+          {!pitstopOpen ? (
+            <button
+              onClick={() => { setPitstopOpen(true); haptic.tap() }}
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+            >
+              <Plus className="w-4 h-4" strokeWidth={3} />
+              <span className="text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
+            </button>
+          ) : (
+            <div className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] animate-[fadeUp_0.3s_ease-out_both]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider">Pit stop</span>
+                <button
+                  onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
+                  aria-label="Remove pit stop"
+                  className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider hover:opacity-80 transition"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Remove
+                </button>
+              </div>
+              <textarea
+                rows={2}
+                maxLength={140}
+                className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl px-3 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/25 transition resize-none"
+                placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
+                value={pitstopNote}
+                onChange={e => setPitstopNote(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* DROP OFF TILE */}
+          <div
+            className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-75">Tap map</span>
+            </div>
+            <input
+              className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/25 transition"
+              placeholder={PLACEHOLDERS[service].dropoff}
+              value={dropoffLabel}
+              onChange={e => setDropoffLabel(e.target.value)}
+            />
+          </div>
+
+          {/* CTA TILE — flipped DARK so the action terminus stands out
+              against the three yellow controls above. Brand-yellow text
+              + brand border keeps it on-brand. */}
+          <button
+            onClick={handleSearch}
+            disabled={!canSearch}
+            className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand/70 shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] hover:border-brand transition disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Search className="w-4 h-4" />
+            {canSearch ? (
+              <>
+                <span>Find driver</span>
+                {tripKm != null && (
+                  <span className="text-[12px] font-bold text-dim ml-1">· ~{tripKm.toFixed(1)} km</span>
+                )}
+                <ChevronLeft className="w-4 h-4 rotate-180" />
+              </>
+            ) : (
+              <span>Set pickup &amp; drop off</span>
+            )}
+          </button>
         </div>
       </div>
     </>
