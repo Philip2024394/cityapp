@@ -2,6 +2,8 @@ import type { Rider } from '@/types/rider'
 
 // Demo riders centered on Yogyakarta. Used when Supabase env is unset
 // so the app boots and demos end-to-end without backend wiring.
+// Some riders demo per-service pricing overrides (servicePricing) so
+// the dashboard "different rate per service" UI has real example data.
 export const MOCK_RIDERS: Rider[] = [
   {
     id: '1',
@@ -12,7 +14,7 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Kurir berpengalaman 4 tahun. Tepat waktu, bawa box untuk paket besar.',
     area: 'Yogyakarta Tengah',
     city: 'Yogyakarta',
-    services: ['package', 'courier', 'food'],
+    services: ['parcel', 'food'],
     bike: { make: 'Honda', model: 'BeAT', year: 2023, color: 'Hitam', type: 'matic', hasBox: true, plate: 'AB 1234 XX', photoUrl: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600' },
     pricePerKm: 2500,
     minFee: 10000,
@@ -30,7 +32,7 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Pengiriman cepat dalam kota. Spesialis dokumen & paket kecil.',
     area: 'Sleman',
     city: 'Yogyakarta',
-    services: ['package', 'courier'],
+    services: ['parcel'],
     bike: { make: 'Yamaha', model: 'NMAX', year: 2022, color: 'Putih', type: 'matic', hasBox: true, plate: 'AB 5678 YY', photoUrl: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600' },
     pricePerKm: 3000,
     minFee: 12000,
@@ -48,10 +50,15 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Kurir wanita ramah, area Selatan kota. Bisa pesan makan & belanja.',
     area: 'Bantul',
     city: 'Yogyakarta',
-    services: ['food', 'personal', 'courier'],
+    services: ['food', 'person', 'parcel'],
     bike: { make: 'Honda', model: 'Scoopy', year: 2024, color: 'Pink', type: 'matic', hasBox: false, plate: 'AB 9012 ZZ', photoUrl: 'https://images.unsplash.com/photo-1591216105714-9c6739c5fde6?w=600' },
     pricePerKm: 2500,
     minFee: 10000,
+    // Demo: per-service overrides. Person pricier (passenger), food cheaper.
+    servicePricing: {
+      person: { perKm: 3000, minFee: 12000 },
+      food:   { perKm: 2200 },
+    },
     isOnline: true,
     lastSeenAt: new Date().toISOString(),
     lat: -7.8123, lng: 110.3540,
@@ -66,7 +73,7 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Paket besar, motor box jumbo. Bisa luar kota Magelang & Klaten.',
     area: 'Kotagede',
     city: 'Yogyakarta',
-    services: ['package', 'courier'],
+    services: ['parcel'],
     bike: { make: 'Suzuki', model: 'Address', year: 2021, color: 'Biru', type: 'matic', hasBox: true, plate: 'AB 3456 AA', photoUrl: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600' },
     pricePerKm: 2800,
     minFee: 12000,
@@ -84,7 +91,7 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Online pagi sampai malam. Antar dokumen ke kantor jadi spesialisasi.',
     area: 'UGM / Bulaksumur',
     city: 'Yogyakarta',
-    services: ['courier', 'package'],
+    services: ['parcel'],
     bike: { make: 'Honda', model: 'Vario', year: 2023, color: 'Merah', type: 'matic', hasBox: false, plate: 'AB 7788 BB', photoUrl: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600' },
     pricePerKm: 2200,
     minFee: 10000,
@@ -102,7 +109,7 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Personal rider untuk antar jemput sekolah & ojek harian.',
     area: 'Malioboro',
     city: 'Yogyakarta',
-    services: ['personal', 'food'],
+    services: ['person', 'food'],
     bike: { make: 'Yamaha', model: 'Mio', year: 2022, color: 'Silver', type: 'matic', hasBox: false, plate: 'AB 4321 CC', photoUrl: 'https://images.unsplash.com/photo-1591216105714-9c6739c5fde6?w=600' },
     pricePerKm: 2300,
     minFee: 10000,
@@ -120,7 +127,7 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Motor sport, cepat tapi tetap hati-hati. Spesialis paket urgent.',
     area: 'Yogyakarta Utara',
     city: 'Yogyakarta',
-    services: ['package', 'courier'],
+    services: ['parcel'],
     bike: { make: 'Honda', model: 'CB150R', year: 2024, color: 'Hitam Merah', type: 'sport', hasBox: false, plate: 'AB 1100 DD', photoUrl: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600' },
     pricePerKm: 3500,
     minFee: 15000,
@@ -138,7 +145,7 @@ export const MOCK_RIDERS: Rider[] = [
     bio: 'Khusus delivery makanan dari resto langganan. Box thermal tersedia.',
     area: 'Condongcatur',
     city: 'Yogyakarta',
-    services: ['food', 'courier'],
+    services: ['food', 'parcel'],
     bike: { make: 'Honda', model: 'Genio', year: 2023, color: 'Putih', type: 'matic', hasBox: true, plate: 'AB 7777 EE', photoUrl: 'https://images.unsplash.com/photo-1591216105714-9c6739c5fde6?w=600' },
     pricePerKm: 2500,
     minFee: 10000,

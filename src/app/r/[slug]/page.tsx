@@ -11,10 +11,10 @@ import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
 import { haversineKm } from '@/lib/geo/haversine'
-import { quoteBreakdown } from '@/lib/pricing/quote'
+import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
-import { SERVICE_ICONS, SERVICE_LABELS } from '@/types/rider'
+import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type ServiceType } from '@/types/rider'
 
 export default function RiderProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
@@ -29,19 +29,29 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   const [pickupLabel, setPickupLabel] = useState('Lokasi saya')
   const [dropoffLabel, setDropoffLabel] = useState('')
 
+  // Selected service — defaults to the first one the rider offers.
+  const [service, setService] = useState<ServiceType | null>(
+    maybeRider?.services[0] ?? null,
+  )
+
   // Auto-fill pickup with customer GPS on grant
   useMemo(() => {
     if (geo.coords && !pickup) setPickup(geo.coords)
   }, [geo.coords, pickup])
 
+  const pricing = useMemo(() => {
+    if (!maybeRider || !service) {
+      return { pricePerKm: maybeRider?.pricePerKm ?? 0, minFee: maybeRider?.minFee ?? 0 }
+    }
+    return rateFor(maybeRider, service)
+  }, [maybeRider, service])
+
   const quote = useMemo(() => {
     if (!maybeRider || !pickup || !dropoff) return null
     const distanceKm = haversineKm(pickup, dropoff)
-    const { final, minApplied } = quoteBreakdown(distanceKm, {
-      pricePerKm: maybeRider.pricePerKm, minFee: maybeRider.minFee,
-    })
+    const { final, minApplied } = quoteBreakdown(distanceKm, pricing)
     return { distanceKm, fare: final, minApplied }
-  }, [pickup, dropoff, maybeRider])
+  }, [pickup, dropoff, maybeRider, pricing])
 
   if (!maybeRider) {
     notFound()
@@ -62,7 +72,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       pickup: { lat: pickup.lat, lng: pickup.lng, label: pickupLabel || undefined },
       dropoff: { lat: dropoff.lat, lng: dropoff.lng, label: dropoffLabel || undefined },
       distanceKm: quote.distanceKm,
-      pricePerKm: rider.pricePerKm,
+      pricePerKm: pricing.pricePerKm,
       fare: quote.fare,
     })
     beep.play()
@@ -122,29 +132,63 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           status={geo.status}
         />
 
+        {/* Service picker (only when rider offers > 1 service) */}
+        {rider.services.length > 1 && (
+          <div className="card p-4">
+            <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold mb-2.5">
+              Layanan
+            </div>
+            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${rider.services.length}, 1fr)` }}>
+              {rider.services.map(s => {
+                const r = rateFor(rider, s)
+                const active = service === s
+                return (
+                  <button
+                    key={s}
+                    onClick={() => { setService(s); haptic.tap() }}
+                    className="rounded-2xl border text-center py-2.5 px-2 transition"
+                    style={{
+                      background:   active ? 'rgba(250,204,21,0.10)' : 'rgba(255,255,255,0.04)',
+                      borderColor:  active ? 'rgba(250,204,21,0.45)' : 'rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <div className="text-[20px] leading-none">{SERVICE_ICONS[s]}</div>
+                    <div className="text-[13px] font-extrabold mt-1.5" style={{ color: active ? '#FACC15' : '#fff' }}>
+                      {SERVICE_SHORT[s]}
+                    </div>
+                    <div className="text-[12px] text-muted mt-0.5">{idr(r.pricePerKm)}/km</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Live quote card */}
         <div className="card p-5 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none opacity-60"
                style={{ background: 'radial-gradient(ellipse at top right, rgba(250,204,21,0.16), transparent 60%)' }} />
           <div className="relative flex items-baseline justify-between">
             <div>
-              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">Estimasi ongkos</div>
+              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">
+                Estimasi ongkos{service && <> · {SERVICE_SHORT[service]}</>}
+              </div>
               <div className="text-[34px] font-extrabold gradient-text mt-1 leading-none">
                 {quote ? idr(quote.fare) : '—'}
               </div>
               <div className="text-[13px] text-muted mt-2">
                 {quote
-                  ? `${quote.distanceKm.toFixed(1)} km × ${idr(rider.pricePerKm)}`
+                  ? `${quote.distanceKm.toFixed(1)} km × ${idr(pricing.pricePerKm)}`
                   : 'Set jemput & antar untuk lihat harga'}
               </div>
               {quote?.minApplied && (
-                <div className="text-brand text-[12px] mt-1">Min fee {idr(rider.minFee)} berlaku</div>
+                <div className="text-brand text-[12px] mt-1">Min fee {idr(pricing.minFee)} berlaku</div>
               )}
             </div>
             <div className="text-right text-[13px] text-muted">
-              <div className="font-bold text-ink">{idr(rider.pricePerKm)}</div>
+              <div className="font-bold text-ink">{idr(pricing.pricePerKm)}</div>
               <div className="text-dim">/km</div>
-              <div className="mt-2 font-bold text-ink">min {idr(rider.minFee)}</div>
+              <div className="mt-2 font-bold text-ink">min {idr(pricing.minFee)}</div>
             </div>
           </div>
         </div>

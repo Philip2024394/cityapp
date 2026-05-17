@@ -10,10 +10,9 @@ import { SERVICE_ICONS, SERVICE_LABELS } from '@/types/rider'
 const ME = MOCK_RIDERS[0]!
 
 const ALL: { key: ServiceType; desc: string; primary?: boolean }[] = [
-  { key: 'package',  desc: 'Paket, dokumen, kiriman. Fokus utama platform.', primary: true },
-  { key: 'courier',  desc: 'Antar barang kecil ke kantor / toko sekitar.', primary: true },
-  { key: 'food',     desc: 'Antar makanan & minuman dari resto / warung.' },
-  { key: 'personal', desc: 'Antar jemput penumpang / ojek harian.' },
+  { key: 'parcel', desc: 'Paket, dokumen, kiriman, kurir luar kota. Fokus utama platform.', primary: true },
+  { key: 'food',   desc: 'Antar makanan dari resto / warung, COD bahan dapur.' },
+  { key: 'person', desc: 'Antar jemput penumpang, ojek harian, ojek event.' },
 ]
 
 export default function ServicesPage() {

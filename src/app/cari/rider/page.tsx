@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, MessageCircle, MapPin, Bike as BikeIcon, ArrowDownUp } from 'lucide-react'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { haversineKm } from '@/lib/geo/haversine'
-import { quoteBreakdown } from '@/lib/pricing/quote'
+import { quoteBreakdown, rateFor, lowestStartingPrice, hasServiceOverrides } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
 import { bikeTitle } from '@/lib/format/bike'
@@ -56,11 +56,13 @@ function DriverResults() {
       (filter === 'all' || r.services.includes(filter)),
     )
     const e = list.map(r => {
-      const { final, minApplied } = quoteBreakdown(tripKm, {
-        pricePerKm: r.pricePerKm, minFee: r.minFee,
-      })
+      // If a specific service is filtered, price for THAT service.
+      // Otherwise show the lowest-starting price across the rider's enabled services.
+      const pricing = filter === 'all' ? lowestStartingPrice(r) : rateFor(r, filter)
+      const { final, minApplied } = quoteBreakdown(tripKm, pricing)
       const distanceToPickup = haversineKm(pickup, { lat: r.lat, lng: r.lng })
-      return { rider: r, fare: final, minApplied, distanceToPickup }
+      const hasOverrides = filter === 'all' && hasServiceOverrides(r)
+      return { rider: r, fare: final, minApplied, distanceToPickup, perKm: pricing.pricePerKm, hasOverrides }
     })
     e.sort((a, b) =>
       sort === 'cheapest' ? a.fare - b.fare : a.distanceToPickup - b.distanceToPickup,
@@ -71,7 +73,7 @@ function DriverResults() {
   const cheapest = enriched[0]?.fare
   const mostExpensive = enriched.length > 0 ? Math.max(...enriched.map(x => x.fare)) : null
 
-  function onWhatsApp(rider: Rider, fare: number) {
+  function onWhatsApp(rider: Rider, fare: number, perKm: number) {
     haptic.buzz()
     beep.play()
     const link = buildWhatsAppLink({
@@ -80,7 +82,7 @@ function DriverResults() {
       pickup: { lat: pickup!.lat, lng: pickup!.lng, label: pickupName },
       dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, label: dropoffName },
       distanceKm: tripKm,
-      pricePerKm: rider.pricePerKm,
+      pricePerKm: perKm,
       fare,
     })
     window.open(link, '_blank', 'noopener,noreferrer')
@@ -174,15 +176,17 @@ function DriverResults() {
 
           {/* Driver cards */}
           <div className="space-y-3">
-            {enriched.map(({ rider, fare, minApplied, distanceToPickup }, idx) => (
+            {enriched.map(({ rider, fare, minApplied, distanceToPickup, perKm, hasOverrides }, idx) => (
               <DriverCard
                 key={rider.id}
                 rider={rider}
                 fare={fare}
                 minApplied={minApplied}
                 distanceToPickup={distanceToPickup}
+                perKm={perKm}
+                hasOverrides={hasOverrides}
                 isCheapest={idx === 0 && sort === 'cheapest'}
-                onWhatsApp={() => onWhatsApp(rider, fare)}
+                onWhatsApp={() => onWhatsApp(rider, fare, perKm)}
               />
             ))}
           </div>
@@ -200,9 +204,9 @@ function DriverResults() {
 }
 
 function DriverCard({
-  rider, fare, minApplied, distanceToPickup, isCheapest, onWhatsApp,
+  rider, fare, minApplied, distanceToPickup, isCheapest, onWhatsApp, perKm, hasOverrides,
 }: {
-  rider: Rider; fare: number; minApplied: boolean; distanceToPickup: number; isCheapest: boolean; onWhatsApp: () => void
+  rider: Rider; fare: number; minApplied: boolean; distanceToPickup: number; isCheapest: boolean; onWhatsApp: () => void; perKm: number; hasOverrides: boolean
 }) {
   return (
     <article
@@ -290,7 +294,8 @@ function DriverCard({
               {idr(fare)}
             </div>
             <div className="text-[13px] text-muted leading-none mt-1 whitespace-nowrap">
-              {idr(rider.pricePerKm)}<span className="text-dim">/km</span>
+              {hasOverrides && <span className="text-brand/90">dari </span>}
+              {idr(perKm)}<span className="text-dim">/km</span>
             </div>
             {minApplied && (
               <div className="text-[13px] text-brand/90 font-bold leading-none mt-1.5 whitespace-nowrap">
