@@ -26,6 +26,9 @@ type Props = {
   /** Hide every non-road layer (water, parks, buildings) and recolour roads
    *  in brand palette — pure roads-only network look. */
   roadsOnly?: boolean
+  /** Map tilt in degrees (0 = top-down, 60 = max). Adds 3D perspective —
+   *  used on the trip planner for an Apple-Maps / Grab-style hero view. */
+  pitch?: number
 }
 
 // OpenFreeMap — community-run vector tiles, OSM data, no API key required.
@@ -38,7 +41,7 @@ export default function RiderMap({
   center, zoom = 13, riders = [], pickup, dropoff, onDropoffSet,
   showRoute = false, height = '320px', interactive = true,
   variant = 'dark', hideLabels = false, autoPan = false,
-  markerStyle = 'scooter', roadsOnly = false,
+  markerStyle = 'scooter', roadsOnly = false, pitch = 0,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -53,6 +56,7 @@ export default function RiderMap({
       style: OPENFREEMAP_STYLES[variant],
       center: [center.lng, center.lat],
       zoom,
+      pitch,
       attributionControl: false,
       interactive,
       // Cap at 2x — high-DPR Androids (3x+) would otherwise burn battery

@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Crosshair, ArrowDown, Plus, X, StopCircle } from 'lucide-react'
+import { ChevronLeft, Search, Crosshair, Plus, X } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -90,13 +90,32 @@ function PlanTripPageInner() {
     router.push(`/cari/rider?${params.toString()}`)
   }
 
+  const serviceLabel = service === 'person' ? 'Bike Ride' : service === 'food' ? 'Bike Food' : 'Bike Parcel'
+  const serviceEmoji = service === 'person' ? '🛵' : service === 'food' ? '🍱' : '📦'
+
   return (
     <>
-      {/* Header — matches the landing page's brand row exactly. No
-          background container, just safe-area spacing + the logo +
-          wordmark on the left. Same logo size (h-11), same wordmark
-          size (text-[16px]), same gap (2.5) as the landing. */}
-      <header className="relative z-20 pt-safe">
+      {/* FULL-BLEED MAP — fixed to the viewport so it sits as the
+          interactive hero behind every other UI layer. pitch=50 adds
+          the Apple-Maps / Grab 3D perspective; zoom 14 lets the visible
+          portion above the bottom sheet still show the route + pins. */}
+      <div className="fixed inset-0 z-0">
+        <RiderMap
+          center={mapCenter}
+          zoom={14}
+          pickup={pickup}
+          dropoff={dropoff}
+          showRoute={canSearch}
+          onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
+          height="100dvh"
+          pitch={50}
+        />
+      </div>
+
+      {/* HEADER — transparent, sits over the map. Same brand row as the
+          landing for consistency. Text shadow keeps it legible over any
+          map content underneath. */}
+      <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
             <img
@@ -104,222 +123,166 @@ function PlanTripPageInner() {
               alt=""
               className="h-11 w-auto"
               loading="eager"
+              style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.85))' }}
             />
-            <div className="font-extrabold tracking-tight text-[16px]">
+            <div
+              className="font-extrabold tracking-tight text-[16px]"
+              style={{ textShadow: '0 1px 8px rgba(0,0,0,0.85)' }}
+            >
               City <span className="gradient-text">Rider</span>
             </div>
           </Link>
         </div>
       </header>
 
-      <main className="pb-28">
-        <div className="max-w-xl mx-auto px-3 pt-1 space-y-2.5">
-          {/* Service was picked on the landing page; arrives here via
-              ?service=<id>. The pickup/drop-off placeholders + filter
-              passed to the rider list both reflect that choice. */}
+      {/* FLOATING CHIPS — top-left "riders nearby" pulse (mirrors the
+          landing's online pill), top-right active service tile + change
+          link. Both float over the map for the premium ride-hail look. */}
+      <div className="relative z-30 px-3 -mt-1 flex items-start justify-between gap-2">
+        <div
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+          style={{
+            background: 'rgba(10,10,12,0.78)',
+            backdropFilter: 'blur(16px) saturate(1.3)',
+            WebkitBackdropFilter: 'blur(16px) saturate(1.3)',
+            border: '1px solid rgba(34,197,94,0.30)',
+            boxShadow: '0 4px 18px rgba(0,0,0,0.45)',
+          }}
+        >
+          <span className="dot-online !w-2 !h-2" />
+          <span className="text-[12px] font-extrabold text-online uppercase tracking-wider">
+            42 nearby
+          </span>
+        </div>
 
-          {/* UNIFIED TRIP CARD — map fills the container, pickup → pit stop
-              → drop-off fields FLOAT on top of the map as a glass panel at
-              the bottom (Uber / Grab style). The map breathes through the
-              top portion while the controls stay anchored over the lower
-              half. The whole thing reads as one trip-planning surface. */}
+        <Link
+          href="/"
+          aria-label={`Service: ${serviceLabel} — tap to change`}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:opacity-90 transition"
+          style={{
+            background: 'rgba(250,204,21,0.18)',
+            backdropFilter: 'blur(16px) saturate(1.3)',
+            WebkitBackdropFilter: 'blur(16px) saturate(1.3)',
+            border: '1px solid rgba(250,204,21,0.45)',
+            boxShadow: '0 4px 14px rgba(250,204,21,0.22)',
+          }}
+        >
+          <span className="text-[14px] leading-none" aria-hidden>{serviceEmoji}</span>
+          <span className="text-[12px] font-extrabold text-brand">{serviceLabel}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-brand/65 ml-0.5">change</span>
+        </Link>
+      </div>
+
+      {/* BOTTOM SHEET — glass panel anchored to the bottom of the viewport.
+          Holds the entire trip-planning form + the Find driver CTA. The
+          map is interactive above it; user taps the visible map area to
+          set drop-off. Decorative drag handle keeps the sheet aesthetic
+          consistent with native iOS/Android bottom sheets. */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
+        <div className="mx-auto max-w-xl px-3 pb-2">
           <div
-            className="relative rounded-[20px] border overflow-hidden"
+            className="rounded-[24px] border border-line/40 p-3 space-y-2.5"
             style={{
-              borderColor: 'rgba(250,204,21,0.28)',
-              background: 'rgba(17,17,22,0.72)',
-              boxShadow:
-                '0 0 0 1px rgba(250,204,21,0.10), 0 18px 38px rgba(0,0,0,0.55)',
+              background: 'rgba(10,10,12,0.88)',
+              backdropFilter: 'blur(22px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(22px) saturate(1.4)',
+              boxShadow: '0 -12px 36px rgba(0,0,0,0.55)',
             }}
           >
-            {/* Map — fills the entire container so the floating panel below
-                can sit on top of it. Tall enough that the visible portion
-                above the panel still shows the route + pickup pin. */}
-            <RiderMap
-              center={mapCenter}
-              zoom={13}
-              pickup={pickup}
-              dropoff={dropoff}
-              showRoute={canSearch}
-              onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-              height="460px"
-            />
+            {/* Decorative drag handle — purely aesthetic */}
+            <div className="mx-auto w-10 h-1 rounded-full bg-white/20" />
 
-            {/* Floating fields panel — absolute-positioned glass panel,
-                bottom-anchored, sits OVER the map's lower half. The map
-                stays visible above (route + markers); the panel handles
-                input. Pointer-events default so the map remains tappable
-                in the area above the panel. */}
-            <div
-              className="absolute left-2 right-2 bottom-2 rounded-[16px] p-3"
-              style={{
-                background: 'rgba(10,10,12,0.78)',
-                backdropFilter: 'blur(18px) saturate(1.4)',
-                WebkitBackdropFilter: 'blur(18px) saturate(1.4)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                boxShadow: '0 12px 28px rgba(0,0,0,0.5)',
-              }}
-            >
-              <div className="flex items-start gap-2.5">
-              {/* Left-side route dots */}
-              <div className="flex flex-col items-center pt-2 shrink-0">
+            {/* Route field group — left dot column, right field column */}
+            <div className="flex items-start gap-2.5">
+              <div className="flex flex-col items-center pt-2.5 shrink-0">
                 <div className="w-2.5 h-2.5 rounded-full bg-brand shadow-glow" />
-                <div className="w-px h-6 bg-line my-1" />
+                <div className="w-px h-7 bg-line my-1" />
                 {pitstopOpen && (
                   <>
                     <div className="w-2.5 h-2.5 rounded-full bg-brand/80" style={{ border: '2px solid #FACC15' }} />
-                    <div className="w-px h-6 bg-line my-1" />
+                    <div className="w-px h-7 bg-line my-1" />
                   </>
                 )}
                 <div className="w-2.5 h-2.5 rounded-sm bg-online" />
               </div>
 
               <div className="flex-1 min-w-0 space-y-2">
-                {/* Pickup */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="label !mb-0">Pick up</label>
-                    <button
-                      onClick={handleUseLocation}
-                      className="text-brand text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal"
-                    >
-                      <Crosshair className="w-3 h-3" />
-                      {geo.status === 'requesting' ? 'Searching…' : 'My location'}
-                    </button>
-                  </div>
+                {/* Pickup — input + inline GPS button */}
+                <div className="relative">
                   <input
-                    className="input"
-                    placeholder={pickup ? 'Place name (optional)' : PLACEHOLDERS[service].pickup}
+                    className="input pr-11"
+                    placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
                     value={pickupLabel}
                     onChange={e => setPickupLabel(e.target.value)}
                   />
-                  {pickup && (
-                    <div className="text-[12px] text-dim mt-1.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {pickup.lat.toFixed(4)}, {pickup.lng.toFixed(4)}
-                    </div>
-                  )}
+                  <button
+                    onClick={handleUseLocation}
+                    aria-label="Use my GPS location"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-brand hover:bg-white/5 transition"
+                  >
+                    <Crosshair className={`w-4 h-4 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} />
+                  </button>
                 </div>
 
-                {/* PIT STOP — inline between pickup and dropoff. Collapsed
-                    button when off; reveals a textarea when active.
-                    Both states show the pit-stop graphic on the right edge
-                    for visual identity. */}
+                {/* Pit stop — compact collapsed button, expands to textarea */}
                 {!pitstopOpen ? (
                   <button
                     onClick={() => { setPitstopOpen(true); haptic.tap() }}
-                    className="w-full flex items-center gap-2.5 pl-2 pr-2 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[13px] font-bold text-muted min-h-[48px]"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[12px] font-bold text-muted"
                   >
-                    <span
-                      className="shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-brand to-brand2 text-bg flex items-center justify-center shadow-[0_4px_12px_rgba(250,204,21,0.45)]"
-                      aria-hidden
-                    >
-                      <Plus className="w-4 h-4" strokeWidth={3} />
-                    </span>
-                    <span className="flex-1">Add a pit stop on the way</span>
-                    <img
-                      src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
-                      alt=""
-                      className="h-9 w-auto object-contain shrink-0"
-                      loading="lazy"
-                    />
+                    <Plus className="w-3.5 h-3.5 text-brand" strokeWidth={3} />
+                    Add a pit stop on the way
                   </button>
                 ) : (
-                  <div className="animate-[fadeUp_0.3s_ease-out_both]">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="label !mb-0 flex items-center gap-1.5">
-                        <StopCircle className="w-3 h-3 text-brand" />
-                        Pit stop
-                      </label>
-                      <button
-                        onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
-                        className="text-dim hover:text-ink text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal"
-                        aria-label="Remove pit stop"
-                      >
-                        <X className="w-3 h-3" />
-                        Remove
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <textarea
-                        className="input pr-16"
-                        rows={2}
-                        maxLength={140}
-                        placeholder='e.g. "Stop at warung depan, buy 1 pack Marlboro Lights"'
-                        value={pitstopNote}
-                        onChange={e => setPitstopNote(e.target.value)}
-                      />
-                      <img
-                        src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
-                        alt=""
-                        className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-auto object-contain pointer-events-none opacity-90"
-                        loading="lazy"
-                      />
-                    </div>
-                    <p className="text-[12px] text-dim mt-1.5 leading-relaxed">
-                      💡 Rider sets their own pit-stop fee (Rp 0–25K). For item costs, transfer the rider via GoPay/QRIS upfront.
-                    </p>
+                  <div className="animate-[fadeUp_0.3s_ease-out_both] relative">
+                    <textarea
+                      className="input pr-9"
+                      rows={2}
+                      maxLength={140}
+                      placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
+                      value={pitstopNote}
+                      onChange={e => setPitstopNote(e.target.value)}
+                    />
+                    <button
+                      onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
+                      aria-label="Remove pit stop"
+                      className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg flex items-center justify-center text-dim hover:text-ink hover:bg-white/5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
 
                 {/* Drop off */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="label !mb-0">Drop off</label>
-                    <span className="text-dim text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal">
-                      <ArrowDown className="w-3 h-3" />
-                      Tap on the map
-                    </span>
-                  </div>
-                  <input
-                    className="input"
-                    placeholder={PLACEHOLDERS[service].dropoff}
-                    value={dropoffLabel}
-                    onChange={e => setDropoffLabel(e.target.value)}
-                  />
-                  {dropoff && (
-                    <div className="text-[12px] text-dim mt-1.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {dropoff.lat.toFixed(4)}, {dropoff.lng.toFixed(4)}
-                    </div>
-                  )}
-                </div>
+                <input
+                  className="input"
+                  placeholder={PLACEHOLDERS[service].dropoff}
+                  value={dropoffLabel}
+                  onChange={e => setDropoffLabel(e.target.value)}
+                />
               </div>
             </div>
 
-            {geo.status === 'denied' && (
-              <div className="mt-3 p-3 rounded-xl bg-danger/10 border border-danger/30 text-[13px] text-danger">
-                GPS denied. Tap the map to set the pickup location too.
-              </div>
-            )}
-
-            {tripKm != null && (
-              <div className="mt-3 pt-2 border-t border-line flex items-center justify-between">
-                <span className="text-[12px] text-dim uppercase tracking-wider font-extrabold">Distance</span>
-                <span className="text-brand font-extrabold text-[16px]">~{tripKm.toFixed(1)} km</span>
-              </div>
-            )}
+            {/* CTA row — optional distance chip + Find driver primary */}
+            <div className="flex items-stretch gap-2 pt-1">
+              {tripKm != null && (
+                <span className="shrink-0 inline-flex items-center text-[12px] font-extrabold text-brand bg-brand/10 border border-brand/25 px-2.5 rounded-xl">
+                  ~{tripKm.toFixed(1)} km
+                </span>
+              )}
+              <button
+                onClick={handleSearch}
+                disabled={!canSearch}
+                className="btn-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Search className="w-4 h-4" />
+                {canSearch ? 'Find driver' : 'Set pickup & drop off'}
+                {canSearch && <ChevronLeft className="w-4 h-4 rotate-180" />}
+              </button>
             </div>
-          </div>
 
-          {/* Inline disclaimer (compact) above the sticky CTA */}
-          <PlatformDisclaimer variant="compact" />
-        </div>
-      </main>
-
-      {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-        <div className="max-w-xl mx-auto px-4 pb-3">
-          <div className="glass-strong rounded-2xl p-3">
-            <button
-              onClick={handleSearch}
-              disabled={!canSearch}
-              className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Search className="w-4 h-4" />
-              {canSearch ? 'Find driver' : 'Set pickup & drop off first'}
-              {canSearch && <ChevronLeft className="w-4 h-4 rotate-180" />}
-            </button>
+            {/* Compact disclaimer — legal anchor kept on every booking page */}
+            <PlatformDisclaimer variant="compact" />
           </div>
         </div>
       </div>
