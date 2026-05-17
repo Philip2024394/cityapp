@@ -118,10 +118,18 @@ export default function PlanTripPage() {
                     onClick={() => { setService(opt.id); haptic.tap() }}
                     className="card p-2.5 text-center transition relative"
                     style={{
-                      borderColor: active ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.06)',
-                      background:  active ? 'rgba(250,204,21,0.06)' : 'rgba(255,255,255,0.03)',
+                      // Solid frosted backdrop so the service cards stay
+                      // clearly visible over the map background — the
+                      // default .card alpha (0.03) is too faint when the
+                      // bg behind is a live map.
+                      borderColor: active ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.10)',
+                      background:  active ? 'rgba(250,204,21,0.10)' : 'rgba(17,17,22,0.72)',
+                      backdropFilter: 'blur(14px) saturate(1.3)',
+                      WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
                       transform:   active ? 'translateY(-2px)' : 'translateY(0)',
-                      boxShadow:   active ? '0 0 0 1px rgba(250,204,21,0.22), 0 10px 24px rgba(250,204,21,0.10)' : 'none',
+                      boxShadow:   active
+                        ? '0 0 0 1px rgba(250,204,21,0.22), 0 10px 24px rgba(250,204,21,0.18)'
+                        : '0 6px 18px rgba(0,0,0,0.45)',
                     }}
                     aria-pressed={active}
                   >
@@ -139,8 +147,28 @@ export default function PlanTripPage() {
             </div>
           </div>
 
-          {/* Small map preview at top */}
-          <div>
+          {/* Trip preview map. Wrapped in a frosted container with strong
+              border + outer shadow so it reads as the active, interactive
+              map — clearly distinct from the ambient background map below. */}
+          <div
+            className="rounded-[22px] p-2 border"
+            style={{
+              borderColor: 'rgba(250,204,21,0.28)',
+              background: 'rgba(10,10,12,0.55)',
+              backdropFilter: 'blur(14px) saturate(1.3)',
+              WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
+              boxShadow:
+                '0 0 0 1px rgba(250,204,21,0.10), 0 20px 44px rgba(0,0,0,0.55)',
+            }}
+          >
+            <div className="flex items-center justify-between px-1 pt-0.5 pb-2">
+              <span className="text-[11px] uppercase tracking-wider font-extrabold text-brand">
+                Your trip
+              </span>
+              <span className="text-[11px] text-dim font-bold">
+                Tap to set drop-off
+              </span>
+            </div>
             <RiderMap
               center={mapCenter}
               zoom={13}
@@ -150,9 +178,6 @@ export default function PlanTripPage() {
               onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
               height="220px"
             />
-            <p className="text-[12px] text-dim mt-2 text-center">
-              Tap the map to set <span className="text-online font-bold">drop-off location</span>
-            </p>
           </div>
 
           {/* Pickup → (optional) Pit stop → Drop off — all in one card.
