@@ -2,7 +2,20 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+
+// Service tiles — the primary CTA on landing. Each tile routes straight to
+// /cari?service=<id> so the customer never has to make this choice twice.
+// Parcel first (most common kurir use case), then Ride, then Food.
+const SERVICE_TILES = [
+  { id: 'parcel', label: 'Bike Parcel', sub: 'Package · Courier',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961' },
+  { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png' },
+  { id: 'food',   label: 'Bike Food',   sub: 'Resto · Warung',
+    img: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890' },
+] as const
 
 // Background map (dark Yogyakarta + 42 pulsing rider pings + autoPan) now
 // lives in the root layout as <MapBackground />, so every page shares it.
@@ -66,10 +79,13 @@ export default function LandingPage() {
   useEffect(() => { setLocale(getStoredLocale()) }, [])
   const t = STRINGS[locale]
 
-  function enterAs(lang: Locale) {
+  function pickService(id: 'parcel' | 'person' | 'food') {
+    router.push(`/cari?service=${id}`)
+  }
+
+  function setLocaleAndStore(lang: Locale) {
     try { localStorage.setItem('cr_locale', lang) } catch { /* ignore */ }
     setLocale(lang)
-    router.push('/cari')
   }
 
   return (
@@ -123,35 +139,50 @@ export default function LandingPage() {
             {t.lede}
           </p>
 
-          {/* SPLIT-FLAG CTA — left half: Bahasa enter · right half: English enter.
-              Decorative image sits BEHIND the button on the right side. The
-              image's lower half is covered by the button; only the top peeks
-              above. Shows on all viewports (positioned to never overflow). */}
-          <div className="pt-3 space-y-3">
-            <div className="relative inline-flex w-full max-w-sm mx-auto pt-[15px]">
-              {/* Image — anchored to right-bottom, rises above the button.
-                  bottom: 37px (was 22px) lifts the image up 15px so more of it
-                  shows above the button's top edge.
-                  right: 0 (was -8px) shifts the image left 8px. */}
-              <img
-                src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png"
-                alt=""
-                aria-hidden
-                loading="lazy"
-                className="absolute z-0 pointer-events-none select-none"
-                style={{
-                  right: '0',
-                  bottom: '37px',
-                  height: '90px',
-                  width: 'auto',
-                  filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.5))',
-                }}
-              />
-              <div className="relative z-10 w-full">
-                <SplitFlagButton enterLabel={t.enter} onEnter={enterAs} activeLocale={locale} />
-              </div>
+          {/* PRIMARY CTA — 3 landscape service tiles. Tapping a tile
+              routes straight to /cari?service=<id> so the customer never
+              has to pick the service type twice. Replaces the previous
+              single "Enter" button with three direct entry points. */}
+          <div className="pt-3 w-full max-w-sm mx-auto space-y-2.5">
+            {SERVICE_TILES.map((tile, i) => (
+              <button
+                key={tile.id}
+                onClick={() => pickService(tile.id)}
+                className="w-full flex items-center gap-3 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_8px_22px_rgba(250,204,21,0.32)]"
+                style={{ animation: `fadeUp 0.55s ease-out ${i * 0.08}s both` }}
+                aria-label={`Enter — ${tile.label}`}
+              >
+                <span
+                  className="shrink-0 w-12 h-12 rounded-xl bg-bg/15 flex items-center justify-center"
+                  aria-hidden
+                >
+                  <img src={tile.img} alt="" className="h-10 w-auto object-contain" loading="eager" />
+                </span>
+                <span className="flex-1 text-left">
+                  <span className="block font-extrabold text-[16px] leading-tight">{tile.label}</span>
+                  <span className="block text-[12px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
+                </span>
+                <ArrowRight className="w-5 h-5 shrink-0 opacity-80" />
+              </button>
+            ))}
+
+            {/* Language toggle — small, below the tiles. Doesn't enter
+                the app; just sets the landing locale for the H1 + pill. */}
+            <div className="flex items-center justify-center gap-1.5 pt-2 text-[11px] font-bold">
+              <button
+                onClick={() => setLocaleAndStore('id')}
+                className={`px-2.5 py-1 rounded-full transition ${locale === 'id' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
+                aria-pressed={locale === 'id'}
+              >ID</button>
+              <span className="text-line">·</span>
+              <button
+                onClick={() => setLocaleAndStore('en')}
+                className={`px-2.5 py-1 rounded-full transition ${locale === 'en' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
+                aria-pressed={locale === 'en'}
+              >EN</button>
             </div>
-            <p className="text-[12px] text-dim">{t.freeNote}</p>
+
+            <p className="text-[12px] text-dim text-center pt-0.5">{t.freeNote}</p>
           </div>
         </div>
       </section>
@@ -161,87 +192,3 @@ export default function LandingPage() {
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   SplitFlagButton
-   One pill, two halves. Tap the left half (🇮🇩 + label) → set locale=id,
-   enter app. Tap the right half (label + 🇬🇧) → set locale=en, enter app.
-   The currently-active language gets a slightly stronger highlight.
-   ───────────────────────────────────────────────────────────────────── */
-function SplitFlagButton({
-  enterLabel, onEnter, activeLocale,
-}: {
-  enterLabel: string
-  onEnter: (l: 'id' | 'en') => void
-  activeLocale: 'id' | 'en'
-}) {
-  return (
-    <div
-      role="group"
-      aria-label="Enter app and choose language"
-      className="inline-flex items-stretch w-full max-w-sm mx-auto rounded-full overflow-hidden shadow-[0_8px_28px_rgba(250,204,21,0.32)] animate-[fadeUp_0.6s_ease-out_both] bg-gradient-to-r from-brand to-brand2"
-    >
-      {/* LEFT half — Indonesia */}
-      <button
-        onClick={() => onEnter('id')}
-        aria-label="Enter in Bahasa Indonesia"
-        className="flex-1 flex items-center justify-center gap-2.5 py-3.5 px-4 text-bg font-extrabold text-[15px] hover:bg-white/10 active:bg-white/15 transition min-h-[52px]"
-        style={{ borderRight: '1px solid rgba(10,10,10,0.18)' }}
-      >
-        <FlagCircle code="id" active={activeLocale === 'id'} />
-        <span>{activeLocale === 'id' ? enterLabel : 'Masuk'}</span>
-      </button>
-
-      {/* RIGHT half — English */}
-      <button
-        onClick={() => onEnter('en')}
-        aria-label="Enter in English"
-        className="flex-1 flex items-center justify-center gap-2.5 py-3.5 px-4 text-bg font-extrabold text-[15px] hover:bg-white/10 active:bg-white/15 transition min-h-[52px]"
-      >
-        <span>{activeLocale === 'en' ? enterLabel : 'Enter'}</span>
-        <FlagCircle code="en" active={activeLocale === 'en'} />
-      </button>
-    </div>
-  )
-}
-
-/* Round inline-SVG flag — reliable across OSes (emoji flags render as
-   text "ID" / "GB" on Windows). 28px circle, brand-thick black ring. */
-function FlagCircle({ code, active }: { code: 'id' | 'en'; active: boolean }) {
-  const size = 28
-  const ring = active ? '#0A0A0A' : 'rgba(10,10,10,0.55)'
-  if (code === 'id') {
-    // Bendera Indonesia — top red, bottom white, horizontal
-    return (
-      <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden>
-        <defs>
-          <clipPath id="flagClipId"><circle cx="14" cy="14" r="13" /></clipPath>
-        </defs>
-        <g clipPath="url(#flagClipId)">
-          <rect x="0" y="0"  width="28" height="14" fill="#E11D48" />
-          <rect x="0" y="14" width="28" height="14" fill="#FFFFFF" />
-        </g>
-        <circle cx="14" cy="14" r="13" fill="none" stroke={ring} strokeWidth="2" />
-      </svg>
-    )
-  }
-  // Simplified Union Jack — readable at small size
-  return (
-    <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden>
-      <defs>
-        <clipPath id="flagClipEn"><circle cx="14" cy="14" r="13" /></clipPath>
-      </defs>
-      <g clipPath="url(#flagClipEn)">
-        <rect x="0" y="0" width="28" height="28" fill="#012169" />
-        {/* White X diagonals */}
-        <path d="M0 0 L28 28 M28 0 L0 28" stroke="#FFFFFF" strokeWidth="5" />
-        {/* Red diagonals */}
-        <path d="M0 0 L28 28 M28 0 L0 28" stroke="#C8102E" strokeWidth="2" />
-        {/* White + cross */}
-        <path d="M14 0 V28 M0 14 H28" stroke="#FFFFFF" strokeWidth="7" />
-        {/* Red + cross */}
-        <path d="M14 0 V28 M0 14 H28" stroke="#C8102E" strokeWidth="4" />
-      </g>
-      <circle cx="14" cy="14" r="13" fill="none" stroke={ring} strokeWidth="2" />
-    </svg>
-  )
-}

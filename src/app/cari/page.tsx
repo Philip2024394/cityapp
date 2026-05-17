@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Search, MapPin, Crosshair, ArrowDown, Plus, X, StopCircle } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
@@ -10,26 +10,22 @@ import { haversineKm } from '@/lib/geo/haversine'
 import type { ServiceType } from '@/types/rider'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
-// Brand images for the 3 service categories — same imagekit PNGs as the
-// selling page so the visual identity is consistent end-to-end.
-const SERVICE_OPTIONS: Array<{ id: ServiceType; label: string; sub: string; img: string }> = [
-  { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
-    img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png' },
-  { id: 'parcel', label: 'Bike Parcel', sub: 'Package · Courier',
-    img: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961' },
-  { id: 'food',   label: 'Bike Food',   sub: 'Resto · Warung',
-    img: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890' },
-]
-
-// Per-service placeholder text — tailors the inputs to the picked service
+// Per-service placeholder text — tailors the inputs to the picked service.
+// Service is picked on the LANDING page now (3 landscape tiles) and arrives
+// here via the ?service=<id> query param.
 const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
   person: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
   parcel: { pickup: 'Where to pick up the package?',      dropoff: 'Destination address' },
   food:   { pickup: 'Restaurant or warung name',           dropoff: 'Drop-off address' },
 }
 
+function parseService(raw: string | null): ServiceType {
+  return raw === 'person' || raw === 'food' ? raw : 'parcel'
+}
+
 export default function PlanTripPage() {
   const router = useRouter()
+  const params = useSearchParams()
   const geo = useGeolocation(true)
   const haptic = useHaptic()
 
@@ -39,9 +35,9 @@ export default function PlanTripPage() {
   const [dropoffLabel, setDropoffLabel] = useState('')
   const [pitstopOpen, setPitstopOpen] = useState(false)
   const [pitstopNote, setPitstopNote] = useState('')
-  // Default to Parcel — the platform's primary focus per Services page.
-  // Most common kurir use case in Indonesia + covers documents/small food.
-  const [service, setService] = useState<ServiceType>('parcel')
+  // Service comes from the landing page via ?service=<id>. Defaults to
+  // parcel (the platform's primary focus + most common kurir use case).
+  const service: ServiceType = parseService(params.get('service'))
 
   // Auto-fill pickup with customer GPS on grant
   useEffect(() => {
@@ -107,41 +103,9 @@ export default function PlanTripPage() {
 
       <main className="pb-28">
         <div className="max-w-xl mx-auto px-3 pt-1 space-y-2.5">
-          {/* SERVICE TYPE — 3 image cards. Default Parcel.
-              Active card gets brand-yellow ring + raised. */}
-          <div className="grid grid-cols-3 gap-2">
-            {SERVICE_OPTIONS.map(opt => {
-              const active = service === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => { setService(opt.id); haptic.tap() }}
-                  className="card p-2 text-center transition relative"
-                  style={{
-                    // Solid frosted backdrop so the service cards stay
-                    // clearly visible over the map background.
-                    borderColor: active ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.10)',
-                    background:  active ? 'rgba(250,204,21,0.10)' : 'rgba(17,17,22,0.72)',
-                    backdropFilter: 'blur(14px) saturate(1.3)',
-                    WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
-                    transform:   active ? 'translateY(-2px)' : 'translateY(0)',
-                    boxShadow:   active
-                      ? '0 0 0 1px rgba(250,204,21,0.22), 0 10px 24px rgba(250,204,21,0.18)'
-                      : '0 6px 18px rgba(0,0,0,0.45)',
-                  }}
-                  aria-pressed={active}
-                >
-                  <img src={opt.img} alt="" aria-hidden loading="lazy"
-                       className="h-9 w-auto object-contain mx-auto"
-                       style={{ filter: active ? 'drop-shadow(0 4px 10px rgba(250,204,21,0.35))' : 'none' }} />
-                  <div className="text-[13px] font-extrabold mt-1 leading-tight"
-                       style={{ color: active ? '#FACC15' : '#fff' }}>
-                    {opt.label}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+          {/* Service was picked on the landing page; arrives here via
+              ?service=<id>. The pickup/drop-off placeholders + filter
+              passed to the rider list both reflect that choice. */}
 
           {/* UNIFIED TRIP CARD — map fills the container, pickup → pit stop
               → drop-off fields FLOAT on top of the map as a glass panel at
