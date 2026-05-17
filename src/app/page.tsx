@@ -156,13 +156,16 @@ export default function LandingPage() {
       {/* Top mini nav */}
       <header className="relative z-20 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="City Rider home">
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
-              alt="City Rider"
+              alt=""
               className="h-11 w-auto"
               loading="eager"
             />
+            <div className="font-extrabold tracking-tight text-[16px]">
+              City <span className="gradient-text">Rider</span>
+            </div>
           </Link>
           <Link href="/login" className="text-[13px] font-bold text-muted hover:text-ink px-3 py-1.5 rounded-lg hover:bg-white/5">
             {t.loginNav}
