@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Search, MapPin, Plus, X } from 'lucide-react'
@@ -72,6 +72,53 @@ function PlanTripPageInner() {
   const [dropoffLabel, setDropoffLabel] = useState('')
   const [pitstopOpen, setPitstopOpen] = useState(false)
   const [pitstopNote, setPitstopNote] = useState('')
+
+  // Live measurement of the bottom stack so the map's viewport padding
+  // exactly matches the obscured area — no more hardcoded 380/460 guesses
+  // that clipped the route on small phones or when the pit-stop expanded.
+  const bottomStackRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const [bottomHeight, setBottomHeight] = useState(380)
+  const [headerHeight, setHeaderHeight] = useState(96)
+  // Soft-keyboard inset (iOS/Android). When the keyboard opens, the visual
+  // viewport shrinks — we add that delta to the bottom padding so the route
+  // re-fits into the still-visible map area above the keyboard.
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
+
+  useEffect(() => {
+    const stack = bottomStackRef.current
+    const header = headerRef.current
+    if (!stack || !header) return
+    const measure = () => {
+      setBottomHeight(stack.offsetHeight)
+      setHeaderHeight(header.offsetHeight)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(stack)
+    ro.observe(header)
+    window.addEventListener('orientationchange', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('orientationchange', measure)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return
+    const vv = window.visualViewport
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKeyboardOffset(offset)
+    }
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [])
   // Service comes from the landing page via ?service=<id>. Defaults to
   // parcel (the platform's primary focus + most common kurir use case).
   const service: ServiceType = parseService(params.get('service'))
@@ -136,11 +183,26 @@ function PlanTripPageInner() {
 
   return (
     <>
-      {/* FULL-BLEED MAP — fixed to the viewport so it sits as the
-          interactive hero behind every other UI layer. pitch=50 adds
-          the Apple-Maps / Grab 3D perspective; zoom 14 lets the visible
-          portion above the bottom sheet still show the route + pins. */}
-      <div className="fixed inset-0 z-0">
+      {/* DARK BACKDROP — fills the whole viewport with the map's #0A0A0A
+          base colour so the page still reads as full-bleed even though
+          the active map is constrained to the hero band only. */}
+      <div className="fixed inset-0 z-0" style={{ background: '#0A0A0A' }} />
+
+      {/* ACTIVE MAP — sized to EXACTLY the visible hero band between the
+          header and the bottom stack. fitBounds now frames the route
+          into the container's full size, so the pickup pin, drop-off
+          pin and route line are guaranteed to sit in the visible area —
+          no padding tricks fighting with chrome. The container animates
+          when the bottom sheet expands (pit-stop) or the keyboard opens
+          so the route smoothly re-fits into the new band. */}
+      <div
+        className="fixed left-0 right-0 z-[1]"
+        style={{
+          top: `${headerHeight}px`,
+          bottom: `${bottomHeight + keyboardOffset}px`,
+          transition: 'top 220ms ease, bottom 220ms ease',
+        }}
+      >
         <RiderMap
           center={mapCenter}
           zoom={14}
@@ -151,19 +213,14 @@ function PlanTripPageInner() {
           showRoute={canSearch}
           pitStop={canSearch && pitstopNote.trim().length > 0}
           onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-          height="100dvh"
-          pitch={50}
-          // Reserve the bottom-sheet area + header area so the map's
-          // visible "hero" portion (where the route + pickup pin +
-          // drop-off pin + nearby driver pings live) is always above
-          // the cards. Bigger bottom padding when the pit stop is
-          // expanded so the expanded sheet doesn't cover anything.
-          viewportPadding={{
-            top: 100,
-            bottom: pitstopOpen ? 480 : 400,
-            left: 24,
-            right: 24,
-          }}
+          height="100%"
+          // pitch flattens to 0 once a route is set so fitBounds can
+          // place the line cleanly in the hero band. Before route: a
+          // gentle 25° tilt for visual interest.
+          pitch={canSearch ? 0 : 25}
+          // Container IS the visible band — padding is just edge
+          // clearance so markers aren't flush against the boundary.
+          viewportPadding={{ top: 24, bottom: 24, left: 32, right: 32 }}
         />
       </div>
 
@@ -171,7 +228,7 @@ function PlanTripPageInner() {
           left, "42 nearby" black badge with yellow text + green dot
           (pink satellite ping ring) on the right. Text shadow keeps
           the brand legible over any map content underneath. */}
-      <header className="relative z-30 pt-safe">
+      <header ref={headerRef} className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
             <img
@@ -243,7 +300,7 @@ function PlanTripPageInner() {
           so the booking page carries the same bold visual language.
           The CTA flips to a DARK tile so it stands out as the action
           terminus against the three yellow controls. */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
+      <div ref={bottomStackRef} className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
         <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
           {/* PICKUP TILE — dark-red round GPS button sits INSIDE the input
               on the right, auto-sets the location to the customer's GPS

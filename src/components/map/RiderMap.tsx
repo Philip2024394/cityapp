@@ -4,6 +4,16 @@ import maplibregl, { Map as MLMap, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { Rider } from '@/types/rider'
 
+// Marching-ants dash cycle for the route line. Each frame shifts the dash
+// pattern so the line appears to flow from pickup → dropoff. Twelve steps
+// gives a smooth loop without burning CPU on every RAF tick.
+const DASH_SEQUENCE: number[][] = [
+  [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
+  [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
+  [0, 0.5, 3, 2.5], [0, 1, 3, 2], [0, 1.5, 3, 1.5],
+  [0, 2, 3, 1], [0, 2.5, 3, 0.5],
+]
+
 type Props = {
   center: { lat: number; lng: number }
   zoom?: number
@@ -54,6 +64,12 @@ export default function RiderMap({
   viewportPadding, pitStop = false,
 }: Props) {
   const pitStopMarkerRef = useRef<Marker | null>(null)
+  const dashFrameRef = useRef<number | null>(null)
+  // Latest fitBounds-for-route closure — kept in a ref so the
+  // ResizeObserver in the init effect can re-fit on container resize
+  // (pit-stop expand, keyboard open, orientation change) without being
+  // captured to a stale pickup/dropoff/padding tuple.
+  const fitRouteRef = useRef<(() => void) | null>(null)
   // Merge caller-provided padding with sane defaults. All camera moves
   // (flyTo, fitBounds) below use this so the route/markers stay in the
   // visible area when a bottom sheet or header overlays the map.
@@ -169,10 +185,14 @@ export default function RiderMap({
       })
     }
 
-    // Observe container size changes — mobile URL bar toggle, parent layout
-    // changes, image-loaded shifts. Each change triggers map.resize() so tiles
-    // re-render at the correct dimensions.
-    const ro = new ResizeObserver(() => { mapRef.current?.resize() })
+    // Observe container size changes — mobile URL bar toggle, parent
+    // layout changes (bottom sheet expand, keyboard), image-loaded
+    // shifts. Each change resizes the map AND re-fits the route so it
+    // stays in the now-visible hero band.
+    const ro = new ResizeObserver(() => {
+      mapRef.current?.resize()
+      fitRouteRef.current?.()
+    })
     ro.observe(containerRef.current)
 
     return () => { ro.disconnect(); map.remove(); mapRef.current = null }
@@ -183,8 +203,12 @@ export default function RiderMap({
   // map's "true centre" lands in the visible area (not behind chrome
   // like a bottom sheet). Maplibre interprets padding as an inset
   // from the map container edges.
+  //
+  // When a route is active, the route effect owns the camera via
+  // fitBounds — skip flyTo here so the two camera moves don't fight.
   useEffect(() => {
     if (!mapRef.current) return
+    if (showRoute && pickup && dropoff) return
     mapRef.current.flyTo({
       center: [center.lng, center.lat],
       zoom,
@@ -198,9 +222,16 @@ export default function RiderMap({
   // the caller changes padding (e.g. sheet expand/collapse).
   useEffect(() => {
     if (!mapRef.current) return
-    mapRef.current.setPadding(padding, { duration: 300 })
+    mapRef.current.setPadding(padding)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [padding.top, padding.bottom, padding.left, padding.right])
+
+  // React to pitch changes after init — caller can flatten the camera
+  // (e.g. to 0 when a route is drawn so fitBounds is exact, no 3D skew).
+  useEffect(() => {
+    if (!mapRef.current) return
+    mapRef.current.easeTo({ pitch, duration: 500 })
+  }, [pitch])
 
   // Render rider markers
   useEffect(() => {
@@ -329,14 +360,54 @@ export default function RiderMap({
       .addTo(mapRef.current)
   }, [pitStop, pickup, dropoff])
 
-  // Route line between pickup and dropoff
+  // Route line between pickup and dropoff — two stacked layers:
+  //   route-glow: soft wide green halo (continuity readability)
+  //   route-line: thin animated dashed foreground (marching ants)
+  // Re-runs on padding change too, so expanding the bottom sheet, opening
+  // the keyboard, or rotating the device re-fits the route into the
+  // newly-visible hero area.
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !showRoute) return
-    const drawRoute = () => {
-      if (!pickup || !dropoff) {
-        if (map.getLayer('route-line')) map.removeLayer('route-line')
-        if (map.getSource('route')) map.removeSource('route')
+    if (!map) return
+
+    const clearRoute = () => {
+      if (dashFrameRef.current != null) {
+        cancelAnimationFrame(dashFrameRef.current)
+        dashFrameRef.current = null
+      }
+      if (map.getLayer('route-line')) map.removeLayer('route-line')
+      if (map.getLayer('route-glow')) map.removeLayer('route-glow')
+      if (map.getSource('route')) map.removeSource('route')
+    }
+
+    const fitRouteBounds = () => {
+      if (!pickup || !dropoff) return
+      map.resize()
+      const bounds = new maplibregl.LngLatBounds()
+      bounds.extend([pickup.lng, pickup.lat])
+      bounds.extend([dropoff.lng, dropoff.lat])
+      // The map container IS the visible hero band (page sizes it to
+      // fit between the header and the bottom stack), so padding here
+      // is just edge clearance — markers shouldn't sit flush against
+      // the container boundary.
+      map.fitBounds(bounds, {
+        padding: {
+          top:    padding.top,
+          bottom: padding.bottom,
+          left:   padding.left,
+          right:  padding.right,
+        },
+        maxZoom: 15,
+        duration: 700,
+      })
+    }
+    // Expose the latest fitRouteBounds to the ResizeObserver in the
+    // init effect so container-size changes re-frame the route too.
+    fitRouteRef.current = fitRouteBounds
+
+    const setupRoute = () => {
+      if (!showRoute || !pickup || !dropoff) {
+        clearRoute()
         return
       }
       const data = {
@@ -351,40 +422,72 @@ export default function RiderMap({
         ;(map.getSource('route') as maplibregl.GeoJSONSource).setData(data)
       } else {
         map.addSource('route', { type: 'geojson', data })
+        // Soft underline glow — keeps the line readable as a continuous
+        // path even while the dashed foreground breaks visually.
+        map.addLayer({
+          id: 'route-glow',
+          type: 'line',
+          source: 'route',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#22C55E',
+            'line-width': 10,
+            'line-opacity': 0.18,
+            'line-blur': 4,
+          },
+        })
+        // Dashed animated foreground — marching ants from pickup → dropoff.
         map.addLayer({
           id: 'route-line',
           type: 'line',
           source: 'route',
+          layout: { 'line-cap': 'butt', 'line-join': 'round' },
           paint: {
-            // Green = active trip path (matches the dropoff marker hue).
             'line-color': '#22C55E',
             'line-width': 4,
-            'line-opacity': 0.92,
+            'line-opacity': 0.95,
+            'line-dasharray': DASH_SEQUENCE[0],
           },
         })
+
+        // RAF dash cycle — throttled to ~16fps so the marching effect is
+        // smooth but doesn't redraw the whole map on every frame.
+        let step = 0
+        let last = 0
+        const tick = (t: number) => {
+          if (!mapRef.current) return
+          if (t - last > 60) {
+            step = (step + 1) % DASH_SEQUENCE.length
+            if (mapRef.current.getLayer('route-line')) {
+              mapRef.current.setPaintProperty(
+                'route-line',
+                'line-dasharray',
+                DASH_SEQUENCE[step],
+              )
+            }
+            last = t
+          }
+          dashFrameRef.current = requestAnimationFrame(tick)
+        }
+        dashFrameRef.current = requestAnimationFrame(tick)
       }
-      // Auto-fit bounds — viewport padding keeps the route + pickup/
-      // dropoff pins in the visible "hero" area above any bottom sheet.
-      // Inflate each edge with a constant 40px buffer so pins aren't
-      // flush against the visible-area boundary.
-      const bounds = new maplibregl.LngLatBounds()
-      bounds.extend([pickup.lng, pickup.lat])
-      bounds.extend([dropoff.lng, dropoff.lat])
-      map.fitBounds(bounds, {
-        padding: {
-          top:    padding.top    + 40,
-          bottom: padding.bottom + 40,
-          left:   padding.left   + 40,
-          right:  padding.right  + 40,
-        },
-        maxZoom: 15,
-        duration: 700,
-      })
+      fitRouteBounds()
     }
-    if (map.isStyleLoaded()) drawRoute()
-    else map.once('load', drawRoute)
+
+    if (map.isStyleLoaded()) setupRoute()
+    else map.once('load', setupRoute)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickup, dropoff, showRoute])
+  }, [
+    pickup?.lat, pickup?.lng,
+    dropoff?.lat, dropoff?.lng,
+    showRoute,
+    padding.top, padding.bottom, padding.left, padding.right,
+  ])
+
+  // Cancel the dash RAF on unmount so it doesn't outlive the map.
+  useEffect(() => () => {
+    if (dashFrameRef.current != null) cancelAnimationFrame(dashFrameRef.current)
+  }, [])
 
   return (
     <div
