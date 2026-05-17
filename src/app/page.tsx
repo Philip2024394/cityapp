@@ -1,45 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
-import type { Rider } from '@/types/rider'
 
-// Landing-background map — dimmed Yogyakarta view so the hero pops.
-const LandingMap = dynamic(() => import('@/components/map/RiderMapDynamic'), { ssr: false })
-
-// 42 demo riders sprinkled across a Yogyakarta bounding box so the hero map
-// has a constellation of pulsing dots. Deterministic positions (no randomness)
-// so SSR + hydration are identical.
-const YOGYA_CENTER = { lat: -7.7928, lng: 110.3657 }
-function buildHeroRiders(count: number): Rider[] {
-  const out: Rider[] = []
-  for (let i = 0; i < count; i++) {
-    const angle = i * 2.39996323
-    const radius = 0.005 + (i / count) * 0.045
-    out.push({
-      id: `hero-${i}`,
-      slug: `hero-${i}`,
-      name: '',
-      photoUrl: '',
-      whatsappE164: '',
-      bio: '',
-      area: '',
-      city: 'Yogyakarta',
-      services: [],
-      bike: { make: '', model: '', year: 0, color: '', type: 'matic', hasBox: false },
-      pricePerKm: 0, minFee: 0,
-      isOnline: true,
-      lastSeenAt: '',
-      lat: YOGYA_CENTER.lat + Math.sin(angle) * radius,
-      lng: YOGYA_CENTER.lng + Math.cos(angle) * radius,
-      subscriptionStatus: 'active',
-    })
-  }
-  return out
-}
+// Background map (dark Yogyakarta + 42 pulsing rider pings + autoPan) now
+// lives in the root layout as <MapBackground />, so every page shares it.
+// The landing no longer renders its own — keeps a single source of truth.
 
 // Inline strings — landing-only translations for Phase 1.
 // Deeper pages (signup, dashboard, marketplace, etc.) stay Bahasa until
@@ -91,8 +58,6 @@ function getStoredLocale(): Locale {
 
 export default function LandingPage() {
   const router = useRouter()
-  const [center] = useState(YOGYA_CENTER)
-  const heroRiders = useMemo(() => buildHeroRiders(42), [])
 
   // Locale state. SSR uses 'id' (deterministic); client hydrates and then
   // reads localStorage. The brief flash from 'id' → stored locale on first
@@ -108,33 +73,9 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] relative overflow-hidden bg-bg flex flex-col">
-      {/* Background map — dark, roads-only, label-free, slowly panning */}
-      <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: 1 }}>
-        <LandingMap
-          center={center}
-          zoom={13}
-          height="100dvh"
-          interactive={false}
-          variant="dark"
-          hideLabels
-          roadsOnly
-          autoPan
-          riders={heroRiders}
-          markerStyle="ping"
-        />
-      </div>
-
-      {/* Soft yellow glow + gradient for hero legibility */}
-      <div
-        className="absolute inset-0 z-10 pointer-events-none"
-        style={{
-          background: [
-            'radial-gradient(ellipse 80% 50% at 50% 35%, rgba(250,204,21,0.10) 0%, transparent 60%)',
-            'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.35) 40%, rgba(10,10,10,0.95) 100%)',
-          ].join(', '),
-        }}
-      />
+    <main className="min-h-[100dvh] relative flex flex-col">
+      {/* Background map + readability overlay are mounted globally in the
+          root layout (<MapBackground />). The hero just sits on top. */}
 
       {/* Top mini nav */}
       <header className="relative z-20 pt-safe">

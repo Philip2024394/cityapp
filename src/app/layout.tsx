@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import MapBackground from '@/components/layout/MapBackground'
 
 export const metadata: Metadata = {
   title: 'City Rider — Marketplace kurir motor Indonesia',
@@ -32,7 +33,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // warning here lets React continue with a client re-render instead of bailing.
   return (
     <html lang="id" translate="no" className="notranslate" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {/* Global dark Yogyakarta map background — mounted once at the root
+            so every page sits over the same panning, pulsing scene.
+            Fixed to the viewport; doesn't scroll with content. */}
+        <MapBackground />
+        {children}
+      </body>
     </html>
   )
 }
