@@ -53,7 +53,7 @@ export default function RiderMap({
       style: OPENFREEMAP_STYLES[variant],
       center: [center.lng, center.lat],
       zoom,
-      attributionControl: { compact: true },
+      attributionControl: false,
       interactive,
     })
     mapRef.current = map
