@@ -215,7 +215,7 @@ function PlanTripPageInner() {
             </div>
             <div className="relative">
               <input
-                className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl pl-3 pr-14 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/25 transition"
+                className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl pl-3 pr-14 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
                 placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
                 value={pickupLabel}
                 onChange={e => setPickupLabel(e.target.value)}
@@ -263,7 +263,7 @@ function PlanTripPageInner() {
                 <textarea
                   rows={2}
                   maxLength={140}
-                  className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/25 transition resize-none"
+                  className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/90 transition resize-none"
                   placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
                   value={pitstopNote}
                   onChange={e => setPitstopNote(e.target.value)}
@@ -299,7 +299,7 @@ function PlanTripPageInner() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-75">Tap map</span>
             </div>
             <input
-              className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/25 transition"
+              className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
               placeholder={PLACEHOLDERS[service].dropoff}
               value={dropoffLabel}
               onChange={e => setDropoffLabel(e.target.value)}
