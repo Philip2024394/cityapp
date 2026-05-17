@@ -37,7 +37,7 @@ const OPENFREEMAP_STYLES = {
 export default function RiderMap({
   center, zoom = 13, riders = [], pickup, dropoff, onDropoffSet,
   showRoute = false, height = '320px', interactive = true,
-  variant = 'positron', hideLabels = false, autoPan = false,
+  variant = 'dark', hideLabels = false, autoPan = false,
   markerStyle = 'scooter', roadsOnly = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -55,6 +55,9 @@ export default function RiderMap({
       zoom,
       attributionControl: false,
       interactive,
+      // Cap at 2x — high-DPR Androids (3x+) would otherwise burn battery
+      // rendering at native resolution. 2x is the sharpness sweet spot.
+      pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     })
     mapRef.current = map
 
