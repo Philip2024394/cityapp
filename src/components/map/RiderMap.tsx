@@ -61,6 +61,16 @@ export default function RiderMap({
     })
     mapRef.current = map
 
+    // Silence "Image 'wood-pattern' could not be loaded" warnings — the
+    // OpenFreeMap dark style references sprite patterns (wood, sand, etc.)
+    // we don't load. Substitute a 1×1 transparent placeholder so the
+    // (already-hidden) fill layers don't spam the console.
+    map.on('styleimagemissing', (e) => {
+      if (!map.hasImage(e.id)) {
+        map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) })
+      }
+    })
+
     map.on('load', () => {
       try {
         const layers = map.getStyle().layers
