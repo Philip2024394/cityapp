@@ -87,71 +87,57 @@ export default function PlanTripPage() {
     <>
       <Header />
 
-      <main className="min-h-screen pb-32">
-        <div className="max-w-xl mx-auto px-4 pt-3 space-y-4">
+      <main className="pb-28">
+        <div className="max-w-xl mx-auto px-3 pt-2 space-y-2.5">
           {/* SERVICE TYPE — 3 image cards, right under the header. Default
               Parcel. Active card gets brand-yellow ring + raised. */}
-          <div>
-            <div className="grid grid-cols-3 gap-2">
-              {SERVICE_OPTIONS.map(opt => {
-                const active = service === opt.id
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => { setService(opt.id); haptic.tap() }}
-                    className="card p-2.5 text-center transition relative"
-                    style={{
-                      // Solid frosted backdrop so the service cards stay
-                      // clearly visible over the map background — the
-                      // default .card alpha (0.03) is too faint when the
-                      // bg behind is a live map.
-                      borderColor: active ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.10)',
-                      background:  active ? 'rgba(250,204,21,0.10)' : 'rgba(17,17,22,0.72)',
-                      backdropFilter: 'blur(14px) saturate(1.3)',
-                      WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
-                      transform:   active ? 'translateY(-2px)' : 'translateY(0)',
-                      boxShadow:   active
-                        ? '0 0 0 1px rgba(250,204,21,0.22), 0 10px 24px rgba(250,204,21,0.18)'
-                        : '0 6px 18px rgba(0,0,0,0.45)',
-                    }}
-                    aria-pressed={active}
-                  >
-                    <img src={opt.img} alt="" aria-hidden loading="lazy"
-                         className="h-12 w-auto object-contain mx-auto"
-                         style={{ filter: active ? 'drop-shadow(0 4px 10px rgba(250,204,21,0.35))' : 'none' }} />
-                    <div className="text-[13px] font-extrabold mt-1.5 leading-tight"
-                         style={{ color: active ? '#FACC15' : '#fff' }}>
-                      {opt.label}
-                    </div>
-                    <div className="text-[11px] text-dim mt-0.5 leading-tight">{opt.sub}</div>
-                  </button>
-                )
-              })}
-            </div>
+          <div className="grid grid-cols-3 gap-2">
+            {SERVICE_OPTIONS.map(opt => {
+              const active = service === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => { setService(opt.id); haptic.tap() }}
+                  className="card p-2 text-center transition relative"
+                  style={{
+                    // Solid frosted backdrop so the service cards stay
+                    // clearly visible over the map background.
+                    borderColor: active ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.10)',
+                    background:  active ? 'rgba(250,204,21,0.10)' : 'rgba(17,17,22,0.72)',
+                    backdropFilter: 'blur(14px) saturate(1.3)',
+                    WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
+                    transform:   active ? 'translateY(-2px)' : 'translateY(0)',
+                    boxShadow:   active
+                      ? '0 0 0 1px rgba(250,204,21,0.22), 0 10px 24px rgba(250,204,21,0.18)'
+                      : '0 6px 18px rgba(0,0,0,0.45)',
+                  }}
+                  aria-pressed={active}
+                >
+                  <img src={opt.img} alt="" aria-hidden loading="lazy"
+                       className="h-9 w-auto object-contain mx-auto"
+                       style={{ filter: active ? 'drop-shadow(0 4px 10px rgba(250,204,21,0.35))' : 'none' }} />
+                  <div className="text-[13px] font-extrabold mt-1 leading-tight"
+                       style={{ color: active ? '#FACC15' : '#fff' }}>
+                    {opt.label}
+                  </div>
+                </button>
+              )
+            })}
           </div>
 
-          {/* Trip preview map. Wrapped in a frosted container with strong
-              border + outer shadow so it reads as the active, interactive
-              map — clearly distinct from the ambient background map below. */}
+          {/* Trip preview map — frosted brand-bordered container.
+              Height kept tight so the full booking flow fits on one screen. */}
           <div
-            className="rounded-[22px] p-2 border"
+            className="rounded-[18px] p-1.5 border"
             style={{
               borderColor: 'rgba(250,204,21,0.28)',
               background: 'rgba(10,10,12,0.55)',
               backdropFilter: 'blur(14px) saturate(1.3)',
               WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
               boxShadow:
-                '0 0 0 1px rgba(250,204,21,0.10), 0 20px 44px rgba(0,0,0,0.55)',
+                '0 0 0 1px rgba(250,204,21,0.10), 0 16px 32px rgba(0,0,0,0.55)',
             }}
           >
-            <div className="flex items-center justify-between px-1 pt-0.5 pb-2">
-              <span className="text-[11px] uppercase tracking-wider font-extrabold text-brand">
-                Your trip
-              </span>
-              <span className="text-[11px] text-dim font-bold">
-                Tap to set drop-off
-              </span>
-            </div>
             <RiderMap
               center={mapCenter}
               zoom={13}
@@ -159,17 +145,17 @@ export default function PlanTripPage() {
               dropoff={dropoff}
               showRoute={canSearch}
               onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-              height="220px"
+              height="150px"
             />
           </div>
 
           {/* Pickup → (optional) Pit stop → Drop off — all in one frosted
               card. The left-side dot column dynamically grows a 3rd dot
               when pit stop is active so the visual route reads top-to-bottom.
-              Frosted backdrop matches the trip preview map above so both
-              sections read as the active controls over the bg map. */}
+              Tightened paddings + reduced internal spacing so the full
+              booking flow fits on one screen without scrolling. */}
           <div
-            className="rounded-[20px] p-4 border"
+            className="rounded-[18px] p-3 border"
             style={{
               borderColor: 'rgba(255,255,255,0.10)',
               background: 'rgba(17,17,22,0.72)',
@@ -178,21 +164,21 @@ export default function PlanTripPage() {
               boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
             }}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2.5">
               {/* Left-side route dots */}
-              <div className="flex flex-col items-center pt-3 shrink-0">
+              <div className="flex flex-col items-center pt-2 shrink-0">
                 <div className="w-2.5 h-2.5 rounded-full bg-brand shadow-glow" />
-                <div className="w-px h-8 bg-line my-1" />
+                <div className="w-px h-6 bg-line my-1" />
                 {pitstopOpen && (
                   <>
                     <div className="w-2.5 h-2.5 rounded-full bg-brand/80" style={{ border: '2px solid #FACC15' }} />
-                    <div className="w-px h-8 bg-line my-1" />
+                    <div className="w-px h-6 bg-line my-1" />
                   </>
                 )}
                 <div className="w-2.5 h-2.5 rounded-sm bg-online" />
               </div>
 
-              <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex-1 min-w-0 space-y-2">
                 {/* Pickup */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
@@ -348,14 +334,21 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 glass-strong pt-safe">
       <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink">
-          <ChevronLeft className="w-4 h-4" />
-          Back
+        <Link href="/" className="shrink-0" aria-label="City Rider home">
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
+            alt=""
+            className="h-9 w-auto hover:opacity-85 transition"
+            loading="eager"
+          />
         </Link>
         <div className="text-[14px] font-extrabold">
           City <span className="gradient-text">Rider</span>
         </div>
-        <div className="w-12" />
+        <Link href="/" className="flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink">
+          <ChevronLeft className="w-4 h-4" />
+          Back
+        </Link>
       </div>
     </header>
   )
