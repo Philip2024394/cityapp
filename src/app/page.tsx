@@ -181,10 +181,30 @@ export default function LandingPage() {
             {t.lede}
           </p>
 
-          {/* SPLIT-FLAG CTA — left half: Bahasa enter · right half: English enter */}
-          <div className="pt-3 space-y-3">
-            <SplitFlagButton enterLabel={t.enter} onEnter={enterAs} activeLocale={locale} />
-            <p className="text-[12px] text-dim">{t.freeNote}</p>
+          {/* SPLIT-FLAG CTA — left half: Bahasa enter · right half: English enter.
+              Decorative image sits behind the button on the right side, peeking
+              out at sm+ viewports (hidden on smallest mobile to keep CTA clear). */}
+          <div className="pt-3 space-y-3 relative">
+            <img
+              src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png"
+              alt=""
+              aria-hidden
+              loading="lazy"
+              className="hidden sm:block absolute z-0 pointer-events-none select-none"
+              style={{
+                right: '-24px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                height: '140px',
+                width: 'auto',
+                opacity: 0.95,
+                filter: 'drop-shadow(0 10px 24px rgba(0,0,0,0.45))',
+              }}
+            />
+            <div className="relative z-10">
+              <SplitFlagButton enterLabel={t.enter} onEnter={enterAs} activeLocale={locale} />
+            </div>
+            <p className="text-[12px] text-dim relative z-10">{t.freeNote}</p>
           </div>
         </div>
       </section>
