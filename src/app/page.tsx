@@ -186,11 +186,11 @@ export default function LandingPage() {
               image's lower half is covered by the button; only the top peeks
               above. Shows on all viewports (positioned to never overflow). */}
           <div className="pt-3 space-y-3">
-            <div className="relative inline-flex w-full max-w-sm mx-auto">
-              {/* Image — anchored to right-bottom, top half rises above the button.
-                  bottom: 22px ≈ button vertical centre (button is 52px tall + 14px py)
-                  so the image's bottom edge sits roughly at the button's centre line
-                  and its top half is visible. */}
+            <div className="relative inline-flex w-full max-w-sm mx-auto pt-[15px]">
+              {/* Image — anchored to right-bottom, rises above the button.
+                  bottom: 37px (was 22px) lifts the image up 15px so more of it
+                  shows above the button's top edge.
+                  right: 0 (was -8px) shifts the image left 8px. */}
               <img
                 src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png"
                 alt=""
@@ -198,8 +198,8 @@ export default function LandingPage() {
                 loading="lazy"
                 className="absolute z-0 pointer-events-none select-none"
                 style={{
-                  right: '-8px',
-                  bottom: '22px',
+                  right: '0',
+                  bottom: '37px',
                   height: '90px',
                   width: 'auto',
                   filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.5))',
