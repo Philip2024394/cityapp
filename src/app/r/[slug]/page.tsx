@@ -3,7 +3,7 @@ import { use, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronLeft, MapPin, Box, Bike as BikeIcon, MessageCircle } from 'lucide-react'
-import RiderMap from '@/components/map/RiderMapDynamic'
+import RiderRadar from '@/components/rider/RiderRadar'
 import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
 import OfflineFallback from '@/components/rider/OfflineFallback'
 import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
@@ -107,19 +107,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       <div className="max-w-2xl mx-auto px-4 pt-2 space-y-5">
         <RiderHero rider={rider} />
 
-        <RiderMap
-          center={{ lat: rider.lat, lng: rider.lng }}
-          zoom={pickup && dropoff ? 12 : 14}
-          riders={[rider]}
-          pickup={pickup}
-          dropoff={dropoff}
-          onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-          showRoute
-          height="240px"
+        <RiderRadar
+          customer={pickup ?? geo.coords ?? null}
+          rider={{ lat: rider.lat, lng: rider.lng, name: rider.name }}
         />
-        <p className="text-[12px] text-dim text-center -mt-3">
-          Tap di peta untuk set <span className="text-online font-bold">lokasi antar</span>
-        </p>
 
         <PickupDropoffPicker
           pickup={pickup}
