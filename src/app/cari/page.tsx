@@ -306,26 +306,22 @@ function PlanTripPageInner() {
             />
           </div>
 
-          {/* CTA TILE — flipped DARK so the action terminus stands out
-              against the three yellow controls above. Brand-yellow text
-              + brand border keeps it on-brand. */}
+          {/* CTA TILE — brand-yellow active fill, dark text. Always reads
+              "View drivers" so the customer can tap through to the rider
+              list even before fully setting the trip. Extra top margin
+              (pt-4) creates breathing room between the three input tiles
+              above (form) and this action tile (terminus). */}
           <button
             onClick={handleSearch}
             disabled={!canSearch}
-            className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand/70 shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] hover:border-brand transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 p-3.5 mt-2 rounded-2xl text-bg font-extrabold text-[15px] bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(250,204,21,0.42)] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Search className="w-4 h-4" />
-            {canSearch ? (
-              <>
-                <span>Find driver</span>
-                {tripKm != null && (
-                  <span className="text-[12px] font-bold text-dim ml-1">· ~{tripKm.toFixed(1)} km</span>
-                )}
-                <ChevronLeft className="w-4 h-4 rotate-180" />
-              </>
-            ) : (
-              <span>Set pickup &amp; drop off</span>
+            <span>View drivers</span>
+            {canSearch && tripKm != null && (
+              <span className="text-[12px] font-bold opacity-75 ml-1">· ~{tripKm.toFixed(1)} km</span>
             )}
+            <ChevronLeft className="w-4 h-4 rotate-180" />
           </button>
         </div>
       </div>
