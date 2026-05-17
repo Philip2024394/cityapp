@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Search, MapPin, Crosshair, ArrowDown, Plus, X, StopCircle } from 'lucide-react'
@@ -23,7 +23,18 @@ function parseService(raw: string | null): ServiceType {
   return raw === 'person' || raw === 'food' ? raw : 'parcel'
 }
 
+// Next 15 requires any component that calls useSearchParams() to live
+// under a <Suspense> boundary — otherwise the whole route bails out at
+// build time and the dev server errors out on refresh.
 export default function PlanTripPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlanTripPageInner />
+    </Suspense>
+  )
+}
+
+function PlanTripPageInner() {
   const router = useRouter()
   const params = useSearchParams()
   const geo = useGeolocation(true)
