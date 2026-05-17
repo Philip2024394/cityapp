@@ -58,18 +58,18 @@ export default function SuggestedPricingCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[13px] uppercase tracking-wider font-extrabold text-dim">
-            Saran harga · {city}
+            Pricing suggestion · {city}
           </div>
           <div className="text-[15px] font-extrabold mt-1">{headline}</div>
           <div className="text-[13px] text-muted mt-1.5 leading-relaxed">
-            Rata-rata rider lain di {city}: <span className="text-ink font-bold">{idr(cityAveragePerKm)}/km</span>{' '}
+            Average other riders in {city}: <span className="text-ink font-bold">{idr(cityAveragePerKm)}/km</span>{' '}
             · min <span className="text-ink font-bold">{idr(cityAverageMinFee)}</span>
           </div>
 
           {/* Side-by-side comparison */}
           <div className="grid grid-cols-2 gap-2 mt-3">
-            <Compare label="Rate kamu" value={`${idr(yourPerKm)}/km`} delta={deltaText(yourPerKm, cityAveragePerKm)} verdict={perKmVerdict} />
-            <Compare label="Min fee kamu" value={idr(yourMinFee)} delta={deltaText(yourMinFee, cityAverageMinFee)} verdict={minFeeVerdict} />
+            <Compare label="Your rate" value={`${idr(yourPerKm)}/km`} delta={deltaText(yourPerKm, cityAveragePerKm)} verdict={perKmVerdict} />
+            <Compare label="Your min fee" value={idr(yourMinFee)} delta={deltaText(yourMinFee, cityAverageMinFee)} verdict={minFeeVerdict} />
           </div>
         </div>
       </div>
@@ -93,14 +93,14 @@ function Compare({ label, value, delta, verdict }: { label: string; value: strin
 }
 
 function headlineFor(v: 'under' | 'par' | 'over'): string {
-  if (v === 'par')   return 'Kamu sudah kompetitif 👌'
-  if (v === 'under') return 'Kamu bisa naikkan harga sedikit'
-  return 'Kamu di atas rata-rata kota'
+  if (v === 'par')   return 'You’re competitive 👌'
+  if (v === 'under') return 'You can raise prices a bit'
+  return 'You’re above the city average'
 }
 
 function deltaText(yours: number, avg: number): string {
   const diff = yours - avg
-  if (Math.abs(diff) < avg * 0.05) return 'pas dengan rata-rata'
+  if (Math.abs(diff) < avg * 0.05) return 'matches the average'
   const pct = Math.round((Math.abs(diff) / avg) * 100)
-  return diff < 0 ? `↓ ${pct}% di bawah` : `↑ ${pct}% di atas`
+  return diff < 0 ? `↓ ${pct}% below` : `↑ ${pct}% above`
 }

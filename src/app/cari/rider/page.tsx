@@ -29,8 +29,8 @@ function DriverResults() {
 
   const pickup = readCoord(sp, 'pLat', 'pLng')
   const dropoff = readCoord(sp, 'dLat', 'dLng')
-  const pickupName = sp.get('pName') ?? 'Lokasi saya'
-  const dropoffName = sp.get('dName') ?? 'Tujuan'
+  const pickupName = sp.get('pName') ?? 'My location'
+  const dropoffName = sp.get('dName') ?? 'Destination'
 
   const [sort, setSort] = useState<'cheapest' | 'nearest'>('cheapest')
   const [filter, setFilter] = useState<ServiceType | 'all'>('all')
@@ -40,8 +40,8 @@ function DriverResults() {
     return (
       <main className="min-h-screen p-6 flex items-center justify-center">
         <div className="card p-6 text-center max-w-sm">
-          <p className="text-[14px] text-muted">Trip belum diset.</p>
-          <Link href="/cari" className="btn-primary mt-4 w-full">Plan trip dulu</Link>
+          <p className="text-[14px] text-muted">Trip not set.</p>
+          <Link href="/cari" className="btn-primary mt-4 w-full">Plan a trip first</Link>
         </div>
       </main>
     )
@@ -108,17 +108,17 @@ function DriverResults() {
                   </div>
                   <div className="flex-1 min-w-0 space-y-2 text-[14px]">
                     <div>
-                      <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Jemput</div>
+                      <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Pick up</div>
                       <div className="truncate">{pickupName}</div>
                     </div>
                     <div>
-                      <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Antar</div>
+                      <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Drop off</div>
                       <div className="truncate">{dropoffName}</div>
                     </div>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Jarak</div>
+                  <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Distance</div>
                   <div className="text-[20px] font-extrabold gradient-text leading-none mt-0.5">
                     {tripKm.toFixed(1)} km
                   </div>
@@ -126,7 +126,7 @@ function DriverResults() {
               </div>
               <div className="mt-3 pt-3 border-t border-line flex items-center justify-between gap-2">
                 <span className="text-[12px] text-muted">
-                  {enriched.length} rider tersedia
+                  {enriched.length} rider{enriched.length === 1 ? '' : 's'} available
                 </span>
                 {cheapest != null && mostExpensive != null && (
                   <span className="text-[12px] font-bold">
@@ -151,18 +151,18 @@ function DriverResults() {
             <FilterChip
               active={sort === 'cheapest'}
               onClick={() => { setSort('cheapest'); haptic.tap() }}
-              label="Termurah"
+              label="Cheapest"
             />
             <FilterChip
               active={sort === 'nearest'}
               onClick={() => { setSort('nearest'); haptic.tap() }}
-              label="Terdekat dari jemput"
+              label="Nearest to pickup"
             />
             <div className="w-px h-5 bg-line shrink-0" />
             <FilterChip
               active={filter === 'all'}
               onClick={() => { setFilter('all'); haptic.tap() }}
-              label="Semua"
+              label="All"
             />
             {(Object.keys(SERVICE_LABELS) as ServiceType[]).map(s => (
               <FilterChip
@@ -193,7 +193,7 @@ function DriverResults() {
 
           {enriched.length === 0 && (
             <div className="card p-8 text-center">
-              <p className="text-muted text-[14px]">Tidak ada rider tersedia dengan filter ini.</p>
+              <p className="text-muted text-[14px]">No riders match this filter.</p>
               <button onClick={() => setFilter('all')} className="btn-secondary mt-4">Reset filter</button>
             </div>
           )}
@@ -220,7 +220,7 @@ function DriverCard({
         <div className="absolute top-0 left-0 z-10">
           <span className="ribbon-cheapest">
             <span aria-hidden>⚡</span>
-            Termurah
+            Cheapest
           </span>
         </div>
       )}
@@ -231,7 +231,7 @@ function DriverCard({
           {/* Driver photo with online dot */}
           <Link
             href={`/r/${rider.slug}`}
-            aria-label={`Lihat profil ${rider.name}`}
+            aria-label={`View ${rider.name}'s profile`}
             className="relative shrink-0 block min-w-[44px] min-h-[44px] rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand/60"
           >
             <img
@@ -269,12 +269,12 @@ function DriverCard({
             {(rider.bike.plate || rider.bike.hasBox) && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 {rider.bike.plate && (
-                  <span className="plate-tag" aria-label={`Plat nomor ${rider.bike.plate}`}>
+                  <span className="plate-tag" aria-label={`Plate number ${rider.bike.plate}`}>
                     {rider.bike.plate}
                   </span>
                 )}
                 {rider.bike.hasBox && (
-                  <span className="pill-soft pill-soft-online" aria-label="Bawa box">
+                  <span className="pill-soft pill-soft-online" aria-label="Has box">
                     <span aria-hidden>📦</span>
                     Box
                   </span>
@@ -294,7 +294,7 @@ function DriverCard({
               {idr(fare)}
             </div>
             <div className="text-[13px] text-muted leading-none mt-1 whitespace-nowrap">
-              {hasOverrides && <span className="text-brand/90">dari </span>}
+              {hasOverrides && <span className="text-brand/90">from </span>}
               {idr(perKm)}<span className="text-dim">/km</span>
             </div>
             {minApplied && (
@@ -312,14 +312,14 @@ function DriverCard({
               <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden />
               <span className="truncate max-w-[140px]">{rider.area}</span>
             </span>
-            <span className="pill-soft" aria-label={`${distanceToPickup.toFixed(1)} kilometer dari titik jemput`}>
-              ~{distanceToPickup.toFixed(1)} km dari jemput
+            <span className="pill-soft" aria-label={`${distanceToPickup.toFixed(1)} kilometers from pickup`}>
+              ~{distanceToPickup.toFixed(1)} km from pickup
             </span>
           </div>
           <button
             onClick={onWhatsApp}
             className="btn-wa-compact shrink-0"
-            aria-label={`Chat WhatsApp dengan ${rider.name}`}
+            aria-label={`Chat on WhatsApp with ${rider.name}`}
           >
             <MessageCircle className="w-4 h-4" aria-hidden />
             WhatsApp

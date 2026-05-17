@@ -4,15 +4,15 @@
 export type ServiceType = 'person' | 'parcel' | 'food'
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {
-  person: 'Antar Penumpang',
-  parcel: 'Kirim Paket',
-  food:   'Antar Makanan',
+  person: 'Bike Ride',
+  parcel: 'Bike Parcel',
+  food:   'Bike Food',
 }
 
 export const SERVICE_SHORT: Record<ServiceType, string> = {
-  person: 'Penumpang',
-  parcel: 'Paket',
-  food:   'Makanan',
+  person: 'Ride',
+  parcel: 'Parcel',
+  food:   'Food',
 }
 
 export const SERVICE_ICONS: Record<ServiceType, string> = {
@@ -22,9 +22,9 @@ export const SERVICE_ICONS: Record<ServiceType, string> = {
 }
 
 export const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
-  person: 'Ojek harian, antar-jemput sekolah/kantor, ojek event',
-  parcel: 'Paket, dokumen, kurir luar kota — fokus utama platform',
-  food:   'Antar makanan dari resto / warung, COD bahan dapur',
+  person: 'Daily rides, school/office pickup, event rides',
+  parcel: 'Parcels, documents, out-of-town courier — platform focus',
+  food:   'Food delivery from restaurants / warungs, COD groceries',
 }
 
 export type Bike = {

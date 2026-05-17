@@ -15,7 +15,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md card p-6 space-y-5 mt-4">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand to-brand2 flex items-center justify-center text-bg text-2xl mb-3">🛵</div>
-            <h1 className="text-2xl font-extrabold">Masuk sebagai rider</h1>
+            <h1 className="text-2xl font-extrabold">Sign in as a rider</h1>
             <p className="text-muted text-[14px] mt-1">Welcome back. Riders only.</p>
           </div>
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
             <div>
               <label className="label flex items-center justify-between">
                 <span>Password</span>
-                <Link href="/forgot" className="text-brand text-[12px] normal-case tracking-normal">Lupa?</Link>
+                <Link href="/forgot" className="text-brand text-[12px] normal-case tracking-normal">Forgot?</Link>
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
@@ -52,17 +52,17 @@ export default function LoginPage() {
 
             <button type="submit" className="btn-primary w-full">
               <LogIn className="w-4 h-4" />
-              Masuk
+              Login
             </button>
           </form>
 
           <div className="text-center text-[13px] text-muted">
-            Belum punya akun?{' '}
-            <Link href="/signup" className="text-brand font-bold">Daftar sebagai rider</Link>
+            Don't have an account?{' '}
+            <Link href="/signup" className="text-brand font-bold">Sign up as a rider</Link>
           </div>
 
           <div className="text-center text-[11px] text-dim pt-2 border-t border-line">
-            Hanya untuk rider. Customer langsung kontak rider via WhatsApp.
+            Riders only. Customers contact riders directly via WhatsApp.
           </div>
         </div>
       </main>

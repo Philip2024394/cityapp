@@ -4,10 +4,10 @@ import { usePathname } from 'next/navigation'
 import { LayoutDashboard, User, DollarSign, Package } from 'lucide-react'
 
 const ITEMS = [
-  { href: '/dashboard',  label: 'Beranda',  icon: LayoutDashboard },
-  { href: '/profile',    label: 'Profil',   icon: User },
-  { href: '/pricing',    label: 'Harga',    icon: DollarSign },
-  { href: '/services',   label: 'Layanan',  icon: Package },
+  { href: '/dashboard',  label: 'Home',     icon: LayoutDashboard },
+  { href: '/profile',    label: 'Profile',  icon: User },
+  { href: '/pricing',    label: 'Pricing',  icon: DollarSign },
+  { href: '/services',   label: 'Services', icon: Package },
 ]
 
 export default function DashboardNav() {

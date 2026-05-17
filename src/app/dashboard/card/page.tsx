@@ -27,7 +27,7 @@ export default function BusinessCardPage() {
     haptic.tap()
     const shareData = {
       title: `${ME.name} · City Rider`,
-      text: `Kurir motor di ${ME.city} · ${ME.bike.make} ${ME.bike.model}. Pesan langsung lewat WhatsApp.`,
+      text: `Motorcycle courier in ${ME.city} · ${ME.bike.make} ${ME.bike.model}. Book directly via WhatsApp.`,
       url: profileUrl,
     }
     if (navigator.share) {
@@ -35,7 +35,7 @@ export default function BusinessCardPage() {
     } else {
       try {
         await navigator.clipboard.writeText(profileUrl)
-        alert('Link tersalin — paste di WhatsApp / Instagram / FB')
+        alert('Link copied — paste in WhatsApp / Instagram / FB')
       } catch { /* clipboard blocked */ }
     }
   }
@@ -51,9 +51,9 @@ export default function BusinessCardPage() {
           </Link>
 
           <header className="space-y-1 no-print">
-            <h1 className="text-2xl font-extrabold">Kartu nama digital</h1>
+            <h1 className="text-2xl font-extrabold">Digital business card</h1>
             <p className="text-muted text-[14px]">
-              Print, gunting, tempel di motor / box kamu. Customer scan QR → masuk ke profilmu → pesan langsung via WhatsApp.
+              Print, cut, stick on your bike / box. Customers scan the QR → go to your profile → book directly on WhatsApp.
             </p>
           </header>
 
@@ -66,7 +66,7 @@ export default function BusinessCardPage() {
           <div className="grid grid-cols-2 gap-2 no-print">
             <button onClick={onPrint} className="btn-primary w-full">
               <Printer className="w-4 h-4" />
-              Print kartu
+              Print card
             </button>
             <button onClick={onShare} className="btn-secondary w-full">
               <Share2 className="w-4 h-4" />
@@ -77,14 +77,14 @@ export default function BusinessCardPage() {
           {/* Tips */}
           <div className="card p-4 border-brand/20 bg-brand/5 no-print">
             <div className="text-[13px] text-ink/85 leading-relaxed space-y-2">
-              <div>📌 <strong className="text-brand">Cara pakai:</strong></div>
+              <div>📌 <strong className="text-brand">How to use:</strong></div>
               <ol className="list-decimal list-inside space-y-1 text-muted">
-                <li>Tap <strong className="text-ink">Print kartu</strong> → A4 → simpan PDF atau print di warnet (Rp 2.000-3.000)</li>
-                <li>Gunting di garis kartu, laminating biar tahan hujan</li>
-                <li>Tempel di box motor, kasih ke customer langganan, sebarkan di warung sekitar</li>
+                <li>Tap <strong className="text-ink">Print card</strong> → A4 → save PDF or print at a warnet (Rp 2.000-3.000)</li>
+                <li>Cut along the card edge, laminate to make rain-proof</li>
+                <li>Stick to your bike box, give to regular customers, spread around nearby warungs</li>
               </ol>
               <div className="text-dim mt-2">
-                💡 Atau tap <strong className="text-ink">Share link</strong> untuk kirim ke teman / posting di Facebook & Instagram Story.
+                💡 Or tap <strong className="text-ink">Share link</strong> to send to friends / post on Facebook & Instagram Story.
               </div>
             </div>
           </div>
@@ -92,8 +92,8 @@ export default function BusinessCardPage() {
           {/* Past customers prompt */}
           <Link href="/dashboard/customers" className="card card-interactive p-4 flex items-center justify-between no-print">
             <div>
-              <div className="font-extrabold text-[15px]">Punya pelanggan langganan?</div>
-              <div className="text-[13px] text-muted mt-0.5">Kabari mereka kartumu sudah jadi di Customer Book →</div>
+              <div className="font-extrabold text-[15px]">Got regular customers?</div>
+              <div className="text-[13px] text-muted mt-0.5">Let them know your card is ready in Customer Book →</div>
             </div>
             <ChevronLeft className="w-5 h-5 text-brand rotate-180" />
           </Link>

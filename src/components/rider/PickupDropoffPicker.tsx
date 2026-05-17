@@ -32,18 +32,18 @@ export default function PickupDropoffPicker({
         <div className="flex-1 min-w-0 space-y-3">
           <div>
             <div className="label text-[12px] mb-1.5 flex items-center justify-between">
-              <span>Jemput</span>
+              <span>Pick up</span>
               <button
                 onClick={onUseMyLocation}
                 className="text-brand text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal"
               >
                 <Crosshair className="w-3 h-3" />
-                {status === 'requesting' ? 'Mencari…' : 'Lokasi saya'}
+                {status === 'requesting' ? 'Searching…' : 'My location'}
               </button>
             </div>
             <input
               className="input"
-              placeholder={pickup ? 'Set — sebut nama tempat (opsional)' : 'Tap "Lokasi saya" atau ketik alamat'}
+              placeholder={pickup ? 'Set — name the place (optional)' : 'Tap "My location" or type the address'}
               value={pickupLabel ?? ''}
               onChange={e => onPickupLabelChange(e.target.value)}
             />
@@ -56,20 +56,20 @@ export default function PickupDropoffPicker({
           </div>
           <div>
             <div className="label text-[12px] mb-1.5 flex items-center justify-between">
-              <span>Antar</span>
+              <span>Drop off</span>
               {onChooseDropoffOnMap && (
                 <button
                   onClick={onChooseDropoffOnMap}
                   className="text-brand text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal"
                 >
                   <ArrowDown className="w-3 h-3" />
-                  Pilih di peta
+                  Pick on map
                 </button>
               )}
             </div>
             <input
               className="input"
-              placeholder="Alamat tujuan"
+              placeholder="Destination address"
               value={dropoffLabel ?? ''}
               onChange={e => onDropoffLabelChange(e.target.value)}
             />
@@ -85,7 +85,7 @@ export default function PickupDropoffPicker({
 
       {status === 'denied' && (
         <div className="mt-3 p-3 rounded-xl bg-danger/10 border border-danger/30 text-[13px] text-danger">
-          GPS ditolak. Drag pin di peta atau ketik alamat manual.
+          GPS denied. Drag the pin on the map or type the address manually.
         </div>
       )}
     </div>

@@ -25,11 +25,11 @@ export default function QuoteInbox({ quotes, onReply }: Props) {
     <div className="card overflow-hidden">
       <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-line">
         <div>
-          <div className="text-[13px] font-extrabold uppercase tracking-wider text-muted">Inbox quote</div>
+          <div className="text-[13px] font-extrabold uppercase tracking-wider text-muted">Quote inbox</div>
           <div className="text-xl font-extrabold mt-0.5">
             {unread > 0
-              ? <><span className="text-brand">{unread}</span> belum direspons</>
-              : 'Semua sudah direspons'}
+              ? <><span className="text-brand">{unread}</span> unanswered</>
+              : 'All replied'}
           </div>
         </div>
         {unread > 0 && (
@@ -41,7 +41,7 @@ export default function QuoteInbox({ quotes, onReply }: Props) {
 
       {quotes.length === 0 ? (
         <div className="p-8 text-center text-muted text-[14px]">
-          Belum ada quote. Saat customer tap WhatsApp button di profilmu, akan muncul di sini.
+          No quotes yet. They&apos;ll show up here when customers tap the WhatsApp button on your profile.
         </div>
       ) : (
         <div className="divide-y divide-line">
@@ -51,7 +51,7 @@ export default function QuoteInbox({ quotes, onReply }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-bold text-[14px] truncate">
-                    {q.pickupLabel || 'Lokasi A'} → {q.dropoffLabel || 'Lokasi B'}
+                    {q.pickupLabel || 'Location A'} → {q.dropoffLabel || 'Location B'}
                   </div>
                   <div className="text-brand font-extrabold text-[14px] shrink-0">{idr(q.fare)}</div>
                 </div>
@@ -68,7 +68,7 @@ export default function QuoteInbox({ quotes, onReply }: Props) {
                 className="shrink-0 bg-[#25D366] text-white rounded-full px-3 py-1.5 text-[13px] font-bold flex items-center gap-1.5"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
-                Balas
+                Reply
               </button>
             </div>
           ))}
@@ -81,9 +81,9 @@ export default function QuoteInbox({ quotes, onReply }: Props) {
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts
   const m = Math.round(diff / 60000)
-  if (m < 1) return 'baru saja'
+  if (m < 1) return 'just now'
   if (m < 60) return `${m}m`
   const h = Math.round(m / 60)
-  if (h < 24) return `${h}j`
-  return `${Math.round(h / 24)}h`
+  if (h < 24) return `${h}h`
+  return `${Math.round(h / 24)}d`
 }

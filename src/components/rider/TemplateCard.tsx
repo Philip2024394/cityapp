@@ -46,7 +46,7 @@ export default function TemplateCard({ template, onCopy }: Props) {
           }}
         >
           {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? 'Tersalin' : 'Copy'}
+          {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
       <p className="text-[14px] leading-relaxed text-ink/85 whitespace-pre-line">

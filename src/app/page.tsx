@@ -65,7 +65,7 @@ const STRINGS: Record<Locale, {
     loginNav: 'Login Rider',
     pill: '42 rider online di Yogyakarta',
     h1Line1: 'Kurir motor,',
-    h1Line2: 'harga jelas.',
+    h1Line2: 'Indonesia.',
     lede: 'Set jemput & antar. Lihat harga total tiap rider. Pesan langsung lewat WhatsApp. Tanpa komisi, tanpa dispatch.',
     enter: 'Masuk',
     freeNote: 'Gratis · langsung kontak rider',
@@ -82,7 +82,7 @@ const STRINGS: Record<Locale, {
     loginNav: 'Rider login',
     pill: '42 riders online in Yogyakarta',
     h1Line1: 'Motorbike couriers,',
-    h1Line2: 'clear pricing.',
+    h1Line2: 'Indonesia.',
     lede: 'Set pickup & dropoff. See each rider’s total price. Book directly on WhatsApp. No commission, no dispatch.',
     enter: 'Enter',
     freeNote: 'Free · direct rider contact',
@@ -155,13 +155,15 @@ export default function LandingPage() {
 
       {/* Top mini nav */}
       <header className="relative z-20 pt-safe">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand to-brand2 flex items-center justify-center text-bg text-lg shadow-glow">🛵</div>
-            <div className="font-extrabold tracking-tight">
-              City <span className="gradient-text">Rider</span>
-            </div>
-          </div>
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="City Rider home">
+            <img
+              src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
+              alt="City Rider"
+              className="h-11 w-auto"
+              loading="eager"
+            />
+          </Link>
           <Link href="/login" className="text-[13px] font-bold text-muted hover:text-ink px-3 py-1.5 rounded-lg hover:bg-white/5">
             {t.loginNav}
           </Link>

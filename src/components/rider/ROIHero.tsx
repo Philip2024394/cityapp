@@ -30,7 +30,7 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
           <div>
             <div className="text-[13px] uppercase tracking-wider font-extrabold text-dim leading-none flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5" />
-              ROI bulan ini
+              ROI this month
             </div>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="text-[34px] font-extrabold gradient-text leading-none">
@@ -39,12 +39,12 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
               <span className="text-[14px] text-muted font-bold">subscription</span>
             </div>
             <div className="text-[13px] text-muted mt-2 max-w-xs">
-              {monthlyQuotes} quote diterima · {idr(monthlyLeadsValue)} total nilai lead
+              {monthlyQuotes} quotes received · {idr(monthlyLeadsValue)} total lead value
             </div>
           </div>
           <span className={(winning ? 'chip-online' : 'chip') + ' chip text-[13px] py-1 px-2.5 shrink-0'}>
             <ArrowUpRight className="w-3 h-3" />
-            {winning ? 'Untung' : 'Tumbuh'}
+            {winning ? 'Profit' : 'Growing'}
           </span>
         </div>
 
@@ -68,9 +68,9 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
         </div>
 
         <div className="mt-3.5 pt-3 border-t border-line text-[13px] text-muted leading-relaxed">
-          <span className="font-bold text-ink/90">{idr(subscriptionMonthly)}/bulan</span>{' '}
-          subscription · kalau hari-hari ini kamu close <span className="text-brand font-bold">semua</span>{' '}
-          quote, kamu untung <span className="text-online font-bold">{idr(Math.max(0, monthlyLeadsValue - subscriptionMonthly))}</span> bersih bulan ini.
+          <span className="font-bold text-ink/90">{idr(subscriptionMonthly)}/month</span>{' '}
+          subscription · if you close <span className="text-brand font-bold">all</span>{' '}
+          quotes, you make <span className="text-online font-bold">{idr(Math.max(0, monthlyLeadsValue - subscriptionMonthly))}</span> net this month.
         </div>
       </div>
     </div>

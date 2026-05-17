@@ -60,7 +60,7 @@ export default function DashboardPage() {
     const url = `${window.location.origin}/r/${ME.slug}`
     const shareData = {
       title: `${ME.name} · City Rider`,
-      text: `Saya kurir motor di ${ME.city}. Pesan langsung via WhatsApp.`,
+      text: `I'm a motorcycle courier in ${ME.city}. Book directly on WhatsApp.`,
       url,
     }
     if (navigator.share) {
@@ -68,7 +68,7 @@ export default function DashboardPage() {
     } else {
       try {
         await navigator.clipboard.writeText(url)
-        alert('Link profilmu sudah disalin — paste di WhatsApp Status / Instagram / FB')
+        alert('Your profile link has been copied — paste in WhatsApp Status / Instagram / FB')
       } catch { /* clipboard blocked */ }
     }
   }
@@ -87,7 +87,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <img src={ME.photoUrl} alt="" className="w-11 h-11 rounded-xl object-cover" />
               <div>
-                <div className="text-[13px] text-muted">Selamat datang kembali,</div>
+                <div className="text-[13px] text-muted">Welcome back,</div>
                 <div className="text-lg font-extrabold">{ME.name.split(' ')[0]}</div>
               </div>
             </div>
@@ -118,14 +118,14 @@ export default function DashboardPage() {
             <ToolCard
               href="/dashboard/card"
               icon={<IdCard className="w-4 h-4" />}
-              label="Kartu nama"
+              label="Business card"
               hint="QR + print"
             />
             <ToolCard
               href="/dashboard/templates"
               icon={<MessageSquare className="w-4 h-4" />}
               label="Quick reply"
-              hint="8 template"
+              hint="8 templates"
             />
           </div>
 
@@ -134,7 +134,7 @@ export default function DashboardPage() {
 
           {/* Demo trigger */}
           <button onClick={fakeIncomingQuote} className="btn-secondary w-full">
-            🔔 Simulasi quote masuk (beep + inbox)
+            🔔 Simulate an incoming quote (beep + inbox)
           </button>
 
           {/* Profile preview link */}
@@ -147,10 +147,10 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <div className="text-[13px] text-dim uppercase tracking-wider font-extrabold flex items-center gap-1.5">
                 <Eye className="w-3 h-3" />
-                Profile publikmu
+                Your public profile
               </div>
               <div className="font-bold mt-1 text-[14px] text-brand truncate">cityrider.id/r/{ME.slug}</div>
-              <div className="text-[13px] text-muted mt-1">Bagikan link ini ke customer & social</div>
+              <div className="text-[13px] text-muted mt-1">Share this link with customers & social</div>
             </div>
             <ArrowRight className="w-5 h-5 text-brand shrink-0" />
           </a>
@@ -161,9 +161,9 @@ export default function DashboardPage() {
               <div>
                 <div className="text-[13px] text-dim uppercase tracking-wider font-extrabold">Subscription</div>
                 <div className="font-extrabold text-lg mt-0.5">
-                  {ME.subscriptionStatus === 'trial' ? 'Trial — 14 hari tersisa' : 'Aktif'}
+                  {ME.subscriptionStatus === 'trial' ? 'Trial — 14 days remaining' : 'Active'}
                 </div>
-                <div className="text-[13px] text-muted mt-1">Rp 30.000/bulan · Midtrans</div>
+                <div className="text-[13px] text-muted mt-1">Rp 30.000/month · Midtrans</div>
               </div>
               <span className={ME.subscriptionStatus === 'trial' ? 'chip' : 'chip chip-online'}>
                 {ME.subscriptionStatus === 'trial' ? '⏳ Trial' : '✓ Active'}

@@ -41,10 +41,10 @@ export default function TemplatesPage() {
               <div className="w-9 h-9 rounded-xl bg-brand/12 border border-brand/25 flex items-center justify-center">
                 <MessageSquare className="w-4 h-4 text-brand" />
               </div>
-              <h1 className="text-2xl font-extrabold">Balasan cepat</h1>
+              <h1 className="text-2xl font-extrabold">Quick replies</h1>
             </div>
             <p className="text-muted text-[14px]">
-              Template profesional buat jawab customer di WhatsApp. Tap <strong className="text-brand">Copy</strong>, lalu paste di chat.
+              Professional templates for replying to customers on WhatsApp. Tap <strong className="text-brand">Copy</strong>, then paste in chat.
             </p>
           </header>
 
@@ -52,13 +52,13 @@ export default function TemplatesPage() {
           {lastCopied && (
             <div className="card p-3 flex items-center gap-2 border-online/30 bg-online/5 animate-[fadeUp_0.3s_ease-out_both]">
               <Check className="w-4 h-4 text-online" />
-              <span className="text-[13px] text-online font-bold">Tersalin — paste di WhatsApp customer</span>
+              <span className="text-[13px] text-online font-bold">Copied — paste in the customer's WhatsApp</span>
             </div>
           )}
 
           {/* Category filter */}
           <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 pb-1">
-            <Chip active={category === 'all'} onClick={() => { setCategory('all'); haptic.tap() }} label="Semua" />
+            <Chip active={category === 'all'} onClick={() => { setCategory('all'); haptic.tap() }} label="All" />
             {(Object.keys(CATEGORY_LABELS) as Template['category'][]).map(c => (
               <Chip
                 key={c}
@@ -78,7 +78,7 @@ export default function TemplatesPage() {
           {/* Coaching footer */}
           <div className="card p-4 border-brand/20 bg-brand/5">
             <div className="text-[13px] text-ink/85 leading-relaxed">
-              💡 <strong className="text-brand">Tip:</strong> jangan kirim semua template apa adanya. Tambahkan 1-2 kata personal (nama customer, nama tempat) supaya terasa hangat, bukan robotik.
+              💡 <strong className="text-brand">Tip:</strong> don't send templates as-is. Add 1-2 personal words (customer's name, place name) so it feels warm, not robotic.
             </div>
           </div>
         </div>

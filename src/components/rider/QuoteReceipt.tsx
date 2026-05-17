@@ -46,12 +46,12 @@ export default function QuoteReceipt({
           </div>
           <div className="flex-1 space-y-3 text-[14px]">
             <div>
-              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">Jemput</div>
-              <div className="text-ink mt-0.5">{pickupLabel || 'Lokasi saya'}</div>
+              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">Pick up</div>
+              <div className="text-ink mt-0.5">{pickupLabel || 'My location'}</div>
             </div>
             <div>
-              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">Antar</div>
-              <div className="text-ink mt-0.5">{dropoffLabel || 'Lokasi tujuan'}</div>
+              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">Drop off</div>
+              <div className="text-ink mt-0.5">{dropoffLabel || 'Destination'}</div>
             </div>
           </div>
         </div>
@@ -64,13 +64,13 @@ export default function QuoteReceipt({
         <div className="relative">
           <div className="flex items-baseline justify-between">
             <div>
-              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">Estimasi</div>
+              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">Estimate</div>
               <div className="text-3xl font-extrabold gradient-text mt-1">{idr(fare)}</div>
             </div>
             <div className="text-right text-[13px] text-muted">
               <div><span className="font-bold text-ink">{distanceKm.toFixed(1)} km</span></div>
               <div className="mt-0.5">{idr(rider.pricePerKm)}/km</div>
-              {minApplied && <div className="text-brand text-[12px] mt-0.5">Min fee {idr(rider.minFee)} berlaku</div>}
+              {minApplied && <div className="text-brand text-[12px] mt-0.5">Min fee {idr(rider.minFee)} applies</div>}
             </div>
           </div>
         </div>
@@ -88,16 +88,16 @@ export default function QuoteReceipt({
 
       {/* CTAs */}
       <div className="flex gap-2 pt-1">
-        <button onClick={onCancel} className="btn-secondary flex-1">Batal</button>
+        <button onClick={onCancel} className="btn-secondary flex-1">Cancel</button>
         <button onClick={onSend} className="btn-wa flex-[2]">
           <MessageCircleIcon />
-          Kirim ke WhatsApp
+          Send to WhatsApp
         </button>
       </div>
 
       <p className="text-[12px] text-dim text-center pt-1 flex items-center justify-center gap-1.5">
         <Box className="w-3 h-3" />
-        Estimasi disimpan untuk analitik rider · pembayaran langsung di lapangan
+        Estimate logged for analytics · pay the rider directly on arrival
       </p>
     </div>
   )

@@ -40,16 +40,16 @@ export default function QRBusinessCard({ rider, profileUrl }: Props) {
 
           <div className="bizcard-bike">
             <div className="bizcard-row">
-              <span className="bizcard-row-label">Motor</span>
+              <span className="bizcard-row-label">Bike</span>
               <span className="bizcard-row-value">{rider.bike.make} {rider.bike.model} {rider.bike.year}</span>
             </div>
             <div className="bizcard-row">
-              <span className="bizcard-row-label">Warna</span>
+              <span className="bizcard-row-label">Colour</span>
               <span className="bizcard-row-value">{rider.bike.color}</span>
             </div>
             {rider.bike.plate && (
               <div className="bizcard-row">
-                <span className="bizcard-row-label">Plat</span>
+                <span className="bizcard-row-label">Plate</span>
                 <span className="bizcard-row-value bizcard-mono">{rider.bike.plate}</span>
               </div>
             )}
@@ -58,7 +58,7 @@ export default function QRBusinessCard({ rider, profileUrl }: Props) {
 
         {/* Right column: price + QR + WhatsApp */}
         <div className="bizcard-right">
-          <div className="bizcard-price-label">Tarif kurir</div>
+          <div className="bizcard-price-label">Courier rate</div>
           <div className="bizcard-price-row">
             <span className="bizcard-price-value">{idr(rider.pricePerKm)}</span>
             <span className="bizcard-price-unit">/km</span>
@@ -66,8 +66,8 @@ export default function QRBusinessCard({ rider, profileUrl }: Props) {
           <div className="bizcard-min">min {idr(rider.minFee)}</div>
 
           <div className="bizcard-qr-wrap">
-            <img src={qrSrc} alt="QR profil" className="bizcard-qr" />
-            <div className="bizcard-qr-cta">Scan untuk profil + pesan</div>
+            <img src={qrSrc} alt="Profile QR" className="bizcard-qr" />
+            <div className="bizcard-qr-cta">Scan for profile + booking</div>
           </div>
 
           <div className="bizcard-wa">

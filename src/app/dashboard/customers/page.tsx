@@ -66,19 +66,19 @@ export default function CustomerBookPage() {
               <h1 className="text-2xl font-extrabold">Customer Book</h1>
             </div>
             <p className="text-muted text-[14px]">
-              Semua customer yang pernah pesan via City Rider. Pesan ulang kapan saja — kamu pemilik datanya.
+              All customers who have booked via City Rider. Message them again anytime — you own the data.
             </p>
           </header>
 
           {/* Top-line stats */}
           <div className="grid grid-cols-3 gap-2">
-            <StatTile label="Customer total" value={MOCK_CUSTOMERS.length.toString()} />
-            <StatTile label="Trips total" value={totalTrips.toString()} />
+            <StatTile label="Total customers" value={MOCK_CUSTOMERS.length.toString()} />
+            <StatTile label="Total trips" value={totalTrips.toString()} />
             <StatTile label="Repeat" value={`${repeatPct}%`} accent />
           </div>
 
           <div className="card p-3.5 flex items-center justify-between gap-3">
-            <div className="text-[13px] text-muted">Total nilai semua trip</div>
+            <div className="text-[13px] text-muted">Total value of all trips</div>
             <div className="text-[16px] font-extrabold gradient-text">{idr(totalRevenue)}</div>
           </div>
 
@@ -87,7 +87,7 @@ export default function CustomerBookPage() {
             <Search className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               className="input pl-11"
-              placeholder="Cari nama, WhatsApp, atau rute…"
+              placeholder="Search name, WhatsApp, or route…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -95,16 +95,16 @@ export default function CustomerBookPage() {
 
           {/* Filter */}
           <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 pb-1">
-            <FilterChip active={filter === 'all'}      onClick={() => { setFilter('all'); haptic.tap() }}      label={`Semua · ${MOCK_CUSTOMERS.length}`} />
+            <FilterChip active={filter === 'all'}      onClick={() => { setFilter('all'); haptic.tap() }}      label={`All · ${MOCK_CUSTOMERS.length}`} />
             <FilterChip active={filter === 'repeat'}   onClick={() => { setFilter('repeat'); haptic.tap() }}   label={`Repeat · ${repeatCustomers().length}`} />
-            <FilterChip active={filter === 'thisWeek'} onClick={() => { setFilter('thisWeek'); haptic.tap() }} label={`7 hari · ${thisWeek(MOCK_CUSTOMERS).length}`} />
+            <FilterChip active={filter === 'thisWeek'} onClick={() => { setFilter('thisWeek'); haptic.tap() }} label={`7 days · ${thisWeek(MOCK_CUSTOMERS).length}`} />
           </div>
 
           {/* List */}
           <div className="space-y-2.5">
             {filtered.length === 0 ? (
               <div className="card p-8 text-center text-muted text-[14px]">
-                Tidak ada customer cocok.
+                No matching customers.
               </div>
             ) : filtered.map(c => (
               <CustomerRow

@@ -26,7 +26,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
   const [pickup, setPickup] = useState<GeoPoint | null>(null)
   const [dropoff, setDropoff] = useState<GeoPoint | null>(null)
-  const [pickupLabel, setPickupLabel] = useState('Lokasi saya')
+  const [pickupLabel, setPickupLabel] = useState('My location')
   const [dropoffLabel, setDropoffLabel] = useState('')
 
   // Selected service — defaults to the first one the rider offers.
@@ -61,7 +61,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   function onUseMyLocation() {
     haptic.tap()
     geo.request()
-    if (geo.coords) { setPickup(geo.coords); setPickupLabel('Lokasi saya') }
+    if (geo.coords) { setPickup(geo.coords); setPickupLabel('My location') }
   }
 
   function onSend() {
@@ -127,7 +127,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         {rider.services.length > 1 && (
           <div className="card p-4">
             <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold mb-2.5">
-              Layanan
+              Service
             </div>
             <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${rider.services.length}, 1fr)` }}>
               {rider.services.map(s => {
@@ -162,7 +162,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           <div className="relative flex items-baseline justify-between">
             <div>
               <div className="text-[12px] text-dim uppercase tracking-wider font-bold">
-                Estimasi ongkos{service && <> · {SERVICE_SHORT[service]}</>}
+                Fare estimate{service && <> · {SERVICE_SHORT[service]}</>}
               </div>
               <div className="text-[34px] font-extrabold gradient-text mt-1 leading-none">
                 {quote ? idr(quote.fare) : '—'}
@@ -170,10 +170,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               <div className="text-[13px] text-muted mt-2">
                 {quote
                   ? `${quote.distanceKm.toFixed(1)} km × ${idr(pricing.pricePerKm)}`
-                  : 'Set jemput & antar untuk lihat harga'}
+                  : 'Set pickup & drop off to see price'}
               </div>
               {quote?.minApplied && (
-                <div className="text-brand text-[12px] mt-1">Min fee {idr(pricing.minFee)} berlaku</div>
+                <div className="text-brand text-[12px] mt-1">Min fee {idr(pricing.minFee)} applies</div>
               )}
             </div>
             <div className="text-right text-[13px] text-muted">
@@ -186,7 +186,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
         {/* Bike section */}
         <div className="card p-5">
-          <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">Motor</div>
+          <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">Bike</div>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 shrink-0 rounded-2xl bg-white/5 flex items-center justify-center text-3xl">
               🛵
@@ -212,7 +212,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         {/* Bio */}
         {rider.bio && (
           <div className="card p-5">
-            <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">Tentang rider</div>
+            <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">About the rider</div>
             <p className="text-[14px] leading-relaxed text-ink/90">{rider.bio}</p>
           </div>
         )}
@@ -229,11 +229,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             >
               <MessageCircle className="w-5 h-5" />
               {quote
-                ? `Kirim WhatsApp · ${idr(quote.fare)}`
-                : 'Set jemput & antar untuk kirim'}
+                ? `Send WhatsApp · ${idr(quote.fare)}`
+                : 'Set pickup & drop off to send'}
             </button>
             <p className="text-[11px] text-dim text-center mt-2">
-              Booking via WhatsApp · rider akan dapat notifikasi instan
+              Booking via WhatsApp · the rider gets an instant notification
             </p>
           </div>
         </div>

@@ -10,9 +10,9 @@ import { SERVICE_ICONS, SERVICE_LABELS } from '@/types/rider'
 const ME = MOCK_RIDERS[0]!
 
 const ALL: { key: ServiceType; desc: string; primary?: boolean }[] = [
-  { key: 'parcel', desc: 'Paket, dokumen, kiriman, kurir luar kota. Fokus utama platform.', primary: true },
-  { key: 'food',   desc: 'Antar makanan dari resto / warung, COD bahan dapur.' },
-  { key: 'person', desc: 'Antar jemput penumpang, ojek harian, ojek event.' },
+  { key: 'parcel', desc: 'Parcels, documents, shipments, out-of-town courier. The platform\'s main focus.', primary: true },
+  { key: 'food',   desc: 'Food delivery from restaurants / warungs, COD groceries.' },
+  { key: 'person', desc: 'Passenger pick-up and drop-off, daily ojek, event ojek.' },
 ]
 
 export default function ServicesPage() {
@@ -30,9 +30,9 @@ export default function ServicesPage() {
       <main className="min-h-screen pb-32">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
           <div>
-            <h1 className="text-2xl font-extrabold">Layanan yang kamu tawarkan</h1>
+            <h1 className="text-2xl font-extrabold">Services you offer</h1>
             <p className="text-muted text-[14px] mt-1">
-              Pilih jenis pekerjaan yang mau kamu terima. Bisa diubah kapan saja.
+              Pick the jobs you'll take. Can be changed anytime.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export default function ServicesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-extrabold text-[15px]">{SERVICE_LABELS[s.key]}</span>
-                      {s.primary && <span className="chip text-[11px] py-0.5 px-2">Utama</span>}
+                      {s.primary && <span className="chip text-[11px] py-0.5 px-2">Primary</span>}
                     </div>
                     <div className="text-[13px] text-muted mt-1">{s.desc}</div>
                   </div>
@@ -78,7 +78,7 @@ export default function ServicesPage() {
 
           <button className="btn-primary w-full">
             <Save className="w-4 h-4" />
-            Simpan layanan
+            Save services
           </button>
         </div>
       </main>

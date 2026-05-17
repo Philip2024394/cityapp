@@ -22,7 +22,7 @@ export default function PlanTripPage() {
   useEffect(() => {
     if (geo.coords && !pickup) {
       setPickup(geo.coords)
-      if (!pickupLabel) setPickupLabel('Lokasi saya')
+      if (!pickupLabel) setPickupLabel('My location')
     }
   }, [geo.coords, pickup, pickupLabel])
 
@@ -36,7 +36,7 @@ export default function PlanTripPage() {
     geo.request()
     if (geo.coords) {
       setPickup(geo.coords)
-      setPickupLabel('Lokasi saya')
+      setPickupLabel('My location')
     }
   }
 
@@ -46,10 +46,10 @@ export default function PlanTripPage() {
     const params = new URLSearchParams({
       pLat: pickup!.lat.toString(),
       pLng: pickup!.lng.toString(),
-      pName: pickupLabel || 'Lokasi saya',
+      pName: pickupLabel || 'My location',
       dLat: dropoff!.lat.toString(),
       dLng: dropoff!.lng.toString(),
-      dName: dropoffLabel || 'Tujuan',
+      dName: dropoffLabel || 'Destination',
     })
     router.push(`/cari/rider?${params.toString()}`)
   }
@@ -66,14 +66,14 @@ export default function PlanTripPage() {
             <span className="text-brand">Plan trip</span>
             <span className="text-line">→</span>
             <StepDot n={2} />
-            <span>Pilih rider</span>
+            <span>Pick rider</span>
             <span className="text-line">→</span>
             <StepDot n={3} />
             <span>WhatsApp</span>
           </div>
 
           <h1 className="text-2xl font-extrabold leading-tight">
-            Mau kirim dari mana ke mana?
+            Where do you need to ship from and to?
           </h1>
 
           {/* Small map preview at top */}
@@ -88,7 +88,7 @@ export default function PlanTripPage() {
               height="220px"
             />
             <p className="text-[12px] text-dim mt-2 text-center">
-              Tap di peta untuk set <span className="text-online font-bold">lokasi antar</span>
+              Tap the map to set <span className="text-online font-bold">drop-off location</span>
             </p>
           </div>
 
@@ -103,18 +103,18 @@ export default function PlanTripPage() {
               <div className="flex-1 min-w-0 space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="label !mb-0">Jemput</label>
+                    <label className="label !mb-0">Pick up</label>
                     <button
                       onClick={handleUseLocation}
                       className="text-brand text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal"
                     >
                       <Crosshair className="w-3 h-3" />
-                      {geo.status === 'requesting' ? 'Mencari…' : 'Lokasi saya'}
+                      {geo.status === 'requesting' ? 'Searching…' : 'My location'}
                     </button>
                   </div>
                   <input
                     className="input"
-                    placeholder={pickup ? 'Nama tempat (opsional)' : 'Tap "Lokasi saya" atau ketik alamat'}
+                    placeholder={pickup ? 'Place name (optional)' : 'Tap "My location" or type an address'}
                     value={pickupLabel}
                     onChange={e => setPickupLabel(e.target.value)}
                   />
@@ -127,15 +127,15 @@ export default function PlanTripPage() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="label !mb-0">Antar</label>
+                    <label className="label !mb-0">Drop off</label>
                     <span className="text-dim text-[12px] font-bold flex items-center gap-1 normal-case tracking-normal">
                       <ArrowDown className="w-3 h-3" />
-                      Tap di peta
+                      Tap on the map
                     </span>
                   </div>
                   <input
                     className="input"
-                    placeholder="Alamat tujuan (mis. Jl. Sudirman 120)"
+                    placeholder="Destination address (e.g. Jl. Sudirman 120)"
                     value={dropoffLabel}
                     onChange={e => setDropoffLabel(e.target.value)}
                   />
@@ -151,13 +151,13 @@ export default function PlanTripPage() {
 
             {geo.status === 'denied' && (
               <div className="mt-3 p-3 rounded-xl bg-danger/10 border border-danger/30 text-[13px] text-danger">
-                GPS ditolak. Tap di peta untuk set lokasi jemput juga.
+                GPS denied. Tap the map to set the pickup location too.
               </div>
             )}
 
             {tripKm != null && (
               <div className="mt-4 pt-3 border-t border-line flex items-center justify-between">
-                <span className="text-[12px] text-dim uppercase tracking-wider font-extrabold">Jarak</span>
+                <span className="text-[12px] text-dim uppercase tracking-wider font-extrabold">Distance</span>
                 <span className="text-brand font-extrabold text-[16px]">~{tripKm.toFixed(1)} km</span>
               </div>
             )}
@@ -175,7 +175,7 @@ export default function PlanTripPage() {
               className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Search className="w-4 h-4" />
-              {canSearch ? 'Cari Driver' : 'Lengkapi jemput & antar dulu'}
+              {canSearch ? 'Find driver' : 'Set pickup & drop off first'}
               {canSearch && <ChevronLeft className="w-4 h-4 rotate-180" />}
             </button>
           </div>
@@ -191,7 +191,7 @@ function Header() {
       <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink">
           <ChevronLeft className="w-4 h-4" />
-          Kembali
+          Back
         </Link>
         <div className="text-[14px] font-extrabold">
           City <span className="gradient-text">Rider</span>

@@ -21,9 +21,9 @@ const CITY_BENCHMARK = {
 }
 
 const PRESETS = [
-  { label: 'Rendah',   perKm: 2000, min: 8000 },
-  { label: 'Standar',  perKm: 2500, min: 10000 },
-  { label: 'Premium',  perKm: 3500, min: 15000 },
+  { label: 'Low',       perKm: 2000, min: 8000 },
+  { label: 'Standard',  perKm: 2500, min: 10000 },
+  { label: 'Premium',   perKm: 3500, min: 15000 },
 ]
 
 const SAMPLE_DISTANCES = [1, 3, 5, 10]
@@ -66,9 +66,9 @@ export default function PricingPage() {
       <main className="min-h-screen pb-32">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
           <div>
-            <h1 className="text-2xl font-extrabold">Harga kamu</h1>
+            <h1 className="text-2xl font-extrabold">Your pricing</h1>
             <p className="text-muted text-[14px] mt-1">
-              Atur tarif per km dan minimum fee. Bisa pakai 1 tarif untuk semua, atau set berbeda per layanan.
+              Set per-km rate and minimum fee. Use one rate for all, or set different rates per service.
             </p>
           </div>
 
@@ -87,7 +87,7 @@ export default function PricingPage() {
                  style={{ background: 'radial-gradient(ellipse at top, rgba(250,204,21,0.18), transparent 60%)' }} />
             <div className="relative">
               <div className="text-[13px] text-dim uppercase tracking-wider font-extrabold mb-3">
-                Preview ongkos · trip 5 km
+                Fare preview · 5 km trip
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {ALL_SERVICES.map(s => {
@@ -101,7 +101,7 @@ export default function PricingPage() {
                       <div className="text-[15px] font-extrabold gradient-text mt-1">{idr(fare)}</div>
                       <div className="text-[12px] text-dim mt-1">{idr(r.perKm)}/km</div>
                       {overridden && (
-                        <span className="absolute top-1.5 right-1.5 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Rate khusus" />
+                        <span className="absolute top-1.5 right-1.5 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Custom rate" />
                       )}
                     </div>
                   )
@@ -111,9 +111,9 @@ export default function PricingPage() {
           </div>
 
           {/* Base sliders */}
-          <Section title="Tarif dasar (default semua layanan)">
+          <Section title="Base rate (default for all services)">
             <div>
-              <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold mb-2">Preset cepat</div>
+              <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold mb-2">Quick preset</div>
               <div className="grid grid-cols-3 gap-2">
                 {PRESETS.map(p => (
                   <button
@@ -128,7 +128,7 @@ export default function PricingPage() {
                 ))}
               </div>
             </div>
-            <SliderRow label="Harga per kilometer" value={perKm}  min={1500} max={6000} step={100} format={idr} onChange={setPerKm} />
+            <SliderRow label="Price per kilometre" value={perKm}  min={1500} max={6000} step={100} format={idr} onChange={setPerKm} />
             <SliderRow label="Minimum fee"         value={minFee} min={5000} max={25000} step={500} format={idr} onChange={setMinFee} />
           </Section>
 
@@ -149,9 +149,9 @@ export default function PricingPage() {
                 <Settings2 className="w-4 h-4 text-brand" />
               </div>
               <div>
-                <div className="font-extrabold text-[15px]">Atur tarif berbeda per layanan</div>
+                <div className="font-extrabold text-[15px]">Set different rates per service</div>
                 <div className="text-[13px] text-muted mt-0.5">
-                  {perServiceMode ? 'Aktif — set tarif khusus untuk Penumpang / Paket / Makanan' : 'Pakai 1 tarif dasar untuk semua layanan'}
+                  {perServiceMode ? 'Active — set custom rates for Passenger / Parcel / Food' : 'Use one base rate for all services'}
                 </div>
               </div>
             </div>
@@ -176,7 +176,7 @@ export default function PricingPage() {
                         <div>
                           <div className="font-extrabold text-[15px]">{SERVICE_LABELS[s]}</div>
                           <div className="text-[12px] text-muted">
-                            {sv.enabled ? 'Tarif khusus aktif' : `Pakai tarif dasar (${idr(perKm)}/km · min ${idr(minFee)})`}
+                            {sv.enabled ? 'Custom rate active' : `Uses base rate (${idr(perKm)}/km · min ${idr(minFee)})`}
                           </div>
                         </div>
                       </div>
@@ -192,7 +192,7 @@ export default function PricingPage() {
                     </div>
                     {sv.enabled && (
                       <div className="space-y-3 pt-2 border-t border-line">
-                        <SliderRow label="Harga per km" value={sv.perKm}  min={1500} max={6000} step={100} format={idr} onChange={v => setSvc(s, 'perKm', v)} />
+                        <SliderRow label="Price per km" value={sv.perKm}  min={1500} max={6000} step={100} format={idr} onChange={v => setSvc(s, 'perKm', v)} />
                         <SliderRow label="Minimum fee"  value={sv.minFee} min={5000} max={25000} step={500} format={idr} onChange={v => setSvc(s, 'minFee', v)} />
                       </div>
                     )}
@@ -206,13 +206,13 @@ export default function PricingPage() {
           <div className="card p-4 bg-brand/5 border-brand/20 flex gap-3">
             <Info className="w-4 h-4 text-brand shrink-0 mt-0.5" />
             <div className="text-[13px] text-ink/85 leading-relaxed">
-              Rata-rata rider Yogya pasang <strong className="text-brand">Rp 2.500/km</strong> dengan minimum <strong className="text-brand">Rp 10.000</strong>. Naikkan jika area mu jauh atau motor punya box besar. Tarif penumpang biasanya 20% lebih tinggi dari paket.
+              Yogya riders typically charge <strong className="text-brand">Rp 2.500/km</strong> with minimum <strong className="text-brand">Rp 10.000</strong>. Raise it if your area is far or you have a big box. Passenger rates are typically 20% higher than parcel.
             </div>
           </div>
 
           <button className="btn-primary w-full">
             <Save className="w-4 h-4" />
-            Simpan harga
+            Save pricing
           </button>
         </div>
       </main>

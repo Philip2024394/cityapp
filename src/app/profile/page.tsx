@@ -31,7 +31,7 @@ export default function ProfilePage() {
       <AppNav />
       <main className="min-h-screen pb-32">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
-          <h1 className="text-2xl font-extrabold">Profil & Motor</h1>
+          <h1 className="text-2xl font-extrabold">Profile & Bike</h1>
 
           {/* Photo */}
           <div className="card p-5 flex items-center gap-4">
@@ -42,45 +42,45 @@ export default function ProfilePage() {
               </button>
             </div>
             <div>
-              <div className="text-[13px] text-muted">Foto rider</div>
-              <div className="font-bold mt-0.5">Tap kamera untuk ubah</div>
-              <div className="text-[12px] text-dim mt-1">Wajib jelas, JPG/PNG, min 400px</div>
+              <div className="text-[13px] text-muted">Rider photo</div>
+              <div className="font-bold mt-0.5">Tap the camera to change</div>
+              <div className="text-[12px] text-dim mt-1">Must be clear, JPG/PNG, min 400px</div>
             </div>
           </div>
 
           {/* Identity */}
-          <Section title="Identitas">
-            <Field label="Nama rider">
+          <Section title="Identity">
+            <Field label="Rider name">
               <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
             </Field>
-            <Field label="WhatsApp (E.164)" hint="Nomor untuk customer kontak — pakai 62 di depan">
+            <Field label="WhatsApp (E.164)" hint="Number customers will use to contact you — start with 62">
               <div className="relative">
                 <Phone className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
                 <input className="input pl-11 font-mono" value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} />
               </div>
             </Field>
-            <Field label="Bio / about" hint="Maksimal 200 karakter">
+            <Field label="Bio" hint="Maximum 200 characters">
               <textarea className="input" rows={3} value={form.bio} onChange={e => set('bio', e.target.value)} maxLength={200} />
             </Field>
           </Section>
 
           {/* Area */}
-          <Section title="Area operasi">
-            <Field label="Area utama">
+          <Section title="Service area">
+            <Field label="Main area">
               <div className="relative">
                 <MapPin className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
                 <input className="input pl-11" value={form.area} onChange={e => set('area', e.target.value)} />
               </div>
             </Field>
-            <Field label="Kota">
+            <Field label="City">
               <input className="input" value={form.city} onChange={e => set('city', e.target.value)} />
             </Field>
           </Section>
 
           {/* Bike */}
-          <Section title="Motor">
+          <Section title="Bike">
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Merk">
+              <Field label="Make">
                 <input className="input" placeholder="Honda" value={form.bikeMake} onChange={e => set('bikeMake', e.target.value)} />
               </Field>
               <Field label="Model">
@@ -89,7 +89,7 @@ export default function ProfilePage() {
                   <input className="input pl-11" placeholder="BeAT" value={form.bikeModel} onChange={e => set('bikeModel', e.target.value)} />
                 </div>
               </Field>
-              <Field label="Tahun">
+              <Field label="Year">
                 <input
                   className="input"
                   type="number"
@@ -99,11 +99,11 @@ export default function ProfilePage() {
                   onChange={e => set('bikeYear', parseInt(e.target.value, 10) || form.bikeYear)}
                 />
               </Field>
-              <Field label="Warna">
-                <input className="input" placeholder="Hitam" value={form.bikeColor} onChange={e => set('bikeColor', e.target.value)} />
+              <Field label="Colour">
+                <input className="input" placeholder="Black" value={form.bikeColor} onChange={e => set('bikeColor', e.target.value)} />
               </Field>
             </div>
-            <Field label="Jenis">
+            <Field label="Type">
               <div className="grid grid-cols-3 gap-2">
                 {(['matic', 'sport', 'manual'] as const).map(t => (
                   <button
@@ -121,7 +121,7 @@ export default function ProfilePage() {
                 ))}
               </div>
             </Field>
-            <Field label="Plat nomor (opsional)">
+            <Field label="Plate number (optional)">
               <input className="input font-mono" placeholder="AB 1234 XX" value={form.plate} onChange={e => set('plate', e.target.value)} />
             </Field>
             <Field label="Delivery box">
@@ -134,8 +134,8 @@ export default function ProfilePage() {
                     <Box className="w-5 h-5 text-brand" />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold text-[14px]">Punya box paket</div>
-                    <div className="text-[12px] text-muted">Penting untuk paket besar</div>
+                    <div className="font-bold text-[14px]">Has a parcel box</div>
+                    <div className="text-[12px] text-muted">Important for large parcels</div>
                   </div>
                 </div>
                 <div
@@ -153,7 +153,7 @@ export default function ProfilePage() {
 
           <button className="btn-primary w-full">
             <Save className="w-4 h-4" />
-            Simpan perubahan
+            Save changes
           </button>
         </div>
       </main>

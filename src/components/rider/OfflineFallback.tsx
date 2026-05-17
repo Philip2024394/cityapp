@@ -34,10 +34,10 @@ export default function OfflineFallback({ offlineRider, nearbyRiders, customerLo
     <div className="space-y-3">
       <div className="card p-4 bg-offline/5 border-offline/20">
         <div className="text-[13px] font-extrabold uppercase tracking-wider text-muted">
-          {offlineRider.name} sedang offline
+          {offlineRider.name} is offline
         </div>
         <div className="text-[15px] mt-1">
-          Rider ini sedang tidak aktif. Kami carikan rider terdekat yang sedang online untukmu:
+          This rider is offline right now. We&apos;ve found the nearest online riders for you:
         </div>
       </div>
 
@@ -58,8 +58,8 @@ export default function OfflineFallback({ offlineRider, nearbyRiders, customerLo
         className="card p-4 flex items-center justify-between hover:border-brand/40 transition"
       >
         <div>
-          <div className="font-bold text-[15px]">Lihat semua rider terdekat</div>
-          <div className="text-[13px] text-muted mt-0.5">Marketplace lengkap dengan filter</div>
+          <div className="font-bold text-[15px]">See all nearby riders</div>
+          <div className="text-[13px] text-muted mt-0.5">Full marketplace with filters</div>
         </div>
         <ChevronRight className="w-5 h-5 text-brand" />
       </Link>

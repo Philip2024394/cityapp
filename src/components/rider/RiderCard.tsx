@@ -92,7 +92,7 @@ export default function RiderCard({ rider, distanceKm, estimatedFare, onWhatsApp
             <div className="text-[12px] text-dim">
               {hasQuote
                 ? <>min fee {idr(rider.minFee)}</>
-                : <>min {idr(rider.minFee)} · WhatsApp langsung</>}
+                : <>min {idr(rider.minFee)} · WhatsApp direct</>}
             </div>
             {onWhatsApp && (
               <button
@@ -101,7 +101,7 @@ export default function RiderCard({ rider, distanceKm, estimatedFare, onWhatsApp
                 aria-label={`WhatsApp ${rider.name}`}
               >
                 <MessageCircle className="w-3.5 h-3.5" />
-                {hasQuote ? 'Pesan' : 'Chat'}
+                {hasQuote ? 'Book' : 'Chat'}
               </button>
             )}
           </div>

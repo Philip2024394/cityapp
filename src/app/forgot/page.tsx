@@ -15,13 +15,13 @@ export default function ForgotPage() {
         <div className="w-full max-w-md card p-6 space-y-5 mt-4">
           <Link href="/login" className="text-muted text-[13px] flex items-center gap-1 -mt-2 -ml-1 font-bold">
             <ChevronLeft className="w-4 h-4" />
-            Kembali ke login
+            Back to login
           </Link>
           {!sent ? (
             <>
               <div>
                 <h1 className="text-2xl font-extrabold">Reset password</h1>
-                <p className="text-muted text-[14px] mt-1">Kami kirim link reset ke emailmu.</p>
+                <p className="text-muted text-[14px] mt-1">We'll email you a reset link.</p>
               </div>
               <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); setSent(true) }}>
                 <div>
@@ -40,16 +40,16 @@ export default function ForgotPage() {
                 </div>
                 <button type="submit" className="btn-primary w-full">
                   <Send className="w-4 h-4" />
-                  Kirim link reset
+                  Send reset link
                 </button>
               </form>
             </>
           ) : (
             <div className="text-center py-6 space-y-3">
               <div className="w-14 h-14 rounded-full bg-online/15 mx-auto flex items-center justify-center text-2xl">✓</div>
-              <h2 className="font-extrabold text-xl">Cek email kamu</h2>
+              <h2 className="font-extrabold text-xl">Check your email</h2>
               <p className="text-muted text-[14px]">
-                Kami kirim link reset password ke<br />
+                We sent a password reset link to<br />
                 <span className="text-ink font-bold">{email}</span>
               </p>
             </div>

@@ -41,10 +41,10 @@ export default function RiderRadar({ customer, rider }: Props) {
             <Navigation2 className="w-5 h-5 text-brand" />
           </div>
           <div className="font-extrabold text-[15px]">
-            Izinkan lokasi GPS
+            Allow GPS location
           </div>
           <div className="text-[13px] text-muted mt-1.5 max-w-[260px]">
-            Untuk lihat seberapa dekat <strong className="text-ink">{rider.name}</strong> dari kamu + estimasi ETA, izinkan akses lokasi.
+            To see how close <strong className="text-ink">{rider.name}</strong> is to you + the ETA estimate, allow location access.
           </div>
         </div>
       </div>
@@ -181,7 +181,7 @@ export default function RiderRadar({ customer, rider }: Props) {
           </div>
 
           <div>
-            <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim leading-none">Jarak</div>
+            <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim leading-none">Distance</div>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-[28px] font-extrabold gradient-text leading-none">{distanceKm.toFixed(1)}</span>
               <span className="text-[14px] font-bold text-muted">km</span>
@@ -191,17 +191,17 @@ export default function RiderRadar({ customer, rider }: Props) {
           <div>
             <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim leading-none flex items-center gap-1.5">
               <Clock className="w-3 h-3" />
-              ETA jemput
+              Pickup ETA
             </div>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-[24px] font-extrabold text-online leading-none">{etaMin}</span>
-              <span className="text-[14px] font-bold text-muted">menit</span>
+              <span className="text-[14px] font-bold text-muted">min</span>
             </div>
           </div>
 
           <div className="pt-3 border-t border-line text-[13px] text-muted flex items-center gap-1.5">
             <MapPin className="w-3 h-3 text-brand shrink-0" />
-            Arah <span className="text-ink font-bold">{direction}</span>
+            Direction <span className="text-ink font-bold">{direction}</span>
           </div>
         </div>
       </div>

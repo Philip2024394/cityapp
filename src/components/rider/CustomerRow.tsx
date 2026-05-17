@@ -59,15 +59,15 @@ export default function CustomerRow({ customer, onPesanUlang, onQuickPing }: Pro
           onClick={onQuickPing}
           className="flex-1 px-3 py-2 rounded-xl border border-line text-[13px] font-bold text-muted hover:text-ink hover:border-brand/40 transition min-h-[44px]"
         >
-          Kabari online
+          Notify I&apos;m online
         </button>
         <button
           onClick={onPesanUlang}
           className="flex-[1.2] btn-wa-compact min-h-[44px]"
-          aria-label={`Pesan ulang ${customer.displayName ?? customer.whatsappE164}`}
+          aria-label={`Message ${customer.displayName ?? customer.whatsappE164} again`}
         >
           <MessageCircle className="w-4 h-4" aria-hidden />
-          Pesan ulang
+          Message again
         </button>
       </div>
     </article>
@@ -77,11 +77,11 @@ export default function CustomerRow({ customer, onPesanUlang, onQuickPing }: Pro
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts
   const m = Math.round(diff / 60_000)
-  if (m < 1) return 'baru saja'
-  if (m < 60) return `${m}m lalu`
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
   const h = Math.round(m / 60)
-  if (h < 24) return `${h}j lalu`
+  if (h < 24) return `${h}h ago`
   const d = Math.round(h / 24)
-  if (d < 30) return `${d}h lalu`
-  return `${Math.round(d / 30)}bl lalu`
+  if (d < 30) return `${d}d ago`
+  return `${Math.round(d / 30)}mo ago`
 }
