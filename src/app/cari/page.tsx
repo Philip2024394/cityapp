@@ -143,11 +143,12 @@ function PlanTripPageInner() {
         />
       </div>
 
-      {/* HEADER — transparent, sits over the map. Same brand row as the
-          landing for consistency. Text shadow keeps it legible over any
-          map content underneath. */}
+      {/* HEADER — transparent, sits over the map. Logo + brand on the
+          left, "42 nearby" black badge with yellow text + green dot
+          (pink satellite ping ring) on the right. Text shadow keeps
+          the brand legible over any map content underneath. */}
       <header className="relative z-30 pt-safe">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center">
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
@@ -163,29 +164,45 @@ function PlanTripPageInner() {
               City <span className="gradient-text">Rider</span>
             </div>
           </Link>
+
+          {/* RIDERS-NEARBY BADGE — solid black pill, brand-yellow text,
+              green dot wrapped in a pink satellite-pulse ring (reuses
+              the ridePing keyframe with a pink colour override). */}
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+            style={{
+              background: '#000',
+              border: '1px solid rgba(250,204,21,0.30)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.4)',
+            }}
+          >
+            <span className="relative inline-flex items-center justify-center" style={{ width: 10, height: 10 }}>
+              {/* Pink satellite ping ring */}
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: 'rgba(236,72,153,0.55)',
+                  animation: 'ridePing 2.2s ease-out infinite',
+                }}
+              />
+              {/* Solid green dot at the centre */}
+              <span
+                aria-hidden
+                className="absolute rounded-full"
+                style={{
+                  width: 7, height: 7,
+                  background: '#22C55E',
+                  boxShadow: '0 0 6px rgba(34,197,94,0.95)',
+                }}
+              />
+            </span>
+            <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider">
+              42 nearby
+            </span>
+          </div>
         </div>
       </header>
-
-      {/* FLOATING CHIP — top-left "riders nearby" pulse mirrors the
-          landing's online pill. Floats over the map for the ride-hail
-          look. Top-right active-service badge removed per design. */}
-      <div className="relative z-30 px-3 -mt-1 flex items-start">
-        <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-          style={{
-            background: 'rgba(10,10,12,0.78)',
-            backdropFilter: 'blur(16px) saturate(1.3)',
-            WebkitBackdropFilter: 'blur(16px) saturate(1.3)',
-            border: '1px solid rgba(34,197,94,0.30)',
-            boxShadow: '0 4px 18px rgba(0,0,0,0.45)',
-          }}
-        >
-          <span className="dot-online !w-2 !h-2" />
-          <span className="text-[12px] font-extrabold text-online uppercase tracking-wider">
-            42 nearby
-          </span>
-        </div>
-      </div>
 
       {/* BOTTOM SHEET — glass panel anchored to the bottom of the viewport.
           Holds the entire trip-planning form + the Find driver CTA. The
