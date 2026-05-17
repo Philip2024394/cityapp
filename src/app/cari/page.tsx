@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Search, Crosshair, Plus, X } from 'lucide-react'
@@ -7,7 +7,7 @@ import RiderMap from '@/components/map/RiderMapDynamic'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
-import type { ServiceType } from '@/types/rider'
+import type { Rider, ServiceType } from '@/types/rider'
 
 // Per-service placeholder text — tailors the inputs to the picked service.
 // Service is picked on the LANDING page now (3 landscape tiles) and arrives
@@ -16,6 +16,31 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
   person: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
   parcel: { pickup: 'Where to pick up the package?',      dropoff: 'Destination address' },
   food:   { pickup: 'Restaurant or warung name',           dropoff: 'Drop-off address' },
+}
+
+// 24 nearby rider pings scattered around the current map centre — pure
+// visual confirmation of the "42 nearby" claim in the top-left chip.
+// Deterministic golden-angle scatter so SSR + client agree.
+function buildNearbyRiders(centerLat: number, centerLng: number, count = 24): Rider[] {
+  const out: Rider[] = []
+  for (let i = 0; i < count; i++) {
+    const angle = i * 2.39996323
+    const radius = 0.003 + (i / count) * 0.022
+    out.push({
+      id: `nearby-${i}`,
+      slug: `nearby-${i}`,
+      name: '', photoUrl: '', whatsappE164: '', bio: '', area: '',
+      city: 'Yogyakarta',
+      services: [],
+      bike: { make: '', model: '', year: 0, color: '', type: 'matic', hasBox: false },
+      pricePerKm: 0, minFee: 0,
+      isOnline: true, lastSeenAt: '',
+      lat: centerLat + Math.sin(angle) * radius,
+      lng: centerLng + Math.cos(angle) * radius,
+      subscriptionStatus: 'active',
+    })
+  }
+  return out
 }
 
 function parseService(raw: string | null): ServiceType {
@@ -62,6 +87,14 @@ function PlanTripPageInner() {
 
   const mapCenter = pickup ?? geo.coords ?? { lat: -7.7928, lng: 110.3657, accuracyM: 0 }
 
+  // Nearby rider pings recompute when the map centre changes (after GPS
+  // grant or pickup edit). useMemo so the array reference is stable
+  // across re-renders that don't move the centre, avoiding marker churn.
+  const nearbyRiders = useMemo(
+    () => buildNearbyRiders(mapCenter.lat, mapCenter.lng, 24),
+    [mapCenter.lat, mapCenter.lng]
+  )
+
   function handleUseLocation() {
     haptic.tap()
     geo.request()
@@ -89,9 +122,6 @@ function PlanTripPageInner() {
     router.push(`/cari/rider?${params.toString()}`)
   }
 
-  const serviceLabel = service === 'person' ? 'Bike Ride' : service === 'food' ? 'Bike Food' : 'Bike Parcel'
-  const serviceEmoji = service === 'person' ? '🛵' : service === 'food' ? '🍱' : '📦'
-
   return (
     <>
       {/* FULL-BLEED MAP — fixed to the viewport so it sits as the
@@ -102,6 +132,8 @@ function PlanTripPageInner() {
         <RiderMap
           center={mapCenter}
           zoom={14}
+          riders={nearbyRiders}
+          markerStyle="ping"
           pickup={pickup}
           dropoff={dropoff}
           showRoute={canSearch}
@@ -134,10 +166,10 @@ function PlanTripPageInner() {
         </div>
       </header>
 
-      {/* FLOATING CHIPS — top-left "riders nearby" pulse (mirrors the
-          landing's online pill), top-right active service tile + change
-          link. Both float over the map for the premium ride-hail look. */}
-      <div className="relative z-30 px-3 -mt-1 flex items-start justify-between gap-2">
+      {/* FLOATING CHIP — top-left "riders nearby" pulse mirrors the
+          landing's online pill. Floats over the map for the ride-hail
+          look. Top-right active-service badge removed per design. */}
+      <div className="relative z-30 px-3 -mt-1 flex items-start">
         <div
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
           style={{
@@ -153,43 +185,37 @@ function PlanTripPageInner() {
             42 nearby
           </span>
         </div>
-
-        <Link
-          href="/"
-          aria-label={`Service: ${serviceLabel} — tap to change`}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:opacity-90 transition"
-          style={{
-            background: 'rgba(250,204,21,0.18)',
-            backdropFilter: 'blur(16px) saturate(1.3)',
-            WebkitBackdropFilter: 'blur(16px) saturate(1.3)',
-            border: '1px solid rgba(250,204,21,0.45)',
-            boxShadow: '0 4px 14px rgba(250,204,21,0.22)',
-          }}
-        >
-          <span className="text-[14px] leading-none" aria-hidden>{serviceEmoji}</span>
-          <span className="text-[12px] font-extrabold text-brand">{serviceLabel}</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-brand/65 ml-0.5">change</span>
-        </Link>
       </div>
 
       {/* BOTTOM SHEET — glass panel anchored to the bottom of the viewport.
           Holds the entire trip-planning form + the Find driver CTA. The
           map is interactive above it; user taps the visible map area to
-          set drop-off. Decorative drag handle keeps the sheet aesthetic
-          consistent with native iOS/Android bottom sheets. */}
+          set drop-off.
+
+          YELLOW ACCENT: 3px brand-yellow top border + brand-yellow glow
+          shadow above the sheet + brand-gradient drag handle. Carries
+          the landing's bold yellow energy into the booking page without
+          sacrificing form-input legibility (the sheet body stays dark
+          glass, the CTA keeps its primary-yellow standout). */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
         <div className="mx-auto max-w-xl px-3 pb-2">
           <div
-            className="rounded-[24px] border border-line/40 p-3 space-y-2.5"
+            className="rounded-[24px] p-3 space-y-2.5"
             style={{
               background: 'rgba(10,10,12,0.88)',
               backdropFilter: 'blur(22px) saturate(1.4)',
               WebkitBackdropFilter: 'blur(22px) saturate(1.4)',
-              boxShadow: '0 -12px 36px rgba(0,0,0,0.55)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderTop: '3px solid #FACC15',
+              boxShadow:
+                '0 -10px 28px rgba(250,204,21,0.22), 0 -2px 8px rgba(250,204,21,0.18), 0 -14px 40px rgba(0,0,0,0.55)',
             }}
           >
-            {/* Decorative drag handle — purely aesthetic */}
-            <div className="mx-auto w-10 h-1 rounded-full bg-white/20" />
+            {/* Drag handle — brand gradient mini pill for premium accent */}
+            <div
+              className="mx-auto w-12 h-1 rounded-full"
+              style={{ background: 'linear-gradient(90deg, #FACC15, #EAB308)' }}
+            />
 
             {/* Route field group — left dot column, right field column */}
             <div className="flex items-start gap-2.5">
