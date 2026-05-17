@@ -31,6 +31,7 @@ function DriverResults() {
   const dropoff = readCoord(sp, 'dLat', 'dLng')
   const pickupName = sp.get('pName') ?? 'My location'
   const dropoffName = sp.get('dName') ?? 'Destination'
+  const pitstopNote = sp.get('stop') ?? null   // null = no pit stop requested
 
   const [sort, setSort] = useState<'cheapest' | 'nearest'>('cheapest')
   const [filter, setFilter] = useState<ServiceType | 'all'>('all')
@@ -62,18 +63,20 @@ function DriverResults() {
       const { final, minApplied } = quoteBreakdown(tripKm, pricing)
       const distanceToPickup = haversineKm(pickup, { lat: r.lat, lng: r.lng })
       const hasOverrides = filter === 'all' && hasServiceOverrides(r)
-      return { rider: r, fare: final, minApplied, distanceToPickup, perKm: pricing.pricePerKm, hasOverrides }
+      const pitstopFee = pitstopNote ? (r.pitstopFee ?? 0) : 0
+      const totalFare = final + pitstopFee
+      return { rider: r, fare: final, pitstopFee, totalFare, minApplied, distanceToPickup, perKm: pricing.pricePerKm, hasOverrides }
     })
     e.sort((a, b) =>
-      sort === 'cheapest' ? a.fare - b.fare : a.distanceToPickup - b.distanceToPickup,
+      sort === 'cheapest' ? a.totalFare - b.totalFare : a.distanceToPickup - b.distanceToPickup,
     )
     return e
-  }, [tripKm, sort, filter, pickup])
+  }, [tripKm, sort, filter, pickup, pitstopNote])
 
-  const cheapest = enriched[0]?.fare
-  const mostExpensive = enriched.length > 0 ? Math.max(...enriched.map(x => x.fare)) : null
+  const cheapest = enriched[0]?.totalFare
+  const mostExpensive = enriched.length > 0 ? Math.max(...enriched.map(x => x.totalFare)) : null
 
-  function onWhatsApp(rider: Rider, fare: number, perKm: number) {
+  function onWhatsApp(rider: Rider, fare: number, perKm: number, pitstopFee: number) {
     haptic.buzz()
     beep.play()
     const link = buildWhatsAppLink({
@@ -84,6 +87,7 @@ function DriverResults() {
       distanceKm: tripKm,
       pricePerKm: perKm,
       fare,
+      pitstop: pitstopNote ? { note: pitstopNote, fee: pitstopFee } : undefined,
     })
     window.open(link, '_blank', 'noopener,noreferrer')
   }
@@ -111,6 +115,14 @@ function DriverResults() {
                       <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Pick up</div>
                       <div className="truncate">{pickupName}</div>
                     </div>
+                    {pitstopNote && (
+                      <div className="pl-2 -ml-2 border-l-2 border-brand/40">
+                        <div className="text-[11px] text-brand uppercase tracking-wider font-extrabold flex items-center gap-1">
+                          🛑 Pit stop
+                        </div>
+                        <div className="text-ink/85 truncate">{pitstopNote}</div>
+                      </div>
+                    )}
                     <div>
                       <div className="text-[11px] text-dim uppercase tracking-wider font-extrabold">Drop off</div>
                       <div className="truncate">{dropoffName}</div>
@@ -176,17 +188,20 @@ function DriverResults() {
 
           {/* Driver cards */}
           <div className="space-y-3">
-            {enriched.map(({ rider, fare, minApplied, distanceToPickup, perKm, hasOverrides }, idx) => (
+            {enriched.map(({ rider, fare, pitstopFee, totalFare, minApplied, distanceToPickup, perKm, hasOverrides }, idx) => (
               <DriverCard
                 key={rider.id}
                 rider={rider}
-                fare={fare}
+                fare={totalFare}
+                tripFare={fare}
+                pitstopFee={pitstopFee}
+                hasPitstop={!!pitstopNote}
                 minApplied={minApplied}
                 distanceToPickup={distanceToPickup}
                 perKm={perKm}
                 hasOverrides={hasOverrides}
                 isCheapest={idx === 0 && sort === 'cheapest'}
-                onWhatsApp={() => onWhatsApp(rider, fare, perKm)}
+                onWhatsApp={() => onWhatsApp(rider, fare, perKm, pitstopFee)}
               />
             ))}
           </div>
@@ -204,9 +219,11 @@ function DriverResults() {
 }
 
 function DriverCard({
-  rider, fare, minApplied, distanceToPickup, isCheapest, onWhatsApp, perKm, hasOverrides,
+  rider, fare, tripFare, pitstopFee, hasPitstop, minApplied, distanceToPickup, isCheapest, onWhatsApp, perKm, hasOverrides,
 }: {
-  rider: Rider; fare: number; minApplied: boolean; distanceToPickup: number; isCheapest: boolean; onWhatsApp: () => void; perKm: number; hasOverrides: boolean
+  rider: Rider; fare: number; tripFare: number; pitstopFee: number; hasPitstop: boolean;
+  minApplied: boolean; distanceToPickup: number; isCheapest: boolean;
+  onWhatsApp: () => void; perKm: number; hasOverrides: boolean
 }) {
   return (
     <article
@@ -297,7 +314,12 @@ function DriverCard({
               {hasOverrides && <span className="text-brand/90">from </span>}
               {idr(perKm)}<span className="text-dim">/km</span>
             </div>
-            {minApplied && (
+            {hasPitstop && (
+              <div className="text-[12px] text-brand/90 font-bold leading-none mt-1.5 whitespace-nowrap">
+                {idr(tripFare)} + {pitstopFee > 0 ? idr(pitstopFee) : 'free'} stop
+              </div>
+            )}
+            {minApplied && !hasPitstop && (
               <div className="text-[13px] text-brand/90 font-bold leading-none mt-1.5 whitespace-nowrap">
                 min {idr(rider.minFee)}
               </div>

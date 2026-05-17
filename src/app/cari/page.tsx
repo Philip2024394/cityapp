@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Crosshair, ArrowDown } from 'lucide-react'
+import { ChevronLeft, Search, MapPin, Crosshair, ArrowDown, Plus, X, StopCircle } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -17,6 +17,8 @@ export default function PlanTripPage() {
   const [dropoff, setDropoff] = useState<GeoPoint | null>(null)
   const [pickupLabel, setPickupLabel] = useState('')
   const [dropoffLabel, setDropoffLabel] = useState('')
+  const [pitstopOpen, setPitstopOpen] = useState(false)
+  const [pitstopNote, setPitstopNote] = useState('')
 
   // Auto-fill pickup with customer GPS on grant
   useEffect(() => {
@@ -51,6 +53,9 @@ export default function PlanTripPage() {
       dLng: dropoff!.lng.toString(),
       dName: dropoffLabel || 'Destination',
     })
+    if (pitstopOpen && pitstopNote.trim()) {
+      params.set('stop', pitstopNote.trim())
+    }
     router.push(`/cari/rider?${params.toString()}`)
   }
 
@@ -162,6 +167,54 @@ export default function PlanTripPage() {
               </div>
             )}
           </div>
+
+          {/* PIT STOP — optional, collapsed by default */}
+          {!pitstopOpen ? (
+            <button
+              onClick={() => { setPitstopOpen(true); haptic.tap() }}
+              className="card card-interactive w-full p-3.5 flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0">
+                  <Plus className="w-4 h-4 text-brand" />
+                </div>
+                <div>
+                  <div className="text-[14px] font-extrabold">Add a pit stop</div>
+                  <div className="text-[12px] text-muted mt-0.5">
+                    Need the rider to buy/pick up something on the way?
+                  </div>
+                </div>
+              </div>
+              <span className="text-brand text-[18px] font-extrabold shrink-0">+</span>
+            </button>
+          ) : (
+            <div className="card p-4 animate-[fadeUp_0.3s_ease-out_both]" style={{ borderColor: 'rgba(250,204,21,0.35)' }}>
+              <div className="flex items-start justify-between mb-2.5">
+                <div className="flex items-center gap-2">
+                  <StopCircle className="w-4 h-4 text-brand" />
+                  <span className="label !mb-0">Pit stop request</span>
+                </div>
+                <button
+                  onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
+                  className="text-dim hover:text-ink p-1 -m-1"
+                  aria-label="Remove pit stop"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <textarea
+                className="input"
+                rows={2}
+                maxLength={140}
+                placeholder='e.g. "Stop at warung depan, buy 1 pack Marlboro Lights"'
+                value={pitstopNote}
+                onChange={e => setPitstopNote(e.target.value)}
+              />
+              <p className="text-[12px] text-dim mt-2 leading-relaxed">
+                💡 Rider sets their own pit-stop fee (Rp 0-25K). For item costs (cigarettes, snacks, ATM, etc.) — transfer the rider via GoPay/QRIS upfront, settle on arrival.
+              </p>
+            </div>
+          )}
         </div>
       </main>
 

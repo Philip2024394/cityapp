@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Save, Info, Settings2 } from 'lucide-react'
+import { Save, Info, Settings2, StopCircle } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import SuggestedPricingCard from '@/components/rider/SuggestedPricingCard'
@@ -35,6 +35,8 @@ export default function PricingPage() {
   const [perKm, setPerKm] = useState(ME.pricePerKm)
   const [minFee, setMinFee] = useState(ME.minFee)
   const [perServiceMode, setPerServiceMode] = useState(!!ME.servicePricing)
+  const [pitstopEnabled, setPitstopEnabled] = useState(ME.pitstopFee !== undefined)
+  const [pitstopFee, setPitstopFee] = useState(ME.pitstopFee ?? 5000)
 
   // Per-service overrides — start pre-filled with the existing rider's
   // overrides if any, otherwise from base.
@@ -202,11 +204,58 @@ export default function PricingPage() {
             </div>
           )}
 
+          {/* PIT-STOP FEE — separate from per-km rate */}
+          <button
+            onClick={() => setPitstopEnabled(v => !v)}
+            className="card p-4 w-full text-left flex items-center justify-between transition"
+            style={{
+              borderColor: pitstopEnabled ? 'rgba(250,204,21,0.35)' : 'rgba(255,255,255,0.06)',
+              background:  pitstopEnabled ? 'rgba(250,204,21,0.04)' : 'rgba(255,255,255,0.03)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: pitstopEnabled ? 'rgba(250,204,21,0.12)' : 'rgba(255,255,255,0.05)' }}
+              >
+                <StopCircle className="w-4 h-4 text-brand" />
+              </div>
+              <div>
+                <div className="font-extrabold text-[15px]">Offer pit-stop service</div>
+                <div className="text-[13px] text-muted mt-0.5">
+                  {pitstopEnabled
+                    ? `Active — ${pitstopFee === 0 ? 'free' : `${idr(pitstopFee)} per stop`}`
+                    : "You won't appear when customers request a pit stop"}
+                </div>
+              </div>
+            </div>
+            <div className="w-12 h-7 rounded-full p-0.5 transition shrink-0"
+                 style={{ background: pitstopEnabled ? '#22C55E' : 'rgba(255,255,255,0.12)' }}>
+              <div className="w-6 h-6 rounded-full bg-white transition-transform"
+                   style={{ transform: pitstopEnabled ? 'translateX(20px)' : 'translateX(0)' }} />
+            </div>
+          </button>
+
+          {pitstopEnabled && (
+            <div className="card p-4 animate-[fadeUp_0.3s_ease-out_both]" style={{ borderColor: 'rgba(250,204,21,0.25)' }}>
+              <SliderRow
+                label="Pit-stop fee"
+                value={pitstopFee}
+                min={0} max={25000} step={500}
+                format={(n) => n === 0 ? 'Free' : idr(n)}
+                onChange={setPitstopFee}
+              />
+              <p className="text-[12px] text-dim mt-3 leading-relaxed">
+                💡 What you charge to make a brief stop along the way (warung, ATM, etc.). Item costs are handled separately — customer transfers you via GoPay/QRIS before you buy.
+              </p>
+            </div>
+          )}
+
           {/* Tip */}
           <div className="card p-4 bg-brand/5 border-brand/20 flex gap-3">
             <Info className="w-4 h-4 text-brand shrink-0 mt-0.5" />
             <div className="text-[13px] text-ink/85 leading-relaxed">
-              Yogya riders typically charge <strong className="text-brand">Rp 2.500/km</strong> with minimum <strong className="text-brand">Rp 10.000</strong>. Raise it if your area is far or you have a big box. Passenger rates are typically 20% higher than parcel.
+              Yogya riders typically charge <strong className="text-brand">Rp 2.500/km</strong> with minimum <strong className="text-brand">Rp 10.000</strong>. Raise it if your area is far or you have a big box. Passenger rates are typically 20% higher than parcel. Pit-stop fees usually Rp 3-10K.
             </div>
           </div>
 

@@ -61,6 +61,10 @@ export type Rider = {
   pricePerKm: number              // base
   minFee:     number              // base
   servicePricing?: Partial<Record<ServiceType, ServicePricing>>
+  // Pit-stop fee — what rider charges to make a brief stop along the way
+  // for the customer (buy something, ATM, etc.). 0 = free, undefined = won't do.
+  // Item costs handled separately between customer + rider via GoPay/QRIS.
+  pitstopFee?: number
   isOnline:   boolean
   lastSeenAt: string
   lat: number
