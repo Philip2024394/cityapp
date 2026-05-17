@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, User, DollarSign, Package } from 'lucide-react'
+import { LayoutDashboard, User, Flame, DollarSign, Package } from 'lucide-react'
 
 const ITEMS = [
-  { href: '/dashboard',  label: 'Home',     icon: LayoutDashboard },
-  { href: '/profile',    label: 'Profile',  icon: User },
-  { href: '/pricing',    label: 'Pricing',  icon: DollarSign },
-  { href: '/services',   label: 'Services', icon: Package },
+  { href: '/dashboard',           label: 'Home',     icon: LayoutDashboard },
+  { href: '/dashboard/hotspots',  label: 'Hotspots', icon: Flame },
+  { href: '/profile',             label: 'Profile',  icon: User },
+  { href: '/pricing',             label: 'Pricing',  icon: DollarSign },
+  { href: '/services',            label: 'Services', icon: Package },
 ]
 
 export default function DashboardNav() {
