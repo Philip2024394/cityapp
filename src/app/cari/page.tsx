@@ -213,9 +213,9 @@ function PlanTripPageInner() {
             <div className="mb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
             </div>
-            <div className="relative">
+            <div className="flex items-stretch gap-1.5">
               <input
-                className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl pl-3 pr-14 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
+                className="flex-1 min-w-0 bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
                 placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
                 value={pickupLabel}
                 onChange={e => setPickupLabel(e.target.value)}
@@ -223,14 +223,14 @@ function PlanTripPageInner() {
               <button
                 onClick={handleUseLocation}
                 aria-label="Auto-set my GPS location"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white transition active:scale-95"
+                className="shrink-0 w-12 rounded-xl flex items-center justify-center text-white transition active:scale-95"
                 style={{
                   background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
                   boxShadow:
                     '0 4px 12px rgba(127,29,29,0.55), 0 0 0 2px rgba(0,0,0,0.18) inset',
                 }}
               >
-                <MapPin className={`w-4 h-4 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} strokeWidth={2.5} />
+                <MapPin className={`w-5 h-5 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -308,12 +308,14 @@ function PlanTripPageInner() {
 
           {/* CTA TILE — black infill with brand-yellow edge line. Under
               the three yellow tiles, this dark fill creates the contrast
-              terminus. mt-2 keeps a clear gap between the form tiles
-              above and the action tile. Always reads "View drivers". */}
+              terminus. !mt-6 forces a clear gap above (parent's
+              space-y-2 has higher specificity than plain mt-N, so we
+              use Tailwind's ! prefix to win). Always reads "View
+              drivers". */}
           <button
             onClick={handleSearch}
             disabled={!canSearch}
-            className="w-full flex items-center justify-center gap-2 p-3.5 mt-2 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Search className="w-4 h-4" />
             <span>View drivers</span>
