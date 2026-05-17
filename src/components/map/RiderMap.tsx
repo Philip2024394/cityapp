@@ -29,6 +29,10 @@ type Props = {
   /** Map tilt in degrees (0 = top-down, 60 = max). Adds 3D perspective —
    *  used on the trip planner for an Apple-Maps / Grab-style hero view. */
   pitch?: number
+  /** Viewport padding (in px) applied to all camera moves so route + markers
+   *  stay in the visible "hero" area rather than getting clipped by floating
+   *  UI like a header, bottom sheet, or side rail. */
+  viewportPadding?: { top?: number; bottom?: number; left?: number; right?: number }
 }
 
 // OpenFreeMap — community-run vector tiles, OSM data, no API key required.
@@ -42,7 +46,17 @@ export default function RiderMap({
   showRoute = false, height = '320px', interactive = true,
   variant = 'dark', hideLabels = false, autoPan = false,
   markerStyle = 'scooter', roadsOnly = false, pitch = 0,
+  viewportPadding,
 }: Props) {
+  // Merge caller-provided padding with sane defaults. All camera moves
+  // (flyTo, fitBounds) below use this so the route/markers stay in the
+  // visible area when a bottom sheet or header overlays the map.
+  const padding = {
+    top:    viewportPadding?.top    ?? 0,
+    bottom: viewportPadding?.bottom ?? 0,
+    left:   viewportPadding?.left   ?? 0,
+    right:  viewportPadding?.right  ?? 0,
+  }
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
   const markersRef = useRef<Marker[]>([])
@@ -159,11 +173,28 @@ export default function RiderMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Update center when prop changes
+  // Update center when prop changes — pass viewport padding so the
+  // map's "true centre" lands in the visible area (not behind chrome
+  // like a bottom sheet). Maplibre interprets padding as an inset
+  // from the map container edges.
   useEffect(() => {
     if (!mapRef.current) return
-    mapRef.current.flyTo({ center: [center.lng, center.lat], zoom, duration: 600 })
+    mapRef.current.flyTo({
+      center: [center.lng, center.lat],
+      zoom,
+      duration: 600,
+      padding,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center.lat, center.lng, zoom])
+
+  // Apply viewport padding to the map's default camera. Updates when
+  // the caller changes padding (e.g. sheet expand/collapse).
+  useEffect(() => {
+    if (!mapRef.current) return
+    mapRef.current.setPadding(padding, { duration: 300 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [padding.top, padding.bottom, padding.left, padding.right])
 
   // Render rider markers
   useEffect(() => {
@@ -289,14 +320,27 @@ export default function RiderMap({
           },
         })
       }
-      // Auto-fit bounds
+      // Auto-fit bounds — viewport padding keeps the route + pickup/
+      // dropoff pins in the visible "hero" area above any bottom sheet.
+      // Inflate each edge with a constant 40px buffer so pins aren't
+      // flush against the visible-area boundary.
       const bounds = new maplibregl.LngLatBounds()
       bounds.extend([pickup.lng, pickup.lat])
       bounds.extend([dropoff.lng, dropoff.lat])
-      map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 700 })
+      map.fitBounds(bounds, {
+        padding: {
+          top:    padding.top    + 40,
+          bottom: padding.bottom + 40,
+          left:   padding.left   + 40,
+          right:  padding.right  + 40,
+        },
+        maxZoom: 15,
+        duration: 700,
+      })
     }
     if (map.isStyleLoaded()) drawRoute()
     else map.once('load', drawRoute)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickup, dropoff, showRoute])
 
   return (

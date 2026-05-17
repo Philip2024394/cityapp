@@ -152,6 +152,17 @@ function PlanTripPageInner() {
           onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
           height="100dvh"
           pitch={50}
+          // Reserve the bottom-sheet area + header area so the map's
+          // visible "hero" portion (where the route + pickup pin +
+          // drop-off pin + nearby driver pings live) is always above
+          // the cards. Bigger bottom padding when the pit stop is
+          // expanded so the expanded sheet doesn't cover anything.
+          viewportPadding={{
+            top: 100,
+            bottom: pitstopOpen ? 480 : 400,
+            left: 24,
+            right: 24,
+          }}
         />
       </div>
 
