@@ -7,6 +7,7 @@ import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
 import QuoteInbox, { type InboxQuote } from '@/components/rider/QuoteInbox'
+import IncomingOrderModal, { type IncomingOrder } from '@/components/rider/IncomingOrderModal'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { MOCK_CUSTOMERS, repeatCustomers } from '@/data/mockCustomers'
 import { useBeep } from '@/hooks/useBeep'
@@ -32,21 +33,56 @@ export default function DashboardPage() {
   const haptic = useHaptic()
   const [quotes, setQuotes] = useState<InboxQuote[]>(DEMO_QUOTES)
   const [online, setOnline] = useState(true)
+  const [incoming, setIncoming] = useState<IncomingOrder | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
 
-  function fakeIncomingQuote() {
-    const next: InboxQuote = {
-      id: 'q' + Date.now(),
+  function fakeIncomingOrder() {
+    // Open the incoming-order modal — the LOUD alarm fires automatically
+    // on mount + repeats every ~3 seconds until rider responds.
+    haptic.buzz()
+    setIncoming({
+      id: 'o' + Date.now(),
       pickupLabel: 'Tugu Jogja',
       dropoffLabel: 'Hotel Tentrem',
+      pitstopNote: 'Buy 1 pack Marlboro Lights at warung depan',
       distanceKm: 3.5,
       fare: 10_000,
-      receivedAt: Date.now(),
-      read: false,
-      customerWhatsApp: '6285800000099',
-    }
-    setQuotes(q => [next, ...q])
+      pitstopFee: 5_000,
+    })
+  }
+
+  function onAccept(order: IncomingOrder) {
+    haptic.impact()
     beep.play()
-    haptic.buzz()
+    // Add accepted order into the inbox + mark as read
+    setQuotes(qs => [{
+      id: order.id,
+      pickupLabel: order.pickupLabel,
+      dropoffLabel: order.dropoffLabel,
+      distanceKm: order.distanceKm,
+      fare: order.fare + (order.pitstopFee ?? 0),
+      receivedAt: Date.now(),
+      read: true,
+      customerWhatsApp: '6285800000099',
+    }, ...qs])
+    setIncoming(null)
+    showToast('✅ Accepted — customer notified, coordinate on WhatsApp')
+  }
+
+  function onDecline(_order: IncomingOrder) {
+    haptic.tap()
+    setIncoming(null)
+    showToast('Declined — customer will be redirected to other riders')
+  }
+
+  function onExpire(_order: IncomingOrder) {
+    setIncoming(null)
+    showToast('⌛ Timed out — order missed')
+  }
+
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3500)
   }
 
   function onReply(q: InboxQuote) {
@@ -132,9 +168,9 @@ export default function DashboardPage() {
           {/* Quote inbox */}
           <QuoteInbox quotes={quotes} onReply={onReply} />
 
-          {/* Demo trigger */}
-          <button onClick={fakeIncomingQuote} className="btn-secondary w-full">
-            🔔 Simulate an incoming quote (beep + inbox)
+          {/* Demo trigger — fires the LOUD incoming-order modal */}
+          <button onClick={fakeIncomingOrder} className="btn-secondary w-full">
+            🚨 Simulate an incoming order (loud alarm + accept/decline modal)
           </button>
 
           {/* Profile preview link */}
@@ -173,6 +209,22 @@ export default function DashboardPage() {
         </div>
       </main>
       <DashboardNav />
+
+      {/* Loud incoming-order modal — z-100, full-screen overlay */}
+      <IncomingOrderModal
+        order={incoming}
+        timeoutSec={300}
+        onAccept={onAccept}
+        onDecline={onDecline}
+        onExpire={onExpire}
+      />
+
+      {/* Toast — short-lived status bar at the top */}
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[110] glass-strong rounded-full px-4 py-2.5 text-[13px] font-bold shadow-card animate-[fadeUp_0.25s_ease-out_both] max-w-[92vw] text-center">
+          {toast}
+        </div>
+      )}
     </>
   )
 }
