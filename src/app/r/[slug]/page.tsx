@@ -6,15 +6,18 @@ import { ChevronLeft, MapPin, Box, Bike as BikeIcon, MessageCircle } from 'lucid
 import RiderRadar from '@/components/rider/RiderRadar'
 import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
 import OfflineFallback from '@/components/rider/OfflineFallback'
+import CustomerWaitingState, { type WaitingStatus } from '@/components/rider/CustomerWaitingState'
 import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
+import { useOrderChannel, getCustomerSessionId, type OrderEvent } from '@/hooks/useOrderChannel'
 import { haversineKm } from '@/lib/geo/haversine'
 import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
 import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type ServiceType } from '@/types/rider'
+import { useEffect } from 'react'
 
 export default function RiderProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
@@ -33,6 +36,36 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   const [service, setService] = useState<ServiceType | null>(
     maybeRider?.services[0] ?? null,
   )
+
+  // Real-time waiting state — once customer taps WhatsApp, we broadcast
+  // a pending order, the rider's dashboard receives it, and the rider's
+  // accept/decline broadcasts back. UI flips through pending → accepted/
+  // declined/expired. Cross-tab today via BroadcastChannel; swap for
+  // Supabase Realtime channel in Phase 3 to enable cross-device.
+  const [waiting, setWaiting] = useState<{
+    orderId: string
+    startedAt: number
+    status: WaitingStatus
+    whatsappLink: string
+  } | null>(null)
+
+  const { broadcast } = useOrderChannel((e: OrderEvent) => {
+    if (!waiting) return
+    if ('orderId' in e && e.orderId !== waiting.orderId) return
+    if (e.type === 'accepted') setWaiting({ ...waiting, status: 'accepted' })
+    if (e.type === 'declined') setWaiting({ ...waiting, status: 'declined' })
+    if (e.type === 'expired')  setWaiting({ ...waiting, status: 'expired' })
+  })
+
+  // Auto-expire customer-side after 5 min (mirrors driver-side timer)
+  useEffect(() => {
+    if (!waiting || waiting.status !== 'pending') return
+    const elapsed = Date.now() - waiting.startedAt
+    const remaining = 5 * 60 * 1000 - elapsed
+    if (remaining <= 0) { setWaiting({ ...waiting, status: 'expired' }); return }
+    const t = setTimeout(() => setWaiting(w => w && w.status === 'pending' ? { ...w, status: 'expired' } : w), remaining)
+    return () => clearTimeout(t)
+  }, [waiting])
 
   // Auto-fill pickup with customer GPS on grant
   useMemo(() => {
@@ -77,7 +110,27 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     })
     beep.play()
     haptic.buzz()
+    // Open WhatsApp in a new tab so the customer can chat
     window.open(link, '_blank', 'noopener,noreferrer')
+
+    // Broadcast a pending order to the driver dashboard (other tabs).
+    // The rider sees the loud incoming-order modal pop in their tab.
+    const orderId = 'o_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
+    broadcast({
+      type: 'created',
+      order: {
+        id: orderId,
+        customerSession: getCustomerSessionId(),
+        riderId: rider.id,
+        riderName: rider.name,
+        pickupLabel: pickupLabel || 'My location',
+        dropoffLabel: dropoffLabel || 'Destination',
+        distanceKm: quote.distanceKm,
+        fare: quote.fare,
+        createdAt: Date.now(),
+      },
+    })
+    setWaiting({ orderId, startedAt: Date.now(), status: 'pending', whatsappLink: link })
   }
 
   // OFFLINE fallback view
@@ -218,24 +271,37 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         )}
       </div>
 
-      {/* Sticky WhatsApp CTA */}
+      {/* Sticky bottom bar — either the WhatsApp CTA (idle) or the
+          customer waiting state (after they tapped) */}
       <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
         <div className="max-w-2xl mx-auto px-4 pb-3">
-          <div className="glass-strong rounded-2xl p-3">
-            <button
-              onClick={onSend}
-              disabled={!quote}
-              className="btn-wa w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <MessageCircle className="w-5 h-5" />
-              {quote
-                ? `Send WhatsApp · ${idr(quote.fare)}`
-                : 'Set pickup & drop off to send'}
-            </button>
-            <p className="text-[11px] text-dim text-center mt-2">
-              Booking via WhatsApp · the rider gets an instant notification
-            </p>
-          </div>
+          {waiting ? (
+            <CustomerWaitingState
+              riderName={rider.name}
+              riderPhotoUrl={rider.photoUrl}
+              status={waiting.status}
+              startedAt={waiting.startedAt}
+              whatsappLink={waiting.whatsappLink}
+              onCancel={() => setWaiting(null)}
+              onSeeOthers={() => { setWaiting(null); window.location.href = '/cari' }}
+            />
+          ) : (
+            <div className="glass-strong rounded-2xl p-3">
+              <button
+                onClick={onSend}
+                disabled={!quote}
+                className="btn-wa w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <MessageCircle className="w-5 h-5" />
+                {quote
+                  ? `Send WhatsApp · ${idr(quote.fare)}`
+                  : 'Set pickup & drop off to send'}
+              </button>
+              <p className="text-[11px] text-dim text-center mt-2">
+                Booking via WhatsApp · the rider gets an instant notification
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </main>

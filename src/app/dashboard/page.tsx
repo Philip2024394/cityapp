@@ -8,6 +8,7 @@ import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
 import QuoteInbox, { type InboxQuote } from '@/components/rider/QuoteInbox'
 import IncomingOrderModal, { type IncomingOrder } from '@/components/rider/IncomingOrderModal'
+import { useOrderChannel, type OrderEvent } from '@/hooks/useOrderChannel'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { MOCK_CUSTOMERS, repeatCustomers } from '@/data/mockCustomers'
 import { useBeep } from '@/hooks/useBeep'
@@ -51,9 +52,27 @@ export default function DashboardPage() {
     })
   }
 
+  // BroadcastChannel — receive new orders from customer tabs
+  const { broadcast } = useOrderChannel((e: OrderEvent) => {
+    if (e.type !== 'created') return
+    // Filter by rider — only show orders addressed to ME
+    if (e.order.riderId !== ME.id) return
+    setIncoming({
+      id: e.order.id,
+      pickupLabel: e.order.pickupLabel,
+      dropoffLabel: e.order.dropoffLabel,
+      pitstopNote: e.order.pitstopNote,
+      distanceKm: e.order.distanceKm,
+      fare: e.order.fare,
+      pitstopFee: e.order.pitstopFee,
+    })
+  })
+
   function onAccept(order: IncomingOrder) {
     haptic.impact()
     beep.play()
+    // Broadcast acceptance back to the customer tab
+    broadcast({ type: 'accepted', orderId: order.id, riderId: ME.id, riderName: ME.name, acceptedAt: Date.now() })
     // Add accepted order into the inbox + mark as read
     setQuotes(qs => [{
       id: order.id,
@@ -69,13 +88,15 @@ export default function DashboardPage() {
     showToast('✅ Accepted — customer notified, coordinate on WhatsApp')
   }
 
-  function onDecline(_order: IncomingOrder) {
+  function onDecline(order: IncomingOrder) {
     haptic.tap()
+    broadcast({ type: 'declined', orderId: order.id, riderId: ME.id })
     setIncoming(null)
     showToast('Declined — customer will be redirected to other riders')
   }
 
-  function onExpire(_order: IncomingOrder) {
+  function onExpire(order: IncomingOrder) {
+    broadcast({ type: 'expired', orderId: order.id })
     setIncoming(null)
     showToast('⌛ Timed out — order missed')
   }
