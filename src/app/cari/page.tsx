@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, Crosshair, Plus, X } from 'lucide-react'
+import { ChevronLeft, Search, MapPin, Plus, X } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -204,60 +204,89 @@ function PlanTripPageInner() {
           terminus against the three yellow controls. */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
         <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
-          {/* PICKUP TILE */}
+          {/* PICKUP TILE — dark-red round GPS button sits INSIDE the input
+              on the right, auto-sets the location to the customer's GPS
+              coords on tap. Replaces the previous "My location" text link. */}
           <div
             className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="mb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
+            </div>
+            <div className="relative">
+              <input
+                className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl pl-3 pr-14 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/25 transition"
+                placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
+                value={pickupLabel}
+                onChange={e => setPickupLabel(e.target.value)}
+              />
               <button
                 onClick={handleUseLocation}
-                aria-label="Use my GPS location"
-                className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider hover:opacity-80 transition"
+                aria-label="Auto-set my GPS location"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white transition active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
+                  boxShadow:
+                    '0 4px 12px rgba(127,29,29,0.55), 0 0 0 2px rgba(0,0,0,0.18) inset',
+                }}
               >
-                <Crosshair className={`w-3.5 h-3.5 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} />
-                {geo.status === 'requesting' ? 'Searching' : 'My location'}
+                <MapPin className={`w-4 h-4 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} strokeWidth={2.5} />
               </button>
             </div>
-            <input
-              className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/25 transition"
-              placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
-              value={pickupLabel}
-              onChange={e => setPickupLabel(e.target.value)}
-            />
           </div>
 
-          {/* PIT STOP TILE — collapsed: solid yellow CTA tile; expanded:
-              brand-yellow tile with textarea + close button. */}
+          {/* PIT STOP TILE — collapsed: yellow CTA with the pit-stop flag
+              image on the right; expanded: yellow tile with textarea +
+              flag image floating in the input's right edge. */}
           {!pitstopOpen ? (
             <button
               onClick={() => { setPitstopOpen(true); haptic.tap() }}
-              className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+              className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
             >
-              <Plus className="w-4 h-4" strokeWidth={3} />
-              <span className="text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
+              <Plus className="w-4 h-4 shrink-0" strokeWidth={3} />
+              <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
+              <img
+                src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                alt=""
+                aria-hidden
+                loading="lazy"
+                className="h-10 w-auto shrink-0"
+                style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+              />
             </button>
           ) : (
-            <div className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] animate-[fadeUp_0.3s_ease-out_both]">
-              <div className="flex items-center justify-between mb-1">
+            <div className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] animate-[fadeUp_0.3s_ease-out_both] space-y-2">
+              <div className="mb-1">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Pit stop</span>
-                <button
-                  onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
-                  aria-label="Remove pit stop"
-                  className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider hover:opacity-80 transition"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Remove
-                </button>
               </div>
-              <textarea
-                rows={2}
-                maxLength={140}
-                className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl px-3 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/25 transition resize-none"
-                placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
-                value={pitstopNote}
-                onChange={e => setPitstopNote(e.target.value)}
-              />
+              <div className="relative">
+                <textarea
+                  rows={2}
+                  maxLength={140}
+                  className="w-full bg-bg/15 border border-bg/20 text-bg placeholder:text-bg/60 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/25 transition resize-none"
+                  placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
+                  value={pitstopNote}
+                  onChange={e => setPitstopNote(e.target.value)}
+                />
+                <img
+                  src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                  alt=""
+                  aria-hidden
+                  loading="lazy"
+                  className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-auto pointer-events-none"
+                  style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+                />
+              </div>
+              {/* Long black close button — sits as the full-width bottom
+                  action of the pit-stop tile, clear way to dismiss. */}
+              <button
+                onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
+                aria-label="Remove pit stop"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-ink font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
+              >
+                <X className="w-4 h-4" strokeWidth={2.5} />
+                Close pit stop
+              </button>
             </div>
           )}
 
