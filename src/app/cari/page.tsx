@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Search, MapPin, Plus, X } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
+import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
@@ -95,11 +96,15 @@ function PlanTripPageInner() {
     [mapCenter.lat, mapCenter.lng]
   )
 
-  function handleUseLocation() {
+  // Awaits the geolocation promise so we always set pickup with the
+  // freshest coords. The old version checked `geo.coords` synchronously
+  // after calling request() — that closure variable was stale, so on
+  // first tap nothing happened.
+  async function handleUseLocation() {
     haptic.tap()
-    geo.request()
-    if (geo.coords) {
-      setPickup(geo.coords)
+    const point = geo.coords ?? await geo.request()
+    if (point) {
+      setPickup(point)
       setPickupLabel('My location')
     }
   }
@@ -230,26 +235,33 @@ function PlanTripPageInner() {
             <div className="mb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
             </div>
-            <div className="flex items-stretch gap-1.5">
-              <input
-                className="flex-1 min-w-0 bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
-                placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
-                value={pickupLabel}
-                onChange={e => setPickupLabel(e.target.value)}
-              />
-              <button
-                onClick={handleUseLocation}
-                aria-label="Auto-set my GPS location"
-                className="shrink-0 w-12 rounded-xl flex items-center justify-center text-white transition active:scale-95"
-                style={{
-                  background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
-                  boxShadow:
-                    '0 4px 12px rgba(127,29,29,0.55), 0 0 0 2px rgba(0,0,0,0.18) inset',
-                }}
-              >
-                <MapPin className={`w-5 h-5 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} strokeWidth={2.5} />
-              </button>
-            </div>
+            <PlaceAutocomplete
+              value={pickupLabel}
+              onChange={setPickupLabel}
+              onSelect={(s) => {
+                setPickup({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                setPickupLabel(s.label)
+                haptic.tap()
+              }}
+              placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
+              className="flex-1 min-w-0 bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
+              near={geo.coords ?? null}
+              ariaLabel="Pick up location"
+              rightSlot={
+                <button
+                  onClick={handleUseLocation}
+                  aria-label="Auto-set my GPS location"
+                  className="shrink-0 w-12 rounded-xl flex items-center justify-center text-white transition active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
+                    boxShadow:
+                      '0 4px 12px rgba(127,29,29,0.55), 0 0 0 2px rgba(0,0,0,0.18) inset',
+                  }}
+                >
+                  <MapPin className={`w-5 h-5 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} strokeWidth={2.5} />
+                </button>
+              }
+            />
           </div>
 
           {/* PIT STOP TILE — collapsed: yellow CTA with the pit-stop flag
@@ -307,7 +319,10 @@ function PlanTripPageInner() {
             </div>
           )}
 
-          {/* DROP OFF TILE */}
+          {/* DROP OFF TILE — same autocomplete pattern as pickup, but
+              without a GPS button (drop-off is wherever the customer is
+              going, not where they are). Tap-map still works as a
+              fallback for setting drop-off coords. */}
           <div
             className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
           >
@@ -315,11 +330,18 @@ function PlanTripPageInner() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
               <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-75">Tap map</span>
             </div>
-            <input
-              className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
-              placeholder={PLACEHOLDERS[service].dropoff}
+            <PlaceAutocomplete
               value={dropoffLabel}
-              onChange={e => setDropoffLabel(e.target.value)}
+              onChange={setDropoffLabel}
+              onSelect={(s) => {
+                setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                setDropoffLabel(s.label)
+                haptic.tap()
+              }}
+              placeholder={PLACEHOLDERS[service].dropoff}
+              className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
+              near={pickup ?? geo.coords ?? null}
+              ariaLabel="Drop off location"
             />
           </div>
 
