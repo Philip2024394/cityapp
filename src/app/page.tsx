@@ -182,29 +182,34 @@ export default function LandingPage() {
           </p>
 
           {/* SPLIT-FLAG CTA — left half: Bahasa enter · right half: English enter.
-              Decorative image sits behind the button on the right side, peeking
-              out at sm+ viewports (hidden on smallest mobile to keep CTA clear). */}
-          <div className="pt-3 space-y-3 relative">
-            <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png"
-              alt=""
-              aria-hidden
-              loading="lazy"
-              className="hidden sm:block absolute z-0 pointer-events-none select-none"
-              style={{
-                right: '-24px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                height: '140px',
-                width: 'auto',
-                opacity: 0.95,
-                filter: 'drop-shadow(0 10px 24px rgba(0,0,0,0.45))',
-              }}
-            />
-            <div className="relative z-10">
-              <SplitFlagButton enterLabel={t.enter} onEnter={enterAs} activeLocale={locale} />
+              Decorative image sits BEHIND the button on the right side. The
+              image's lower half is covered by the button; only the top peeks
+              above. Shows on all viewports (positioned to never overflow). */}
+          <div className="pt-3 space-y-3">
+            <div className="relative inline-flex w-full max-w-sm mx-auto">
+              {/* Image — anchored to right-bottom, top half rises above the button.
+                  bottom: 22px ≈ button vertical centre (button is 52px tall + 14px py)
+                  so the image's bottom edge sits roughly at the button's centre line
+                  and its top half is visible. */}
+              <img
+                src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png"
+                alt=""
+                aria-hidden
+                loading="lazy"
+                className="absolute z-0 pointer-events-none select-none"
+                style={{
+                  right: '-8px',
+                  bottom: '22px',
+                  height: '90px',
+                  width: 'auto',
+                  filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.5))',
+                }}
+              />
+              <div className="relative z-10 w-full">
+                <SplitFlagButton enterLabel={t.enter} onEnter={enterAs} activeLocale={locale} />
+              </div>
             </div>
-            <p className="text-[12px] text-dim relative z-10">{t.freeNote}</p>
+            <p className="text-[12px] text-dim">{t.freeNote}</p>
           </div>
         </div>
       </section>
