@@ -89,26 +89,9 @@ export default function PlanTripPage() {
 
       <main className="min-h-screen pb-32">
         <div className="max-w-xl mx-auto px-4 pt-3 space-y-4">
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-muted">
-            <StepDot n={1} active />
-            <span className="text-brand">Plan trip</span>
-            <span className="text-line">→</span>
-            <StepDot n={2} />
-            <span>Pick rider</span>
-            <span className="text-line">→</span>
-            <StepDot n={3} />
-            <span>WhatsApp</span>
-          </div>
-
-          <h1 className="text-2xl font-extrabold leading-tight">
-            Where do you need to ship from and to?
-          </h1>
-
-          {/* SERVICE TYPE — 3 image cards. Default Parcel. Active card gets
-              brand-yellow ring + raised. Customer can change with one tap. */}
+          {/* SERVICE TYPE — 3 image cards, right under the header. Default
+              Parcel. Active card gets brand-yellow ring + raised. */}
           <div>
-            <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim mb-2">Service</div>
             <div className="grid grid-cols-3 gap-2">
               {SERVICE_OPTIONS.map(opt => {
                 const active = service === opt.id
@@ -180,10 +163,21 @@ export default function PlanTripPage() {
             />
           </div>
 
-          {/* Pickup → (optional) Pit stop → Drop off — all in one card.
-              The left-side dot column dynamically grows a 3rd dot when pit
-              stop is active so the visual route reads top-to-bottom. */}
-          <div className="card p-4">
+          {/* Pickup → (optional) Pit stop → Drop off — all in one frosted
+              card. The left-side dot column dynamically grows a 3rd dot
+              when pit stop is active so the visual route reads top-to-bottom.
+              Frosted backdrop matches the trip preview map above so both
+              sections read as the active controls over the bg map. */}
+          <div
+            className="rounded-[20px] p-4 border"
+            style={{
+              borderColor: 'rgba(255,255,255,0.10)',
+              background: 'rgba(17,17,22,0.72)',
+              backdropFilter: 'blur(14px) saturate(1.3)',
+              WebkitBackdropFilter: 'blur(14px) saturate(1.3)',
+              boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
+            }}
+          >
             <div className="flex items-start gap-3">
               {/* Left-side route dots */}
               <div className="flex flex-col items-center pt-3 shrink-0">
@@ -367,16 +361,3 @@ function Header() {
   )
 }
 
-function StepDot({ n, active }: { n: number; active?: boolean }) {
-  return (
-    <span
-      className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[11px] font-extrabold"
-      style={{
-        background: active ? '#FACC15' : 'rgba(255,255,255,0.08)',
-        color: active ? '#0A0A0A' : 'rgba(255,255,255,0.5)',
-      }}
-    >
-      {n}
-    </span>
-  )
-}
