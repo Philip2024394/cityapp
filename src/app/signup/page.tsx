@@ -6,6 +6,7 @@ import AppNav from '@/components/layout/AppNav'
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: '', email: '', whatsapp: '', password: '' })
+  const [agree, setAgree] = useState(false)
   const set = <K extends keyof typeof form>(k: K, v: typeof form[K]) =>
     setForm(f => ({ ...f, [k]: v }))
 
@@ -35,7 +36,31 @@ export default function SignupPage() {
                 <input className="input pl-11" type="password" placeholder="Minimum 8 characters" value={form.password} onChange={e => set('password', e.target.value)} />
               </Field>
 
-              <button type="submit" className="btn-primary w-full mt-2">
+              {/* Independent contractor declaration — required to lock in
+                  the "rider is an independent business" position. Must be
+                  ticked before submitting. */}
+              <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={agree}
+                  onChange={e => setAgree(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-[#FACC15] shrink-0 cursor-pointer"
+                />
+                <span className="text-[13px] text-muted leading-relaxed">
+                  I confirm I am an <strong className="text-ink">independent business operator</strong>,
+                  not an employee or contractor of City Rider. I am responsible for my own
+                  licences (SIM C, STNK), vehicle, insurance, taxes, and conduct. I agree to the{' '}
+                  <Link href="/terms" target="_blank" className="text-brand hover:underline">Terms</Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" target="_blank" className="text-brand hover:underline">Privacy Policy</Link>.
+                </span>
+              </label>
+
+              <button
+                type="submit"
+                disabled={!agree}
+                className="btn-primary w-full mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Sign up for 30-day free trial
                 <ArrowRight className="w-4 h-4" />
               </button>

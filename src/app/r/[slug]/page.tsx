@@ -7,6 +7,7 @@ import RiderRadar from '@/components/rider/RiderRadar'
 import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
 import OfflineFallback from '@/components/rider/OfflineFallback'
 import CustomerWaitingState, { type WaitingStatus, type RiderSuggestion } from '@/components/rider/CustomerWaitingState'
+import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { findRiderBySlug, getOnlineRiders, MOCK_RIDERS } from '@/data/mockRiders'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -385,6 +386,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           )}
         </div>
       </div>
+
+      {/* Compact disclaimer above the sticky CTA (rendered in page body
+          padding so it sits visible above the fixed bottom area) */}
+      <div className="max-w-2xl mx-auto"><PlatformDisclaimer variant="compact" /></div>
     </main>
   )
 }

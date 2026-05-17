@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye } from 'lucide-react'
+import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
@@ -185,6 +185,22 @@ export default function DashboardPage() {
               hint="8 templates"
             />
           </div>
+
+          {/* Legal requirements — single-row prompt to /dashboard/legal */}
+          <Link href="/dashboard/legal" className="card card-interactive p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-brand/12 border border-brand/22 flex items-center justify-center shrink-0">
+                <Scale className="w-4 h-4 text-brand" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-extrabold text-[14px]">Legal requirements</div>
+                <div className="text-[13px] text-muted truncate">
+                  SIM C · STNK · insurance · NPWP — what you need as an independent rider
+                </div>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-brand shrink-0" />
+          </Link>
 
           {/* Quote inbox */}
           <QuoteInbox quotes={quotes} onReply={onReply} />

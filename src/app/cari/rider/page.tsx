@@ -12,6 +12,7 @@ import { bikeTitle } from '@/lib/format/bike'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
 import { SERVICE_ICONS, SERVICE_LABELS, type Rider, type ServiceType } from '@/types/rider'
+import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
 export default function Page() {
   return (
@@ -219,6 +220,8 @@ function DriverResults() {
               <button onClick={() => setFilter('all')} className="btn-secondary mt-4">Reset filter</button>
             </div>
           )}
+
+          <PlatformDisclaimer variant="compact" />
         </div>
       </main>
     </>

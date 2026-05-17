@@ -8,6 +8,7 @@ import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
 import type { ServiceType } from '@/types/rider'
+import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
 // Brand images for the 3 service categories — same imagekit PNGs as the
 // selling page so the visual identity is consistent end-to-end.
@@ -298,6 +299,9 @@ export default function PlanTripPage() {
               </div>
             )}
           </div>
+
+          {/* Inline disclaimer (compact) above the sticky CTA */}
+          <PlatformDisclaimer variant="compact" />
         </div>
       </main>
 

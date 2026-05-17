@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
+import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import type { Rider } from '@/types/rider'
 
 // Landing-background map — dimmed Yogyakarta view so the hero pops.
@@ -214,6 +215,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <PlatformDisclaimer />
     </main>
   )
 }
