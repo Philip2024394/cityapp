@@ -89,12 +89,14 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] relative flex flex-col">
+    <main className="h-[100dvh] relative flex flex-col overflow-hidden">
       {/* Background map + readability overlay are mounted globally in the
-          root layout (<MapBackground />). The hero just sits on top. */}
+          root layout (<MapBackground />). The hero just sits on top.
+          Fixed viewport height + overflow-hidden so the landing never
+          scrolls — the hero section flex-shrinks to fit. */}
 
       {/* Top mini nav */}
-      <header className="relative z-20 pt-safe">
+      <header className="relative z-20 pt-safe shrink-0">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
             <img
@@ -119,9 +121,10 @@ export default function LandingPage() {
       </header>
 
       {/* Hero — flex-1 so it fills the viewport between header and the
-          bottom edge. Inner content vertically centered. */}
-      <section className="relative z-20 px-4 py-8 flex-1 flex items-center">
-        <div className="max-w-xl mx-auto text-center space-y-5 w-full">
+          bottom edge. Inner content vertically centered. Tight paddings
+          + min-h-0 so flex can shrink the section if content overflows. */}
+      <section className="relative z-20 px-4 py-3 flex-1 flex items-center min-h-0 overflow-hidden">
+        <div className="max-w-xl mx-auto text-center space-y-3 w-full">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/25">
             <span className="dot-online !w-2 !h-2" />
             <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider">
@@ -141,48 +144,44 @@ export default function LandingPage() {
 
           {/* PRIMARY CTA — 3 landscape service tiles. Tapping a tile
               routes straight to /cari?service=<id> so the customer never
-              has to pick the service type twice. Replaces the previous
-              single "Enter" button with three direct entry points. */}
-          <div className="pt-3 w-full max-w-sm mx-auto space-y-2.5">
+              has to pick the service type twice. */}
+          <div className="pt-1 w-full max-w-sm mx-auto space-y-2">
             {SERVICE_TILES.map((tile, i) => (
               <button
                 key={tile.id}
                 onClick={() => pickService(tile.id)}
-                className="w-full flex items-center gap-3 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_8px_22px_rgba(250,204,21,0.32)]"
+                className="w-full flex items-center gap-2.5 p-2 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(250,204,21,0.30)]"
                 style={{ animation: `fadeUp 0.55s ease-out ${i * 0.08}s both` }}
                 aria-label={`Enter — ${tile.label}`}
               >
                 <span
-                  className="shrink-0 w-12 h-12 rounded-xl bg-bg/15 flex items-center justify-center"
+                  className="shrink-0 w-10 h-10 rounded-xl bg-bg/15 flex items-center justify-center"
                   aria-hidden
                 >
-                  <img src={tile.img} alt="" className="h-10 w-auto object-contain" loading="eager" />
+                  <img src={tile.img} alt="" className="h-8 w-auto object-contain" loading="eager" />
                 </span>
                 <span className="flex-1 text-left">
-                  <span className="block font-extrabold text-[16px] leading-tight">{tile.label}</span>
-                  <span className="block text-[12px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
+                  <span className="block font-extrabold text-[15px] leading-tight">{tile.label}</span>
+                  <span className="block text-[11px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
                 </span>
                 <ArrowRight className="w-5 h-5 shrink-0 opacity-80" />
               </button>
             ))}
 
-            {/* Language toggle — small, below the tiles. Doesn't enter
-                the app; just sets the landing locale for the H1 + pill. */}
-            <div className="flex items-center justify-center gap-1.5 pt-2 text-[11px] font-bold">
+            {/* Language toggle — small, below the tiles. */}
+            <div className="flex items-center justify-center gap-1.5 pt-1 text-[11px] font-bold">
               <button
                 onClick={() => setLocaleAndStore('id')}
-                className={`px-2.5 py-1 rounded-full transition ${locale === 'id' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
+                className={`px-2.5 py-0.5 rounded-full transition ${locale === 'id' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
                 aria-pressed={locale === 'id'}
               >ID</button>
               <span className="text-line">·</span>
               <button
                 onClick={() => setLocaleAndStore('en')}
-                className={`px-2.5 py-1 rounded-full transition ${locale === 'en' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
+                className={`px-2.5 py-0.5 rounded-full transition ${locale === 'en' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
                 aria-pressed={locale === 'en'}
               >EN</button>
             </div>
-
-            <p className="text-[12px] text-dim text-center pt-0.5">{t.freeNote}</p>
           </div>
         </div>
       </section>
