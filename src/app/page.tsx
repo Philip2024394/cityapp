@@ -215,7 +215,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <PlatformDisclaimer />
+      <PlatformDisclaimer variant="links" />
     </main>
   )
 }

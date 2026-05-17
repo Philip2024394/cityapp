@@ -2,8 +2,10 @@
 import Link from 'next/link'
 
 type Props = {
-  /** Compact: 1-line subtle credit. Full: 3-line clear disclaimer. */
-  variant?: 'compact' | 'full'
+  /** links: 4 link chips, no paragraph, no container. Lean for the landing.
+   *  compact: 1-line subtle credit + one link.
+   *  full: 3-line clear disclaimer paragraph + 4 links. */
+  variant?: 'links' | 'compact' | 'full'
 }
 
 // Footer disclaimer affirming City Rider's position as a SOFTWARE
@@ -15,6 +17,19 @@ type Props = {
 // Wording reviewed against the 5 classification tests Indonesian
 // transport authorities apply. DO NOT alter without legal review.
 export default function PlatformDisclaimer({ variant = 'full' }: Props) {
+  if (variant === 'links') {
+    return (
+      <div className="relative z-20 flex items-center justify-center gap-3 text-[11px] text-dim pb-4 pt-2 px-4">
+        <Link href="/about"   className="hover:text-ink transition">About</Link>
+        <span aria-hidden>·</span>
+        <Link href="/terms"   className="hover:text-ink transition">Terms</Link>
+        <span aria-hidden>·</span>
+        <Link href="/privacy" className="hover:text-ink transition">Privacy</Link>
+        <span aria-hidden>·</span>
+        <Link href="/legal"   className="hover:text-ink transition">Legal info</Link>
+      </div>
+    )
+  }
   if (variant === 'compact') {
     return (
       <div className="text-center text-[11px] text-dim leading-relaxed pt-3 pb-2 px-4 max-w-3xl mx-auto">
