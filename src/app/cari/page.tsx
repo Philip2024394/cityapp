@@ -149,6 +149,7 @@ function PlanTripPageInner() {
           pickup={pickup}
           dropoff={dropoff}
           showRoute={canSearch}
+          pitStop={canSearch && pitstopNote.trim().length > 0}
           onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
           height="100dvh"
           pitch={50}
@@ -283,60 +284,105 @@ function PlanTripPageInner() {
             />
           </div>
 
-          {/* PIT STOP TILE — collapsed: yellow CTA with the pit-stop flag
-              image on the right; expanded: yellow tile with textarea +
-              flag image floating in the input's right edge. */}
-          {!pitstopOpen ? (
-            <button
-              onClick={() => { setPitstopOpen(true); haptic.tap() }}
-              className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
-            >
-              <Plus className="w-4 h-4 shrink-0" strokeWidth={3} />
-              <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
-              <img
-                src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
-                alt=""
-                aria-hidden
-                loading="lazy"
-                className="h-10 w-auto shrink-0"
-                style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
-              />
-            </button>
-          ) : (
-            <div className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] animate-[fadeUp_0.3s_ease-out_both] space-y-2">
-              <div className="mb-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider">Pit stop</span>
+          {/* PIT STOP TILE — 3 states driven by (pitstopOpen, pitstopNote):
+              1. collapsed + empty  → "+ Add a pit stop" CTA tile
+              2. collapsed + text   → "✓ Pit stop set: …" compact tile (tap to edit)
+              3. expanded           → textarea + dynamic close/save button */}
+          {(() => {
+            const hasNote = pitstopNote.trim().length > 0
+            if (!pitstopOpen && !hasNote) {
+              return (
+                <button
+                  onClick={() => { setPitstopOpen(true); haptic.tap() }}
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+                >
+                  <Plus className="w-4 h-4 shrink-0" strokeWidth={3} />
+                  <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
+                  <img
+                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    className="h-10 w-auto shrink-0"
+                    style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+                  />
+                </button>
+              )
+            }
+            if (!pitstopOpen && hasNote) {
+              return (
+                <button
+                  onClick={() => { setPitstopOpen(true); haptic.tap() }}
+                  aria-label="Edit pit stop"
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+                >
+                  <span className="shrink-0 w-7 h-7 rounded-full bg-bg flex items-center justify-center" style={{ boxShadow: '0 0 10px rgba(249,115,22,0.65)' }}>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#F97316' }} />
+                  </span>
+                  <span className="flex-1 text-left min-w-0">
+                    <span className="block text-[10px] font-extrabold uppercase tracking-wider opacity-80">Pit stop set · tap to edit</span>
+                    <span className="block text-[13px] font-extrabold truncate">{pitstopNote.trim()}</span>
+                  </span>
+                  <img
+                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    className="h-10 w-auto shrink-0"
+                    style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+                  />
+                </button>
+              )
+            }
+            // expanded
+            return (
+              <div className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] animate-[fadeUp_0.3s_ease-out_both] space-y-2">
+                <div className="mb-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider">Pit stop</span>
+                </div>
+                <div className="relative">
+                  <textarea
+                    rows={2}
+                    maxLength={140}
+                    className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/90 transition resize-none"
+                    placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
+                    value={pitstopNote}
+                    onChange={e => setPitstopNote(e.target.value)}
+                    autoFocus
+                  />
+                  <img
+                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-auto pointer-events-none"
+                    style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+                  />
+                </div>
+                {/* Button label flips based on text state: cancel when
+                    empty, save (keeps text + closes tile) when present. */}
+                {hasNote ? (
+                  <button
+                    onClick={() => { setPitstopOpen(false); haptic.tap() }}
+                    aria-label="Save pit stop"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-brand font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
+                  >
+                    <Plus className="w-4 h-4" strokeWidth={2.5} />
+                    Add pit stop
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
+                    aria-label="Close pit stop"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-ink font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
+                  >
+                    <X className="w-4 h-4" strokeWidth={2.5} />
+                    Close pit stop
+                  </button>
+                )}
               </div>
-              <div className="relative">
-                <textarea
-                  rows={2}
-                  maxLength={140}
-                  className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/90 transition resize-none"
-                  placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
-                  value={pitstopNote}
-                  onChange={e => setPitstopNote(e.target.value)}
-                />
-                <img
-                  src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
-                  alt=""
-                  aria-hidden
-                  loading="lazy"
-                  className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-auto pointer-events-none"
-                  style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
-                />
-              </div>
-              {/* Long black close button — sits as the full-width bottom
-                  action of the pit-stop tile, clear way to dismiss. */}
-              <button
-                onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
-                aria-label="Remove pit stop"
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-ink font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
-              >
-                <X className="w-4 h-4" strokeWidth={2.5} />
-                Close pit stop
-              </button>
-            </div>
-          )}
+            )
+          })()}
 
           {/* DROP OFF TILE — same autocomplete pattern as pickup, but
               without a GPS button (drop-off is wherever the customer is

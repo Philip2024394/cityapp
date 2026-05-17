@@ -33,6 +33,11 @@ type Props = {
    *  stay in the visible "hero" area rather than getting clipped by floating
    *  UI like a header, bottom sheet, or side rail. */
   viewportPadding?: { top?: number; bottom?: number; left?: number; right?: number }
+  /** When true (and a route is shown), an orange marker is drawn at the
+   *  geometric midpoint of pickup → dropoff to signal "there's a stop on
+   *  the way". Free-form pit-stop notes don't have real coordinates, so
+   *  the midpoint is a visual indicator rather than a real location. */
+  pitStop?: boolean
 }
 
 // OpenFreeMap — community-run vector tiles, OSM data, no API key required.
@@ -46,8 +51,9 @@ export default function RiderMap({
   showRoute = false, height = '320px', interactive = true,
   variant = 'dark', hideLabels = false, autoPan = false,
   markerStyle = 'scooter', roadsOnly = false, pitch = 0,
-  viewportPadding,
+  viewportPadding, pitStop = false,
 }: Props) {
+  const pitStopMarkerRef = useRef<Marker | null>(null)
   // Merge caller-provided padding with sane defaults. All camera moves
   // (flyTo, fitBounds) below use this so the route/markers stay in the
   // visible area when a bottom sheet or header overlays the map.
@@ -286,6 +292,43 @@ export default function RiderMap({
       .addTo(mapRef.current)
   }, [dropoff])
 
+  // Pit-stop marker — orange pulsing dot at the geometric midpoint of
+  // pickup → dropoff. Free-form pit-stop notes don't have real coords,
+  // so this midpoint serves as a visual "there's a stop on the way"
+  // indicator rather than the literal stop location.
+  useEffect(() => {
+    if (!mapRef.current) return
+    if (pitStopMarkerRef.current) { pitStopMarkerRef.current.remove(); pitStopMarkerRef.current = null }
+    if (!pitStop || !pickup || !dropoff) return
+    const midLat = (pickup.lat + dropoff.lat) / 2
+    const midLng = (pickup.lng + dropoff.lng) / 2
+    const el = document.createElement('div')
+    el.innerHTML = `
+      <div style="position: relative; width: 20px; height: 20px;">
+        <div style="
+          position: absolute; left: 50%; top: 50%;
+          width: 20px; height: 20px;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          background: rgba(249,115,22,0.45);
+          animation: ridePing 2.4s ease-out infinite;
+        "></div>
+        <div style="
+          position: absolute; left: 50%; top: 50%;
+          width: 14px; height: 14px;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          background: #F97316;
+          border: 2px solid #0A0A0A;
+          box-shadow: 0 0 10px rgba(249,115,22,0.85);
+        "></div>
+      </div>
+    `
+    pitStopMarkerRef.current = new maplibregl.Marker({ element: el })
+      .setLngLat([midLng, midLat])
+      .addTo(mapRef.current)
+  }, [pitStop, pickup, dropoff])
+
   // Route line between pickup and dropoff
   useEffect(() => {
     const map = mapRef.current
@@ -313,10 +356,10 @@ export default function RiderMap({
           type: 'line',
           source: 'route',
           paint: {
-            'line-color': '#FACC15',
-            'line-width': 3,
-            'line-dasharray': [2, 1.5],
-            'line-opacity': 0.8,
+            // Green = active trip path (matches the dropoff marker hue).
+            'line-color': '#22C55E',
+            'line-width': 4,
+            'line-opacity': 0.92,
           },
         })
       }
