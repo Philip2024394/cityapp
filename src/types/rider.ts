@@ -33,6 +33,7 @@ export type Bike = {
   year:  number       // 2022
   color: string       // 'Hitam', 'Merah', etc.
   type:  'matic' | 'sport' | 'manual'
+  cc?:   number       // 110, 125, 155, 250 — engine displacement in cc
   photoUrl?: string
   plate?:    string
   hasBox:    boolean
@@ -70,6 +71,12 @@ export type Rider = {
   lat: number
   lng: number
   subscriptionStatus: 'trial' | 'active' | 'past_due' | 'canceled'
+  /** Average customer rating (1–5, one decimal place). Undefined for new
+   *  riders with no completed trips yet — UI hides the rating row in that
+   *  case rather than showing a default. */
+  rating?: number
+  /** Total completed trips. Undefined for new riders. */
+  trips?: number
 }
 
 export type QuoteEvent = {

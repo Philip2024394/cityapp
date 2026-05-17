@@ -17,8 +17,14 @@ export type IncomingOrderPayload = {
   customerSession: string         // anon cookie identifier (here: random)
   riderId: string                 // recipient rider
   riderName: string
+  customerName?: string
+  customerWhatsApp?: string       // E164, digits only — used on the trip page
   pickupLabel: string
+  pickupLat?: number              // optional — populated when the customer
+  pickupLng?: number              // picks a real point (not a freeform label)
   dropoffLabel: string
+  dropoffLat?: number
+  dropoffLng?: number
   pitstopNote?: string
   distanceKm: number
   fare: number

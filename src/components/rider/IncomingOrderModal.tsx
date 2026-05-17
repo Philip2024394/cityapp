@@ -7,8 +7,14 @@ import { useBeep } from '@/hooks/useBeep'
 export type IncomingOrder = {
   id: string
   customerLabel?: string          // optional customer display name
+  customerName?: string           // forwarded to the trip page on accept
+  customerWhatsApp?: string       // E164, digits only
   pickupLabel: string
+  pickupLat?: number
+  pickupLng?: number
   dropoffLabel: string
+  dropoffLat?: number
+  dropoffLng?: number
   pitstopNote?: string
   distanceKm: number
   fare: number                    // trip fare (before pitstop fee)

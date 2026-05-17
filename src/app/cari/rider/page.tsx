@@ -2,7 +2,7 @@
 import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft, MessageCircle, MapPin, Bike as BikeIcon, ArrowDownUp } from 'lucide-react'
+import { ChevronLeft, Star, ArrowRight } from 'lucide-react'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { haversineKm } from '@/lib/geo/haversine'
 import { quoteBreakdown, rateFor, lowestStartingPrice, hasServiceOverrides } from '@/lib/pricing/quote'
@@ -11,7 +11,7 @@ import { idr } from '@/lib/format/idr'
 import { bikeTitle } from '@/lib/format/bike'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
-import { SERVICE_ICONS, SERVICE_LABELS, type Rider, type ServiceType } from '@/types/rider'
+import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type Rider, type ServiceType } from '@/types/rider'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
 export default function Page() {
@@ -194,22 +194,14 @@ function DriverResults() {
             ))}
           </div>
 
-          {/* Driver cards */}
+          {/* Driver cards — featured-banner style for the top 4 */}
           <div className="space-y-3">
-            {enriched.map(({ rider, fare, pitstopFee, totalFare, minApplied, distanceToPickup, perKm, hasOverrides }, idx) => (
-              <DriverCard
-                key={rider.id}
-                rider={rider}
-                fare={totalFare}
-                tripFare={fare}
-                pitstopFee={pitstopFee}
-                hasPitstop={!!pitstopNote}
-                minApplied={minApplied}
-                distanceToPickup={distanceToPickup}
-                perKm={perKm}
-                hasOverrides={hasOverrides}
+            {enriched.slice(0, 4).map((item, idx) => (
+              <FeaturedDriverCard
+                key={item.rider.id}
+                item={item}
                 isCheapest={idx === 0 && sort === 'cheapest'}
-                onWhatsApp={() => onWhatsApp(rider, fare, perKm, pitstopFee)}
+                onWhatsApp={() => onWhatsApp(item.rider, item.fare, item.perKm, item.pitstopFee)}
               />
             ))}
           </div>
@@ -228,13 +220,31 @@ function DriverResults() {
   )
 }
 
-function DriverCard({
-  rider, fare, tripFare, pitstopFee, hasPitstop, minApplied, distanceToPickup, isCheapest, onWhatsApp, perKm, hasOverrides,
+// Rough pickup ETA estimate. Assumes ~25 km/h average city speed in Bali.
+// Replace with real routing data (Mapbox/OSRM) when available.
+function etaMinutes(km: number): number {
+  return Math.max(1, Math.round((km / 25) * 60))
+}
+
+function FeaturedDriverCard({
+  item, isCheapest, onWhatsApp,
 }: {
-  rider: Rider; fare: number; tripFare: number; pitstopFee: number; hasPitstop: boolean;
-  minApplied: boolean; distanceToPickup: number; isCheapest: boolean;
-  onWhatsApp: () => void; perKm: number; hasOverrides: boolean
+  item: {
+    rider: Rider
+    fare: number
+    pitstopFee: number
+    totalFare: number
+    minApplied: boolean
+    distanceToPickup: number
+    perKm: number
+    hasOverrides: boolean
+  }
+  isCheapest: boolean
+  onWhatsApp: () => void
 }) {
+  const { rider, fare, distanceToPickup, minApplied } = item
+  const eta = etaMinutes(distanceToPickup)
+
   return (
     <article
       className={
@@ -242,120 +252,114 @@ function DriverCard({
         (isCheapest ? ' card-driver-cheapest' : '')
       }
     >
-      {/* Cheapest ribbon — sits flush along the top-left edge */}
-      {isCheapest && (
-        <div className="absolute top-0 left-0 z-10">
-          <span className="ribbon-cheapest">
-            <span aria-hidden>⚡</span>
-            Cheapest
-          </span>
+      <img
+        src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2018,%202026,%2001_32_57%20AM.png"
+        alt=""
+        className="block w-full h-auto"
+        loading="lazy"
+      />
+
+      {/* Driver name ribbon — flush top-left edge */}
+      <div className="absolute top-0 left-0 z-10 max-w-[60%]">
+        <span className="ribbon-cheapest truncate block">{rider.name}</span>
+      </div>
+
+      {/* Bike model — plain uppercase text in the top-right corner.
+          Line 1: MAKE MODEL  |  Line 2: YEAR */}
+      <div className="absolute top-3 right-[28px] z-10 text-right max-w-[42%]">
+        <div className="text-[14px] font-extrabold text-black leading-tight truncate uppercase tracking-wide">
+          {rider.bike.make} {rider.bike.model}
         </div>
-      )}
+        <div className="text-[12px] font-medium text-black/80 leading-tight mt-0.5">
+          {rider.bike.year}
+        </div>
+      </div>
 
-      <div className={'p-4 ' + (isCheapest ? 'pt-9' : '')}>
-        {/* Top row: driver identity (left) + price block (right) */}
-        <div className="flex gap-3 items-start">
-          {/* Driver photo with online dot */}
-          <Link
-            href={`/r/${rider.slug}`}
-            aria-label={`View ${rider.name}'s profile`}
-            className="relative shrink-0 block min-w-[44px] min-h-[44px] rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand/60"
+      {/* Avatar + identity with frosted scrim for contrast over photo */}
+      <Link
+        href={`/r/${rider.slug}`}
+        aria-label={`View ${rider.name}'s profile`}
+        className="absolute left-4 top-10 flex items-center gap-2.5 focus:outline-none focus:ring-2 focus:ring-brand/60 rounded-2xl z-10"
+      >
+        <span className="relative shrink-0">
+          <img
+            src={rider.photoUrl}
+            alt={rider.name}
+            className="w-[58px] h-[58px] rounded-2xl object-cover ring-2 ring-white/80"
+          />
+          <span className="dot-online absolute bottom-1 right-1 ring-2 ring-white" aria-label="Online" />
+        </span>
+        {rider.rating != null && (
+          <span
+            className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[13px] font-bold leading-none"
+            style={{
+              background: 'rgba(255,255,255,0.7)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+            }}
           >
-            <img
-              src={rider.photoUrl}
-              alt={rider.name}
-              className="w-16 h-16 rounded-2xl object-cover ring-1 ring-white/10"
-            />
-            <span
-              className="dot-online absolute -bottom-0.5 -right-0.5 ring-2 ring-bg"
-              aria-label="Online"
-            />
-          </Link>
+            <Star className="w-3.5 h-3.5 fill-black text-black shrink-0" aria-hidden />
+            <span className="text-black">{rider.rating.toFixed(1)}</span>
+            {rider.trips != null && (
+              <span className="text-[12px] text-gray-700 ml-0.5 font-semibold">
+                ({rider.trips.toLocaleString()} trips)
+              </span>
+            )}
+          </span>
+        )}
+      </Link>
 
-          {/* Name + bike block */}
-          <div className="flex-1 min-w-0">
-            <Link
-              href={`/r/${rider.slug}`}
-              className="inline-block font-extrabold text-[16px] leading-tight hover:text-brand transition truncate max-w-full align-bottom"
-            >
-              {rider.name}
-            </Link>
+      {/* Bottom info panel — overlays the lower portion of the image */}
+      <div className="absolute inset-x-0 bottom-0 pointer-events-none">
+        <div className="relative px-3.5 pt-2.5 pb-3 space-y-1.5 pointer-events-auto">
+          {/* Trust chips: box + services (excl. parcel + food) */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {rider.bike.hasBox && (
+              <span className="pill-soft pill-soft-online" aria-label="Has box">
+                <span aria-hidden>📦</span>
+                Box
+              </span>
+            )}
+            {rider.services.filter(s => s !== 'parcel' && s !== 'food').map(s => (
+              <span key={s} className="pill-soft" aria-label={SERVICE_LABELS[s]}>
+                <span aria-hidden>{SERVICE_ICONS[s]}</span>
+                {SERVICE_SHORT[s]}
+              </span>
+            ))}
+          </div>
 
-            {/* Bike — automotive listing style */}
-            <div className="mt-1.5 flex items-center gap-1.5 min-w-0">
-              <BikeIcon className="w-3.5 h-3.5 text-brand shrink-0" aria-hidden />
-              <span className="text-[14px] font-bold text-ink/90 truncate">
-                {rider.bike.make} {rider.bike.model}
+          {/* Price block (left) + Primary CTA (right) */}
+          <div className="pt-1 flex items-end justify-between gap-3">
+            <div className="flex flex-col leading-none drop-shadow min-w-0">
+              <span className="text-[17px] font-extrabold text-gray-700 whitespace-nowrap">
+                {idr(fare)}
+              </span>
+              <span className="mt-1.5 text-[12px] font-bold text-gray-700 whitespace-nowrap">
+                ~{eta} {eta === 1 ? 'min' : 'mins'} away
+                {minApplied && <span className="text-brand ml-1.5">· min fare</span>}
               </span>
             </div>
-            <div className="mt-0.5 text-[13px] text-muted">
-              {rider.bike.year} · {rider.bike.color} · {capFirst(rider.bike.type)}
-            </div>
-
-            {/* Plate + box badges */}
-            {(rider.bike.plate || rider.bike.hasBox) && (
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {rider.bike.plate && (
-                  <span className="plate-tag" aria-label={`Plate number ${rider.bike.plate}`}>
-                    {rider.bike.plate}
-                  </span>
-                )}
-                {rider.bike.hasBox && (
-                  <span className="pill-soft pill-soft-online" aria-label="Has box">
-                    <span aria-hidden>📦</span>
-                    Box
-                  </span>
-                )}
-              </div>
-            )}
+            <button
+              onClick={onWhatsApp}
+              aria-label={`Book ${rider.name}`}
+              className="h-[39px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60 shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
+                boxShadow: '0 6px 16px rgba(250,204,21,0.28)',
+              }}
+            >
+              <span className="text-[12px] font-extrabold uppercase tracking-wider text-black whitespace-nowrap">
+                Book driver
+              </span>
+              <span
+                aria-hidden
+                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: '#000' }}
+              >
+                <ArrowRight className="w-3 h-3 text-white" strokeWidth={3} />
+              </span>
+            </button>
           </div>
-
-          {/* Price block — visual anchor */}
-          <div
-            className={'price-block shrink-0' + (isCheapest ? ' price-block-cheapest' : '')}
-          >
-            <div className="text-[13px] uppercase tracking-wider font-extrabold text-dim leading-none">
-              Total
-            </div>
-            <div className="text-[24px] font-extrabold gradient-text leading-tight mt-1 whitespace-nowrap">
-              {idr(fare)}
-            </div>
-            <div className="text-[13px] text-muted leading-none mt-1 whitespace-nowrap">
-              {hasOverrides && <span className="text-brand/90">from </span>}
-              {idr(perKm)}<span className="text-dim">/km</span>
-            </div>
-            {hasPitstop && (
-              <div className="text-[12px] text-brand/90 font-bold leading-none mt-1.5 whitespace-nowrap">
-                {idr(tripFare)} + {pitstopFee > 0 ? idr(pitstopFee) : 'free'} stop
-              </div>
-            )}
-            {minApplied && !hasPitstop && (
-              <div className="text-[13px] text-brand/90 font-bold leading-none mt-1.5 whitespace-nowrap">
-                min {idr(rider.minFee)}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer: trust info (left) + WhatsApp CTA (right) */}
-        <div className="mt-3.5 pt-3 border-t border-line flex items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span className="pill-soft" title={rider.area}>
-              <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              <span className="truncate max-w-[140px]">{rider.area}</span>
-            </span>
-            <span className="pill-soft" aria-label={`${distanceToPickup.toFixed(1)} kilometers from pickup`}>
-              ~{distanceToPickup.toFixed(1)} km from pickup
-            </span>
-          </div>
-          <button
-            onClick={onWhatsApp}
-            className="btn-wa-compact shrink-0"
-            aria-label={`Chat on WhatsApp with ${rider.name}`}
-          >
-            <MessageCircle className="w-4 h-4" aria-hidden />
-            WhatsApp
-          </button>
         </div>
       </div>
     </article>
@@ -412,4 +416,3 @@ function readCoord(sp: URLSearchParams, latKey: string, lngKey: string) {
   return null
 }
 
-function capFirst(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }

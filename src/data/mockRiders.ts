@@ -23,6 +23,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date().toISOString(),
     lat: -7.7928, lng: 110.3657,
     subscriptionStatus: 'active',
+    rating: 4.8,
+    trips: 1247,
   },
   {
     id: '2',
@@ -42,6 +44,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date().toISOString(),
     lat: -7.7556, lng: 110.3782,
     subscriptionStatus: 'active',
+    rating: 4.9,
+    trips: 856,
   },
   {
     id: '3',
@@ -66,6 +70,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date().toISOString(),
     lat: -7.8123, lng: 110.3540,
     subscriptionStatus: 'active',
+    rating: 5.0,
+    trips: 642,
   },
   {
     id: '4',
@@ -84,6 +90,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     lat: -7.8268, lng: 110.4006,
     subscriptionStatus: 'active',
+    rating: 4.7,
+    trips: 412,
   },
   {
     id: '5',
@@ -103,6 +111,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date().toISOString(),
     lat: -7.7700, lng: 110.3782,
     subscriptionStatus: 'trial',
+    rating: 4.8,
+    trips: 89,
   },
   {
     id: '6',
@@ -122,6 +132,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date().toISOString(),
     lat: -7.7956, lng: 110.3695,
     subscriptionStatus: 'active',
+    rating: 4.9,
+    trips: 1456,
   },
   {
     id: '7',
@@ -141,6 +153,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date().toISOString(),
     lat: -7.7400, lng: 110.3700,
     subscriptionStatus: 'active',
+    rating: 4.6,
+    trips: 723,
   },
   {
     id: '8',
@@ -159,6 +173,8 @@ export const MOCK_RIDERS: Rider[] = [
     lastSeenAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     lat: -7.7570, lng: 110.4080,
     subscriptionStatus: 'active',
+    rating: 4.9,
+    trips: 521,
   },
 ]
 

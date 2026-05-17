@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
@@ -30,6 +31,7 @@ const DEMO_QUOTES: InboxQuote[] = [
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
   const beep = useBeep()
   const haptic = useHaptic()
   const [quotes, setQuotes] = useState<InboxQuote[]>(DEMO_QUOTES)
@@ -39,12 +41,20 @@ export default function DashboardPage() {
 
   function fakeIncomingOrder() {
     // Open the incoming-order modal — the LOUD alarm fires automatically
-    // on mount + repeats every ~3 seconds until rider responds.
+    // on mount + repeats every ~3 seconds until rider responds. Coords +
+    // customer info populated so the post-accept trip page has a real
+    // map + WhatsApp/call buttons to demo against.
     haptic.buzz()
     setIncoming({
       id: 'o' + Date.now(),
+      customerName: 'Putri Anggraini',
+      customerWhatsApp: '6285800000099',
       pickupLabel: 'Tugu Jogja',
+      pickupLat: -7.7828,
+      pickupLng: 110.3672,
       dropoffLabel: 'Hotel Tentrem',
+      dropoffLat: -7.7732,
+      dropoffLng: 110.3826,
       pitstopNote: 'Buy 1 pack Marlboro Lights at warung depan',
       distanceKm: 3.5,
       fare: 10_000,
@@ -59,8 +69,14 @@ export default function DashboardPage() {
     if (e.order.riderId !== ME.id) return
     setIncoming({
       id: e.order.id,
+      customerName: e.order.customerName,
+      customerWhatsApp: e.order.customerWhatsApp,
       pickupLabel: e.order.pickupLabel,
+      pickupLat: e.order.pickupLat,
+      pickupLng: e.order.pickupLng,
       dropoffLabel: e.order.dropoffLabel,
+      dropoffLat: e.order.dropoffLat,
+      dropoffLng: e.order.dropoffLng,
       pitstopNote: e.order.pitstopNote,
       distanceKm: e.order.distanceKm,
       fare: e.order.fare,
@@ -82,10 +98,31 @@ export default function DashboardPage() {
       fare: order.fare + (order.pitstopFee ?? 0),
       receivedAt: Date.now(),
       read: true,
-      customerWhatsApp: '6285800000099',
+      customerWhatsApp: order.customerWhatsApp ?? '6285800000099',
     }, ...qs])
     setIncoming(null)
-    showToast('✅ Accepted — customer notified, coordinate on WhatsApp')
+    // Navigate to the active-trip page — map + customer card + WhatsApp +
+    // Google-Maps deep link for turn-by-turn nav. All data passed via
+    // URL params so the page is self-contained / reload-safe.
+    const params = new URLSearchParams({
+      pName: order.pickupLabel,
+      dName: order.dropoffLabel,
+      km: order.distanceKm.toString(),
+      fare: (order.fare + (order.pitstopFee ?? 0)).toString(),
+    })
+    if (order.pickupLat != null && order.pickupLng != null) {
+      params.set('pLat', order.pickupLat.toString())
+      params.set('pLng', order.pickupLng.toString())
+    }
+    if (order.dropoffLat != null && order.dropoffLng != null) {
+      params.set('dLat', order.dropoffLat.toString())
+      params.set('dLng', order.dropoffLng.toString())
+    }
+    if (order.customerName) params.set('cName', order.customerName)
+    if (order.customerWhatsApp) params.set('cWa', order.customerWhatsApp)
+    if (order.pitstopNote) params.set('stop', order.pitstopNote)
+    if (order.pitstopFee) params.set('stopFee', order.pitstopFee.toString())
+    router.push(`/dashboard/trip/${order.id}?${params.toString()}`)
   }
 
   function onDecline(order: IncomingOrder) {
