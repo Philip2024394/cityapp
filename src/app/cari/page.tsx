@@ -143,14 +143,22 @@ export default function PlanTripPage() {
                 </div>
 
                 {/* PIT STOP — inline between pickup and dropoff. Collapsed
-                    button when off; reveals a textarea when active. */}
+                    button when off; reveals a textarea when active.
+                    Both states show the pit-stop graphic on the right edge
+                    for visual identity. */}
                 {!pitstopOpen ? (
                   <button
                     onClick={() => { setPitstopOpen(true); haptic.tap() }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[13px] font-bold text-muted min-h-[40px]"
+                    className="w-full flex items-center gap-2 pl-3 pr-2 py-2 rounded-xl border border-dashed border-line hover:border-brand/40 hover:bg-brand/5 transition text-left text-[13px] font-bold text-muted min-h-[48px]"
                   >
-                    <Plus className="w-3.5 h-3.5 text-brand" />
-                    Add a pit stop on the way
+                    <Plus className="w-3.5 h-3.5 text-brand shrink-0" />
+                    <span className="flex-1">Add a pit stop on the way</span>
+                    <img
+                      src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                      alt=""
+                      className="h-9 w-auto object-contain shrink-0"
+                      loading="lazy"
+                    />
                   </button>
                 ) : (
                   <div className="animate-[fadeUp_0.3s_ease-out_both]">
@@ -168,14 +176,22 @@ export default function PlanTripPage() {
                         Remove
                       </button>
                     </div>
-                    <textarea
-                      className="input"
-                      rows={2}
-                      maxLength={140}
-                      placeholder='e.g. "Stop at warung depan, buy 1 pack Marlboro Lights"'
-                      value={pitstopNote}
-                      onChange={e => setPitstopNote(e.target.value)}
-                    />
+                    <div className="relative">
+                      <textarea
+                        className="input pr-16"
+                        rows={2}
+                        maxLength={140}
+                        placeholder='e.g. "Stop at warung depan, buy 1 pack Marlboro Lights"'
+                        value={pitstopNote}
+                        onChange={e => setPitstopNote(e.target.value)}
+                      />
+                      <img
+                        src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                        alt=""
+                        className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-auto object-contain pointer-events-none opacity-90"
+                        loading="lazy"
+                      />
+                    </div>
                     <p className="text-[12px] text-dim mt-1.5 leading-relaxed">
                       💡 Rider sets their own pit-stop fee (Rp 0–25K). For item costs, transfer the rider via GoPay/QRIS upfront.
                     </p>
