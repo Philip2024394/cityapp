@@ -64,7 +64,7 @@ const STRINGS: Record<Locale, {
   id: {
     loginNav: 'Login Rider',
     pill: '42 rider online di Yogyakarta',
-    h1Line1: 'Kurir motor,',
+    h1Line1: 'Komunitas motor,',
     h1Line2: 'Indonesia.',
     lede: 'Set jemput & antar. Lihat harga total tiap rider. Pesan langsung lewat WhatsApp. Tanpa komisi, tanpa dispatch.',
     enter: 'Masuk',
@@ -81,7 +81,7 @@ const STRINGS: Record<Locale, {
   en: {
     loginNav: 'Rider login',
     pill: '42 riders online in Yogyakarta',
-    h1Line1: 'Motorbike couriers,',
+    h1Line1: 'Motorbike community,',
     h1Line2: 'Indonesia.',
     lede: 'Set pickup & dropoff. See each rider’s total price. Book directly on WhatsApp. No commission, no dispatch.',
     enter: 'Enter',
@@ -174,8 +174,8 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative z-20 px-4 pt-10 pb-16">
-        <div className="max-w-xl mx-auto text-center space-y-6">
+      <section className="relative z-20 px-4 pt-4 sm:pt-8 pb-14">
+        <div className="max-w-xl mx-auto text-center space-y-5">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/25">
             <span className="dot-online !w-2 !h-2" />
             <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider">
@@ -183,7 +183,7 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <h1 className="text-[42px] sm:text-[56px] font-extrabold leading-[1.05] tracking-tight">
+          <h1 className="text-[36px] sm:text-[48px] md:text-[56px] font-extrabold leading-[1.05] tracking-tight">
             {t.h1Line1}
             <br />
             <span className="gradient-text">{t.h1Line2}</span>

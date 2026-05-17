@@ -16,7 +16,13 @@
   }
   body {
     min-height: 100dvh;
-    overscroll-behavior-y: contain;
+    /* `none` (not `contain`) fully disables the browser's native
+     * pull-to-refresh + side-swipe-back gestures. Pages should be
+     * driven by our app's own scroll, never the browser's overscroll. */
+    overscroll-behavior: none;
+  }
+  html {
+    overscroll-behavior: none;
   }
   button {
     font-family: inherit;
