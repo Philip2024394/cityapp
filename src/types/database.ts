@@ -10,16 +10,7 @@ export type Role = 'customer' | 'driver' | 'admin'
 export type AvailabilityState = 'online' | 'busy' | 'offline'
 export type DriverAccountStatus = 'active' | 'suspended'
 export type SubscriptionStatus = 'trial' | 'active' | 'past_due' | 'canceled'
-export type TripStatus =
-  | 'requested'
-  | 'accepted'
-  | 'arrived'
-  | 'in_progress'
-  | 'completed'
-  | 'canceled'
-  | 'expired'
 export type PaymentMethod = 'cash' | 'qr' | 'transfer'
-export type PaymentStatus = 'pending' | 'confirmed' | 'disputed'
 export type ServiceType = 'person' | 'parcel' | 'food'
 export type BikeType = 'matic' | 'sport' | 'manual'
 
@@ -85,41 +76,9 @@ export interface SubscriptionRow {
   updated_at: string
 }
 
-export interface TripRow {
-  id: string
-  driver_id: string
-  customer_phone: string
-  customer_name: string | null
-  customer_user_id: string | null
-  service: ServiceType
-  status: TripStatus
-  pickup_lat: number
-  pickup_lng: number
-  pickup_label: string | null
-  dropoff_lat: number
-  dropoff_lng: number
-  dropoff_label: string | null
-  pitstop_note: string | null
-  distance_km: number | null
-  estimated_fare: number | null
-  payment_method: PaymentMethod | null
-  payment_status: PaymentStatus
-  rating: number | null
-  rating_comment: string | null
-  cancel_reason: string | null
-  created_at: string
-  accepted_at: string | null
-  completed_at: string | null
-}
-
-export interface TripEventRow {
-  id: string
-  trip_id: string
-  actor_id: string | null
-  event_type: string
-  payload: Record<string, unknown> | null
-  created_at: string
-}
+// Trip / dispatch tables were removed in migration 0010 to keep the
+// platform on the directory side of Permenhub PM 12/2019 — see
+// supabase/migrations/0010_remove_trips_workflow.sql.
 
 export interface AuditLogRow {
   id: string
@@ -166,26 +125,6 @@ export interface Database {
         Update: Partial<SubscriptionRow>
         Relationships: []
       }
-      trips: {
-        Row: TripRow
-        Insert: Partial<TripRow> & {
-          driver_id: string
-          customer_phone: string
-          service: ServiceType
-          pickup_lat: number
-          pickup_lng: number
-          dropoff_lat: number
-          dropoff_lng: number
-        }
-        Update: Partial<TripRow>
-        Relationships: []
-      }
-      trip_events: {
-        Row: TripEventRow
-        Insert: Partial<TripEventRow> & { trip_id: string; event_type: string }
-        Update: Partial<TripEventRow>
-        Relationships: []
-      }
       audit_log: {
         Row: AuditLogRow
         Insert: Partial<AuditLogRow> & { action: string }
@@ -211,6 +150,5 @@ export interface Database {
 
 // Convenience re-exports for app code
 export type Driver = DriverRow
-export type Trip = TripRow
 export type Profile = ProfileRow
 export type Subscription = SubscriptionRow

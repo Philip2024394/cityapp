@@ -1,8 +1,7 @@
 import Link from 'next/link'
-import { Users, AlertTriangle, Receipt, CheckCircle2, Clock, History, MapPin, Bike } from 'lucide-react'
+import { Users, AlertTriangle, CheckCircle2, Clock, History, MapPin, Bike } from 'lucide-react'
 import { getAdminSupabase } from '@/lib/supabase/admin'
-import { idr } from '@/lib/format/idr'
-import type { DriverRow, SubscriptionRow, TripRow } from '@/types/database'
+import type { DriverRow, SubscriptionRow } from '@/types/database'
 
 // Force SSR every request so freshly-mutated state is reflected without
 // hard-refreshing the browser cache.
@@ -14,18 +13,15 @@ export default async function AdminOverview() {
     return <p className="text-muted text-[14px]">Server not configured.</p>
   }
 
-  const [{ data: drivers }, { data: subs }, { data: trips }, { data: places }, { data: rentals }] = await Promise.all([
+  const [{ data: drivers }, { data: subs }, { data: places }, { data: rentals }] = await Promise.all([
     admin.from('drivers').select('user_id, status, availability'),
     admin.from('subscriptions').select('driver_id, status'),
-    admin.from('trips').select('id, status, estimated_fare, created_at').order('created_at', { ascending: false }).limit(50),
     admin.from('places').select('id, status, paid_until'),
     admin.from('bike_rentals').select('id, status, paid_until'),
   ])
 
   const driversByStatus = countBy((drivers as Pick<DriverRow, 'status'>[] | null) || [], (r) => r.status)
   const subsByStatus = countBy((subs as Pick<SubscriptionRow, 'status'>[] | null) || [], (r) => r.status)
-  const last24h = (trips || []).filter((t) => Date.now() - new Date(t.created_at).getTime() < 86_400_000)
-  const grossLast24h = last24h.reduce((s, t) => s + (t.estimated_fare ?? 0), 0)
   const pastDueCount = subsByStatus['past_due'] ?? 0
   type RowStub = { id: string; status: string; paid_until: string | null }
   const placesList = (places as RowStub[] | null) ?? []
@@ -116,27 +112,6 @@ export default async function AdminOverview() {
         <StatTile icon={<Clock className="w-4 h-4" />}        label="On trial"   value={(subsByStatus['trial']  ?? 0).toString()} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <StatTile icon={<Receipt className="w-4 h-4" />} label="Trips · 24h"   value={last24h.length.toString()} />
-        <StatTile icon={<Receipt className="w-4 h-4" />} label="Trips · total" value={(trips?.length ?? 0).toString()} hint="(last 50 fetched)" />
-        <StatTile icon={<Receipt className="w-4 h-4" />} label="Gross · 24h"   value={idr(grossLast24h)} />
-      </div>
-
-      <section className="card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[14px] font-extrabold uppercase tracking-wider text-dim">Recent trips</h2>
-          <Link href="/admin/trips" className="text-[12px] font-bold text-brand">All trips →</Link>
-        </div>
-        <div className="space-y-2">
-          {(trips || []).slice(0, 8).map((t) => (
-            <TripRowLine key={t.id} trip={t as TripRow} />
-          ))}
-          {(!trips || trips.length === 0) && (
-            <p className="text-[13px] text-muted">No trips yet.</p>
-          )}
-        </div>
-      </section>
-
       <Link href="/admin/audit" className="card card-interactive p-4 flex items-center gap-3">
         <History className="w-4 h-4 text-muted shrink-0" />
         <div className="flex-1 min-w-0">
@@ -168,23 +143,3 @@ function StatTile({ icon, label, value, hint, tone }: { icon: React.ReactNode; l
   )
 }
 
-function TripRowLine({ trip }: { trip: TripRow }) {
-  const time = new Date(trip.created_at).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })
-  return (
-    <div className="flex items-center gap-2 text-[13px]">
-      <span className="text-[11px] text-dim font-mono shrink-0 w-24">{time}</span>
-      <span className="text-[11px] uppercase tracking-wider font-extrabold shrink-0" style={{ color: statusColor(trip.status) }}>
-        {trip.status}
-      </span>
-      <span className="text-ink truncate flex-1">{trip.pickup_label ?? '—'} → {trip.dropoff_label ?? '—'}</span>
-      {trip.estimated_fare != null && <span className="text-muted shrink-0">{idr(trip.estimated_fare)}</span>}
-    </div>
-  )
-}
-
-function statusColor(status: TripRow['status']): string {
-  if (status === 'completed') return '#22C55E'
-  if (status === 'canceled' || status === 'expired') return '#EF4444'
-  if (status === 'requested') return '#FACC15'
-  return '#F97316'
-}

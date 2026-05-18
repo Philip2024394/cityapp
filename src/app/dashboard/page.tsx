@@ -1,47 +1,29 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
-import QuoteInbox, { type InboxQuote } from '@/components/rider/QuoteInbox'
-import IncomingOrderModal, { type IncomingOrder } from '@/components/rider/IncomingOrderModal'
-import { useOrderChannel, type OrderEvent } from '@/hooks/useOrderChannel'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { MOCK_CUSTOMERS, repeatCustomers } from '@/data/mockCustomers'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
-import { getBrowserSupabase } from '@/lib/supabase/client'
-import { useBeep } from '@/hooks/useBeep'
 import { useHaptic } from '@/hooks/useHaptic'
 import type { Rider } from '@/types/rider'
-import type { TripRow } from '@/types/database'
 
 const FALLBACK_ME = MOCK_RIDERS[0]!
 const SUBSCRIPTION_MONTHLY = 30_000
 
-const DEMO_QUOTES: InboxQuote[] = [
-  { id: 'q1', pickupLabel: 'Malioboro 45', dropoffLabel: 'UGM Bulaksumur',
-    distanceKm: 4.2, fare: 12_500, receivedAt: Date.now() - 5 * 60 * 1000, read: false,
-    customerWhatsApp: '6285800000001' },
-  { id: 'q2', pickupLabel: 'Jl. Solo Km 6', dropoffLabel: 'Ambarrukmo Plaza',
-    distanceKm: 2.8, fare: 10_000, receivedAt: Date.now() - 18 * 60 * 1000, read: false,
-    customerWhatsApp: '6285800000002' },
-  { id: 'q3', pickupLabel: 'Bandara YIA', dropoffLabel: 'Kraton',
-    distanceKm: 6.1, fare: 15_250, receivedAt: Date.now() - 2 * 60 * 60 * 1000, read: true,
-    customerWhatsApp: '6285800000003' },
-]
-
+// City Rider is a software listing directory, NOT a ride-hailing operator.
+// This dashboard is therefore a PROFILE + SUBSCRIPTION + ANALYTICS console
+// for the independent rider — there is intentionally no dispatch, no
+// realtime incoming-trip channel, and no platform-side trip records.
+// Customers reach the rider via WhatsApp deep-links from the public
+// profile; everything after that is between them.
 export default function DashboardPage() {
-  const router = useRouter()
-  const beep = useBeep()
   const haptic = useHaptic()
-  const [quotes, setQuotes] = useState<InboxQuote[]>(DEMO_QUOTES)
   const [online, setOnline] = useState(true)
-  const [incoming, setIncoming] = useState<IncomingOrder | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
 
   // Authenticated independent rider for this dashboard. Falls back to demo
   // rider until Supabase responds (or if not configured at all).
@@ -54,186 +36,6 @@ export default function DashboardPage() {
     })
     return () => { cancelled = true }
   }, [])
-
-  function fakeIncomingOrder() {
-    // Open the incoming-order modal — the LOUD alarm fires automatically
-    // on mount + repeats every ~3 seconds until rider responds. Coords +
-    // customer info populated so the post-accept trip page has a real
-    // map + WhatsApp/call buttons to demo against.
-    haptic.buzz()
-    setIncoming({
-      id: 'o' + Date.now(),
-      customerName: 'Putri Anggraini',
-      customerWhatsApp: '6285800000099',
-      pickupLabel: 'Tugu Jogja',
-      pickupLat: -7.7828,
-      pickupLng: 110.3672,
-      dropoffLabel: 'Hotel Tentrem',
-      dropoffLat: -7.7732,
-      dropoffLng: 110.3826,
-      pitstopNote: 'Buy 1 pack Marlboro Lights at warung depan',
-      distanceKm: 3.5,
-      fare: 10_000,
-      pitstopFee: 5_000,
-    })
-  }
-
-  // Supabase Realtime — receive new trip requests addressed to this rider.
-  // This is the production path. BroadcastChannel (below) is kept for the
-  // legacy single-browser demo flow.
-  useEffect(() => {
-    const supabase = getBrowserSupabase()
-    if (!supabase || !ME.id) return
-    const channel = supabase
-      .channel(`trips-driver-${ME.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'trips', filter: `driver_id=eq.${ME.id}` },
-        (payload) => {
-          const trip = payload.new as TripRow
-          if (trip.status !== 'requested') return
-          haptic.buzz()
-          beep.play()
-          setIncoming({
-            id: trip.id,
-            customerName: trip.customer_name ?? 'Customer',
-            customerWhatsApp: trip.customer_phone,
-            pickupLabel: trip.pickup_label ?? 'Pickup',
-            pickupLat: trip.pickup_lat,
-            pickupLng: trip.pickup_lng,
-            dropoffLabel: trip.dropoff_label ?? 'Drop-off',
-            dropoffLat: trip.dropoff_lat,
-            dropoffLng: trip.dropoff_lng,
-            pitstopNote: trip.pitstop_note ?? undefined,
-            distanceKm: Number(trip.distance_km ?? 0),
-            fare: trip.estimated_fare ?? 0,
-            pitstopFee: 0,
-          })
-        },
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [ME.id, beep, haptic])
-
-  // BroadcastChannel — receive new orders from customer tabs
-  const { broadcast } = useOrderChannel((e: OrderEvent) => {
-    if (e.type !== 'created') return
-    // Filter by rider — only show orders addressed to ME
-    if (e.order.riderId !== ME.id) return
-    setIncoming({
-      id: e.order.id,
-      customerName: e.order.customerName,
-      customerWhatsApp: e.order.customerWhatsApp,
-      pickupLabel: e.order.pickupLabel,
-      pickupLat: e.order.pickupLat,
-      pickupLng: e.order.pickupLng,
-      dropoffLabel: e.order.dropoffLabel,
-      dropoffLat: e.order.dropoffLat,
-      dropoffLng: e.order.dropoffLng,
-      pitstopNote: e.order.pitstopNote,
-      distanceKm: e.order.distanceKm,
-      fare: e.order.fare,
-      pitstopFee: e.order.pitstopFee,
-    })
-  })
-
-  async function onAccept(order: IncomingOrder) {
-    haptic.impact()
-    beep.play()
-    // PATCH the server-side trip row first. This is the source of truth —
-    // the customer's waiting state subscribes to this row via Realtime.
-    try {
-      const res = await fetch(`/api/trips/${order.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'accept' }),
-      })
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        showToast(json.error || 'Could not accept — try again')
-        return
-      }
-    } catch {
-      // If the server is unreachable, fall back to BroadcastChannel demo
-      // mode so the legacy in-browser flow still works.
-    }
-    // Legacy BroadcastChannel signal — kept for single-browser demo
-    broadcast({ type: 'accepted', orderId: order.id, riderId: ME.id, riderName: ME.name, acceptedAt: Date.now() })
-    // Add accepted order into the inbox + mark as read
-    setQuotes(qs => [{
-      id: order.id,
-      pickupLabel: order.pickupLabel,
-      dropoffLabel: order.dropoffLabel,
-      distanceKm: order.distanceKm,
-      fare: order.fare + (order.pitstopFee ?? 0),
-      receivedAt: Date.now(),
-      read: true,
-      customerWhatsApp: order.customerWhatsApp ?? '6285800000099',
-    }, ...qs])
-    setIncoming(null)
-    // Navigate to the active-trip page — map + customer card + WhatsApp +
-    // Google-Maps deep link for turn-by-turn nav. All data passed via
-    // URL params so the page is self-contained / reload-safe.
-    const params = new URLSearchParams({
-      pName: order.pickupLabel,
-      dName: order.dropoffLabel,
-      km: order.distanceKm.toString(),
-      fare: (order.fare + (order.pitstopFee ?? 0)).toString(),
-    })
-    if (order.pickupLat != null && order.pickupLng != null) {
-      params.set('pLat', order.pickupLat.toString())
-      params.set('pLng', order.pickupLng.toString())
-    }
-    if (order.dropoffLat != null && order.dropoffLng != null) {
-      params.set('dLat', order.dropoffLat.toString())
-      params.set('dLng', order.dropoffLng.toString())
-    }
-    if (order.customerName) params.set('cName', order.customerName)
-    if (order.customerWhatsApp) params.set('cWa', order.customerWhatsApp)
-    if (order.pitstopNote) params.set('stop', order.pitstopNote)
-    if (order.pitstopFee) params.set('stopFee', order.pitstopFee.toString())
-    router.push(`/dashboard/trip/${order.id}?${params.toString()}`)
-  }
-
-  async function onDecline(order: IncomingOrder) {
-    haptic.tap()
-    // Mark trip as expired server-side so the customer's waiting state
-    // shows "rider declined — pick another"
-    try {
-      await fetch(`/api/trips/${order.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'decline' }),
-      })
-    } catch { /* best-effort */ }
-    broadcast({ type: 'declined', orderId: order.id, riderId: ME.id })
-    setIncoming(null)
-    showToast('Declined — customer can pick another rider')
-  }
-
-  async function onExpire(order: IncomingOrder) {
-    try {
-      await fetch(`/api/trips/${order.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'decline', cancel_reason: 'timed_out' }),
-      })
-    } catch { /* best-effort */ }
-    broadcast({ type: 'expired', orderId: order.id })
-    setIncoming(null)
-    showToast('⌛ Timed out — order missed')
-  }
-
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3500)
-  }
-
-  function onReply(q: InboxQuote) {
-    setQuotes(qs => qs.map(x => (x.id === q.id ? { ...x, read: true } : x)))
-    const link = `https://wa.me/${q.customerWhatsApp?.replace(/[^0-9]/g, '')}`
-    window.open(link, '_blank', 'noopener,noreferrer')
-  }
 
   async function shareProfile() {
     haptic.tap()
@@ -325,14 +127,6 @@ export default function DashboardPage() {
             <ArrowRight className="w-4 h-4 text-brand shrink-0" />
           </Link>
 
-          {/* Quote inbox */}
-          <QuoteInbox quotes={quotes} onReply={onReply} />
-
-          {/* Demo trigger — fires the LOUD incoming-order modal */}
-          <button onClick={fakeIncomingOrder} className="btn-secondary w-full">
-            🚨 Simulate an incoming order (loud alarm + accept/decline modal)
-          </button>
-
           {/* Profile preview link */}
           <a
             href={`/r/${ME.slug}`}
@@ -369,22 +163,6 @@ export default function DashboardPage() {
         </div>
       </main>
       <DashboardNav />
-
-      {/* Loud incoming-order modal — z-100, full-screen overlay */}
-      <IncomingOrderModal
-        order={incoming}
-        timeoutSec={300}
-        onAccept={onAccept}
-        onDecline={onDecline}
-        onExpire={onExpire}
-      />
-
-      {/* Toast — short-lived status bar at the top */}
-      {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[110] glass-strong rounded-full px-4 py-2.5 text-[13px] font-bold shadow-card animate-[fadeUp_0.25s_ease-out_both] max-w-[92vw] text-center">
-          {toast}
-        </div>
-      )}
     </>
   )
 }

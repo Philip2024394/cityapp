@@ -8,7 +8,6 @@ import { haversineKm } from '@/lib/geo/haversine'
 import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
-import { bikeTitle } from '@/lib/format/bike'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
 import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type Rider, type ServiceType } from '@/types/rider'
@@ -75,29 +74,6 @@ function DriverResults() {
     return () => { cancelled = true }
   }, [])
 
-  // Customer identity — anonymous, kept in localStorage between visits so
-  // repeat customers don't have to re-enter their phone.
-  const [customerPhone, setCustomerPhone] = useState<string>('')
-  const [customerName, setCustomerName] = useState<string>('')
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    setCustomerPhone(localStorage.getItem('cityrider:customer_phone') || '')
-    setCustomerName(localStorage.getItem('cityrider:customer_name') || '')
-  }, [])
-
-  // Modal state — when customer presses Book without saved info, we open
-  // this to collect phone+name first, stash the chosen rider, then continue.
-  type PendingBook = {
-    rider: Rider
-    fare: number
-    perKm: number
-    pitstopFee: number
-    service: ServiceType
-  }
-  const [pendingBook, setPendingBook] = useState<PendingBook | null>(null)
-  const [submittingBook, setSubmittingBook] = useState(false)
-  const [bookError, setBookError] = useState<string | null>(null)
-
   // Back-to-booking URL — carries the current trip params so /cari can
   // reload exactly where the user left off rather than starting blank.
   const editTripHref = `/cari?${sp.toString()}`
@@ -141,130 +117,32 @@ function DriverResults() {
   const cheapest = enriched[0]?.totalFare
   const mostExpensive = enriched.length > 0 ? Math.max(...enriched.map(x => x.totalFare)) : null
 
-  // The trip record uses whichever service the customer is currently
-  // viewing. The toggle guarantees `filter` is always one of the three
-  // service types, so no fallback is needed.
-  function serviceForBooking(_rider: Rider): ServiceType {
-    return filter
-  }
-
-  // Entry point for the Book Driver button on every card.
-  // Step 1: ensure we have customer info; if not, open the info modal.
-  // Step 2: hand off to recordTripAndOpenChat() with the chosen rider.
+  // Book Driver — pure WhatsApp deep-link. No platform-side record of
+  // the booking. The directory's job ends the moment the customer taps
+  // through to wa.me; everything after that is between the customer and
+  // the independent rider, exactly like a Yellow Pages listing.
+  //
+  // This is a deliberate legal posture: by NOT recording the trip on
+  // our servers, the platform stays a software directory and falls
+  // outside Permenhub PM 12/2019's definition of an aplikasi penyedia
+  // jasa angkutan (transport-app operator).
   function onBookRider(rider: Rider, fare: number, perKm: number, pitstopFee: number) {
     haptic.buzz()
     beep.play()
-    const intent: PendingBook = {
-      rider, fare, perKm, pitstopFee,
-      service: serviceForBooking(rider),
-    }
-    if (!customerPhone || customerPhone.length < 10) {
-      // Stash the intent + open the phone-info modal first
-      setPendingBook(intent)
-      return
-    }
-    void recordTripAndOpenChat(intent)
-  }
-
-  // Insert the trip server-side (so the rider sees it in-app via realtime)
-  // and ALSO open WhatsApp for direct chat. WhatsApp is the chat layer
-  // after acceptance — the trip record is the source of truth.
-  async function recordTripAndOpenChat(intent: PendingBook) {
-    setBookError(null)
     const link = buildWhatsAppLink({
-      riderName: intent.rider.name,
-      riderWhatsAppE164: intent.rider.whatsappE164,
+      riderName: rider.name,
+      riderWhatsAppE164: rider.whatsappE164,
       pickup: { lat: pickup!.lat, lng: pickup!.lng, label: pickupName },
       dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, label: dropoffName },
       distanceKm: tripKm,
-      pricePerKm: intent.perKm,
-      fare: intent.fare,
-      pitstop: pitstopNote ? { note: pitstopNote, fee: intent.pitstopFee } : undefined,
+      pricePerKm: perKm,
+      fare,
+      pitstop: pitstopNote ? { note: pitstopNote, fee: pitstopFee } : undefined,
     })
-
-    // POST to the server first — fire-and-don't-wait would lose the trip
-    // if the request fails. But we do open WhatsApp even on failure so the
-    // user experience never breaks: WhatsApp is the fallback chat channel.
-    let tripId: string | null = null
-    let tripToken: string | null = null
-    try {
-      const res = await fetch('/api/trips', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          driver_id: intent.rider.id,
-          customer_phone: customerPhone,
-          customer_name: customerName || undefined,
-          service: intent.service,
-          pickup_lat: pickup!.lat,
-          pickup_lng: pickup!.lng,
-          pickup_label: pickupName,
-          dropoff_lat: dropoff!.lat,
-          dropoff_lng: dropoff!.lng,
-          dropoff_label: dropoffName,
-          pitstop_note: pitstopNote || undefined,
-          distance_km: Number(tripKm.toFixed(2)),
-          estimated_fare: intent.fare + intent.pitstopFee,
-        }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (res.ok) {
-        tripId = json.trip_id as string
-        tripToken = (json.token as string) || null
-        if (typeof window !== 'undefined' && tripId) {
-          localStorage.setItem('cityrider:last_trip_id', tripId)
-          if (tripToken) localStorage.setItem('cityrider:last_trip_token', tripToken)
-        }
-      } else if (res.status === 409) {
-        // Rider just went busy / accepted another booking
-        setBookError(json.error || 'This rider is no longer available — please pick another.')
-        return
-      } else {
-        // Surface the error but still open WhatsApp as fallback
-        console.warn('[trips] create failed:', json.error)
-      }
-    } catch (e) {
-      console.warn('[trips] create failed:', (e as Error).message)
-    }
-
     window.open(link, '_blank', 'noopener,noreferrer')
-
-    // Server-backed flow — navigate the customer to the trip tracker so
-    // they can see accept/decline + collect payment + rate at the end.
-    if (tripId) {
-      const trackUrl = `/trip/${tripId}${tripToken ? `?token=${encodeURIComponent(tripToken)}` : ''}`
-      router.push(trackUrl)
-      return
-    }
-
-    // Demo-mode fallback (no Supabase) — just toast and stay on the list
-    setToast({ driverName: intent.rider.name })
+    setToast({ driverName: rider.name })
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     toastTimerRef.current = setTimeout(() => setToast(null), 3000)
-  }
-
-  // Submit handler for the customer-info modal.
-  async function submitCustomerInfo() {
-    const cleaned = customerPhone.replace(/\D/g, '')
-    let normalized = cleaned
-    if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1)
-    if (!normalized.startsWith('62') || normalized.length < 10) {
-      setBookError('Please enter a valid Indonesian phone, e.g. 6281234567890')
-      return
-    }
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cityrider:customer_phone', normalized)
-      localStorage.setItem('cityrider:customer_name', customerName.trim())
-    }
-    setCustomerPhone(normalized)
-    setBookError(null)
-    const intent = pendingBook
-    setPendingBook(null)
-    if (intent) {
-      setSubmittingBook(true)
-      await recordTripAndOpenChat(intent)
-      setSubmittingBook(false)
-    }
   }
 
   return (
@@ -414,64 +292,6 @@ function DriverResults() {
           <PlatformDisclaimer variant="compact" />
         </div>
       </main>
-
-      {/* Customer info prompt — opens on first Book tap if we don't have
-          the customer's phone yet. Saved to localStorage for repeat visits. */}
-      {pendingBook && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
-        >
-          <div className="card w-full max-w-md p-5 space-y-4" style={{ background: '#0E0E0E' }}>
-            <div>
-              <h2 className="text-xl font-extrabold">Almost there</h2>
-              <p className="text-muted text-[13px] mt-1">
-                Your phone number is shared with <span className="text-brand font-bold">{pendingBook.rider.name}</span> only — so they can reply on WhatsApp.
-              </p>
-            </div>
-            <div>
-              <label className="label">Your name</label>
-              <input
-                className="input"
-                placeholder="Wayan"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="label">WhatsApp number</label>
-              <input
-                className="input font-mono"
-                inputMode="numeric"
-                placeholder="6281234567890"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-              />
-              <p className="text-[12px] text-dim mt-1.5">Start with 62 (no +). Saved locally for next time.</p>
-            </div>
-            {bookError && <p className="text-[13px] text-red-400">{bookError}</p>}
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => { setPendingBook(null); setBookError(null) }}
-                className="btn-secondary"
-                disabled={submittingBook}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submitCustomerInfo}
-                className="btn-primary flex-1"
-                disabled={submittingBook}
-              >
-                {submittingBook ? 'Sending…' : `Book ${pendingBook.rider.name}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Booking toast — fires when a driver's Book button is tapped.
           Opens WhatsApp immediately; the toast is a brief, non-blocking

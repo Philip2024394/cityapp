@@ -3,10 +3,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 // Service-role Supabase client. BYPASSES Row Level Security.
 // NEVER import this from any file that runs in the browser.
 // Use ONLY in server routes for privileged operations:
-//   - inserting anonymous customer trips (no auth.uid())
-//   - writing trip_events
-//   - admin moderation
+//   - admin moderation (places, rentals, drivers)
 //   - seeding subscription on driver signup
+//   - writing audit_log entries
 //
 // Note: deliberately UNTYPED against the Database schema. Runtime validation
 // in each API route enforces the shape; we trade compile-time table-name
