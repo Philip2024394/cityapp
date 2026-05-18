@@ -176,6 +176,7 @@ function DriverResults() {
     // if the request fails. But we do open WhatsApp even on failure so the
     // user experience never breaks: WhatsApp is the fallback chat channel.
     let tripId: string | null = null
+    let tripToken: string | null = null
     try {
       const res = await fetch('/api/trips', {
         method: 'POST',
@@ -199,10 +200,10 @@ function DriverResults() {
       const json = await res.json().catch(() => ({}))
       if (res.ok) {
         tripId = json.trip_id as string
-        // Remember for future tracking (Phase 3 ratings, payment confirm)
+        tripToken = (json.token as string) || null
         if (typeof window !== 'undefined' && tripId) {
           localStorage.setItem('cityrider:last_trip_id', tripId)
-          localStorage.setItem('cityrider:last_trip_token', json.token || '')
+          if (tripToken) localStorage.setItem('cityrider:last_trip_token', tripToken)
         }
       } else if (res.status === 409) {
         // Rider just went busy / accepted another booking
@@ -216,10 +217,20 @@ function DriverResults() {
       console.warn('[trips] create failed:', (e as Error).message)
     }
 
+    window.open(link, '_blank', 'noopener,noreferrer')
+
+    // Server-backed flow — navigate the customer to the trip tracker so
+    // they can see accept/decline + collect payment + rate at the end.
+    if (tripId) {
+      const trackUrl = `/trip/${tripId}${tripToken ? `?token=${encodeURIComponent(tripToken)}` : ''}`
+      router.push(trackUrl)
+      return
+    }
+
+    // Demo-mode fallback (no Supabase) — just toast and stay on the list
     setToast({ driverName: intent.rider.name })
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     toastTimerRef.current = setTimeout(() => setToast(null), 3000)
-    window.open(link, '_blank', 'noopener,noreferrer')
   }
 
   // Submit handler for the customer-info modal.

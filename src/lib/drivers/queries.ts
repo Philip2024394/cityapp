@@ -109,3 +109,15 @@ export async function fetchMyDriverBrowser(): Promise<Rider | null> {
   if (error || !data) return null
   return driverRowToRider(data as DriverRow)
 }
+
+// Raw DriverRow for the authenticated rider — used where the UI needs
+// fields outside the legacy Rider shape (payment methods, QR URL, etc.).
+export async function fetchMyDriverRowBrowser(): Promise<DriverRow | null> {
+  const supabase = getBrowserSupabase()
+  if (!supabase) return null
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data, error } = await supabase.from('drivers').select('*').eq('user_id', user.id).maybeSingle()
+  if (error || !data) return null
+  return data as DriverRow
+}

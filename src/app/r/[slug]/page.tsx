@@ -1,7 +1,7 @@
 'use client'
 import { use, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, useRouter } from 'next/navigation'
 import { ChevronLeft, MapPin, Box, Bike as BikeIcon, MessageCircle } from 'lucide-react'
 import RiderRadar from '@/components/rider/RiderRadar'
 import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
@@ -22,6 +22,7 @@ import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type ServiceType, type Ri
 
 export default function RiderProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
+  const router = useRouter()
   // Initial render uses sync mock lookup so the page boots instantly.
   // Then we upgrade to the live Supabase row if one exists.
   const [maybeRider, setMaybeRider] = useState<Rider | null>(() => findRiderBySlug(slug) ?? null)
@@ -221,8 +222,16 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     // Open WhatsApp regardless — it's the fallback chat layer
     window.open(intent.whatsappLink, '_blank', 'noopener,noreferrer')
 
-    // Legacy BroadcastChannel — single-browser demo path
-    const orderId = tripId ?? 'o_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
+    // Server-backed flow — navigate the customer to the trip tracker
+    if (tripId) {
+      const trackUrl = `/trip/${tripId}${tripToken ? `?token=${encodeURIComponent(tripToken)}` : ''}`
+      router.push(trackUrl)
+      return
+    }
+
+    // Demo-mode (no Supabase) — fall through to the legacy BroadcastChannel
+    // waiting state in the sticky bottom bar.
+    const orderId = 'o_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
     broadcast({
       type: 'created',
       order: {

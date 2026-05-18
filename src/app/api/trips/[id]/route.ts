@@ -175,6 +175,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     case 'confirm_payment':
       if (actor !== 'driver') return forbid()
       patch.payment_status = 'confirmed' satisfies PaymentStatus
+      // Driver may also assert the method received here, useful when the
+      // customer paid cash on-site without opening the customer tracker.
+      if (body.payment_method) {
+        patch.payment_method = body.payment_method
+        eventPayload.payment_method = body.payment_method
+      }
       break
     case 'rate':
       if (actor !== 'customer') return forbid()

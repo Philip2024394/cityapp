@@ -92,5 +92,5 @@ Plus a `last_active_at` displayed as "Active just now / 3 min ago / 1 hr ago".
 - ✅ Phase 0 — Schema, auth, middleware, Supabase wiring
 - ⏳ Phase 1 — Rider onboarding wizard, dashboard wired to real data
 - ✅ Phase 2 — Real trip flow (server insert + realtime delivery to rider)
-- ⏳ Phase 3 — QR payment confirmation flow + ratings
+- ✅ Phase 3 — QR payment confirmation flow + ratings
 - ⏳ Phase 4 — Admin panel + production hardening
