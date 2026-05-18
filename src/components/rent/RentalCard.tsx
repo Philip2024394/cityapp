@@ -1,12 +1,11 @@
 'use client'
-import {
-  Star, Hammer, ArrowRight,
-} from 'lucide-react'
+import { Star, ArrowRight } from 'lucide-react'
 
 const HELMET_ICON   = 'https://ik.imagekit.io/nepgaxllc/Untitledasdaaaaaaa-removebg-preview.png?updatedAt=1779053735062'
 const RAINCOAT_ICON = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2012_29_10%20AM.png'
 const PICKUP_ICON   = 'https://ik.imagekit.io/nepgaxllc/Untitleddasdaaa-removebg-preview.png'
 const DRIVER_ICON   = 'https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png?updatedAt=1779022378771'
+const BRAND_LOGO    = 'https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg-preview.png?updatedAt=1779107454479'
 import type { BikeRental } from '@/lib/rentals/types'
 import { idr } from '@/lib/format/idr'
 import { BIKE_CATALOG } from '@/lib/rentals/catalog'
@@ -66,6 +65,25 @@ function whatsappLink(e164: string, name: string, brand: string, model: string):
   return `https://wa.me/${phone}?text=${text}`
 }
 
+// Picks the area/street portion of an address (the part before the
+// first comma) so the card shows a useful pickup hint without leaking
+// the full city / district / postcode.
+function shortAddress(address: string | null): string | null {
+  if (!address) return null
+  return address.split(',')[0].trim() || null
+}
+
+// Strips a trailing standalone cc number from the model name (e.g.
+// "PCX 150" → "PCX", "Vario 125" → "Vario") so the card title doesn't
+// duplicate the CC corner badge. Models that bake the CC into the part
+// number itself (CB150R, CRF150L, GSX-R150) stay intact because the CC
+// is not a separate trailing word.
+function cleanModelName(model: string, cc: number): string {
+  if (cc <= 0) return model
+  const stripped = model.replace(new RegExp(`\\s+${cc}$`), '').trim()
+  return stripped || model
+}
+
 // For bike-with-driver bundles, the renter pays for a tour block, not a
 // daily. We derive 3h / 6h / 8h totals from (daily + driver_rate_per_day)
 // with diminishing-discount scaling: longer blocks are cheaper per hour.
@@ -93,12 +111,13 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
         className="pointer-events-none absolute inset-0 w-full h-full object-cover"
       />
 
+      {/* CC corner badge — top-left, compact uppercase. */}
+      <span className="absolute top-[14px] left-2 z-20 text-[12px] font-extrabold uppercase tracking-wider text-black leading-none">
+        {r.cc > 0 ? `${r.cc} CC` : 'Electric'}
+      </span>
+
       <div className="relative flex flex-col gap-2.5 p-3">
-        {/* Driver figure overlay — appears only on listings that include
-            a rider. Floats over the right edge so it overlaps the
-            raincoat row and the Month price tile, signalling at a glance
-            that this bundle ships with a driver. pointer-events-none so
-            it never blocks the Book Rental tap. */}
+        {/* Driver figure overlay — with-driver listings only. */}
         {withDriver && (
           <img
             src={DRIVER_ICON}
@@ -111,15 +130,20 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
 
         {/* Top row: hero photo on the left, trust + title block on the right. */}
         <div className="flex items-start gap-3">
-          {/* Hero bike — no container frame, no header label above. */}
-          <div className="shrink-0 w-[110px] sm:w-[140px] h-[88px] sm:h-[110px] relative">
+          {/* Hero bike — no container frame, no header label above.
+              Sized +10% from original 110×88 / 140×110 baseline. */}
+          <div className="shrink-0 w-[121px] sm:w-[154px] h-[97px] sm:h-[121px] relative">
             {photo
               ? <img
                   src={photo}
                   alt={`${r.brand} ${r.model}`}
                   className="w-full h-full object-contain"
+                  style={{ transform: 'translateX(10px)' }}
                 />
-              : <div className="w-full h-full flex items-center justify-center text-[12px] font-extrabold uppercase tracking-wider text-black/70">
+              : <div
+                  className="w-full h-full flex items-center justify-center text-[12px] font-extrabold uppercase tracking-wider text-black/70"
+                  style={{ transform: 'translateX(10px)' }}
+                >
                   {r.brand}
                 </div>}
             {r.rating != null && (
@@ -130,44 +154,73 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
             )}
           </div>
 
-          {/* Trust + title */}
-          <div className="flex-1 min-w-0">
-            {/* Trust chip row — only "Ready to work" remains; verified,
-                available-now, and featured chips have been removed. */}
-            <div className="flex items-center gap-1 flex-wrap">
-              {r.readyToWork && (
-                <Chip Icon={Hammer} tone="black">Ready to work</Chip>
-              )}
-            </div>
-
-            {/* Bike name */}
-            <h3 className="mt-1 text-[15px] sm:text-[16px] font-extrabold text-black leading-tight truncate">
-              {r.brand} {r.model}
+          {/* Trust + title — on bike-only cards (no driver overlay)
+              the content is shifted right of centre to balance the card
+              now that there's no driver figure occupying the right edge. */}
+          <div className={`flex-1 min-w-0 ${!withDriver ? 'pl-[31px] sm:pl-[47px]' : ''}`}>
+            {/* Bike name — nudged 3 px down via translate so it doesn't
+                affect the company name or price tiles below. */}
+            <h3
+              className="text-[16px] sm:text-[17px] font-extrabold text-black leading-tight"
+              style={{ transform: 'translateY(3px)' }}
+            >
+              {r.brand} {cleanModelName(r.model, r.cc)}
             </h3>
-            {/* Spec strip — bike-only specs. Mode (self ride / with
-                driver) is communicated by the driver figure overlay +
-                price-tile period (3/6/8 hr vs Day/Week/Month). */}
+            {/* Spec strip — year + transmission. CC moved below as a
+                dedicated centered display under the gear icons. */}
             <div className="mt-0.5 text-[12px] font-bold text-gray-700 truncate">
-              {r.year} · {r.cc}cc · {transmissionLabel(r.transmission)}
+              {r.year} · {transmissionLabel(r.transmission)}
             </div>
 
-            {/* Helmet + raincoat — sit directly under the title; gear
-                included is the next signal a renter scans for. */}
-            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-              {r.helmetCount > 0 && (
-                <Inclusion imageSrc={HELMET_ICON} imageSize="sm" label={`×${r.helmetCount}`} />
-              )}
-              {r.raincoatCount > 0 && (
-                <Inclusion imageSrc={RAINCOAT_ICON} imageSize="lg" label={`×${r.raincoatCount}`} />
-              )}
+            {/* Rental-includes block — small eyebrow header above a
+                vertical stack of gear lines. Each icon sits in a fixed
+                32px column so the count + word labels line up under
+                each other regardless of icon size. Raincoat icon is
+                nudged 2px left via translateX. translateY(10px) shifts
+                the whole block visually without pushing siblings down. */}
+            <div className="mt-1.5" style={{ transform: 'translateY(10px)' }}>
+              <div className="flex flex-col gap-1">
+                {r.helmetCount > 0 && (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap text-[12px] font-extrabold text-black">
+                    <span className="shrink-0 w-8 flex justify-center">
+                      <img src={HELMET_ICON} alt="" aria-hidden className="w-5 h-5 object-contain" />
+                    </span>
+                    <span className="leading-none">×{r.helmetCount} Helmets</span>
+                  </div>
+                )}
+                {r.raincoatCount > 0 && (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap text-[12px] font-extrabold text-black">
+                    <span className="shrink-0 w-8 flex justify-center">
+                      <img
+                        src={RAINCOAT_ICON}
+                        alt=""
+                        aria-hidden
+                        className="w-8 h-8 object-contain"
+                        style={{ transform: 'translateX(-2px)' }}
+                      />
+                    </span>
+                    <span className="leading-none">×{r.raincoatCount} Raincoats</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Company / owner attribution — sits as a small label directly
-            above the price-tile row. No icon, just the name. */}
-        <div className="text-[12px] font-extrabold text-black truncate">
-          {r.ownerCompany ?? r.ownerName}
+        {/* Company / owner attribution + short pickup address. Both
+            lines truncate so they never spill past the right edge of
+            the price-tile row directly below. Negative top margin pulls
+            this block + everything beneath it up 4 px while keeping the
+            bike photo above untouched. */}
+        <div className="space-y-0.5 -mt-1">
+          <div className="text-[12px] font-extrabold text-black truncate">
+            {r.ownerCompany ?? r.ownerName}
+          </div>
+          {shortAddress(r.address) && (
+            <div className="text-[11px] font-bold text-gray-700 truncate">
+              {shortAddress(r.address)}
+            </div>
+          )}
         </div>
 
         {/* Pricing tiles — three small dark containers.
@@ -235,27 +288,6 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
 
 // ─── helpers ─────────────────────────────────────────────────────────
 
-function Chip({
-  Icon, tone, children,
-}: {
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
-  tone: 'brand' | 'green' | 'black' | 'featured'
-  children: React.ReactNode
-}) {
-  const styles =
-    tone === 'featured'
-      ? { border: 'border-black/85 border-2', fg: 'text-black' }
-      : { border: 'border-black/60', fg: 'text-black' }
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-extrabold uppercase tracking-wider border ${styles.border} ${styles.fg}`}
-    >
-      <Icon className="w-3 h-3" strokeWidth={2.75} aria-hidden />
-      {children}
-    </span>
-  )
-}
-
 function Inclusion({
   Icon, imageSrc, imageSize = 'md', label,
 }: {
@@ -269,13 +301,13 @@ function Inclusion({
   // sm = w-5 (~20px, helmet), md = w-4 (default), lg = w-8 (raincoat).
   const sizeClass = imageSize === 'lg' ? 'w-8 h-8' : imageSize === 'sm' ? 'w-5 h-5' : 'w-4 h-4'
   return (
-    <span className="inline-flex items-center gap-1 text-[12px] font-extrabold text-black">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] font-extrabold text-black">
       {imageSrc
         ? <img src={imageSrc} alt="" aria-hidden className={`${sizeClass} object-contain shrink-0`} />
         : Icon
           ? <Icon className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
           : null}
-      {label}
+      <span className="leading-none">{label}</span>
     </span>
   )
 }

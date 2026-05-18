@@ -9,9 +9,9 @@ import { assertAdminFromCookies, writeAudit } from '@/lib/admin/guard'
 // shape: assert admin → load before → mutate via service role → audit.
 //
 // Actions:
-//   approve         → status='approved', verified=true
+//   approve         → status='approved', verified=true, paid_until=today+60d (2-month trial)
 //   reject          → status='rejected', rejection_note=<required>
-//   mark_paid       → paid_until=now()+1y, listing_tier='paid'
+//   mark_paid       → paid_until += 30 days, listing_tier='paid'
 //   suspend         → status='suspended'
 //   reactivate      → status='approved' (from suspended)
 // ============================================================================
@@ -47,9 +47,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   let update: Record<string, unknown> = {}
 
   switch (body.action) {
-    case 'approve':
-      update = { status: 'approved', verified: true, rejection_note: null }
+    case 'approve': {
+      // Auto-grants a 2-month free trial: paid_until = today + 60 days,
+      // listing_tier stays 'free' so renewal flow still applies.
+      const trialEnd = new Date()
+      trialEnd.setDate(trialEnd.getDate() + 60)
+      update = {
+        status: 'approved',
+        verified: true,
+        rejection_note: null,
+        paid_until: trialEnd.toISOString().slice(0, 10),
+      }
       break
+    }
     case 'reject':
       if (!body.rejection_note?.trim()) {
         return NextResponse.json({ error: 'rejection_note required' }, { status: 400 })
@@ -57,10 +67,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       update = { status: 'rejected', rejection_note: body.rejection_note.trim() }
       break
     case 'mark_paid': {
-      const oneYearFromNow = new Date()
-      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
+      // Extends paid_until by 30 days; if existing paid_until is in the
+      // past, starts from today. Monthly billing model.
+      const basis = before.paid_until ? new Date(before.paid_until) : new Date()
+      if (basis.getTime() < Date.now()) basis.setTime(Date.now())
+      basis.setDate(basis.getDate() + 30)
       update = {
-        paid_until: oneYearFromNow.toISOString().slice(0, 10),
+        paid_until: basis.toISOString().slice(0, 10),
         listing_tier: 'paid',
       }
       break

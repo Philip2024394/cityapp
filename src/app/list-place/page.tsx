@@ -11,7 +11,7 @@ import AppNav from '@/components/layout/AppNav'
 export const metadata = {
   title: 'List Your Place · City Rider',
   description:
-    'Daftarkan tempat usahamu di City Rider. Rp 100.000 / tahun, listing langsung tampil di area kotamu.',
+    'Daftarkan tempat usahamu di City Rider. GRATIS 2 bulan pertama, lalu Rp 30.000/bulan — listing langsung tampil di area kotamu.',
 }
 
 const STEPS = [
@@ -33,7 +33,7 @@ const STEPS = [
   {
     Icon: CreditCard,
     title: 'Bayar via Midtrans',
-    body: 'Rp 100.000 / tahun. Transfer bank, e-wallet, atau QRIS — listing tayang setelah disetujui admin.',
+    body: 'GRATIS 2 bulan pertama, lalu Rp 30.000/bulan via transfer bank, e-wallet, atau QRIS — listing tayang setelah disetujui admin.',
   },
 ] as const
 
@@ -56,8 +56,8 @@ export default function ListPlacePage() {
           </h1>
           <p className="mt-2 text-[14px] text-muted leading-snug">
             Tampilkan tempat usahamu di City Rider dan biarkan pelanggan kami yang sedang booking
-            rider langsung menemukan tempatmu. <strong className="text-ink">Rp 100.000 / tahun</strong>,
-            satu listing per tempat.
+            rider langsung menemukan tempatmu. <strong className="text-ink">GRATIS 2 bulan</strong> — lalu hanya
+            <strong className="text-ink"> Rp 30.000/bulan</strong>, satu listing per tempat.
           </p>
         </header>
 
@@ -97,7 +97,7 @@ export default function ListPlacePage() {
           </div>
           <p className="text-[13px] font-bold leading-snug">
             Isi detail tempatmu, upload foto, dan kirim — admin City Rider akan meninjau dalam
-            24–48 jam. Listing tayang setelah pembayaran Rp 100.000 / tahun dikonfirmasi.
+            24–48 jam. Setelah disetujui kamu mendapat GRATIS 2 bulan, lalu Rp 30.000/bulan untuk tetap tayang.
           </p>
           <Link
             href="/list-place/new"

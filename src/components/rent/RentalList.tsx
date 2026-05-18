@@ -231,7 +231,7 @@ export default function RentalList({
                       List your bike
                     </span>
                     <span className="block text-[12px] font-bold leading-tight text-bg/75">
-                      Rp 100.000 / tahun
+                      GRATIS 2 bulan · Rp 30K/bulan
                     </span>
                   </span>
                 </button>

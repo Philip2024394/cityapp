@@ -19,8 +19,9 @@ export default function SubmittedPage() {
         </h1>
         <p className="text-[14px] text-muted leading-snug mb-6">
           Terima kasih! Admin City Rider akan meninjau tempatmu dalam <strong className="text-ink">24–48 jam</strong>.
-          Kami akan menghubungi via WhatsApp + email yang kamu daftarkan untuk konfirmasi
-          pembayaran (Rp 100.000 / tahun) sebelum listing tayang.
+          Setelah disetujui kamu mendapat <strong className="text-ink">GRATIS 2 bulan</strong> —
+          lalu hanya <strong className="text-ink">Rp 30.000/bulan</strong> untuk tetap tayang.
+          Kami akan menghubungi via WhatsApp + email yang kamu daftarkan.
         </p>
         <Link
           href="/places"

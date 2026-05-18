@@ -1,46 +1,34 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Home, LayoutDashboard, MapPin, LogIn, Bike } from 'lucide-react'
+import { Home } from 'lucide-react'
 
+// Minimal app header — brand logo + name on the left, home icon on
+// the right. All navigation tabs (Marketplace / Places / Rental /
+// Dashboard / Login) live elsewhere; the header just identifies the
+// app and provides a one-tap path back to the marketplace.
 export default function AppNav() {
-  const path = usePathname()
   return (
     <header className="sticky top-0 z-40 glass-strong pt-safe">
-      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <Link href="/" className="flex items-center gap-2 min-w-0">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714"
             alt=""
-            className="h-7 w-auto"
+            className="h-7 w-auto shrink-0"
             loading="eager"
           />
-          <div className="text-[15px] font-extrabold tracking-tight">
+          <div className="text-[15px] font-extrabold tracking-tight truncate">
             City <span className="gradient-text">Rider</span>
           </div>
         </Link>
-        <nav className="flex items-center gap-1">
-          <NavItem href="/"          icon={<Home className="w-4 h-4" />}           label="Marketplace" active={path === '/'} compact />
-          <NavItem href="/places"    icon={<MapPin className="w-4 h-4" />}          label="Places"      active={path?.startsWith('/places') ?? false} />
-          <NavItem href="/rent"      icon={<Bike className="w-4 h-4" />}            label="Rental"      active={path?.startsWith('/rent') ?? false} />
-          <NavItem href="/dashboard" icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard"   active={path?.startsWith('/dashboard') ?? false} compact />
-          <NavItem href="/login"     icon={<LogIn className="w-4 h-4" />}          label="Login"       active={path === '/login'} compact />
-        </nav>
+        <Link
+          href="/"
+          aria-label="Home"
+          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-ink hover:bg-white/5 active:scale-95 transition"
+        >
+          <Home className="w-5 h-5" strokeWidth={2.5} />
+        </Link>
       </div>
     </header>
-  )
-}
-
-function NavItem({ href, icon, label, active, compact }: { href: string; icon: React.ReactNode; label: string; active: boolean; compact?: boolean }) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-bold transition ${
-        active ? 'bg-brand/12 text-brand' : 'text-muted hover:text-ink hover:bg-white/5'
-      }`}
-    >
-      {icon}
-      <span className={compact ? 'hidden sm:inline' : ''}>{label}</span>
-    </Link>
   )
 }

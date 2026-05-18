@@ -35,7 +35,7 @@ export default function RentalRowActions({
   }
 
   async function approve() {
-    if (!confirm('Approve this rental? It becomes publicly visible on /rent immediately.')) return
+    if (!confirm('Approve this rental? It becomes publicly visible on /rent immediately and starts a 2-month free trial (paid_until = today + 60 days).')) return
     await call({ action: 'approve' })
   }
   async function reject() {
@@ -45,7 +45,7 @@ export default function RentalRowActions({
   }
   async function markPaid() {
     const ref = window.prompt('Payment reference (optional — bank transfer ID):') ?? ''
-    if (!confirm('Mark as paid? Sets paid_until = today + 1 year, listing_tier = "paid".')) return
+    if (!confirm('Mark as paid? Extends paid_until by 30 days (Rp 30.000/month) and sets listing_tier = "paid".')) return
     await call({ action: 'mark_paid', payment_reference: ref.trim() || undefined })
   }
   async function suspend() {
@@ -74,7 +74,7 @@ export default function RentalRowActions({
       {status !== 'rejected' && !hasPaid && (
         <button onClick={markPaid} disabled={pending} className="action-btn action-btn-primary disabled:opacity-60">
           <BadgeCheck className="w-3.5 h-3.5" />
-          Mark paid · +1 year
+          Mark paid · +30 days
         </button>
       )}
 

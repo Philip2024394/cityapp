@@ -474,7 +474,8 @@ export default function ListPlaceNewPage() {
           </button>
           <p className="text-[12px] text-muted leading-snug text-center">
             Submission akan ditinjau oleh admin dalam 24–48 jam.
-            Listing tayang setelah pembayaran Rp 100.000 / tahun dikonfirmasi.
+            Setelah disetujui kamu mendapat <strong className="text-ink">GRATIS 2 bulan</strong>, lalu
+            <strong className="text-ink"> Rp 30.000/bulan</strong> untuk tetap tayang.
           </p>
         </form>
       </main>
