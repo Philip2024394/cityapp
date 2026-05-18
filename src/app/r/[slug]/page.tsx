@@ -2,22 +2,18 @@
 import { use, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, MapPin, Bike as BikeIcon, MessageCircle, Star, Share2, Copy, Check } from 'lucide-react'
-import RiderRadar from '@/components/rider/RiderRadar'
+import { ChevronLeft, MapPin, Bike as BikeIcon, Star } from 'lucide-react'
 import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
 import OfflineFallback from '@/components/rider/OfflineFallback'
-import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
 import { fetchDriverBySlugBrowser } from '@/lib/drivers/queries'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
-import { useBeep } from '@/hooks/useBeep'
 import { haversineKm } from '@/lib/geo/haversine'
-import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
-import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
+import { rateFor } from '@/lib/pricing/quote'
 import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
-import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
+import { SERVICE_ICONS, SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
 
 // Shape of a curated place tile rendered in "My favourite places"
 type FavePlace = {
@@ -94,7 +90,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
   const geo = useGeolocation(true)
   const haptic = useHaptic()
-  const beep = useBeep()
 
   const [pickup, setPickup] = useState<GeoPoint | null>(null)
   const [dropoff, setDropoff] = useState<GeoPoint | null>(null)
@@ -105,20 +100,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   const [service, setService] = useState<ServiceType | null>(
     maybeRider?.services[0] ?? null,
   )
-
-  const pricing = useMemo(() => {
-    if (!maybeRider || !service) {
-      return { pricePerKm: maybeRider?.pricePerKm ?? 0, minFee: maybeRider?.minFee ?? 0 }
-    }
-    return rateFor(maybeRider, service)
-  }, [maybeRider, service])
-
-  const quote = useMemo(() => {
-    if (!maybeRider || !pickup || !dropoff) return null
-    const distanceKm = haversineKm(pickup, dropoff)
-    const { final, minApplied } = quoteBreakdown(distanceKm, pricing)
-    return { distanceKm, fare: final, minApplied }
-  }, [pickup, dropoff, maybeRider, pricing])
 
   // Auto-fill pickup with customer GPS on grant
   useMemo(() => {
@@ -134,27 +115,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     haptic.tap()
     geo.request()
     if (geo.coords) { setPickup(geo.coords); setPickupLabel('My location') }
-  }
-
-  // Send WhatsApp — pure deep-link, no platform-side record. The directory's
-  // job ends here; the rest of the booking happens between the customer and
-  // the independent rider on WhatsApp. Keeps the platform on the directory
-  // side of Permenhub PM 12/2019 classification (we are a listing service,
-  // not an aplikasi penyedia jasa angkutan).
-  function onSend() {
-    if (!pickup || !dropoff || !quote) return
-    const link = buildWhatsAppLink({
-      riderName: rider.name,
-      riderWhatsAppE164: rider.whatsappE164,
-      pickup: { lat: pickup.lat, lng: pickup.lng, label: pickupLabel || undefined },
-      dropoff: { lat: dropoff.lat, lng: dropoff.lng, label: dropoffLabel || undefined },
-      distanceKm: quote.distanceKm,
-      pricePerKm: pricing.pricePerKm,
-      fare: quote.fare,
-    })
-    beep.play()
-    haptic.buzz()
-    window.open(link, '_blank', 'noopener,noreferrer')
   }
 
   // OFFLINE fallback view
@@ -180,16 +140,47 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
   // ONLINE view
   return (
-    <main className="min-h-screen pb-40">
+    <main className="min-h-screen pb-6">
       <PageBackground />
       <BackNav />
-      <div className="max-w-2xl mx-auto px-4 pt-2 space-y-5">
+      <div className="max-w-2xl mx-auto px-4 pt-2 space-y-3">
         <RiderHero rider={rider} />
 
-        <RiderRadar
-          customer={pickup ?? geo.coords ?? null}
-          rider={{ lat: rider.lat, lng: rider.lng, name: rider.name }}
-        />
+        {/* Service picker — 3 big tile-buttons (Bike / Parcel / Food).
+            Always renders all 3 even if the rider only offers some,
+            so the booking UX is consistent across every driver page.
+            Services the rider doesn't actually offer fall back to the
+            default per-km rate from rateFor(). */}
+        <div className="card p-4">
+          <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold mb-2.5">
+            Service
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {(['person','parcel','food'] as const).map(s => {
+              const r = rateFor(rider, s)
+              const active = service === s
+              const offered = rider.services.includes(s)
+              return (
+                <button
+                  key={s}
+                  onClick={() => { setService(s); haptic.tap() }}
+                  className="rounded-2xl border text-center py-3 px-2 transition flex flex-col items-center gap-1.5"
+                  style={{
+                    background:   active ? 'rgba(250,204,21,0.10)' : 'rgba(255,255,255,0.04)',
+                    borderColor:  active ? 'rgba(250,204,21,0.45)' : 'rgba(255,255,255,0.08)',
+                    opacity:      offered ? 1 : 0.55,
+                  }}
+                >
+                  <div className="text-[34px] leading-none">{SERVICE_ICONS[s]}</div>
+                  <div className="text-[14px] font-extrabold mt-1" style={{ color: active ? '#FACC15' : '#fff' }}>
+                    {SERVICE_SHORT[s]}
+                  </div>
+                  <div className="text-[12px] text-muted">{idr(r.pricePerKm)}/km</div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
         <PickupDropoffPicker
           pickup={pickup}
@@ -202,93 +193,29 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           status={geo.status}
         />
 
-        {/* Service picker (only when rider offers > 1 service) */}
-        {rider.services.length > 1 && (
-          <div className="card p-4">
-            <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold mb-2.5">
-              Service
-            </div>
-            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${rider.services.length}, 1fr)` }}>
-              {rider.services.map(s => {
-                const r = rateFor(rider, s)
-                const active = service === s
-                return (
-                  <button
-                    key={s}
-                    onClick={() => { setService(s); haptic.tap() }}
-                    className="rounded-2xl border text-center py-2.5 px-2 transition"
-                    style={{
-                      background:   active ? 'rgba(250,204,21,0.10)' : 'rgba(255,255,255,0.04)',
-                      borderColor:  active ? 'rgba(250,204,21,0.45)' : 'rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    <div className="text-[20px] leading-none">{SERVICE_ICONS[s]}</div>
-                    <div className="text-[13px] font-extrabold mt-1.5" style={{ color: active ? '#FACC15' : '#fff' }}>
-                      {SERVICE_SHORT[s]}
-                    </div>
-                    <div className="text-[12px] text-muted mt-0.5">{idr(r.pricePerKm)}/km</div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Live quote card */}
-        <div className="card p-5 relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none opacity-60"
-               style={{ background: 'radial-gradient(ellipse at top right, rgba(250,204,21,0.16), transparent 60%)' }} />
-          <div className="relative flex items-baseline justify-between">
-            <div>
-              <div className="text-[12px] text-dim uppercase tracking-wider font-bold">
-                Fare estimate{service && <> · {SERVICE_SHORT[service]}</>}
-              </div>
-              <div className="text-[34px] font-extrabold gradient-text mt-1 leading-none">
-                {quote ? idr(quote.fare) : '—'}
-              </div>
-              <div className="text-[13px] text-muted mt-2">
-                {quote
-                  ? `${quote.distanceKm.toFixed(1)} km × ${idr(pricing.pricePerKm)}`
-                  : 'Set pickup & drop off to see price'}
-              </div>
-              {quote?.minApplied && (
-                <div className="text-brand text-[12px] mt-1">Min fee {idr(pricing.minFee)} applies</div>
-              )}
-            </div>
-            <div className="text-right text-[13px] text-muted">
-              <div className="font-bold text-ink">{idr(pricing.pricePerKm)}</div>
-              <div className="text-dim">/km</div>
-              <div className="mt-2 font-bold text-ink">min {idr(pricing.minFee)}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bike section */}
-        <div className="card p-5">
-          <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">Bike</div>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 shrink-0 rounded-2xl bg-white/5 flex items-center justify-center text-3xl">
-              🛵
-            </div>
-            <div className="flex-1">
-              <div className="font-extrabold text-lg">{rider.bike.make} {rider.bike.model}</div>
-              <div className="text-[13px] text-muted">
-                {rider.bike.year} · {rider.bike.color} · <span className="capitalize">{rider.bike.type}</span>
-              </div>
-              {rider.bike.plate && (
-                <div className="text-[12px] text-dim mt-1 font-mono">{rider.bike.plate}</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Bio */}
-        {rider.bio && (
-          <div className="card p-5">
-            <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">About the rider</div>
-            <p className="text-[14px] leading-relaxed text-ink/90">{rider.bio}</p>
-          </div>
-        )}
+        {/* Contact Driver — primary CTA. Opens WhatsApp with a prefilled
+            message that carries the customer's pickup + dropoff if they
+            entered them above; otherwise a generic intro. Keeps the page
+            single-screen and replaces the old fare-estimate + sticky bar. */}
+        <button
+          type="button"
+          onClick={() => {
+            const lines = [`Hi ${rider.name}, saya lihat profilmu di City Rider.`]
+            if (pickupLabel || dropoffLabel) {
+              lines.push('')
+              if (pickupLabel)  lines.push(`Pickup:  ${pickupLabel}`)
+              if (dropoffLabel) lines.push(`Drop off: ${dropoffLabel}`)
+            }
+            if (service) lines.push('', `Service: ${SERVICE_SHORT[service]}`)
+            lines.push('', 'Apakah tersedia?')
+            const url = `https://wa.me/${rider.whatsappE164.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`
+            haptic.buzz()
+            window.open(url, '_blank', 'noopener,noreferrer')
+          }}
+          className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[15px] uppercase tracking-wider border border-black/85 shadow-[0_8px_22px_rgba(250,204,21,0.30)] active:scale-[0.99]"
+        >
+          Contact Driver
+        </button>
 
         {/* My favourite places — Layer 1 ↔ Layer 2 bridge. Each tile links
             to the public place page, which in turn lists drivers who tour
@@ -341,11 +268,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           </div>
         )}
 
-        {/* Share row — friction-free distribution. Each share = a new entry
-            point into the platform. Friends shared via WhatsApp Status are
-            the highest-converting traffic source we see. */}
-        <ShareRow slug={rider.slug} riderName={rider.name} />
-
         {/* Cross-sell strip — Layer 2 retention. Customer who arrived via
             a driver share now sees the network. Same city, sorted by rating.
             Each card link carries utm_source=cross-sell + utm_from=<slug>
@@ -393,32 +315,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         )}
       </div>
 
-      {/* Sticky bottom bar — pure WhatsApp CTA. The directory hands the
-          customer off to WhatsApp; everything after that is between the
-          customer and the independent rider. */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-        <div className="max-w-2xl mx-auto px-4 pb-3">
-          <div className="glass-strong rounded-2xl p-3">
-            <button
-              onClick={onSend}
-              disabled={!quote}
-              className="btn-wa w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <MessageCircle className="w-5 h-5" />
-              {quote
-                ? `Open WhatsApp · ${idr(quote.fare)}`
-                : 'Set pickup & drop off to send'}
-            </button>
-            <p className="text-[11px] text-dim text-center mt-2">
-              Booking, payment + dispute handled directly between you and the rider
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Compact disclaimer above the sticky CTA (rendered in page body
-          padding so it sits visible above the fixed bottom area) */}
-      <div className="max-w-2xl mx-auto"><PlatformDisclaimer variant="compact" /></div>
     </main>
   )
 }
@@ -443,102 +339,6 @@ function PageBackground() {
         backgroundRepeat: 'no-repeat',
       }}
     />
-  )
-}
-
-// ShareRow — copy/WhatsApp/QR for the driver's own URL. Drivers screenshot
-// this section, customers tap-and-go. Every share button click ALSO opens
-// the relevant share surface — we never silently copy without confirmation.
-function ShareRow({ slug, riderName }: { slug: string; riderName: string }) {
-  const [shareUrl, setShareUrl] = useState<string>('')
-  const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    setShareUrl(`${window.location.origin}/r/${slug}`)
-  }, [slug])
-
-  function copyLink() {
-    if (!shareUrl) return
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => { /* clipboard blocked — no-op */ })
-  }
-
-  function shareWhatsApp() {
-    if (!shareUrl) return
-    const text = encodeURIComponent(
-      `Recommended driver in town — book directly on WhatsApp:\n${shareUrl}`,
-    )
-    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer')
-  }
-
-  async function nativeShare() {
-    if (!shareUrl) return
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${riderName} · City Rider`,
-          text: `Book ${riderName} directly on WhatsApp`,
-          url: shareUrl,
-        })
-      } catch { /* user cancel */ }
-    } else {
-      copyLink()
-    }
-  }
-
-  const qrSrc = shareUrl ? `/api/qr?text=${encodeURIComponent(shareUrl)}` : ''
-
-  return (
-    <div className="card p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <Share2 className="w-4 h-4 text-brand" />
-        <h2 className="text-[12px] text-dim uppercase tracking-wider font-bold">
-          Share {riderName.split(' ')[0]}
-        </h2>
-      </div>
-      <div className="flex items-center gap-4">
-        {/* QR — large enough to scan from a phone screen */}
-        <div className="w-24 h-24 shrink-0 rounded-xl bg-white p-2 border border-white/10">
-          {qrSrc ? (
-            <img src={qrSrc} alt="QR code" className="w-full h-full" />
-          ) : null}
-        </div>
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="text-[12px] text-muted truncate font-mono">
-            {shareUrl || '—'}
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={copyLink}
-              className="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl bg-black/50 border border-white/10 text-[12px] font-extrabold text-ink hover:border-brand/40 transition"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-brand" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-            <button
-              type="button"
-              onClick={shareWhatsApp}
-              className="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl bg-black/50 border border-white/10 text-[12px] font-extrabold text-ink hover:border-brand/40 transition"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              WhatsApp
-            </button>
-            <button
-              type="button"
-              onClick={nativeShare}
-              className="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl bg-gradient-to-r from-brand to-brand2 text-bg text-[12px] font-extrabold border border-black/85 transition"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              Share
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 
@@ -584,14 +384,6 @@ function RiderHero({ rider, dimmed }: { rider: ReturnType<typeof findRiderBySlug
           </div>
           <div className="text-[12px] text-dim mt-0.5">
             {rider.bike.color} · {rider.bike.type[0]!.toUpperCase() + rider.bike.type.slice(1)}
-          </div>
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {rider.services.map(s => (
-              <span key={s} className="chip-muted chip">
-                <span>{SERVICE_ICONS[s]}</span>
-                <span>{SERVICE_LABELS[s]}</span>
-              </span>
-            ))}
           </div>
         </div>
       </div>
