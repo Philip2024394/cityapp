@@ -83,9 +83,6 @@ export default function RiderCard({ rider, distanceKm, estimatedFare, onWhatsApp
                 <span className="font-semibold">{SERVICE_LABELS[s].split(' ')[0]}</span>
               </span>
             ))}
-            {rider.bike.hasBox && (
-              <span className="chip-muted chip text-[13px] py-1 px-2">📦 Box</span>
-            )}
           </div>
 
           <div className="flex items-center justify-between mt-2.5">

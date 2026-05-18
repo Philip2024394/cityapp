@@ -418,14 +418,9 @@ function FeaturedDriverCard({
       {/* Bottom info panel — overlays the lower portion of the image */}
       <div className="absolute inset-x-0 bottom-0 pointer-events-none">
         <div className="relative px-3.5 pt-2.5 pb-3 space-y-1.5 pointer-events-auto">
-          {/* Trust chips: box + services (excl. parcel + food) */}
+          {/* Trust chips: services offered (excl. parcel + food). Box
+              badge was removed — drivers can mention a box in their bio. */}
           <div className="flex flex-wrap items-center gap-1.5">
-            {rider.bike.hasBox && (
-              <span className="pill-soft pill-soft-online" aria-label="Has box">
-                <span aria-hidden>📦</span>
-                Box
-              </span>
-            )}
             {rider.services.filter(s => s !== 'parcel' && s !== 'food').map(s => (
               <span key={s} className="pill-soft" aria-label={SERVICE_LABELS[s]}>
                 <span aria-hidden>{SERVICE_ICONS[s]}</span>

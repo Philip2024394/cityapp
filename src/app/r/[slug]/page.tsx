@@ -2,7 +2,7 @@
 import { use, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, MapPin, Box, Bike as BikeIcon, MessageCircle } from 'lucide-react'
+import { ChevronLeft, MapPin, Bike as BikeIcon, MessageCircle } from 'lucide-react'
 import RiderRadar from '@/components/rider/RiderRadar'
 import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
 import OfflineFallback from '@/components/rider/OfflineFallback'
@@ -216,12 +216,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 <div className="text-[12px] text-dim mt-1 font-mono">{rider.bike.plate}</div>
               )}
             </div>
-            {rider.bike.hasBox && (
-              <span className="chip-online chip">
-                <Box className="w-3 h-3" />
-                Box
-              </span>
-            )}
           </div>
         </div>
 
