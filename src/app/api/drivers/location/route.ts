@@ -7,8 +7,10 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // ----------------------------------------------------------------------------
 // Online rider's browser pings their GPS location every ~15 seconds.
 // We update current_lat/current_lng/current_location_updated_at and bump
-// last_active_at. Customers tracking their accepted trip subscribe via
-// Supabase Realtime to drivers.current_lat changes.
+// last_active_at. Used by /cari + /r/[slug] so customers can see where
+// independent riders are listed in the directory. Not used for any
+// trip tracking — the platform does not record trips (see migration
+// 0010 and /legal page for the directory-vs-operator posture).
 //
 // Light validation only — drivers may have GPS jitter or no GPS at all.
 // ============================================================================
