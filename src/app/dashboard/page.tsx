@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale } from 'lucide-react'
+import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
@@ -89,7 +89,47 @@ export default function DashboardPage() {
             subscriptionMonthly={SUBSCRIPTION_MONTHLY}
           />
 
-          {/* New rider-tools row */}
+          {/* Edit listing — sends rider back through /onboarding which
+              upserts the drivers row. Top-level CTA because it's the most
+              common action ("change my price / hours / bike"). */}
+          <Link
+            href="/onboarding?mode=edit"
+            className="card card-interactive p-4 flex items-center justify-between"
+            style={{ background: 'rgba(250,204,21,0.08)', borderColor: 'rgba(250,204,21,0.30)' }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-brand/15 border border-brand/30 flex items-center justify-center shrink-0">
+                <Edit3 className="w-4 h-4 text-brand" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-extrabold text-[14px]">Edit my listing</div>
+                <div className="text-[13px] text-muted truncate">
+                  Price, services, bike details — all editable
+                </div>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-brand shrink-0" />
+          </Link>
+
+          {/* Owner dashboards — visible to all signed-in users so a non-rider
+              place or rental owner can still navigate here. The dashboards
+              themselves show empty-state CTAs if the user has no listings. */}
+          <div className="grid grid-cols-2 gap-2">
+            <ToolCard
+              href="/dashboard/places"
+              icon={<MapPin className="w-4 h-4" />}
+              label="My places"
+              hint="Edit / renew"
+            />
+            <ToolCard
+              href="/dashboard/rentals"
+              icon={<Bike className="w-4 h-4" />}
+              label="My rentals"
+              hint="Edit bikes"
+            />
+          </div>
+
+          {/* Rider-tools row */}
           <div className="grid grid-cols-3 gap-2">
             <ToolCard
               href="/dashboard/customers"

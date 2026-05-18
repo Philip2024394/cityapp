@@ -117,5 +117,5 @@ export async function listRentalsForCity(city: string): Promise<BikeRental[]> {
     .order('rating', { ascending: false, nullsFirst: false })
 
   if (error || !data) return []
-  return (data as RentalRow[]).map(rowToRental)
+  return (data as unknown as RentalRow[]).map(rowToRental)
 }

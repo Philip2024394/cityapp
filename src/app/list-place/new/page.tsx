@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Upload, X as XIcon, MapPin, CheckCircle2, Loader2, User, Store, Camera, Tag } from 'lucide-react'
@@ -73,6 +73,31 @@ export default function ListPlaceNewPage() {
 
   const [submitting, setSubmitting]   = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Auth gate — listings are now tied to the submitter via owner_user_id so
+  // they can self-manage on /dashboard/places. If signed out, bounce to
+  // /login with a returnTo back to this page so the flow is one round-trip.
+  const [authedUserId, setAuthedUserId] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  useEffect(() => {
+    if (!supabase) { setAuthLoading(false); return }
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user
+      if (!u) {
+        router.replace('/login?next=/list-place/new')
+        return
+      }
+      setAuthedUserId(u.id)
+      // Prefill contact fields from the user's metadata for convenience.
+      const meta = u.user_metadata ?? {}
+      if (meta.full_name && !ownerName) setOwnerName(String(meta.full_name))
+      if (u.email && !email) setEmail(u.email)
+      if (u.phone && !whatsapp) setWhatsApp('+' + u.phone)
+      setAuthLoading(false)
+    })
+  // ownerName/email/whatsapp intentionally excluded — prefill runs once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function toggleTag(id: string) {
     setTags((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]))
@@ -167,6 +192,12 @@ export default function ListPlaceNewPage() {
       return
     }
 
+    if (!authedUserId) {
+      setSubmitError('Sesi habis — silakan login ulang.')
+      router.replace('/login?next=/list-place/new')
+      return
+    }
+
     setSubmitting(true)
     try {
       const slug = `${slugify(name)}-${submissionIdRef.current.slice(0, 8)}`
@@ -185,11 +216,22 @@ export default function ListPlaceNewPage() {
         whatsapp_e164: normaliseWhatsApp(whatsapp),
         tags,
         status: 'pending',
+        owner_user_id: authedUserId,
         submitted_name: ownerName.trim(),
         submitted_email: email.trim(),
         submitted_whatsapp: normaliseWhatsApp(whatsapp),
       })
-      if (error) throw error
+      if (error) {
+        // 23505 = unique_violation — dedup index from migration 0011 caught
+        // a second pending listing for the same (owner, city).
+        if (error.code === '23505') {
+          setSubmitError('Kamu sudah punya listing pending di kota ini. Tunggu admin review atau edit yang ada di /dashboard/places.')
+        } else {
+          throw error
+        }
+        setSubmitting(false)
+        return
+      }
       router.push('/list-place/submitted')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Terjadi kesalahan saat submit.'

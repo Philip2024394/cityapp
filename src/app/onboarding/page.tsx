@@ -1,9 +1,10 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Check, Briefcase, Link2, Bike,
-  Wallet, MapPin, Coins, Loader2, Banknote, QrCode, Send,
+  Wallet, MapPin, Coins, Loader2, Banknote, QrCode, Send, Edit3,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -13,7 +14,17 @@ import type { ServiceType, BikeType } from '@/types/database'
 const STEPS = ['Business', 'Link', 'Bike', 'Services & price', 'Payment', 'Location'] as const
 
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<main className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-muted" /></main>}>
+      <OnboardingInner />
+    </Suspense>
+  )
+}
+
+function OnboardingInner() {
   const router = useRouter()
+  const sp = useSearchParams()
+  const isEditMode = sp.get('mode') === 'edit'
   const [stepIdx, setStepIdx] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -65,6 +76,53 @@ export default function OnboardingPage() {
   const [acceptsTransfer, setAcceptsTransfer] = useState(false)
   const [qrPaymentUrl, setQrPaymentUrl] = useState('')
   const [transferDetails, setTransferDetails] = useState('')
+
+  // Edit-mode prefill — when ?mode=edit, fetch the existing driver row
+  // and populate state. Onboarding's submit handler already calls
+  // `upsert` keyed on user_id so the same flow doubles as the edit
+  // surface, which keeps us from maintaining two parallel forms.
+  const [prefillLoading, setPrefillLoading] = useState(false)
+  useEffect(() => {
+    if (!isEditMode || !me?.id) return
+    const supabase = getBrowserSupabase()
+    if (!supabase) return
+    setPrefillLoading(true)
+    supabase
+      .from('drivers')
+      .select('*')
+      .eq('user_id', me.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) { setPrefillLoading(false); return }
+        const d = data as Record<string, unknown>
+        if (typeof d.business_name === 'string') setBusinessName(d.business_name)
+        if (typeof d.bio === 'string') setBio(d.bio)
+        if (typeof d.slug === 'string') { setSlug(d.slug); setSlugTouched(true) }
+        if (typeof d.bike_make === 'string') setBikeMake(d.bike_make)
+        if (typeof d.bike_model === 'string') setBikeModel(d.bike_model)
+        if (typeof d.bike_year === 'number') setBikeYear(d.bike_year)
+        if (typeof d.bike_color === 'string') setBikeColor(d.bike_color)
+        if (typeof d.bike_plate === 'string') setBikePlate(d.bike_plate)
+        if (typeof d.bike_type === 'string') setBikeType(d.bike_type as BikeType)
+        if (typeof d.bike_cc === 'number') setBikeCc(d.bike_cc)
+        if (typeof d.has_box === 'boolean') setHasBox(d.has_box)
+        if (Array.isArray(d.services)) setServices(d.services as ServiceType[])
+        if (typeof d.price_per_km === 'number') setPricePerKm(d.price_per_km)
+        if (typeof d.min_fee === 'number') setMinFee(d.min_fee)
+        if (typeof d.pitstop_fee === 'number') setPitstopFee(d.pitstop_fee)
+        if (typeof d.accepts_cash === 'boolean') setAcceptsCash(d.accepts_cash)
+        if (typeof d.accepts_qr === 'boolean') setAcceptsQR(d.accepts_qr)
+        if (typeof d.accepts_transfer === 'boolean') setAcceptsTransfer(d.accepts_transfer)
+        if (typeof d.qr_payment_url === 'string') setQrPaymentUrl(d.qr_payment_url)
+        if (typeof d.transfer_details === 'string') setTransferDetails(d.transfer_details)
+        if (typeof d.city === 'string') setCity(d.city)
+        if (typeof d.area === 'string') setArea(d.area)
+        if (typeof d.service_zone_center_lat === 'number') setZoneLat(d.service_zone_center_lat)
+        if (typeof d.service_zone_center_lng === 'number') setZoneLng(d.service_zone_center_lng)
+        if (typeof d.service_zone_radius_km === 'number') setZoneRadius(d.service_zone_radius_km)
+        setPrefillLoading(false)
+      })
+  }, [isEditMode, me?.id])
 
   const [city, setCity] = useState('')
   const [area, setArea] = useState('')
@@ -207,6 +265,23 @@ export default function OnboardingPage() {
       <AppNav />
       <main className="min-h-screen pt-6 pb-20 px-4 grid-bg">
         <div className="w-full max-w-md mx-auto space-y-4">
+          {isEditMode && (
+            <div
+              className="card p-3 flex items-center gap-3"
+              style={{ background: 'rgba(250,204,21,0.10)', borderColor: 'rgba(250,204,21,0.40)' }}
+            >
+              <Edit3 className="w-4 h-4 text-brand shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-extrabold text-ink">Editing your listing</div>
+                <div className="text-[12px] text-muted">
+                  {prefillLoading ? 'Loading your current values…' : 'Changes save when you finish all steps.'}
+                </div>
+              </div>
+              <Link href="/dashboard" className="text-[12px] text-muted hover:text-ink font-bold shrink-0">
+                Cancel
+              </Link>
+            </div>
+          )}
           {/* Progress dots */}
           <div className="flex items-center gap-1.5 px-1">
             {STEPS.map((label, i) => (

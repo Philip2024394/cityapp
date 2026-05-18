@@ -42,7 +42,7 @@ function cityLabel(slug: string): string {
 }
 
 function nearestCity(lat: number, lng: number): { slug: string; km: number } {
-  let best = { slug: SUPPORTED_CITIES[0].slug, km: Infinity }
+  let best: { slug: string; km: number } = { slug: SUPPORTED_CITIES[0].slug, km: Infinity }
   for (const c of SUPPORTED_CITIES) {
     const km = haversineKm({ lat, lng }, { lat: c.lat, lng: c.lng })
     if (km < best.km) best = { slug: c.slug, km }

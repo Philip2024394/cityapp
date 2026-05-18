@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -109,6 +109,27 @@ export default function ListBikeFormPage() {
   // Submit
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Auth gate — rental listings are tied to the submitter via owner_user_id
+  // so they can self-manage on /dashboard/rentals. If signed out, bounce to
+  // /login with a returnTo back to this page.
+  const [authedUserId, setAuthedUserId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!supabase) return
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user
+      if (!u) {
+        router.replace('/login?next=/rent/list/new')
+        return
+      }
+      setAuthedUserId(u.id)
+      const meta = u.user_metadata ?? {}
+      if (meta.full_name && !ownerName) setOwnerName(String(meta.full_name))
+      if (u.email && !email) setEmail(u.email)
+      if (u.phone && !whatsapp) setWhatsApp('+' + u.phone)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function toggleLang(id: string) {
     setLanguages((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]))
@@ -220,12 +241,18 @@ export default function ListBikeFormPage() {
     }
     const latN = parseFloat(lat); const lngN = parseFloat(lng)
     if (!Number.isFinite(latN) || !Number.isFinite(lngN)) { setSubmitError('Atur titik lokasi (lat + lng).'); return }
+    if (!authedUserId) {
+      setSubmitError('Sesi habis — silakan login ulang.')
+      router.replace('/login?next=/rent/list/new')
+      return
+    }
     setSubmitting(true)
     try {
       const num = (s: string) => parseInt(s.replace(/[^\d]/g, ''), 10) || 0
       const slug = `${slugify(`${brand}-${model}`)}-${submissionIdRef.current.slice(0, 8)}`
       const { error } = await supabase.from('bike_rentals').insert({
         slug,
+        owner_user_id: authedUserId,
         owner_name: ownerName.trim(),
         owner_company: ownerCompany.trim() || null,
         owner_whatsapp_e164: normaliseWhatsApp(whatsapp),
@@ -264,7 +291,15 @@ export default function ListBikeFormPage() {
         submitted_email: email.trim(),
         submitted_whatsapp: normaliseWhatsApp(whatsapp),
       })
-      if (error) throw error
+      if (error) {
+        if (error.code === '23505') {
+          setSubmitError('Kamu sudah punya rental pending di kota ini. Cek /dashboard/rentals untuk edit.')
+        } else {
+          throw error
+        }
+        setSubmitting(false)
+        return
+      }
       router.push('/rent/list/submitted')
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Submit gagal.')
