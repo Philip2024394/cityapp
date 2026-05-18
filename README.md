@@ -1,60 +1,96 @@
 # City Rider
 
-Mobile-first PWA marketplace for independent Indonesian motorcycle couriers. Riders own their profile, set their own prices, keep 100% earnings. Platform monetises via Rp 30.000/month subscription only — no commission, no dispatch.
+**Booking software for independent rider businesses.**
+City Rider is a SaaS platform for individual rider entrepreneurs in Indonesia. Each rider runs their own independent transport / parcel / food-delivery business; the platform sells software access only. We never process trip payments, never auto-assign customers to riders, and never run a fleet.
+
+## Core rules (architectural invariants)
+
+- One driver = one independent rider business. No fleet hierarchy.
+- The customer **always** picks the rider manually. Platform never auto-assigns.
+- Payments flow directly customer ↔ rider (cash / QR / transfer). Platform records `payment_method` + `payment_status` only.
+- Subscription: Rp 30.000/month per rider, paid directly to the platform.
 
 ## Stack
 
 - Next.js 15 (App Router) + React 19 + TypeScript
-- Tailwind CSS — yellow / black / white
-- Supabase (Postgres + Auth + Realtime + PostGIS)
-- Maplibre GL + OpenFreeMap (OSM vector tiles, no API key)
-- Vaul (bottom sheets)
-- Web Audio API (in-app beep), Vibration API (haptics)
+- Tailwind CSS
+- Supabase (Postgres + Auth + Realtime) — Singapore region
+- Maplibre GL + OSM tiles
 - Vercel hosting
 
-## Dev
+## Local dev
 
 ```bash
 npm install
-cp .env.local.example .env.local   # fill Supabase keys when ready
-npm run dev                         # defaults to port 3000; monorepo runs on 5186
-npm run build                       # production build
-npm run typecheck                   # tsc --noEmit
+cp .env.local.example .env.local       # fill in Supabase keys
+npm run dev                             # defaults to port 3000
+npm run build                           # production build
+npm run typecheck                       # tsc --noEmit
 ```
 
-App works without Supabase env — falls back to mock riders.
+App boots in **demo mode** (legacy mock data) when Supabase env vars are absent.
+
+## Supabase setup
+
+1. Create a project at [supabase.com](https://supabase.com) in the **Singapore (SIN)** region.
+2. Copy `Project URL`, `anon` key, and `service_role` key into `.env.local`.
+3. Push the schema:
+   ```bash
+   npx supabase link --project-ref <your-ref>
+   npx supabase db push
+   ```
+   (Or paste the contents of `supabase/migrations/*.sql` into the Supabase SQL editor in order.)
+4. Enable phone-OTP auth in the Supabase dashboard: Authentication → Providers → Phone. Configure an SMS provider (Twilio is default).
+5. Restart `npm run dev`. The middleware now enforces auth on protected routes.
 
 ## Routes
 
-- `/` — Marketplace (map + pickup/dropoff picker + rider list + WhatsApp handoff)
-- `/r/[slug]` — Public rider profile (online) OR offline-fallback marketplace
-- `/dashboard` — Rider dashboard (GO ONLINE toggle, quote inbox, stats)
-- `/profile` — Profile + bike editor
-- `/pricing` — Per-km rate + min fee sliders, live quote preview
-- `/services` — Service type toggles (Package, Food, Courier, Personal)
-- `/login`, `/signup`, `/forgot` — Auth
+| Path | Audience | Notes |
+|---|---|---|
+| `/` | Public | Landing page |
+| `/cari` | Public | Trip planner (pickup / dropoff / pit stop) |
+| `/cari/rider` | Public | Discovery — list of nearby independent riders. **Customer picks manually.** |
+| `/r/[slug]` | Public | Single rider's public booking page |
+| `/login`, `/signup`, `/forgot` | Public | Phone-OTP auth |
+| `/onboarding` | Authenticated | New-rider wizard (slug, business name, pricing, QR upload) |
+| `/dashboard` | Driver | Rider business dashboard |
+| `/profile` | Driver | Profile + bike + pricing editor |
+| `/admin` | Admin | Platform moderation |
 
-## Booking flow
+## Booking flow (server-backed)
 
-1. Customer enters pickup (auto-GPS) + dropoff (tap on map)
-2. App computes Haversine distance × rider's per-km rate (respecting min fee)
-3. Rider cards re-sort by total fare for this trip
-4. Customer taps a rider → quote receipt drawer
-5. "Kirim ke WhatsApp" → opens wa.me link with prefilled message:
-   - Greeting, pickup + dropoff addresses
-   - Both OSM location pins (clickable)
-   - Distance + fare estimate
-6. Platform beeps + logs `quote_events` row (analytics)
-7. Phase 2: server fires Web Push to rider's device
+1. Customer enters pickup + dropoff on `/cari` → routed to `/cari/rider`
+2. Discovery returns nearby riders sorted by distance/availability — **customer picks one manually**
+3. Customer presses Book → server inserts a `trips` row with the chosen `driver_id` and `status = 'requested'`
+4. Selected rider receives a realtime notification (Supabase Realtime + optional Web Push)
+5. Rider accepts → `status = 'accepted'`. If declines or times out → `status = 'expired'`, customer returns and picks another.
+6. Trip transitions: `requested → accepted → arrived → in_progress → completed`
+7. On completion: rider's QR / transfer details / cash option are shown to the customer.
+8. Customer marks paid → `payment_status = 'pending_confirmation'`. Rider confirms received → `payment_status = 'confirmed'`.
+9. Customer rates the rider. `drivers.rating` and `drivers.trips_count` updated.
 
-## Offline-fallback pattern
+There is **no automated dispatch**. There is **no platform-controlled payment flow**.
 
-When customer visits a rider's profile and that rider is offline, page renders the marketplace of 5 nearest online riders instead — every dead lead converts.
+## Rider availability
 
-## Phase roadmap
+A rider's state is one of:
 
-- ✅ Phase 1 — UI, marketplace, profile pages, dashboard, mock data
-- ⏳ Phase 2 — Supabase auth + DB wiring, real GPS persistence, Web Push
-- ⏳ Phase 3 — Maplibre live rider pins via Supabase Realtime
-- ⏳ Phase 4 — Midtrans Recurring billing
-- ⏳ Phase 5 — Polish (confetti, prayer-time auto-offline, Bahasa pass)
+- **online** — visible on discovery + bookable
+- **busy** — visible on discovery, Book button disabled, shown as "Currently busy"
+- **offline** — visible on discovery, greyed out at the bottom, not bookable
+
+Plus a `last_active_at` displayed as "Active just now / 3 min ago / 1 hr ago".
+
+## Subscription enforcement (MVP)
+
+- New riders start with `subscription.status = 'trial'` (14 days).
+- After trial expires → `past_due`. Rider stays visible in discovery, but their Book button is disabled with a "Subscription expired" overlay.
+- Admin manually flips `status = 'active'` when a transfer is received (no automated billing in MVP).
+
+## Roadmap
+
+- ✅ Phase 0 — Schema, auth, middleware, Supabase wiring
+- ⏳ Phase 1 — Rider onboarding wizard, dashboard wired to real data
+- ✅ Phase 2 — Real trip flow (server insert + realtime delivery to rider)
+- ⏳ Phase 3 — QR payment confirmation flow + ratings
+- ⏳ Phase 4 — Admin panel + production hardening

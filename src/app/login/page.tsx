@@ -1,12 +1,68 @@
 'use client'
 import Link from 'next/link'
 import { useState } from 'react'
-import { Mail, Lock, LogIn } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Phone, KeyRound, LogIn, ArrowLeft } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import { getBrowserSupabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const router = useRouter()
+  const sp = useSearchParams()
+  const next = sp.get('next') || '/dashboard'
+
+  const [step, setStep] = useState<'phone' | 'otp'>('phone')
+  const [phone, setPhone] = useState('')
+  const [otp, setOtp] = useState('')
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function sendOtp(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const cleaned = normalizePhone(phone)
+    if (!cleaned) {
+      setError('Please enter a valid Indonesian mobile number (e.g. 6281234567890)')
+      return
+    }
+    const supabase = getBrowserSupabase()
+    if (!supabase) {
+      setError('Auth not configured. Add Supabase keys to .env.local.')
+      return
+    }
+    setPending(true)
+    const { error } = await supabase.auth.signInWithOtp({ phone: cleaned })
+    setPending(false)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setPhone(cleaned)
+    setStep('otp')
+  }
+
+  async function verifyOtp(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const supabase = getBrowserSupabase()
+    if (!supabase) {
+      setError('Auth not configured.')
+      return
+    }
+    setPending(true)
+    const { error } = await supabase.auth.verifyOtp({
+      phone,
+      token: otp.trim(),
+      type: 'sms',
+    })
+    setPending(false)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    router.push(next)
+    router.refresh()
+  }
 
   return (
     <>
@@ -15,57 +71,92 @@ export default function LoginPage() {
         <div className="w-full max-w-md card p-6 space-y-5 mt-4">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand to-brand2 flex items-center justify-center text-bg text-2xl mb-3">🛵</div>
-            <h1 className="text-2xl font-extrabold">Sign in as a rider</h1>
-            <p className="text-muted text-[14px] mt-1">Welcome back. Riders only.</p>
+            <h1 className="text-2xl font-extrabold">
+              {step === 'phone' ? 'Sign in' : 'Verify your phone'}
+            </h1>
+            <p className="text-muted text-[14px] mt-1">
+              {step === 'phone'
+                ? 'Welcome back. Use the phone number you signed up with.'
+                : `We sent a 6-digit code to +${phone}`}
+            </p>
           </div>
 
-          <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
-            <div>
-              <label className="label">Email</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  className="input pl-11"
-                  type="email"
-                  placeholder="andi@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
+          {step === 'phone' && (
+            <form className="space-y-3" onSubmit={sendOtp}>
+              <div>
+                <label className="label">WhatsApp number</label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    className="input pl-11 font-mono"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="6281234567890"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </div>
+                <p className="text-[12px] text-dim mt-1.5">Indonesian number, start with 62 (no +)</p>
               </div>
-            </div>
-            <div>
-              <label className="label flex items-center justify-between">
-                <span>Password</span>
-                <Link href="/forgot" className="text-brand text-[12px] normal-case tracking-normal">Forgot?</Link>
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  className="input pl-11"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
+              {error && <p className="text-[13px] text-red-400">{error}</p>}
+              <button type="submit" className="btn-primary w-full" disabled={pending}>
+                <LogIn className="w-4 h-4" />
+                {pending ? 'Sending code…' : 'Send code'}
+              </button>
+            </form>
+          )}
 
-            <button type="submit" className="btn-primary w-full">
-              <LogIn className="w-4 h-4" />
-              Login
-            </button>
-          </form>
+          {step === 'otp' && (
+            <form className="space-y-3" onSubmit={verifyOtp}>
+              <div>
+                <label className="label">6-digit code</label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    className="input pl-11 font-mono tracking-[0.4em] text-center text-[18px]"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    autoComplete="one-time-code"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              {error && <p className="text-[13px] text-red-400">{error}</p>}
+              <button type="submit" className="btn-primary w-full" disabled={pending || otp.length !== 6}>
+                <LogIn className="w-4 h-4" />
+                {pending ? 'Verifying…' : 'Verify & sign in'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setStep('phone'); setOtp(''); setError(null) }}
+                className="w-full text-[13px] text-muted hover:text-brand inline-flex items-center justify-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Use a different number
+              </button>
+            </form>
+          )}
 
           <div className="text-center text-[13px] text-muted">
-            Don't have an account?{' '}
-            <Link href="/signup" className="text-brand font-bold">Sign up as a rider</Link>
-          </div>
-
-          <div className="text-center text-[11px] text-dim pt-2 border-t border-line">
-            Riders only. Customers contact riders directly via WhatsApp.
+            New here?{' '}
+            <Link href="/signup" className="text-brand font-bold">Create an account</Link>
           </div>
         </div>
       </main>
     </>
   )
+}
+
+// Normalize a user-typed phone number to E.164 without the leading +.
+// Accepts: "081234...", "+6281234...", "6281234..." → returns "6281234..."
+function normalizePhone(raw: string): string | null {
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return null
+  if (digits.startsWith('0')) return '62' + digits.slice(1)
+  if (digits.startsWith('62')) return digits
+  return null
 }

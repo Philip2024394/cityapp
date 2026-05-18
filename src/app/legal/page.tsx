@@ -51,9 +51,9 @@ export default function LegalIndexPage() {
         <section className="card p-5 space-y-3 text-[14px] leading-relaxed">
           <h2 className="font-extrabold text-[16px]">Our regulatory position</h2>
           <p className="text-ink/85">
-            City Rider is a software listing platform for independent motorcycle couriers. We do
-            not own vehicles, employ riders, set prices, dispatch trips, process payments, or
-            take commission. Each rider on this directory is an independent business operator,
+            City Rider is a booking software platform for independent motorcycle riders. We do
+            not own vehicles, employ riders, set prices, assign customers to riders, process
+            payments, or take commission. Each rider on this directory is an independent business,
             solely responsible for their own licences, vehicle, insurance, taxes, and conduct.
           </p>
           <p className="text-ink/85">

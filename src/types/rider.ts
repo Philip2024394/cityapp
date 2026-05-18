@@ -67,6 +67,9 @@ export type Rider = {
   // Item costs handled separately between customer + rider via GoPay/QRIS.
   pitstopFee?: number
   isOnline:   boolean
+  /** Three-state availability used by the new schema. Falls back to derived
+   *  value (`isOnline ? 'online' : 'offline'`) for legacy mock data. */
+  availability?: 'online' | 'busy' | 'offline'
   lastSeenAt: string
   lat: number
   lng: number

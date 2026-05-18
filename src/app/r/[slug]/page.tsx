@@ -1,5 +1,5 @@
 'use client'
-import { use, useMemo, useState } from 'react'
+import { use, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronLeft, MapPin, Box, Bike as BikeIcon, MessageCircle } from 'lucide-react'
@@ -9,6 +9,7 @@ import OfflineFallback from '@/components/rider/OfflineFallback'
 import CustomerWaitingState, { type WaitingStatus, type RiderSuggestion } from '@/components/rider/CustomerWaitingState'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { findRiderBySlug, getOnlineRiders, MOCK_RIDERS } from '@/data/mockRiders'
+import { fetchDriverBySlugBrowser } from '@/lib/drivers/queries'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
@@ -17,12 +18,20 @@ import { haversineKm } from '@/lib/geo/haversine'
 import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
-import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type ServiceType } from '@/types/rider'
-import { useEffect } from 'react'
+import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
 
 export default function RiderProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const maybeRider = findRiderBySlug(slug)
+  // Initial render uses sync mock lookup so the page boots instantly.
+  // Then we upgrade to the live Supabase row if one exists.
+  const [maybeRider, setMaybeRider] = useState<Rider | null>(() => findRiderBySlug(slug) ?? null)
+  useEffect(() => {
+    let cancelled = false
+    fetchDriverBySlugBrowser(slug).then((r) => {
+      if (!cancelled && r) setMaybeRider(r)
+    })
+    return () => { cancelled = true }
+  }, [slug])
 
   const geo = useGeolocation(true)
   const haptic = useHaptic()
@@ -85,6 +94,29 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     return () => clearTimeout(t)
   }, [waiting])
 
+  // Customer identity — anonymous, persisted in localStorage between visits so
+  // repeat customers skip the modal. Shared with /cari/rider via the same keys.
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [customerName, setCustomerName] = useState('')
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setCustomerPhone(localStorage.getItem('cityrider:customer_phone') || '')
+    setCustomerName(localStorage.getItem('cityrider:customer_name') || '')
+  }, [])
+
+  // Pending-book intent — captured when customer presses Send WhatsApp
+  // without saved phone+name. Modal collects the missing info, then we
+  // continue with recordTripAndOpenChat against the stashed rider.
+  type PendingBook = {
+    rider: Rider
+    fare: number
+    perKm: number
+    whatsappLink: string
+  }
+  const [pendingBook, setPendingBook] = useState<PendingBook | null>(null)
+  const [submittingBook, setSubmittingBook] = useState(false)
+  const [bookError, setBookError] = useState<string | null>(null)
+
   // Compute 3 nearest online riders (excluding the currently-waiting one)
   // for the soft-suggest list shown in declined/expired states.
   const suggestions: RiderSuggestion[] = useMemo(() => {
@@ -130,29 +162,113 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     })
     beep.play()
     haptic.buzz()
-    window.open(newLink, '_blank', 'noopener,noreferrer')
-    const newOrderId = 'o_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
+    if (!customerPhone || customerPhone.length < 10) {
+      setPendingBook({ rider: newRider, fare: newFare, perKm: newPricing.pricePerKm, whatsappLink: newLink })
+      return
+    }
+    void recordTripAndOpenChat({ rider: newRider, fare: newFare, perKm: newPricing.pricePerKm, whatsappLink: newLink })
+  }
+
+  // Server insert + WhatsApp handoff. Inserts a `trips` row pointed at the
+  // chosen rider so their dashboard receives a real-time notification via the
+  // Supabase Realtime subscription. WhatsApp is opened either way — if the
+  // server is unreachable, the legacy BroadcastChannel signal still drives
+  // the same-browser demo path.
+  async function recordTripAndOpenChat(intent: PendingBook) {
+    if (!pickup || !dropoff || !quote) return
+    setBookError(null)
+    const chosenService: ServiceType = service ?? intent.rider.services[0] ?? 'person'
+
+    let tripId: string | null = null
+    let tripToken: string | null = null
+    try {
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driver_id: intent.rider.id,
+          customer_phone: customerPhone,
+          customer_name: customerName || undefined,
+          service: chosenService,
+          pickup_lat: pickup.lat,
+          pickup_lng: pickup.lng,
+          pickup_label: pickupLabel || undefined,
+          dropoff_lat: dropoff.lat,
+          dropoff_lng: dropoff.lng,
+          dropoff_label: dropoffLabel || undefined,
+          distance_km: Number(quote.distanceKm.toFixed(2)),
+          estimated_fare: intent.fare,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok) {
+        tripId = json.trip_id as string
+        tripToken = (json.token as string) || null
+        if (typeof window !== 'undefined' && tripId) {
+          localStorage.setItem('cityrider:last_trip_id', tripId)
+          if (tripToken) localStorage.setItem('cityrider:last_trip_token', tripToken)
+        }
+      } else if (res.status === 409) {
+        setBookError(json.error || 'Rider is no longer available — please pick another.')
+        return
+      } else {
+        console.warn('[trips] create failed:', json.error)
+      }
+    } catch (e) {
+      console.warn('[trips] create failed:', (e as Error).message)
+    }
+
+    // Open WhatsApp regardless — it's the fallback chat layer
+    window.open(intent.whatsappLink, '_blank', 'noopener,noreferrer')
+
+    // Legacy BroadcastChannel — single-browser demo path
+    const orderId = tripId ?? 'o_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
     broadcast({
       type: 'created',
       order: {
-        id: newOrderId,
+        id: orderId,
         customerSession: getCustomerSessionId(),
-        riderId: newRider.id,
-        riderName: newRider.name,
+        riderId: intent.rider.id,
+        riderName: intent.rider.name,
         pickupLabel: pickupLabel || 'My location',
         dropoffLabel: dropoffLabel || 'Destination',
         distanceKm: quote.distanceKm,
-        fare: newFare,
+        fare: intent.fare,
         createdAt: Date.now(),
       },
     })
     setWaiting({
-      orderId: newOrderId,
-      rider: { id: newRider.id, name: newRider.name, photoUrl: newRider.photoUrl, whatsappE164: newRider.whatsappE164 },
+      orderId,
+      rider: { id: intent.rider.id, name: intent.rider.name, photoUrl: intent.rider.photoUrl, whatsappE164: intent.rider.whatsappE164 },
       startedAt: Date.now(),
       status: 'pending',
-      whatsappLink: newLink,
+      whatsappLink: intent.whatsappLink,
     })
+  }
+
+  // Submit handler for the customer-info modal — normalizes phone, persists,
+  // then continues with the stashed booking intent.
+  async function submitCustomerInfo() {
+    const cleaned = customerPhone.replace(/\D/g, '')
+    let normalized = cleaned
+    if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1)
+    if (!normalized.startsWith('62') || normalized.length < 10) {
+      setBookError('Please enter a valid Indonesian phone, e.g. 6281234567890')
+      return
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cityrider:customer_phone', normalized)
+      localStorage.setItem('cityrider:customer_name', customerName.trim())
+    }
+    setCustomerPhone(normalized)
+    setBookError(null)
+    const intent = pendingBook
+    setPendingBook(null)
+    if (intent) {
+      setSubmittingBook(true)
+      await recordTripAndOpenChat(intent)
+      setSubmittingBook(false)
+    }
   }
 
   // Auto-fill pickup with customer GPS on grant
@@ -184,33 +300,12 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     })
     beep.play()
     haptic.buzz()
-    // Open WhatsApp in a new tab so the customer can chat
-    window.open(link, '_blank', 'noopener,noreferrer')
-
-    // Broadcast a pending order to the driver dashboard (other tabs).
-    // The rider sees the loud incoming-order modal pop in their tab.
-    const orderId = 'o_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
-    broadcast({
-      type: 'created',
-      order: {
-        id: orderId,
-        customerSession: getCustomerSessionId(),
-        riderId: rider.id,
-        riderName: rider.name,
-        pickupLabel: pickupLabel || 'My location',
-        dropoffLabel: dropoffLabel || 'Destination',
-        distanceKm: quote.distanceKm,
-        fare: quote.fare,
-        createdAt: Date.now(),
-      },
-    })
-    setWaiting({
-      orderId,
-      rider: { id: rider.id, name: rider.name, photoUrl: rider.photoUrl, whatsappE164: rider.whatsappE164 },
-      startedAt: Date.now(),
-      status: 'pending',
-      whatsappLink: link,
-    })
+    const intent: PendingBook = { rider, fare: quote.fare, perKm: pricing.pricePerKm, whatsappLink: link }
+    if (!customerPhone || customerPhone.length < 10) {
+      setPendingBook(intent)
+      return
+    }
+    void recordTripAndOpenChat(intent)
   }
 
   // OFFLINE fallback view
@@ -390,6 +485,64 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       {/* Compact disclaimer above the sticky CTA (rendered in page body
           padding so it sits visible above the fixed bottom area) */}
       <div className="max-w-2xl mx-auto"><PlatformDisclaimer variant="compact" /></div>
+
+      {/* Customer info prompt — opens on first Send WhatsApp tap if we don't
+          have the customer's phone yet. Saved to localStorage for repeat visits. */}
+      {pendingBook && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+        >
+          <div className="card w-full max-w-md p-5 space-y-4" style={{ background: '#0E0E0E' }}>
+            <div>
+              <h2 className="text-xl font-extrabold">Almost there</h2>
+              <p className="text-muted text-[13px] mt-1">
+                Your phone number is shared with <span className="text-brand font-bold">{pendingBook.rider.name}</span> only — so they can reply on WhatsApp.
+              </p>
+            </div>
+            <div>
+              <label className="label">Your name</label>
+              <input
+                className="input"
+                placeholder="Wayan"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="label">WhatsApp number</label>
+              <input
+                className="input font-mono"
+                inputMode="numeric"
+                placeholder="6281234567890"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+              />
+              <p className="text-[12px] text-dim mt-1.5">Start with 62 (no +). Saved locally for next time.</p>
+            </div>
+            {bookError && <p className="text-[13px] text-red-400">{bookError}</p>}
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => { setPendingBook(null); setBookError(null) }}
+                className="btn-secondary"
+                disabled={submittingBook}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitCustomerInfo}
+                className="btn-primary flex-1"
+                disabled={submittingBook}
+              >
+                {submittingBook ? 'Sending…' : `Send to ${pendingBook.rider.name}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

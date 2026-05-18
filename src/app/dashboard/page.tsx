@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale } from 'lucide-react'
@@ -12,10 +12,14 @@ import IncomingOrderModal, { type IncomingOrder } from '@/components/rider/Incom
 import { useOrderChannel, type OrderEvent } from '@/hooks/useOrderChannel'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { MOCK_CUSTOMERS, repeatCustomers } from '@/data/mockCustomers'
+import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
+import { getBrowserSupabase } from '@/lib/supabase/client'
 import { useBeep } from '@/hooks/useBeep'
 import { useHaptic } from '@/hooks/useHaptic'
+import type { Rider } from '@/types/rider'
+import type { TripRow } from '@/types/database'
 
-const ME = MOCK_RIDERS[0]!
+const FALLBACK_ME = MOCK_RIDERS[0]!
 const SUBSCRIPTION_MONTHLY = 30_000
 
 const DEMO_QUOTES: InboxQuote[] = [
@@ -38,6 +42,18 @@ export default function DashboardPage() {
   const [online, setOnline] = useState(true)
   const [incoming, setIncoming] = useState<IncomingOrder | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+
+  // Authenticated independent rider for this dashboard. Falls back to demo
+  // rider until Supabase responds (or if not configured at all).
+  const [ME, setME] = useState<Rider>(FALLBACK_ME)
+  useEffect(() => {
+    let cancelled = false
+    fetchMyDriverBrowser().then((me) => {
+      if (cancelled || !me) return
+      setME(me)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   function fakeIncomingOrder() {
     // Open the incoming-order modal — the LOUD alarm fires automatically
@@ -62,6 +78,43 @@ export default function DashboardPage() {
     })
   }
 
+  // Supabase Realtime — receive new trip requests addressed to this rider.
+  // This is the production path. BroadcastChannel (below) is kept for the
+  // legacy single-browser demo flow.
+  useEffect(() => {
+    const supabase = getBrowserSupabase()
+    if (!supabase || !ME.id) return
+    const channel = supabase
+      .channel(`trips-driver-${ME.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'trips', filter: `driver_id=eq.${ME.id}` },
+        (payload) => {
+          const trip = payload.new as TripRow
+          if (trip.status !== 'requested') return
+          haptic.buzz()
+          beep.play()
+          setIncoming({
+            id: trip.id,
+            customerName: trip.customer_name ?? 'Customer',
+            customerWhatsApp: trip.customer_phone,
+            pickupLabel: trip.pickup_label ?? 'Pickup',
+            pickupLat: trip.pickup_lat,
+            pickupLng: trip.pickup_lng,
+            dropoffLabel: trip.dropoff_label ?? 'Drop-off',
+            dropoffLat: trip.dropoff_lat,
+            dropoffLng: trip.dropoff_lng,
+            pitstopNote: trip.pitstop_note ?? undefined,
+            distanceKm: Number(trip.distance_km ?? 0),
+            fare: trip.estimated_fare ?? 0,
+            pitstopFee: 0,
+          })
+        },
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [ME.id, beep, haptic])
+
   // BroadcastChannel — receive new orders from customer tabs
   const { broadcast } = useOrderChannel((e: OrderEvent) => {
     if (e.type !== 'created') return
@@ -84,10 +137,27 @@ export default function DashboardPage() {
     })
   })
 
-  function onAccept(order: IncomingOrder) {
+  async function onAccept(order: IncomingOrder) {
     haptic.impact()
     beep.play()
-    // Broadcast acceptance back to the customer tab
+    // PATCH the server-side trip row first. This is the source of truth —
+    // the customer's waiting state subscribes to this row via Realtime.
+    try {
+      const res = await fetch(`/api/trips/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept' }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        showToast(json.error || 'Could not accept — try again')
+        return
+      }
+    } catch {
+      // If the server is unreachable, fall back to BroadcastChannel demo
+      // mode so the legacy in-browser flow still works.
+    }
+    // Legacy BroadcastChannel signal — kept for single-browser demo
     broadcast({ type: 'accepted', orderId: order.id, riderId: ME.id, riderName: ME.name, acceptedAt: Date.now() })
     // Add accepted order into the inbox + mark as read
     setQuotes(qs => [{
@@ -125,14 +195,30 @@ export default function DashboardPage() {
     router.push(`/dashboard/trip/${order.id}?${params.toString()}`)
   }
 
-  function onDecline(order: IncomingOrder) {
+  async function onDecline(order: IncomingOrder) {
     haptic.tap()
+    // Mark trip as expired server-side so the customer's waiting state
+    // shows "rider declined — pick another"
+    try {
+      await fetch(`/api/trips/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decline' }),
+      })
+    } catch { /* best-effort */ }
     broadcast({ type: 'declined', orderId: order.id, riderId: ME.id })
     setIncoming(null)
-    showToast('Declined — customer will be redirected to other riders')
+    showToast('Declined — customer can pick another rider')
   }
 
-  function onExpire(order: IncomingOrder) {
+  async function onExpire(order: IncomingOrder) {
+    try {
+      await fetch(`/api/trips/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decline', cancel_reason: 'timed_out' }),
+      })
+    } catch { /* best-effort */ }
     broadcast({ type: 'expired', orderId: order.id })
     setIncoming(null)
     showToast('⌛ Timed out — order missed')

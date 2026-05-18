@@ -5,8 +5,8 @@ import { ChevronLeft } from 'lucide-react'
 // Plain HTML, no client components — readable + crawlable by search +
 // regulators alike.
 export const metadata = {
-  title: 'About · City Rider — Software for independent motorcycle couriers',
-  description: 'City Rider is software for independent motorcycle couriers. We are not a transportation service provider.',
+  title: 'About · City Rider — Booking software for independent riders',
+  description: 'City Rider is booking software for independent Indonesian motorcycle riders. Each rider runs their own business; we are not a transportation service provider.',
 }
 
 export default function AboutPage() {
@@ -27,7 +27,7 @@ export default function AboutPage() {
             What <span className="gradient-text">City Rider</span> is
           </h1>
           <p className="text-muted text-[14px] mt-2">
-            Software for independent Indonesian motorcycle couriers. Not a ride-hailing service.
+            Booking software for independent Indonesian motorcycle riders. Each rider runs their own local business.
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export default function AboutPage() {
             <li>We do not own vehicles</li>
             <li>We do not employ riders — every rider is an independent business</li>
             <li>We do not set prices — riders set their own per-km rates</li>
-            <li>We do not dispatch — customers choose which rider to contact</li>
+            <li>Customers choose their rider manually — we never auto-assign</li>
             <li>We do not process payments — customers pay riders directly</li>
             <li>We do not take commission — riders keep 100% of their earnings</li>
             <li>We do not control rider conduct, hours, vehicles, or service quality</li>
@@ -62,8 +62,8 @@ export default function AboutPage() {
             Privat) and as a B2B software vendor. We do not operate as an Aplikasi Penyedia Jasa
             Transportasi (APJT) under Permenhub PM 12/2019, because we do not provide
             transportation services, do not control pricing, do not process payments, and do not
-            dispatch riders. Each rider on this platform is responsible for compliance with their
-            own local transport, tax, and safety regulations as an independent business operator.
+            assign customers to riders. Each rider on this platform is responsible for compliance
+            with their own local transport, tax, and safety regulations as an independent business.
           </p>
         </Section>
 

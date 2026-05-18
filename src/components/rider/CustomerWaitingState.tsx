@@ -24,8 +24,8 @@ type Props = {
   onCancel: () => void
   onSeeOthers: () => void
   /** When status is 'expired' or 'declined', a list of nearest online
-   *  riders for the customer to one-tap re-send to. Brand-coherent
-   *  "soft suggest" — never auto-dispatch. */
+   *  riders for the customer to one-tap re-send to. Customer always picks
+   *  manually — platform never auto-assigns. */
   suggestions?: RiderSuggestion[]
   onPickSuggestion?: (riderId: string) => void
 }

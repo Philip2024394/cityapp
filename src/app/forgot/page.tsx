@@ -1,13 +1,9 @@
 'use client'
 import Link from 'next/link'
-import { useState } from 'react'
-import { Mail, Send, ChevronLeft } from 'lucide-react'
+import { ChevronLeft, KeyRound, Phone } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 
 export default function ForgotPage() {
-  const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
-
   return (
     <>
       <AppNav />
@@ -15,45 +11,27 @@ export default function ForgotPage() {
         <div className="w-full max-w-md card p-6 space-y-5 mt-4">
           <Link href="/login" className="text-muted text-[13px] flex items-center gap-1 -mt-2 -ml-1 font-bold">
             <ChevronLeft className="w-4 h-4" />
-            Back to login
+            Back to sign in
           </Link>
-          {!sent ? (
-            <>
-              <div>
-                <h1 className="text-2xl font-extrabold">Reset password</h1>
-                <p className="text-muted text-[14px] mt-1">We'll email you a reset link.</p>
-              </div>
-              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); setSent(true) }}>
-                <div>
-                  <label className="label">Email</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
-                    <input
-                      className="input pl-11"
-                      type="email"
-                      required
-                      placeholder="andi@example.com"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <button type="submit" className="btn-primary w-full">
-                  <Send className="w-4 h-4" />
-                  Send reset link
-                </button>
-              </form>
-            </>
-          ) : (
-            <div className="text-center py-6 space-y-3">
-              <div className="w-14 h-14 rounded-full bg-online/15 mx-auto flex items-center justify-center text-2xl">✓</div>
-              <h2 className="font-extrabold text-xl">Check your email</h2>
-              <p className="text-muted text-[14px]">
-                We sent a password reset link to<br />
-                <span className="text-ink font-bold">{email}</span>
-              </p>
+
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand to-brand2 flex items-center justify-center text-bg mb-3">
+              <KeyRound className="w-6 h-6" />
             </div>
-          )}
+            <h1 className="text-2xl font-extrabold">No password needed</h1>
+            <p className="text-muted text-[14px] mt-1">
+              City Rider uses phone-OTP sign-in. Every time you sign in we send a fresh 6-digit code to your WhatsApp number — there's no password to forget.
+            </p>
+          </div>
+
+          <Link href="/login" className="btn-primary w-full">
+            <Phone className="w-4 h-4" />
+            Sign in with phone
+          </Link>
+
+          <div className="text-center text-[12px] text-dim pt-2 border-t border-line">
+            Lost access to your phone number? Email <a href="mailto:support@cityrider.app" className="text-brand">support@cityrider.app</a>
+          </div>
         </div>
       </main>
     </>
