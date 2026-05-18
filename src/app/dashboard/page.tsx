@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike } from 'lucide-react'
+import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike, Star } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
@@ -114,12 +114,18 @@ export default function DashboardPage() {
           {/* Owner dashboards — visible to all signed-in users so a non-rider
               place or rental owner can still navigate here. The dashboards
               themselves show empty-state CTAs if the user has no listings. */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            <ToolCard
+              href="/dashboard/favourites"
+              icon={<Star className="w-4 h-4" />}
+              label="Favourite places"
+              hint="Recommend to customers"
+            />
             <ToolCard
               href="/dashboard/places"
               icon={<MapPin className="w-4 h-4" />}
               label="My places"
-              hint="Edit / renew"
+              hint="Listings I own"
             />
             <ToolCard
               href="/dashboard/rentals"
