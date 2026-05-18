@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, LayoutDashboard, User, LogIn } from 'lucide-react'
+import { Home, LayoutDashboard, MapPin, LogIn } from 'lucide-react'
 
 export default function AppNav() {
   const path = usePathname()
@@ -9,14 +9,20 @@ export default function AppNav() {
     <header className="sticky top-0 z-40 glass-strong pt-safe">
       <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand to-brand2 flex items-center justify-center text-bg text-[15px]">🛵</div>
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714"
+            alt=""
+            className="h-7 w-auto"
+            loading="eager"
+          />
           <div className="text-[15px] font-extrabold tracking-tight">
             City <span className="gradient-text">Rider</span>
           </div>
         </Link>
         <nav className="flex items-center gap-1">
           <NavItem href="/"          icon={<Home className="w-4 h-4" />}           label="Marketplace" active={path === '/'} />
-          <NavItem href="/dashboard" icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard"   active={path?.startsWith('/dashboard') ?? false} />
+          <NavItem href="/places"    icon={<MapPin className="w-4 h-4" />}          label="Places"      active={path?.startsWith('/places') ?? false} />
+          <NavItem href="/dashboard" icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard"   active={path?.startsWith('/dashboard') ?? false} compact />
           <NavItem href="/login"     icon={<LogIn className="w-4 h-4" />}          label="Login"       active={path === '/login'} compact />
         </nav>
       </div>
