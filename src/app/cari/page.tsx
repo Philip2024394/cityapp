@@ -263,7 +263,7 @@ function PlanTripPageInner() {
           <span className="text-[11px] font-extrabold uppercase tracking-wider">Places</span>
         </button>
         <button
-          onClick={() => { haptic.tap(); router.push('/rental') }}
+          onClick={() => { haptic.tap(); router.push('/rent') }}
           aria-label="Rent a motorbike"
           className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
         >

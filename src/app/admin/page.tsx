@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, AlertTriangle, Receipt, CheckCircle2, Clock, History } from 'lucide-react'
+import { Users, AlertTriangle, Receipt, CheckCircle2, Clock, History, MapPin, Bike } from 'lucide-react'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { idr } from '@/lib/format/idr'
 import type { DriverRow, SubscriptionRow, TripRow } from '@/types/database'
@@ -14,10 +14,12 @@ export default async function AdminOverview() {
     return <p className="text-muted text-[14px]">Server not configured.</p>
   }
 
-  const [{ data: drivers }, { data: subs }, { data: trips }] = await Promise.all([
+  const [{ data: drivers }, { data: subs }, { data: trips }, { data: places }, { data: rentals }] = await Promise.all([
     admin.from('drivers').select('user_id, status, availability'),
     admin.from('subscriptions').select('driver_id, status'),
     admin.from('trips').select('id, status, estimated_fare, created_at').order('created_at', { ascending: false }).limit(50),
+    admin.from('places').select('id, status, paid_until'),
+    admin.from('bike_rentals').select('id, status, paid_until'),
   ])
 
   const driversByStatus = countBy((drivers as Pick<DriverRow, 'status'>[] | null) || [], (r) => r.status)
@@ -25,6 +27,13 @@ export default async function AdminOverview() {
   const last24h = (trips || []).filter((t) => Date.now() - new Date(t.created_at).getTime() < 86_400_000)
   const grossLast24h = last24h.reduce((s, t) => s + (t.estimated_fare ?? 0), 0)
   const pastDueCount = subsByStatus['past_due'] ?? 0
+  type RowStub = { id: string; status: string; paid_until: string | null }
+  const placesList = (places as RowStub[] | null) ?? []
+  const placesPending = placesList.filter((p) => p.status === 'pending').length
+  const placesUnpaid  = placesList.filter((p) => p.status === 'approved' && !p.paid_until).length
+  const rentalsList    = (rentals as RowStub[] | null) ?? []
+  const rentalsPending = rentalsList.filter((r) => r.status === 'pending').length
+  const rentalsUnpaid  = rentalsList.filter((r) => r.status === 'approved' && !r.paid_until).length
 
   return (
     <div className="space-y-4">
@@ -40,6 +49,62 @@ export default async function AdminOverview() {
           <div className="flex-1 min-w-0">
             <div className="font-extrabold text-[14px]">{pastDueCount} rider{pastDueCount > 1 ? 's' : ''} past due</div>
             <div className="text-[12px] text-muted">Tap to review and flip to active when payment is received.</div>
+          </div>
+        </Link>
+      )}
+
+      {placesPending > 0 && (
+        <Link
+          href="/admin/places?filter=pending"
+          className="card card-interactive p-4 flex items-center gap-3"
+          style={{ background: 'rgba(250,204,21,0.06)', borderColor: 'rgba(250,204,21,0.30)' }}
+        >
+          <MapPin className="w-5 h-5 text-brand shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-extrabold text-[14px]">{placesPending} place listing{placesPending > 1 ? 's' : ''} pending</div>
+            <div className="text-[12px] text-muted">Submitted by owners — review photos + details, then approve or reject.</div>
+          </div>
+        </Link>
+      )}
+
+      {placesUnpaid > 0 && (
+        <Link
+          href="/admin/places?filter=unpaid"
+          className="card card-interactive p-4 flex items-center gap-3"
+          style={{ background: 'rgba(249,115,22,0.06)', borderColor: 'rgba(249,115,22,0.30)' }}
+        >
+          <AlertTriangle className="w-5 h-5 shrink-0" style={{ color: '#F97316' }} />
+          <div className="flex-1 min-w-0">
+            <div className="font-extrabold text-[14px]">{placesUnpaid} approved listing{placesUnpaid > 1 ? 's' : ''} unpaid</div>
+            <div className="text-[12px] text-muted">Already public, but no payment recorded yet — chase or mark paid.</div>
+          </div>
+        </Link>
+      )}
+
+      {rentalsPending > 0 && (
+        <Link
+          href="/admin/rentals?filter=pending"
+          className="card card-interactive p-4 flex items-center gap-3"
+          style={{ background: 'rgba(250,204,21,0.06)', borderColor: 'rgba(250,204,21,0.30)' }}
+        >
+          <Bike className="w-5 h-5 text-brand shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-extrabold text-[14px]">{rentalsPending} bike rental{rentalsPending > 1 ? 's' : ''} pending</div>
+            <div className="text-[12px] text-muted">Submitted by owners — review photos + details, then approve or reject.</div>
+          </div>
+        </Link>
+      )}
+
+      {rentalsUnpaid > 0 && (
+        <Link
+          href="/admin/rentals?filter=unpaid"
+          className="card card-interactive p-4 flex items-center gap-3"
+          style={{ background: 'rgba(249,115,22,0.06)', borderColor: 'rgba(249,115,22,0.30)' }}
+        >
+          <AlertTriangle className="w-5 h-5 shrink-0" style={{ color: '#F97316' }} />
+          <div className="flex-1 min-w-0">
+            <div className="font-extrabold text-[14px]">{rentalsUnpaid} approved rental{rentalsUnpaid > 1 ? 's' : ''} unpaid</div>
+            <div className="text-[12px] text-muted">Already public, but no payment recorded yet — chase or mark paid.</div>
           </div>
         </Link>
       )}

@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, LayoutDashboard, MapPin, LogIn } from 'lucide-react'
+import { Home, LayoutDashboard, MapPin, LogIn, Bike } from 'lucide-react'
 
 export default function AppNav() {
   const path = usePathname()
@@ -20,8 +20,9 @@ export default function AppNav() {
           </div>
         </Link>
         <nav className="flex items-center gap-1">
-          <NavItem href="/"          icon={<Home className="w-4 h-4" />}           label="Marketplace" active={path === '/'} />
+          <NavItem href="/"          icon={<Home className="w-4 h-4" />}           label="Marketplace" active={path === '/'} compact />
           <NavItem href="/places"    icon={<MapPin className="w-4 h-4" />}          label="Places"      active={path?.startsWith('/places') ?? false} />
+          <NavItem href="/rent"      icon={<Bike className="w-4 h-4" />}            label="Rental"      active={path?.startsWith('/rent') ?? false} />
           <NavItem href="/dashboard" icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard"   active={path?.startsWith('/dashboard') ?? false} compact />
           <NavItem href="/login"     icon={<LogIn className="w-4 h-4" />}          label="Login"       active={path === '/login'} compact />
         </nav>

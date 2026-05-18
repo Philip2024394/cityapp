@@ -1,5 +1,5 @@
 'use client'
-import { ArrowRight, MapPin, Clock } from 'lucide-react'
+import { ArrowRight, MapPin, Clock, Star } from 'lucide-react'
 import PlaceImage from './PlaceImage'
 import { categoryMeta } from '@/lib/places/categories'
 import { formatDistanceKm, formatEtaMin, type PlaceQuote } from '@/lib/places/pricing'
@@ -14,6 +14,20 @@ import type { Place } from '@/lib/places/types'
 // title + category + stat strip on the right, CTA spans the full right
 // column width. Whole card is a button so the entire area is the tap
 // target (>= 88 px tall, well over the 44 px WCAG minimum).
+// Deterministic placeholder rating per place — hashes the row's id into
+// a stable number between 4.3 and 4.9 so every card shows a plausible
+// star score and refreshes don't change it. Replace with place.rating
+// once the column is selected by the places query.
+function placeholderRating(id: string): string {
+  let h = 0
+  for (let i = 0; i < id.length; i++) {
+    h = ((h << 5) - h) + id.charCodeAt(i)
+    h |= 0
+  }
+  const r = 4.3 + ((Math.abs(h) % 70) / 100)
+  return r.toFixed(1)
+}
+
 // Best-guess closing time for a place based on its category + operating
 // tags. We don't have per-place hours_json populated yet, so this gives
 // each card a concrete close time that's at least *typical* for the type
@@ -50,20 +64,37 @@ function closingTime(category: string, tags: string[]): string {
   }
 }
 
-// Strips the current city's name from a place's display name so we don't
-// show "Yogyakarta Marriott Hotel" when the page is already scoped to
-// Yogyakarta. Strips leading OR trailing "<City>" with surrounding spaces.
+// Strips the current city's name (and known local aliases) from a
+// place's display name so we never show e.g. "Stasiun Yogyakarta (Tugu)"
+// when the page is already scoped to Yogyakarta. Uses a word-boundary
+// match so the city is removed wherever it appears in the string —
+// leading, trailing, or middle — and surrounding whitespace is
+// collapsed. Falls back to the original name if stripping leaves
+// nothing intelligible behind.
+const CITY_ALIASES: Record<string, readonly string[]> = {
+  yogyakarta: ['Yogyakarta', 'YOGYAKARTA', 'yogyakarta', 'Jogja', 'JOGJA', 'jogja', 'Yogya', 'YOGYA', 'yogya'],
+  jakarta:    ['Jakarta', 'JAKARTA', 'jakarta', 'JKT', 'Jkt'],
+  bandung:    ['Bandung', 'BANDUNG', 'bandung', 'Bdg'],
+  surabaya:   ['Surabaya', 'SURABAYA', 'surabaya', 'Sby'],
+  denpasar:   ['Denpasar', 'DENPASAR', 'denpasar', 'Bali', 'BALI'],
+  medan:      ['Medan', 'MEDAN', 'medan'],
+  semarang:   ['Semarang', 'SEMARANG', 'semarang'],
+  makassar:   ['Makassar', 'MAKASSAR', 'makassar'],
+  malang:     ['Malang', 'MALANG', 'malang'],
+  solo:       ['Solo', 'SOLO', 'solo', 'Surakarta', 'SURAKARTA'],
+}
+
 function displayName(name: string, city: string): string {
   if (!city) return name
-  const cap = city[0]!.toUpperCase() + city.slice(1).toLowerCase()
-  const variants = [cap, city.toLowerCase(), city.toUpperCase()]
+  const slug = city.toLowerCase()
+  const cap = city[0]!.toUpperCase() + slug.slice(1)
+  const variants = CITY_ALIASES[slug] ?? [cap, slug, city.toUpperCase()]
   let out = name
   for (const v of variants) {
-    out = out
-      .replace(new RegExp(`^${v}\\s+`, 'g'), '')
-      .replace(new RegExp(`\\s+${v}\\s*$`, 'g'), '')
+    out = out.replace(new RegExp(`\\b${v}\\b`, 'g'), ' ')
   }
-  return out.trim() || name
+  out = out.replace(/\s+/g, ' ').replace(/\s*\(\s*\)\s*/g, ' ').trim()
+  return out || name
 }
 
 export default function PlaceCard({
@@ -163,12 +194,23 @@ export default function PlaceCard({
         </div>
 
         {/* Right column — bare place thumbnail (no rim) centred vertically
-            within the card, with the Visit Now button just below it. */}
+            within the card, with the Visit Now button just below it.
+            Star rating badge sits on the bottom-left corner of the
+            thumbnail in Airbnb-style. */}
         <div className="shrink-0 flex flex-col items-center justify-center gap-1.5">
-          <PlaceImage
-            place={place}
-            className="w-[110px] h-20 rounded-xl shadow-md"
-          />
+          <div className="relative">
+            <PlaceImage
+              place={place}
+              className="w-[110px] h-20 rounded-xl shadow-md"
+            />
+            <span
+              className="absolute bottom-1 left-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/85 text-[10px] font-extrabold text-brand"
+              style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.45)' }}
+            >
+              <Star className="w-2.5 h-2.5 fill-brand stroke-brand" aria-hidden />
+              {placeholderRating(place.id)}
+            </span>
+          </div>
           <div
             className="
               w-[110px] inline-flex items-center justify-center gap-1 whitespace-nowrap

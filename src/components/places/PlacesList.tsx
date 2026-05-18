@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Drawer } from 'vaul'
-import { MapPin, AlertCircle, Search, X, Building2, Check } from 'lucide-react'
+import { MapPin, AlertCircle, Search, X, Building2, Check, Plus } from 'lucide-react'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import CategoryChips, { type PlaceFilter } from './CategoryChips'
@@ -289,6 +289,41 @@ export default function PlacesList({
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                {/* First row — pinned CTA so owners can self-list before
+                    they pick a city. Routes to /list-place. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    haptic.tap()
+                    setCityPickerOpen(false)
+                    router.push('/list-place')
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition bg-gradient-to-r from-brand to-brand2 border border-black/85 shadow-[0_4px_12px_rgba(250,204,21,0.30)] active:scale-[0.99]"
+                  style={{ minHeight: 44 }}
+                >
+                  <span
+                    className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center bg-black/85"
+                    aria-hidden
+                  >
+                    <Plus className="w-4 h-4 text-white" strokeWidth={3} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[14px] font-extrabold leading-tight text-bg">
+                      List your place
+                    </span>
+                    <span className="block text-[12px] font-bold leading-tight text-bg/75">
+                      Rp 100.000 / tahun
+                    </span>
+                  </span>
+                </button>
+
+                {/* Section divider for city list. */}
+                <div className="pt-2 pb-1 px-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted">
+                    Pilih kota
+                  </span>
+                </div>
+
                 {SUPPORTED_CITIES.map((c) => {
                   const active = c.slug === currentCity
                   return (

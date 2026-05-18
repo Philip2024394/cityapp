@@ -1,4 +1,6 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import PlacesList from '@/components/places/PlacesList'
 import { listPlacesForCity } from '@/lib/places/queries'
@@ -29,14 +31,26 @@ export default async function PlacesPage({
     <>
       <AppNav />
       <main className="max-w-3xl mx-auto px-4 pt-3 pb-24">
-        <header className="mb-3">
-          <h1 className="text-[24px] sm:text-[28px] font-extrabold tracking-tight leading-tight">
-            Places <span className="gradient-text">di sekitarmu</span>
-          </h1>
-          <p className="mt-1 text-[13px] text-muted leading-snug">
-            Temukan tempat, lihat tarif rider, langsung pesan.
-            Trip ke luar kota sudah termasuk ongkos balik rider.
-          </p>
+        <header className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[24px] sm:text-[28px] font-extrabold tracking-tight leading-tight">
+              Places <span className="gradient-text">di sekitarmu</span>
+            </h1>
+            <p className="mt-1 text-[13px] text-muted leading-snug">
+              Temukan tempat, lihat tarif rider, langsung pesan.
+              Trip ke luar kota sudah termasuk ongkos balik rider.
+            </p>
+          </div>
+          {/* Small yellow "List Place" CTA at top-right of the header.
+              Routes to /list-place where owners submit their venue. */}
+          <Link
+            href="/list-place"
+            className="shrink-0 mt-1 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider text-bg bg-gradient-to-r from-brand to-brand2 border border-black/85 shadow-[0_4px_12px_rgba(250,204,21,0.30)] active:scale-95 transition"
+            aria-label="List your place"
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={3} />
+            <span>List Place</span>
+          </Link>
         </header>
 
         <Suspense fallback={<ListSkeleton />}>
