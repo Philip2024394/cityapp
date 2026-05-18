@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Plus, X } from 'lucide-react'
+import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
@@ -66,10 +66,27 @@ function PlanTripPageInner() {
   const geo = useGeolocation(true)
   const haptic = useHaptic()
 
-  const [pickup, setPickup] = useState<GeoPoint | null>(null)
-  const [dropoff, setDropoff] = useState<GeoPoint | null>(null)
-  const [pickupLabel, setPickupLabel] = useState('')
-  const [dropoffLabel, setDropoffLabel] = useState('')
+  // Optional ?dLat=&dLng=&dName= handoff from /places — pre-fills the
+  // destination so the customer only has to confirm/edit the pickup
+  // before tapping View drivers. Pickup pre-fill from URL is supported
+  // too for symmetry, but Places never passes one.
+  const initialDropoffLat = parseFloat(params.get('dLat') ?? '')
+  const initialDropoffLng = parseFloat(params.get('dLng') ?? '')
+  const hasInitialDropoff =
+    Number.isFinite(initialDropoffLat) && Number.isFinite(initialDropoffLng)
+  const initialPickupLat = parseFloat(params.get('pLat') ?? '')
+  const initialPickupLng = parseFloat(params.get('pLng') ?? '')
+  const hasInitialPickup =
+    Number.isFinite(initialPickupLat) && Number.isFinite(initialPickupLng)
+
+  const [pickup, setPickup] = useState<GeoPoint | null>(
+    hasInitialPickup ? { lat: initialPickupLat, lng: initialPickupLng, accuracyM: 0 } : null,
+  )
+  const [dropoff, setDropoff] = useState<GeoPoint | null>(
+    hasInitialDropoff ? { lat: initialDropoffLat, lng: initialDropoffLng, accuracyM: 0 } : null,
+  )
+  const [pickupLabel, setPickupLabel] = useState(params.get('pName') ?? '')
+  const [dropoffLabel, setDropoffLabel] = useState(params.get('dName') ?? '')
   const [pitstopOpen, setPitstopOpen] = useState(false)
   const [pitstopNote, setPitstopNote] = useState('')
 
@@ -224,6 +241,37 @@ function PlanTripPageInner() {
         />
       </div>
 
+      {/* FLOATING ACTION BUTTONS — vertically centred in the hero band
+          (between header and bottom-stack). pointer-events-none on the
+          wrapper so empty space falls through to the map for drop-off
+          tap; pointer-events-auto on the buttons themselves. z-20 sits
+          below the header (z-30) and bottom-sheet (z-40) chrome. */}
+      <div
+        className="fixed right-3 z-20 flex flex-col items-end justify-center gap-3 pointer-events-none"
+        style={{
+          top: `${headerHeight}px`,
+          bottom: `${bottomHeight + keyboardOffset}px`,
+          transition: 'top 220ms ease, bottom 220ms ease',
+        }}
+      >
+        <button
+          onClick={() => { haptic.tap(); router.push('/places') }}
+          aria-label="Browse places in Yogyakarta"
+          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-bg bg-gradient-to-br from-brand to-brand2 shadow-[0_10px_28px_rgba(250,204,21,0.45)] active:scale-95 transition"
+        >
+          <Landmark className="w-6 h-6" strokeWidth={2.5} />
+          <span className="text-[11px] font-extrabold uppercase tracking-wider">Places</span>
+        </button>
+        <button
+          onClick={() => { haptic.tap(); router.push('/rental') }}
+          aria-label="Rent a motorbike"
+          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
+        >
+          <Bike className="w-6 h-6" strokeWidth={2.5} />
+          <span className="text-[11px] font-extrabold uppercase tracking-wider">Rent</span>
+        </button>
+      </div>
+
       {/* HEADER — transparent, sits over the map. Logo + brand on the
           left, "42 nearby" black badge with yellow text + green dot
           (pink satellite ping ring) on the right. Text shadow keeps
@@ -356,7 +404,7 @@ function PlanTripPageInner() {
                   <Plus className="w-4 h-4 shrink-0" strokeWidth={3} />
                   <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
                   <img
-                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png?updatedAt=1779022378771"
                     alt=""
                     aria-hidden
                     loading="lazy"
@@ -381,7 +429,7 @@ function PlanTripPageInner() {
                     <span className="block text-[13px] font-extrabold truncate">{pitstopNote.trim()}</span>
                   </span>
                   <img
-                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png?updatedAt=1779022378771"
                     alt=""
                     aria-hidden
                     loading="lazy"
@@ -408,7 +456,7 @@ function PlanTripPageInner() {
                     autoFocus
                   />
                   <img
-                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdasaa-removebg-preview.png"
+                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png?updatedAt=1779022378771"
                     alt=""
                     aria-hidden
                     loading="lazy"

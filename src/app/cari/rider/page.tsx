@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, Star, ArrowRight } from 'lucide-react'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { haversineKm } from '@/lib/geo/haversine'
-import { quoteBreakdown, rateFor, lowestStartingPrice, hasServiceOverrides } from '@/lib/pricing/quote'
+import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
 import { bikeTitle } from '@/lib/format/bike'
@@ -13,6 +13,14 @@ import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
 import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type Rider, type ServiceType } from '@/types/rider'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+
+// Customer-facing labels for the service-type toggle. Stable order so
+// the underline bar always slides over consistent positions.
+const SERVICE_TOGGLE: ReadonlyArray<{ id: ServiceType; label: string }> = [
+  { id: 'person', label: 'Bike' },
+  { id: 'parcel', label: 'Parcel'    },
+  { id: 'food',   label: 'Food'      },
+]
 
 export default function Page() {
   return (
@@ -34,15 +42,19 @@ function DriverResults() {
   const dropoffName = sp.get('dName') ?? 'Destination'
   const pitstopNote = sp.get('stop') ?? null   // null = no pit stop requested
 
-  const [sort, setSort] = useState<'cheapest' | 'nearest'>('cheapest')
-  // Read service choice from URL — set by /cari when customer picks one of
-  // the 3 service cards. Defaults to 'all' if the param is missing or invalid.
-  const initialFilter = (() => {
+  // Sort is fixed to 'cheapest' since the badge row was replaced with a
+  // service-type toggle (Passenger / Parcel / Food). State is preserved
+  // so the FeaturedDriverCard's `isCheapest` flag keeps working.
+  const [sort] = useState<'cheapest' | 'nearest'>('cheapest')
+  // Read service choice from URL — set by /cari when customer picks one
+  // of the 3 service cards. Defaults to 'person' (Passenger) since the
+  // new toggle has no "all" option.
+  const initialFilter: ServiceType = (() => {
     const f = sp.get('filter')
     if (f === 'person' || f === 'parcel' || f === 'food') return f
-    return 'all' as const
+    return 'person'
   })()
-  const [filter, setFilter] = useState<ServiceType | 'all'>(initialFilter)
+  const [filter, setFilter] = useState<ServiceType>(initialFilter)
 
   // Brief non-blocking toast shown when the user taps Book Driver. Tells
   // them WhatsApp is opening and the driver will reply there. Auto-dismiss.
@@ -108,15 +120,14 @@ function DriverResults() {
     const list = riders.filter(r =>
       r.isOnline &&
       r.subscriptionStatus !== 'past_due' &&
-      (filter === 'all' || r.services.includes(filter)),
+      r.services.includes(filter),
     )
     const e = list.map(r => {
-      // If a specific service is filtered, price for THAT service.
-      // Otherwise show the lowest-starting price across the rider's enabled services.
-      const pricing = filter === 'all' ? lowestStartingPrice(r) : rateFor(r, filter)
+      // Price the trip for the actively-selected service.
+      const pricing = rateFor(r, filter)
       const { final, minApplied } = quoteBreakdown(tripKm, pricing)
       const distanceToPickup = haversineKm(pickup, { lat: r.lat, lng: r.lng })
-      const hasOverrides = filter === 'all' && hasServiceOverrides(r)
+      const hasOverrides = false
       const pitstopFee = pitstopNote ? (r.pitstopFee ?? 0) : 0
       const totalFare = final + pitstopFee
       return { rider: r, fare: final, pitstopFee, totalFare, minApplied, distanceToPickup, perKm: pricing.pricePerKm, hasOverrides }
@@ -130,12 +141,11 @@ function DriverResults() {
   const cheapest = enriched[0]?.totalFare
   const mostExpensive = enriched.length > 0 ? Math.max(...enriched.map(x => x.totalFare)) : null
 
-  // Determine the service category for the trip (used by the trip record).
-  // If the user filtered to a specific service, use it; otherwise default to
-  // the rider's first listed service.
-  function serviceForBooking(rider: Rider): ServiceType {
-    if (filter !== 'all') return filter
-    return rider.services[0] ?? 'person'
+  // The trip record uses whichever service the customer is currently
+  // viewing. The toggle guarantees `filter` is always one of the three
+  // service types, so no fallback is needed.
+  function serviceForBooking(_rider: Rider): ServiceType {
+    return filter
   }
 
   // Entry point for the Book Driver button on every card.
@@ -339,32 +349,42 @@ function DriverResults() {
             </div>
           </div>
 
-          {/* Filter / sort */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-            <FilterChip
-              active={sort === 'cheapest'}
-              onClick={() => { setSort('cheapest'); haptic.tap() }}
-              label="Cheapest"
-            />
-            <FilterChip
-              active={sort === 'nearest'}
-              onClick={() => { setSort('nearest'); haptic.tap() }}
-              label="Nearest to pickup"
-            />
-            <div className="w-px h-5 bg-line shrink-0" />
-            <FilterChip
-              active={filter === 'all'}
-              onClick={() => { setFilter('all'); haptic.tap() }}
-              label="All"
-            />
-            {(Object.keys(SERVICE_LABELS) as ServiceType[]).map(s => (
-              <FilterChip
-                key={s}
-                active={filter === s}
-                onClick={() => { setFilter(s); haptic.tap() }}
-                label={`${SERVICE_ICONS[s]} ${SERVICE_LABELS[s].split(' ')[0]}`}
-              />
-            ))}
+          {/* Service-type toggle — Passenger / Parcel / Food. Yellow
+              gradient bar underlines the active option. Replaces the
+              older overflow-scrolling chip row. */}
+          <div
+            className="flex items-stretch gap-1 border-b border-white/10"
+            role="tablist"
+            aria-label="Filter drivers by service"
+          >
+            {SERVICE_TOGGLE.map(({ id, label }) => {
+              const active = filter === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => { setFilter(id); haptic.tap() }}
+                  className="relative flex-1 px-1 py-2.5 text-center transition"
+                  style={{ minHeight: 44 }}
+                >
+                  <span
+                    className={`block text-[14px] font-extrabold uppercase tracking-wider transition ${
+                      active ? 'text-brand' : 'text-muted'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    aria-hidden
+                    className={`absolute left-1/2 -translate-x-1/2 -bottom-[1px] h-[3px] rounded-full bg-gradient-to-r from-brand to-brand2 shadow-[0_0_10px_rgba(250,204,21,0.45)] transition-all ${
+                      active ? 'w-12 opacity-100' : 'w-0 opacity-0'
+                    }`}
+                  />
+                </button>
+              )
+            })}
           </div>
 
           {/* Driver cards — featured-banner style for the top 4 */}
@@ -387,7 +407,7 @@ function DriverResults() {
           {ridersLoaded && enriched.length === 0 && (
             <div className="card p-8 text-center">
               <p className="text-muted text-[14px]">No independent riders match this filter right now.</p>
-              <button onClick={() => setFilter('all')} className="btn-secondary mt-4">Reset filter</button>
+              <button onClick={() => setFilter('person')} className="btn-secondary mt-4">Reset filter</button>
             </div>
           )}
 
@@ -605,26 +625,39 @@ function FeaturedDriverCard({
                 {minApplied && <span className="text-brand ml-1.5">· min fare</span>}
               </span>
             </div>
-            <button
-              onClick={onWhatsApp}
-              aria-label={`Book ${rider.name}`}
-              className="h-[39px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60 shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
-                boxShadow: '0 6px 16px rgba(250,204,21,0.28)',
-              }}
-            >
-              <span className="text-[12px] font-extrabold uppercase tracking-wider text-black whitespace-nowrap">
-                Book driver
-              </span>
-              <span
+            <div className="flex flex-col items-center gap-1 shrink-0">
+              <img
+                src="https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg-preview.png"
+                alt=""
                 aria-hidden
-                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: '#000' }}
+                loading="lazy"
+                className="h-9 w-auto"
+                style={{
+                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.45))',
+                  transform: 'translateY(-3px)',
+                }}
+              />
+              <button
+                onClick={onWhatsApp}
+                aria-label={`Book ${rider.name}`}
+                className="h-[39px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60"
+                style={{
+                  background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
+                  boxShadow: '0 6px 16px rgba(250,204,21,0.28)',
+                }}
               >
-                <ArrowRight className="w-3 h-3 text-white" strokeWidth={3} />
-              </span>
-            </button>
+                <span className="text-[12px] font-extrabold uppercase tracking-wider text-black whitespace-nowrap">
+                  Book driver
+                </span>
+                <span
+                  aria-hidden
+                  className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: '#000' }}
+                >
+                  <ArrowRight className="w-3 h-3 text-white" strokeWidth={3} />
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -653,22 +686,6 @@ function Header({ editTripHref = '/cari' }: { editTripHref?: string }) {
         </Link>
       </div>
     </header>
-  )
-}
-
-function FilterChip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className="shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-bold transition border whitespace-nowrap"
-      style={{
-        background: active ? '#FACC15' : 'rgba(255,255,255,0.04)',
-        color: active ? '#0A0A0A' : 'rgba(255,255,255,0.75)',
-        borderColor: active ? '#FACC15' : 'rgba(255,255,255,0.1)',
-      }}
-    >
-      {label}
-    </button>
   )
 }
 

@@ -16,8 +16,14 @@ export const metadata = {
 //
 // Phase 1 hardcodes Yogyakarta. Multi-city support is a query param +
 // city_zones lookup away — no UI changes needed.
-export default async function PlacesPage() {
-  const { places, zone } = await listPlacesForCity('yogyakarta')
+export default async function PlacesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ city?: string }>
+}) {
+  const params = await searchParams
+  const currentCity = params.city || 'yogyakarta'
+  const { places, zone } = await listPlacesForCity(currentCity)
 
   return (
     <>
@@ -34,7 +40,7 @@ export default async function PlacesPage() {
         </header>
 
         <Suspense fallback={<ListSkeleton />}>
-          <PlacesList places={places} zone={zone} />
+          <PlacesList places={places} zone={zone} currentCity={currentCity} />
         </Suspense>
       </main>
     </>
