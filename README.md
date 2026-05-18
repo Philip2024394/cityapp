@@ -87,10 +87,31 @@ Plus a `last_active_at` displayed as "Active just now / 3 min ago / 1 hr ago".
 - After trial expires → `past_due`. Rider stays visible in discovery, but their Book button is disabled with a "Subscription expired" overlay.
 - Admin manually flips `status = 'active'` when a transfer is received (no automated billing in MVP).
 
+## Admin
+
+`/admin` is the platform operator's console (Philip). Riders run their own
+business on `/dashboard` and never see `/admin`.
+
+To promote your account once, after signing in via phone OTP:
+
+```sql
+-- Run in Supabase SQL editor. Use the phone number you signed up with.
+update public.profiles set role = 'admin' where phone = '62XXXXXXXXXXX';
+```
+
+After that, signing in to `/admin` gives you:
+
+- **Overview** — counts (riders, subs, trips) + recent activity, with a banner when riders go past due.
+- **Riders** — every driver row with status + subscription state; Suspend / Reactivate / Mark paid (+30 days) actions.
+- **Trips** — live filter (requested → in_progress), completed, canceled.
+- **Audit log** — every admin write (driver suspend, subscription paid, …) lands here with before/after diffs.
+
+All admin mutations go through `/api/admin/*` route handlers that re-check `role = 'admin'` server-side and append to `public.audit_log`.
+
 ## Roadmap
 
 - ✅ Phase 0 — Schema, auth, middleware, Supabase wiring
 - ⏳ Phase 1 — Rider onboarding wizard, dashboard wired to real data
 - ✅ Phase 2 — Real trip flow (server insert + realtime delivery to rider)
 - ✅ Phase 3 — QR payment confirmation flow + ratings
-- ⏳ Phase 4 — Admin panel + production hardening
+- ✅ Phase 4 — Admin panel + production hardening
