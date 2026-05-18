@@ -75,9 +75,14 @@ export async function POST(req: Request) {
   if (!body.business_name || body.business_name.trim().length < 2) {
     return NextResponse.json({ error: 'Business name is required' }, { status: 400 })
   }
-  if (!body.whatsapp_e164 || !/^62\d{8,14}$/.test(body.whatsapp_e164)) {
+  // Normalize defensively — supabase auth may return phone with or without
+  // the leading "+", and we always want the canonical "62XXXXXXXXX" shape
+  // before validating + persisting.
+  const normalizedPhone = (body.whatsapp_e164 || '').replace(/\D/g, '')
+  if (!/^62\d{8,14}$/.test(normalizedPhone)) {
     return NextResponse.json({ error: 'Invalid WhatsApp number' }, { status: 400 })
   }
+  body.whatsapp_e164 = normalizedPhone
   if (
     !Array.isArray(body.services) ||
     body.services.length === 0 ||
