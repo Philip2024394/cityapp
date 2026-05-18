@@ -76,9 +76,14 @@ function LoginInner() {
     <>
       <AppNav />
       <main className="min-h-screen flex items-start justify-center pt-12 px-4 grid-bg">
-        <div className="w-full max-w-md card p-6 space-y-5 mt-4">
+        <div className="w-full max-w-md card-dark p-6 space-y-5 mt-4">
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand to-brand2 flex items-center justify-center text-bg text-2xl mb-3">🛵</div>
+            <img
+              src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714"
+              alt="City Rider"
+              className="h-12 w-auto mb-3"
+              loading="eager"
+            />
             <h1 className="text-2xl font-extrabold">
               {step === 'phone' ? 'Sign in' : 'Verify your phone'}
             </h1>

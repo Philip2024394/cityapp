@@ -95,7 +95,7 @@ export default function SignupPage() {
       <AppNav />
       <main className="min-h-screen flex items-start justify-center pt-10 px-4 grid-bg">
         <div className="w-full max-w-md space-y-4 mt-2">
-          <div className="card p-6 space-y-5">
+          <div className="card-dark p-6 space-y-5">
             {step === 'role' && (
               <>
                 <div>

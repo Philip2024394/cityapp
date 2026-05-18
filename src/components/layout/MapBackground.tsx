@@ -64,7 +64,7 @@ export default function MapBackground() {
           tiles arrive. If the network never delivers, the canvas
           stays transparent and the fallback below stays visible. */}
       <div
-        className="fixed inset-0 z-0 pointer-events-none"
+        className="fixed inset-0 -z-10 pointer-events-none"
         aria-hidden
       >
         <LandingMap
@@ -121,7 +121,7 @@ const STATIC_PINGS: ReadonlyArray<{
 function StaticFallback() {
   return (
     <div
-      className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      className="fixed inset-0 -z-10 pointer-events-none overflow-hidden"
       aria-hidden
     >
       {/* Deep dark radial base — matches the Maplibre dark style's average tone */}
