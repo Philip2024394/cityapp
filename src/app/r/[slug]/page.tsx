@@ -162,6 +162,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     const nearby = getOnlineRiders(rider.id)
     return (
       <main className="min-h-screen pb-16">
+        <PageBackground />
         <BackNav />
         <div className="max-w-2xl mx-auto px-4 pt-2">
           <RiderHero rider={rider} dimmed />
@@ -180,6 +181,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   // ONLINE view
   return (
     <main className="min-h-screen pb-40">
+      <PageBackground />
       <BackNav />
       <div className="max-w-2xl mx-auto px-4 pt-2 space-y-5">
         <RiderHero rider={rider} />
@@ -418,6 +420,29 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           padding so it sits visible above the fixed bottom area) */}
       <div className="max-w-2xl mx-auto"><PlatformDisclaimer variant="compact" /></div>
     </main>
+  )
+}
+
+// PageBackground — fixed-viewport background image for the driver
+// shareable page. The dark gradient overlay keeps every card readable
+// over the image without disabling its mood. background-attachment:fixed
+// is avoided because iOS Safari renders it incorrectly; instead we use
+// position: fixed on the bg div so it sits in the viewport while content
+// scrolls over it.
+function PageBackground() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 -z-10"
+      style={{
+        backgroundImage:
+          'linear-gradient(rgba(10,10,10,0.62), rgba(10,10,10,0.78)),' +
+          " url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    />
   )
 }
 

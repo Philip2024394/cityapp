@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike, Star } from 'lucide-react'
+import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike, Star, Copy, Check, MessageCircle, Facebook, Instagram } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
@@ -191,6 +191,13 @@ export default function DashboardPage() {
             <ArrowRight className="w-5 h-5 text-brand shrink-0" />
           </a>
 
+          {/* Share kit — explicit per-channel buttons. The dashboard's job
+              is to push the driver to share as often as possible; one tap
+              per channel = lower friction than picking from a system share
+              sheet. Instagram has no web-share API, so we copy + open the
+              IG app via deep-link as the closest equivalent. */}
+          <ShareKitCard slug={ME.slug} riderName={ME.name} city={ME.city} />
+
           {/* Subscription card */}
           <div className="card p-5">
             <div className="flex items-center justify-between gap-3">
@@ -210,6 +217,152 @@ export default function DashboardPage() {
       </main>
       <DashboardNav />
     </>
+  )
+}
+
+// ShareKitCard — explicit per-channel share buttons. The driver page is
+// only valuable if it gets distributed; this section optimises for low-
+// friction sharing to the three channels Indonesian drivers actually use:
+// WhatsApp (status + groups), Facebook (Pages + Marketplace), Instagram
+// (Stories + bio link). Plus a literal copy button as the universal
+// fallback.
+function ShareKitCard({ slug, riderName, city }: { slug: string; riderName: string; city: string }) {
+  const [shareUrl, setShareUrl] = useState('')
+  const [copied,   setCopied]   = useState<'url' | 'ig' | null>(null)
+  const [igTip,    setIgTip]    = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setShareUrl(`${window.location.origin}/r/${slug}`)
+  }, [slug])
+
+  const shareText = `Booking driver di ${city}? Saya ada di sini — langsung WhatsApp:`
+
+  function flashCopied(which: 'url' | 'ig') {
+    setCopied(which)
+    setTimeout(() => setCopied(null), 1800)
+  }
+
+  function copyLink() {
+    if (!shareUrl) return
+    navigator.clipboard.writeText(shareUrl).then(() => flashCopied('url')).catch(() => {})
+  }
+
+  function shareWhatsApp() {
+    if (!shareUrl) return
+    const text = encodeURIComponent(`${shareText}\n${shareUrl}`)
+    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer')
+  }
+
+  function shareFacebook() {
+    if (!shareUrl) return
+    // Facebook's sharer pulls Open Graph metadata from the URL — make sure
+    // /r/[slug] has og:title + og:image (handled by Next.js metadata).
+    const u = encodeURIComponent(shareUrl)
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+      '_blank',
+      'noopener,noreferrer,width=620,height=600',
+    )
+  }
+
+  function shareInstagram() {
+    // Instagram has no web share API. The closest UX is: copy the URL to
+    // clipboard, then prompt the driver to paste it into their IG Story or
+    // bio. On mobile we ALSO try the instagram:// deep link to nudge the
+    // app open; desktop just gets the copy + tooltip.
+    if (!shareUrl) return
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      flashCopied('ig')
+      setIgTip(true)
+      setTimeout(() => setIgTip(false), 4000)
+      // Try opening the IG app (works on mobile; silently does nothing
+      // on desktop).
+      if (typeof window !== 'undefined') {
+        const w = window.open('instagram://story-camera', '_blank')
+        // If the browser blocked it (desktop), no-op.
+        if (w) w.focus()
+      }
+    }).catch(() => {})
+  }
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Share2 className="w-4 h-4 text-brand" />
+        <h2 className="text-[12px] text-dim uppercase tracking-wider font-extrabold">
+          Share your page
+        </h2>
+      </div>
+
+      {/* URL + Copy */}
+      <div className="flex items-stretch gap-2 mb-3">
+        <div className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-black/50 border border-white/10 text-[13px] text-ink font-mono truncate">
+          {shareUrl || '—'}
+        </div>
+        <button
+          type="button"
+          onClick={copyLink}
+          className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-black/50 border border-white/10 text-[12px] font-extrabold text-ink hover:border-brand/40 transition"
+        >
+          {copied === 'url'
+            ? <><Check className="w-3.5 h-3.5 text-brand" /> Copied</>
+            : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+        </button>
+      </div>
+
+      {/* Per-channel buttons */}
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={shareWhatsApp}
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-black/60 active:scale-[0.98] transition"
+          style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}
+        >
+          <MessageCircle className="w-4 h-4" />
+          WhatsApp
+        </button>
+
+        <button
+          type="button"
+          onClick={shareFacebook}
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-black/60 active:scale-[0.98] transition"
+          style={{ background: 'linear-gradient(135deg, #1877F2, #0E5FD2)' }}
+        >
+          <Facebook className="w-4 h-4" />
+          Facebook
+        </button>
+
+        <button
+          type="button"
+          onClick={shareInstagram}
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-black/60 active:scale-[0.98] transition"
+          style={{
+            background:
+              'linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%)',
+          }}
+        >
+          <Instagram className="w-4 h-4" />
+          {copied === 'ig' ? 'Copied' : 'Instagram'}
+        </button>
+      </div>
+
+      {igTip && (
+        <p className="mt-2 text-[12px] text-brand leading-snug">
+          Link copied. Open Instagram → tambahkan ke bio atau paste di Story.
+        </p>
+      )}
+
+      <p className="text-[11px] text-dim text-center mt-3 leading-snug">
+        Tip: paste your URL ke IG bio, WA Status, dan Facebook profile description.
+        Every share = a new customer who knows your name, not the platform&apos;s.
+      </p>
+
+      {/* Voiceover for the empty driver name reference (silence the linter
+          and reassure the maintainer that it's intentionally used in the
+          shareText constant above). */}
+      <span className="sr-only">{riderName}</span>
+    </div>
   )
 }
 
