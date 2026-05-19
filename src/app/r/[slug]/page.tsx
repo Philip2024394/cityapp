@@ -2,13 +2,18 @@
 import { use, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MapPin, Bike as BikeIcon, Star, X as XIcon, Crosshair, Search as SearchIcon } from 'lucide-react'
+import { Drawer } from 'vaul'
+import {
+  MapPin, Bike as BikeIcon, Star, X as XIcon, Crosshair,
+  Search as SearchIcon, Compass, Check,
+} from 'lucide-react'
 import OfflineFallback from '@/components/rider/OfflineFallback'
 import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
 import { fetchDriverBySlugBrowser } from '@/lib/drivers/queries'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
-import { rateFor } from '@/lib/pricing/quote'
+import { rateFor, quoteBreakdown } from '@/lib/pricing/quote'
+import { haversineKm } from '@/lib/geo/haversine'
 import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { nearestCity, citySlugLabel } from '@/lib/cities'
@@ -108,6 +113,29 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   // WhatsApp deep-link so the driver sees it in the booking message.
   const [pitstop, setPitstop] = useState('')
 
+  // Places picker drawer state
+  const [placesOpen, setPlacesOpen] = useState(false)
+  const [placeSearch, setPlaceSearch] = useState('')
+  type PickablePlace = {
+    id: string
+    slug: string
+    name: string
+    category: string
+    city: string
+    lat: number
+    lng: number
+    image_urls: string[] | null
+    rating: number | null
+    isFavourite?: boolean
+  }
+  const [allPlaces, setAllPlaces] = useState<PickablePlace[]>([])
+
+  // Selected service — defaults to the first one the rider offers.
+  // Declared up here so the quote useMemo below can reference it.
+  const [service, setService] = useState<ServiceType | null>(
+    maybeRider?.services[0] ?? null,
+  )
+
   // City-mismatch detection — once GPS lands, find the customer's
   // nearest supported city and compare to the driver's service city.
   // If they don't match, the booking card is replaced with a
@@ -121,10 +149,63 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     userCity.city.slug.toLowerCase() !== maybeRider.city.toLowerCase()
   )
 
-  // Selected service — defaults to the first one the rider offers.
-  const [service, setService] = useState<ServiceType | null>(
-    maybeRider?.services[0] ?? null,
-  )
+  // Live trip quote — distance × driver's per-km, floored at min-fee.
+  // Drives the price shown on the Confirm Driver button.
+  const quote = useMemo(() => {
+    if (!maybeRider || !pickup || !dropoff) return null
+    const distanceKm = haversineKm(pickup, dropoff)
+    const pricing = service ? rateFor(maybeRider, service) : { pricePerKm: maybeRider.pricePerKm, minFee: maybeRider.minFee }
+    const { final, minApplied } = quoteBreakdown(distanceKm, pricing)
+    return { distanceKm, fare: final, minApplied, pricePerKm: pricing.pricePerKm }
+  }, [maybeRider, pickup, dropoff, service])
+
+  // Fetch places in this driver's city for the picker drawer. Favourites
+  // (from driver_places) get a star + sort to the top.
+  useEffect(() => {
+    if (!maybeRider?.city) return
+    const supabase = getBrowserSupabase()
+    if (!supabase) return
+    let cancelled = false
+    ;(async () => {
+      const { data } = await supabase
+        .from('places')
+        .select('id, slug, name, category, city, lat, lng, image_urls, rating')
+        .eq('city', maybeRider.city)
+        .eq('status', 'approved')
+        .order('name')
+        .limit(120)
+      if (cancelled) return
+      const rows = (data ?? []) as PickablePlace[]
+      const favIds = new Set(favePlaces.map((f) => f.place_id))
+      rows.forEach((r) => { r.isFavourite = favIds.has(r.id) })
+      rows.sort((a, b) => {
+        if (a.isFavourite && !b.isFavourite) return -1
+        if (b.isFavourite && !a.isFavourite) return 1
+        return a.name.localeCompare(b.name)
+      })
+      setAllPlaces(rows)
+    })()
+    return () => { cancelled = true }
+  // favePlaces dep matters because favourite tags depend on it
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maybeRider?.city, favePlaces])
+
+  // Filtered list for the search box inside the drawer
+  const filteredPlaces = useMemo(() => {
+    const q = placeSearch.trim().toLowerCase()
+    if (!q) return allPlaces.slice(0, 60)
+    return allPlaces
+      .filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+      .slice(0, 60)
+  }, [allPlaces, placeSearch])
+
+  function selectPlace(p: PickablePlace) {
+    setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
+    setDropoffLabel(p.name)
+    setPlaceSearch('')
+    setPlacesOpen(false)
+    haptic.tap()
+  }
 
   // Auto-fill pickup with customer GPS on grant
   useMemo(() => {
@@ -171,9 +252,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       <div className="max-w-2xl mx-auto px-4 pt-2 space-y-3">
         <RiderHero rider={rider} />
 
-        {/* Service picker — 3 black tile-buttons with brand images from
-            the landing page. Active state outlined in brand-yellow. */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Service picker — 4 black tile-buttons (20% smaller than before)
+            with brand images from the landing page. Fourth tile opens the
+            Places drawer so customers can pick a destination from the
+            directory; selecting a place autofills the booking drop-off. */}
+        <div className="grid grid-cols-4 gap-1.5">
           {(['person','parcel','food'] as const).map(s => {
             const r = rateFor(rider, s)
             const active = service === s
@@ -182,27 +265,47 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               <button
                 key={s}
                 onClick={() => { setService(s); haptic.tap() }}
-                className="rounded-2xl border text-center py-3 px-2 transition flex flex-col items-center gap-1.5"
+                className="rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
                 style={{
                   background:   '#0A0A0A',
                   borderColor:  active ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
-                  boxShadow:    active ? '0 4px 14px rgba(250,204,21,0.20)' : 'none',
+                  boxShadow:    active ? '0 3px 10px rgba(250,204,21,0.20)' : 'none',
                   opacity:      offered ? 1 : 0.6,
                 }}
               >
                 <img
                   src={SERVICE_TILE_IMAGES[s]}
                   alt=""
-                  className="h-12 w-auto object-contain"
+                  className="h-9 w-auto object-contain"
                   loading="eager"
                 />
-                <div className="text-[14px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
+                <div className="text-[11px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
                   {SERVICE_SHORT[s]}
                 </div>
-                <div className="text-[11px] text-muted">{idr(r.pricePerKm)}/km</div>
+                <div className="text-[10px] text-muted leading-none">{idr(r.pricePerKm)}/km</div>
               </button>
             )
           })}
+          {/* Places tile — opens picker drawer */}
+          <button
+            type="button"
+            onClick={() => { setPlacesOpen(true); haptic.tap() }}
+            className="rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
+            style={{
+              background:   '#0A0A0A',
+              borderColor:  dropoffLabel ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
+            }}
+          >
+            <div className="h-9 flex items-center justify-center">
+              <Compass className="w-7 h-7 text-brand" strokeWidth={2.2} />
+            </div>
+            <div className="text-[11px] font-extrabold mt-0.5" style={{ color: dropoffLabel ? '#FACC15' : '#fff' }}>
+              Places
+            </div>
+            <div className="text-[10px] text-muted leading-none">
+              {dropoffLabel ? 'picked ✓' : 'pick dropoff'}
+            </div>
+          </button>
         </div>
 
         {cityMismatch ? (
@@ -299,29 +402,46 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               </div>
             </div>
 
-            {/* Contact Driver — primary CTA below the booking inputs.
-                WhatsApp deep-link carries pickup + pit-stop + dropoff
-                + service so the driver gets a complete brief in one
-                message. Platform never sees the booking. */}
+            {/* Confirm Driver — primary CTA. Carries pickup + pit-stop +
+                drop-off + service + the live fare estimate. When quote is
+                set, the price renders ON the button so the customer
+                commits with a known price. */}
             <button
               type="button"
               onClick={() => {
-                const lines = [`Hi ${rider.name}, saya lihat profilmu di City Rider.`]
+                const lines = [`Hi ${rider.name}, saya mau booking via City Rider.`]
                 if (pickupLabel || dropoffLabel || pitstop) {
                   lines.push('')
-                  if (pickupLabel) lines.push(`Pickup:    ${pickupLabel}`)
-                  if (pitstop)     lines.push(`Pit stop:  ${pitstop}`)
+                  if (pickupLabel)  lines.push(`Pickup:    ${pickupLabel}`)
+                  if (pitstop)      lines.push(`Pit stop:  ${pitstop}`)
                   if (dropoffLabel) lines.push(`Drop off:  ${dropoffLabel}`)
                 }
                 if (service) lines.push('', `Service:   ${SERVICE_SHORT[service]}`)
+                if (quote) {
+                  lines.push(
+                    '',
+                    `Distance:  ${quote.distanceKm.toFixed(1)} km`,
+                    `Fare est:  ${idr(quote.fare)}${quote.minApplied ? ' (min fare)' : ''}`,
+                  )
+                }
                 lines.push('', 'Apakah tersedia?')
                 const url = `https://wa.me/${rider.whatsappE164.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`
                 haptic.buzz()
                 window.open(url, '_blank', 'noopener,noreferrer')
               }}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-black text-brand font-extrabold text-[14px] uppercase tracking-wider border border-black active:scale-[0.99]"
+              className="w-full inline-flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-black text-brand font-extrabold text-[14px] uppercase tracking-wider border border-black active:scale-[0.99]"
             >
-              Contact Driver
+              <span className="flex items-center gap-2">
+                <Check className="w-4 h-4" />
+                Confirm Driver
+              </span>
+              {quote ? (
+                <span className="text-[15px]">{idr(quote.fare)}</span>
+              ) : (
+                <span className="text-[11px] opacity-70 normal-case tracking-normal">
+                  set pickup + drop off
+                </span>
+              )}
             </button>
           </div>
         )}
@@ -424,6 +544,109 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         )}
       </div>
 
+      {/* Places picker — opens when the "Places" service tile is tapped.
+          Bottom-sheet drawer with search + scrollable list. Favourites
+          (curated by this driver) are tagged with a star and float to
+          the top. Selecting a place autofills the booking drop-off. */}
+      <Drawer.Root open={placesOpen} onOpenChange={setPlacesOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/60" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] bg-bg2 rounded-t-3xl border-t border-line flex flex-col">
+            <Drawer.Title className="sr-only">Pick a place for drop off</Drawer.Title>
+            <Drawer.Description className="sr-only">
+              Search or browse places — selecting one will autofill the booking drop off.
+            </Drawer.Description>
+            <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-white/15" />
+            <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-[16px] font-extrabold leading-tight">Pick a place</h3>
+                <p className="text-[12px] text-muted leading-snug mt-0.5">
+                  Drop off in {citySlugLabel(rider.city) || rider.city} ·
+                  fare uses {rider.name.split(' ')[0]}&apos;s rate ({idr(rider.pricePerKm)}/km)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPlacesOpen(false)}
+                aria-label="Close"
+                className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-white/5"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-4 pb-2">
+              <div className="relative">
+                <SearchIcon className="w-4 h-4 text-dim absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search places by name or category"
+                  value={placeSearch}
+                  onChange={(e) => setPlaceSearch(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-black/50 border border-white/10 text-[14px] text-ink placeholder:text-dim focus:outline-none focus:border-brand/40"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
+              {filteredPlaces.length === 0 ? (
+                <p className="text-[13px] text-muted text-center py-12">
+                  {allPlaces.length === 0 ? 'Loading places…' : 'No matches.'}
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {filteredPlaces.map((p) => {
+                    const photo = p.image_urls?.[0] ?? null
+                    // Per-place price preview using THIS driver's rate
+                    let perPlaceFare: number | null = null
+                    if (pickup) {
+                      const km = haversineKm(pickup, { lat: p.lat, lng: p.lng })
+                      const pricing = service ? rateFor(rider, service) : { pricePerKm: rider.pricePerKm, minFee: rider.minFee }
+                      perPlaceFare = quoteBreakdown(km, pricing).final
+                    }
+                    return (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectPlace(p)}
+                          className="w-full card p-2 flex items-stretch gap-3 text-left hover:border-brand/40 transition"
+                        >
+                          <div className="w-14 shrink-0 rounded-lg overflow-hidden bg-black/60 border border-white/10">
+                            {photo ? (
+                              <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <MapPin className="w-4 h-4 text-dim" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 self-center">
+                            <div className="flex items-center gap-1.5">
+                              {p.isFavourite && <Star className="w-3 h-3 text-brand fill-brand shrink-0" />}
+                              <span className="text-[13px] font-extrabold text-ink truncate">{p.name}</span>
+                            </div>
+                            <div className="text-[11px] text-muted truncate">
+                              {p.category.replace(/_/g, ' ')}
+                              {p.rating != null ? ` · ★ ${p.rating.toFixed(1)}` : ''}
+                            </div>
+                          </div>
+                          {perPlaceFare != null && (
+                            <div className="self-center text-right shrink-0">
+                              <div className="text-[12px] font-extrabold text-brand">
+                                {idr(perPlaceFare)}
+                              </div>
+                              <div className="text-[10px] text-dim">fare est.</div>
+                            </div>
+                          )}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </main>
   )
 }
@@ -501,7 +724,23 @@ function RiderHero({ rider, dimmed }: { rider: ReturnType<typeof findRiderBySlug
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <h1 className="text-2xl font-extrabold leading-tight">{rider.name}</h1>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <h1 className="text-2xl font-extrabold leading-tight">{rider.name}</h1>
+          {rider.rating != null && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-extrabold"
+              style={{ background: 'rgba(250,204,21,0.18)', color: '#FACC15', border: '1px solid rgba(250,204,21,0.40)' }}
+            >
+              <Star className="w-3 h-3 fill-current" strokeWidth={0} />
+              {rider.rating.toFixed(1)}
+              {rider.trips != null && (
+                <span className="text-[10px] font-bold text-brand/70 ml-0.5">
+                  ({rider.trips.toLocaleString('en-US')})
+                </span>
+              )}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 text-[13px] mt-1.5">
           <MapPin className="w-4 h-4 shrink-0" style={{ color: '#EF4444' }} />
           <span className="text-ink/90 font-extrabold">
