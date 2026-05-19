@@ -158,21 +158,30 @@ export default function LandingPage() {
               <button
                 key={tile.id}
                 onClick={() => pickService(tile.href)}
-                className="w-full flex items-center gap-2 p-1.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(250,204,21,0.30)]"
-                style={{ animation: `fadeUp 0.55s ease-out ${i * 0.08}s both` }}
+                className="w-full flex items-center gap-2 p-1.5 rounded-2xl active:scale-[0.99] transition-transform"
+                style={{
+                  // Solid black tile with a thin yellow border. No shadow,
+                  // no gradient — matches the driver-profile service
+                  // tiles so the brand language is consistent across both
+                  // surfaces.
+                  background: '#0A0A0A',
+                  border: '1px solid rgba(250,204,21,0.45)',
+                  animation: `fadeUp 0.55s ease-out ${i * 0.08}s both`,
+                }}
                 aria-label={`Enter — ${tile.label}`}
               >
                 <span
-                  className="shrink-0 w-9 h-9 rounded-xl bg-bg/15 flex items-center justify-center"
+                  className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,0.04)' }}
                   aria-hidden
                 >
                   <img src={tile.img} alt="" className="h-7 w-auto object-contain" loading="eager" />
                 </span>
                 <span className="flex-1 text-left">
-                  <span className="block font-extrabold text-[14px] leading-tight">{tile.label}</span>
-                  <span className="block text-[10px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
+                  <span className="block font-extrabold text-[14px] leading-tight text-brand">{tile.label}</span>
+                  <span className="block text-[10px] font-bold leading-tight mt-0.5 text-muted">{tile.sub}</span>
                 </span>
-                <ArrowRight className="w-4 h-4 shrink-0 opacity-80" />
+                <ArrowRight className="w-4 h-4 shrink-0 text-brand" />
               </button>
             ))}
 
