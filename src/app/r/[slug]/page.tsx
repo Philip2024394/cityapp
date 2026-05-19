@@ -945,22 +945,27 @@ function RiderHero({ rider, dimmed }: { rider: ReturnType<typeof findRiderBySlug
         {!dimmed && rider.isOnline && (
           <span className="dot-online absolute -bottom-1 -right-1 ring-2 ring-bg2 !w-3.5 !h-3.5" />
         )}
+        {!dimmed && rider.rating != null && (
+          <span
+            className="absolute -top-1.5 -left-1.5 inline-flex items-center gap-0.5 px-1.5 py-[2px] rounded-full text-[11px] font-extrabold leading-none"
+            style={{
+              background: '#0A0A0A',
+              color: '#FACC15',
+              border: '1.5px solid #FACC15',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.55)',
+            }}
+          >
+            <Star className="w-2.5 h-2.5 fill-current" strokeWidth={0} />
+            {rider.rating.toFixed(1)}
+          </span>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <h1 className="text-2xl font-extrabold leading-tight">{rider.name}</h1>
-          {rider.rating != null && (
-            <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-extrabold"
-              style={{ background: 'rgba(250,204,21,0.18)', color: '#FACC15', border: '1px solid rgba(250,204,21,0.40)' }}
-            >
-              <Star className="w-3 h-3 fill-current" strokeWidth={0} />
-              {rider.rating.toFixed(1)}
-              {rider.trips != null && (
-                <span className="text-[10px] font-bold text-brand/70 ml-0.5">
-                  ({rider.trips.toLocaleString('en-US')})
-                </span>
-              )}
+          {rider.trips != null && rider.rating != null && (
+            <span className="text-[11px] text-muted font-bold">
+              {rider.trips.toLocaleString('en-US')} trips
             </span>
           )}
         </div>
