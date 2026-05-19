@@ -6,6 +6,11 @@
       "comment": "Weekly affiliate-payout aggregation — Mondays 1am UTC = 8am WIB. Requires CRON_SECRET env var; route returns 403 without it.",
       "path": "/api/admin/payouts/aggregate?secret=$CRON_SECRET",
       "schedule": "0 1 * * 1"
+    },
+    {
+      "comment": "Daily subscription-expiry sweep — flips lapsed trials/active subs to past_due, and flips affected drivers to availability=offline so they drop off the marketplace. 18:00 UTC = 01:00 WIB next day.",
+      "path": "/api/admin/subscriptions/expire?secret=$CRON_SECRET",
+      "schedule": "0 18 * * *"
     }
   ]
 }

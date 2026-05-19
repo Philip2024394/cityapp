@@ -15,6 +15,8 @@ import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import { rateFor, quoteBreakdown } from '@/lib/pricing/quote'
 import { haversineKm } from '@/lib/geo/haversine'
+import { etaMinutes } from '@/lib/geo/eta'
+import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { nearestCity, citySlugLabel, SUPPORTED_CITIES } from '@/lib/cities'
@@ -293,15 +295,18 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     if (geo.coords) { setPickup(geo.coords); setPickupLabel('My location') }
   }
 
-  // OFFLINE fallback view
+  // OFFLINE / BUSY / PAST_DUE fallback view. A driver who is BUSY (on
+  // a service) is shown with distinct copy and a blue "on service"
+  // badge — offline drivers are greyscaled and labelled offline.
   if (!rider.isOnline || rider.subscriptionStatus === 'past_due') {
     const nearby = getOnlineRiders(rider.id)
+    const isBusy = rider.availability === 'busy' && rider.subscriptionStatus !== 'past_due'
     return (
       <main className="min-h-screen pb-16">
         <PageBackground />
         <BackNav />
         <div className="max-w-2xl mx-auto px-4 pt-2">
-          <RiderHero rider={rider} dimmed />
+          <RiderHero rider={rider} dimmed={!isBusy} busy={isBusy} />
           <div className="mt-5">
             <OfflineFallback
               offlineRider={rider}
@@ -647,6 +652,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                   lines.push(
                     '',
                     `Distance: ${quote.distanceKm.toFixed(1)} km`,
+                    `ETA: ~${etaMinutes(quote.distanceKm)} min`,
                     `Fare est: ${idr(quote.fare)}${quote.minApplied ? ' (min fare)' : ''}`,
                   )
                 }
@@ -661,7 +667,12 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                   '',
                   'Apakah tersedia?',
                 )
-                const url = `https://wa.me/${rider.whatsappE164.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`
+                const wa = normaliseE164ForWaMe(rider.whatsappE164)
+                if (!wa) {
+                  alert("Nomor WhatsApp driver tidak valid. Coba driver lain.")
+                  return
+                }
+                const url = `https://wa.me/${wa}?text=${encodeURIComponent(lines.join('\n'))}`
                 haptic.buzz()
                 window.open(url, '_blank', 'noopener,noreferrer')
               }}
@@ -1131,7 +1142,16 @@ function BackNav() {
 // RiderHero — no card container. Just photo + name + bike + a red
 // map-pin row showing the city this driver services. Sits flush
 // against the page background.
-function RiderHero({ rider, dimmed }: { rider: ReturnType<typeof findRiderBySlug>; dimmed?: boolean }) {
+function RiderHero({
+  rider, dimmed, busy,
+}: {
+  rider: ReturnType<typeof findRiderBySlug>
+  dimmed?: boolean
+  /** Busy = currently on a service. Visually halfway between online
+   *  and offline: full-colour photo + soft blue badge instead of the
+   *  green pulse dot. */
+  busy?: boolean
+}) {
   if (!rider) return null
   return (
     <div className="flex items-start gap-4 px-1">
@@ -1142,7 +1162,17 @@ function RiderHero({ rider, dimmed }: { rider: ReturnType<typeof findRiderBySlug
           className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white/15"
           style={{ filter: dimmed ? 'grayscale(1) brightness(0.6)' : undefined }}
         />
-        {!dimmed && rider.isOnline && (
+        {busy && (
+          <span
+            className="absolute -bottom-1 -right-1 ring-2 ring-bg2 inline-flex w-3.5 h-3.5 rounded-full"
+            style={{
+              background: '#60A5FA',
+              boxShadow: '0 0 10px rgba(96,165,250,0.85)',
+              animation: 'pulse 1.4s ease-in-out infinite',
+            }}
+          />
+        )}
+        {!dimmed && !busy && rider.isOnline && (
           <span className="dot-online absolute -bottom-1 -right-1 ring-2 ring-bg2 !w-3.5 !h-3.5" />
         )}
         {!dimmed && rider.rating != null && (

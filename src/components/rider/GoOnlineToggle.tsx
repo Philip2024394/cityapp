@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Power } from 'lucide-react'
 import { useHaptic } from '@/hooks/useHaptic'
+import { useDriverLocationPing, type DriverLocationPingState } from '@/hooks/useDriverLocationPing'
 
 type Props = {
   defaultOnline?: boolean
@@ -10,18 +11,55 @@ type Props = {
 
 export default function GoOnlineToggle({ defaultOnline = false, onChange }: Props) {
   const [online, setOnline] = useState(defaultOnline)
+  const [ping, setPing] = useState<DriverLocationPingState>({
+    status: 'idle', lastSentAt: null, lastError: null,
+  })
   const haptic = useHaptic()
 
-  function toggle() {
+  // Live location loop — only runs while the toggle is online. The hook
+  // handles permission prompts, watchPosition, and the throttled POST
+  // to /api/drivers/location (which auto-flips between 'online' and
+  // 'busy' based on detected movement, server-side).
+  useDriverLocationPing(online, { onStatus: setPing })
+
+  // Reflect the loaded server-side state on first mount, then leave
+  // subsequent flips to the user's tap.
+  useEffect(() => {
+    setOnline(defaultOnline)
+  }, [defaultOnline])
+
+  async function toggle() {
     const next = !online
     setOnline(next)
     haptic.impact()
     onChange?.(next)
-    if (next && typeof navigator !== 'undefined' && navigator.geolocation) {
-      // Trigger GPS permission prompt on going online (live tracking starts here in Phase 2)
-      navigator.geolocation.getCurrentPosition(() => {}, () => {})
+    // Persist availability immediately. Going online → 'online'; going
+    // offline → 'offline'. Once 'online', the location ping loop will
+    // flip to 'busy' / 'online' based on movement; we don't need to
+    // overwrite that here.
+    try {
+      await fetch('/api/drivers/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ availability: next ? 'online' : 'offline' }),
+      })
+    } catch {
+      /* offline / network blip — UI optimistically reflects, server
+         will catch up on the next successful call. */
     }
   }
+
+  const gpsHint = (() => {
+    if (!online) return 'GPS permission required'
+    if (ping.status === 'denied') return 'Location permission denied — tap to allow'
+    if (ping.status === 'unavailable') return 'GPS unavailable on this device'
+    if (ping.status === 'requesting') return 'Locating…'
+    if (ping.lastSentAt) {
+      const ageS = Math.max(0, Math.round((Date.now() - ping.lastSentAt) / 1000))
+      return `Live — last update ${ageS < 5 ? 'just now' : `${ageS}s ago`}`
+    }
+    return 'Live location updates every 30 seconds'
+  })()
 
   return (
     <div className="card p-5 relative overflow-hidden">
@@ -43,9 +81,7 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
           <div className="text-xl font-extrabold mt-1.5">
             {online ? 'You are visible on the marketplace' : 'Go online to receive quotes'}
           </div>
-          <div className="text-[13px] text-dim mt-1">
-            {online ? 'Live location updates every 30 seconds' : 'GPS permission required'}
-          </div>
+          <div className="text-[13px] text-dim mt-1">{gpsHint}</div>
         </div>
 
         <button

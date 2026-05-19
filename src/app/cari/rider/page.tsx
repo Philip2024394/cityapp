@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, Star, ArrowRight } from 'lucide-react'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { haversineKm } from '@/lib/geo/haversine'
+import { etaMinutes } from '@/lib/geo/eta'
 import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
@@ -137,8 +138,18 @@ function DriverResults() {
       distanceKm: tripKm,
       pricePerKm: perKm,
       fare,
+      etaMin: etaMinutes(tripKm),
       pitstop: pitstopNote ? { note: pitstopNote, fee: pitstopFee } : undefined,
     })
+    if (!link) {
+      // Phone number unusable — refuse to open WhatsApp to a wrong
+      // number. Visible toast so the customer knows something's off
+      // with this rider's listing rather than launching a no-op chat.
+      setToast({ driverName: rider.name + ' — nomor WhatsApp tidak valid' })
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => setToast(null), 3000)
+      return
+    }
     window.open(link, '_blank', 'noopener,noreferrer')
     setToast({ driverName: rider.name })
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
@@ -317,12 +328,6 @@ function DriverResults() {
       )}
     </>
   )
-}
-
-// Rough pickup ETA estimate. Assumes ~25 km/h average city speed in Bali.
-// Replace with real routing data (Mapbox/OSRM) when available.
-function etaMinutes(km: number): number {
-  return Math.max(1, Math.round((km / 25) * 60))
 }
 
 function FeaturedDriverCard({

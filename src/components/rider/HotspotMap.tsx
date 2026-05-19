@@ -39,8 +39,12 @@ export default function HotspotMap({
       style: STYLE_URL,
       center: [center.lng, center.lat],
       zoom,
-      attributionControl: false,
+      // OpenFreeMap / OSM attribution — compact "i" pill, see RiderMap.
+      attributionControl: { compact: true },
       interactive: true,
+      // Constrain pan to Indonesia — keeps the hotspot heatmap in
+      // the country's reachable area instead of the open Pacific.
+      maxBounds: [[94.0, -12.0], [142.0, 7.0]],
       pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     })
     mapRef.current = map

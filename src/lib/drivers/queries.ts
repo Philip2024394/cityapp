@@ -13,11 +13,49 @@
 
 import { getBrowserSupabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import { MOCK_RIDERS } from '@/data/mockRiders'
-import type { DriverRow, AvailabilityState } from '@/types/database'
+import type { DriverRow, AvailabilityState, SubscriptionStatus } from '@/types/database'
 import type { Rider, ServiceType } from '@/types/rider'
 
+// Minimal subscription shape used to derive what customers see on the
+// public driver pages. Trial / period dates are factored in here so a
+// row stuck on status='trial' with an expired trial_ends_at still maps
+// to past_due (drivers stop appearing as bookable).
+type SubInfo = {
+  status: SubscriptionStatus | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+} | null
+
+function effectiveSubStatus(sub: SubInfo): SubscriptionStatus {
+  if (!sub || !sub.status) return 'past_due'
+  const now = Date.now()
+  if (sub.status === 'trial') {
+    const t = sub.trial_ends_at ? Date.parse(sub.trial_ends_at) : NaN
+    return Number.isFinite(t) && t < now ? 'past_due' : 'trial'
+  }
+  if (sub.status === 'active') {
+    const e = sub.current_period_end ? Date.parse(sub.current_period_end) : NaN
+    return Number.isFinite(e) && e < now ? 'past_due' : 'active'
+  }
+  return sub.status
+}
+
+// Row shape with embedded subscription via PostgREST. Supabase's join
+// helper can return either a single row or an array depending on the
+// detected cardinality; handle both.
+type DriverRowWithSub = DriverRow & {
+  subscriptions?: SubInfo | SubInfo[] | null
+}
+
+function pickSub(row: DriverRowWithSub): SubInfo {
+  const s = row.subscriptions
+  if (!s) return null
+  if (Array.isArray(s)) return s[0] ?? null
+  return s
+}
+
 // Map a Supabase drivers.row → legacy Rider shape used across the app.
-export function driverRowToRider(row: DriverRow): Rider {
+export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
   const services = (row.services || []) as ServiceType[]
   return {
     id: row.user_id,
@@ -47,7 +85,7 @@ export function driverRowToRider(row: DriverRow): Rider {
     lastSeenAt: row.last_active_at || row.updated_at,
     lat: row.current_lat ?? row.service_zone_center_lat ?? 0,
     lng: row.current_lng ?? row.service_zone_center_lng ?? 0,
-    subscriptionStatus: 'active',
+    subscriptionStatus: effectiveSubStatus(sub),
     rating: row.rating ?? undefined,
     trips: row.trips_count,
   } as Rider & { availability: AvailabilityState }
@@ -62,7 +100,7 @@ export async function fetchActiveDriversBrowser(): Promise<Rider[]> {
   if (!supabase) return MOCK_RIDERS
   const { data, error } = await supabase
     .from('drivers')
-    .select('*')
+    .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('status', 'active')
     .order('availability', { ascending: true })
     .order('rating', { ascending: false, nullsFirst: false })
@@ -71,7 +109,13 @@ export async function fetchActiveDriversBrowser(): Promise<Rider[]> {
     if (error) console.warn('[drivers] fetchActiveDrivers failed:', error.message)
     return MOCK_RIDERS
   }
-  return (data as DriverRow[]).map(driverRowToRider)
+  // Filter out past_due / canceled subs before returning — the
+  // marketplace must not show riders whose billing has lapsed, even
+  // if drivers.status is still 'active'. Suspension is rare; the
+  // billing wall is the load-bearing gate.
+  return (data as DriverRowWithSub[])
+    .map((row) => driverRowToRider(row, pickSub(row)))
+    .filter((r) => r.subscriptionStatus !== 'past_due' && r.subscriptionStatus !== 'canceled')
 }
 
 // ============================================================================
@@ -85,7 +129,7 @@ export async function fetchDriverBySlugBrowser(slug: string): Promise<Rider | nu
   if (!supabase) return MOCK_RIDERS.find((r) => r.slug === slug) ?? null
   const { data, error } = await supabase
     .from('drivers')
-    .select('*')
+    .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('slug', slug)
     .eq('status', 'active')
     .maybeSingle()
@@ -94,7 +138,8 @@ export async function fetchDriverBySlugBrowser(slug: string): Promise<Rider | nu
     return MOCK_RIDERS.find((r) => r.slug === slug) ?? null
   }
   if (!data) return null
-  return driverRowToRider(data as DriverRow)
+  const row = data as DriverRowWithSub
+  return driverRowToRider(row, pickSub(row))
 }
 
 // ============================================================================
@@ -105,9 +150,14 @@ export async function fetchMyDriverBrowser(): Promise<Rider | null> {
   if (!supabase) return null
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data, error } = await supabase.from('drivers').select('*').eq('user_id', user.id).maybeSingle()
+  const { data, error } = await supabase
+    .from('drivers')
+    .select('*, subscriptions(status, trial_ends_at, current_period_end)')
+    .eq('user_id', user.id)
+    .maybeSingle()
   if (error || !data) return null
-  return driverRowToRider(data as DriverRow)
+  const row = data as DriverRowWithSub
+  return driverRowToRider(row, pickSub(row))
 }
 
 // Raw DriverRow for the authenticated rider — used where the UI needs

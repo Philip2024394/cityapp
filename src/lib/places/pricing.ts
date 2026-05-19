@@ -1,5 +1,6 @@
 import type { Place } from './types'
 import { haversineKm } from '@/lib/geo/haversine'
+import { AVG_SPEED_KMH } from '@/lib/geo/eta'
 
 // Platform-average rate used for the discovery card preview ONLY. The
 // authoritative fare comes from the rider's own pricing on /cari/rider.
@@ -8,10 +9,6 @@ import { haversineKm } from '@/lib/geo/haversine'
 // rider will quote — the customer never feels surprised by a higher bill.
 export const PLATFORM_AVG_RATE_PER_KM = 2500
 export const PLATFORM_AVG_MIN_FEE     = 12000
-
-// Average rider speed in moderate traffic — used for ETA only. Real ETA
-// will come from the routing layer once OSRM/Mapbox is wired up.
-const AVG_SPEED_KMH = 22
 
 export type PlaceQuote = {
   distanceKm: number       // one-way pickup → place (haversine)

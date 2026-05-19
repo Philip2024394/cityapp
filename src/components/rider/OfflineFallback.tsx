@@ -14,6 +14,10 @@ type Props = {
 }
 
 export default function OfflineFallback({ offlineRider, nearbyRiders, customerLocation }: Props) {
+  // 'busy' = on an active delivery, will be free soon. 'offline' = went
+  // off-duty, may or may not return today. We use different copy + tint
+  // so the customer can decide whether to wait or book someone else.
+  const busy = offlineRider.availability === 'busy'
   const [withDistance, _] = useState(() =>
     nearbyRiders
       .map(r => {
@@ -32,12 +36,34 @@ export default function OfflineFallback({ offlineRider, nearbyRiders, customerLo
 
   return (
     <div className="space-y-3">
-      <div className="card p-4 bg-offline/5 border-offline/20">
-        <div className="text-[13px] font-extrabold uppercase tracking-wider text-muted">
-          {offlineRider.name} is offline
+      <div
+        className="card p-4"
+        style={
+          busy
+            ? { background: 'rgba(96,165,250,0.06)', borderColor: 'rgba(96,165,250,0.25)' }
+            : { background: 'rgba(148,163,184,0.05)', borderColor: 'rgba(148,163,184,0.20)' }
+        }
+      >
+        <div
+          className="text-[13px] font-extrabold uppercase tracking-wider flex items-center gap-2"
+          style={{ color: busy ? '#60A5FA' : '#94A3B8' }}
+        >
+          <span
+            className="inline-block w-2 h-2 rounded-full"
+            style={{
+              background: busy ? '#60A5FA' : '#94A3B8',
+              boxShadow: busy ? '0 0 8px rgba(96,165,250,0.85)' : 'none',
+              animation: busy ? 'pulse 1.4s ease-in-out infinite' : 'none',
+            }}
+          />
+          {busy
+            ? `${offlineRider.name} is on a service`
+            : `${offlineRider.name} is offline`}
         </div>
         <div className="text-[15px] mt-1">
-          This rider is offline right now. We&apos;ve found the nearest online riders for you:
+          {busy
+            ? 'This rider is on a delivery right now. Will be available again shortly — or pick one of the nearest online riders below:'
+            : "This rider is offline right now. We've found the nearest online riders for you:"}
         </div>
       </div>
 

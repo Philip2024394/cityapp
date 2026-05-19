@@ -56,6 +56,15 @@ const OPENFREEMAP_STYLES = {
   dark:     'https://tiles.openfreemap.org/styles/dark',
 }
 
+// Indonesia bounding box — constrains pan so users can't accidentally
+// scroll into the Pacific. Generous margin around the real coastline
+// (94°E–142°E, 12°S–7°N) so cities at the edges (Sabang, Merauke) still
+// have headroom for pan + zoom around their suburbs.
+const INDONESIA_BOUNDS: [[number, number], [number, number]] = [
+  [94.0, -12.0],
+  [142.0,  7.0],
+]
+
 export default function RiderMap({
   center, zoom = 13, riders = [], pickup, dropoff, onDropoffSet,
   showRoute = false, height = '320px', interactive = true,
@@ -93,8 +102,12 @@ export default function RiderMap({
       center: [center.lng, center.lat],
       zoom,
       pitch,
-      attributionControl: false,
+      // OpenFreeMap ToS requires OSM/OpenFreeMap credit visible on every
+      // map view. We use compact attribution — a tiny "i" pill in the
+      // bottom-right that expands on tap, low visual cost.
+      attributionControl: { compact: true },
       interactive,
+      maxBounds: INDONESIA_BOUNDS,
       // Cap at 2x — high-DPR Androids (3x+) would otherwise burn battery
       // rendering at native resolution. 2x is the sharpness sweet spot.
       pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
@@ -233,11 +246,122 @@ export default function RiderMap({
     mapRef.current.easeTo({ pitch, duration: 500 })
   }, [pitch])
 
+  // Cluster threshold — above this rider count we switch to GeoJSON
+  // cluster layers (native maplibre) which scale to tens of thousands
+  // of points. Below it we keep the HTML scooter/ping markers which
+  // look nicer and are fine for small lists.
+  const CLUSTER_THRESHOLD = 30
+
   // Render rider markers
   useEffect(() => {
-    if (!mapRef.current) return
+    const map = mapRef.current
+    if (!map) return
+
+    // Clear any previous HTML markers
     markersRef.current.forEach(m => m.remove())
     markersRef.current = []
+
+    // Helper to safely remove the cluster source + its layers between
+    // runs (e.g. rider list changes from clustered to non-clustered).
+    const clearClusterLayers = () => {
+      ['riders-cluster-count', 'riders-cluster-bg', 'riders-unclustered'].forEach((id) => {
+        if (map.getLayer(id)) map.removeLayer(id)
+      })
+      if (map.getSource('riders')) map.removeSource('riders')
+    }
+
+    if (riders.length >= CLUSTER_THRESHOLD && markerStyle === 'scooter') {
+      // GeoJSON-clustered path — kicks in when we're rendering many
+      // riders in one viewport (post-scale rollout). Clusters appear as
+      // brand-yellow circles with the rider count; individual riders
+      // appear as a smaller circle at high zoom.
+      const setup = () => {
+        clearClusterLayers()
+        map.addSource('riders', {
+          type: 'geojson',
+          cluster: true,
+          clusterMaxZoom: 14,
+          clusterRadius: 50,
+          data: {
+            type: 'FeatureCollection',
+            features: riders.map((r) => ({
+              type: 'Feature' as const,
+              properties: { isOnline: r.isOnline ? 1 : 0 },
+              geometry: { type: 'Point' as const, coordinates: [r.lng, r.lat] },
+            })),
+          },
+        })
+        map.addLayer({
+          id: 'riders-cluster-bg',
+          type: 'circle',
+          source: 'riders',
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': '#FACC15',
+            'circle-radius': [
+              'step', ['get', 'point_count'],
+              16, 10, 22, 50, 28, 200, 34,
+            ],
+            'circle-stroke-color': '#0A0A0A',
+            'circle-stroke-width': 3,
+            'circle-opacity': 0.92,
+          },
+        })
+        map.addLayer({
+          id: 'riders-cluster-count',
+          type: 'symbol',
+          source: 'riders',
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': ['get', 'point_count_abbreviated'],
+            'text-size': 13,
+            'text-font': ['Noto Sans Bold', 'Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-allow-overlap': true,
+          },
+          paint: { 'text-color': '#0A0A0A' },
+        })
+        map.addLayer({
+          id: 'riders-unclustered',
+          type: 'circle',
+          source: 'riders',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-color': ['case', ['==', ['get', 'isOnline'], 1], '#FACC15', '#64748B'],
+            'circle-radius': 7,
+            'circle-stroke-color': '#0A0A0A',
+            'circle-stroke-width': 2,
+          },
+        })
+
+        // Click a cluster → zoom into it.
+        map.on('click', 'riders-cluster-bg', (e) => {
+          const features = map.queryRenderedFeatures(e.point, {
+            layers: ['riders-cluster-bg'],
+          })
+          const clusterId = features[0]?.properties?.cluster_id
+          const src = map.getSource('riders') as maplibregl.GeoJSONSource | undefined
+          if (clusterId == null || !src) return
+          src.getClusterExpansionZoom(clusterId).then((zoomNext) => {
+            const geom = features[0].geometry
+            if (geom.type !== 'Point') return
+            map.easeTo({
+              center: geom.coordinates as [number, number],
+              zoom: zoomNext,
+              duration: 500,
+            })
+          })
+        })
+      }
+      if (map.isStyleLoaded()) setup()
+      else map.once('load', setup)
+      return () => {
+        try { clearClusterLayers() } catch { /* style gone */ }
+      }
+    }
+
+    // HTML marker path — keeps the existing scooter / ping styling for
+    // small marker counts (the typical case in production today).
+    clearClusterLayers()
     riders.forEach((r, i) => {
       const el = document.createElement('div')
       if (markerStyle === 'ping') {
