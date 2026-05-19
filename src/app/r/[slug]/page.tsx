@@ -632,7 +632,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                         <button
                           type="button"
                           onClick={() => selectPlace(p)}
-                          className="w-full card p-2 flex items-stretch gap-3 text-left hover:border-brand/40 transition"
+                          className="w-full p-2 flex items-stretch gap-3 text-left rounded-2xl bg-black/55 transition hover:bg-black/70"
+                          style={{
+                            border: '1px solid rgba(250,204,21,0.55)',
+                            boxShadow: '0 1px 0 rgba(250,204,21,0.10) inset',
+                          }}
                         >
                           <div className="w-14 shrink-0 rounded-lg overflow-hidden bg-black/60 border border-white/10">
                             {photo ? (
