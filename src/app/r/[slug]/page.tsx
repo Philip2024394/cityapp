@@ -323,83 +323,55 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         <RiderHero rider={rider} />
 
         {/* Service picker — 4 black tile-buttons with brand images.
-            No drop-shadows in the unselected state. Selected tile gets
-            a soft yellow halo glow BEHIND the button (via an absolute-
-            positioned blurred sibling) so the selection reads visually
-            without modifying the button itself. */}
+            Selected tile fires a soft yellow drop-shadow BELOW the button
+            (negative-spread box-shadow, no sibling halo). The shadow
+            sits strictly under the button so the button face itself stays
+            pure black with no glow on it. */}
         <div className="grid grid-cols-4 gap-1.5">
           {(['person','parcel','food'] as const).map(s => {
             const r = rateFor(rider, s)
             const active = service === s
-            const offered = rider.services.includes(s)
             return (
-              <div key={s} className="relative">
-                {active && (
-                  <span
-                    aria-hidden
-                    className="absolute -inset-1 rounded-2xl pointer-events-none"
-                    style={{
-                      background: 'rgba(250,204,21,0.45)',
-                      filter: 'blur(14px)',
-                      zIndex: 0,
-                    }}
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => { setService(s); haptic.tap() }}
-                  className="relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
-                  style={{
-                    // Pure black button. The selection signal is the yellow
-                    // halo behind (rendered by the sibling above) plus the
-                    // label colour change — the button face itself never
-                    // gains a tint, border, or shadow that could dirty the
-                    // PNG icon's transparent edges.
-                    background:   '#0A0A0A',
-                    border:       '1px solid rgba(255,255,255,0.08)',
-                    boxShadow:    'none',
-                    opacity:      offered ? 1 : 0.6,
-                    zIndex: 1,
-                  }}
-                >
-                  <img
-                    src={SERVICE_TILE_IMAGES[s]}
-                    alt=""
-                    className="h-9 w-auto object-contain"
-                    loading="eager"
-                  />
-                  <div className="text-[11px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
-                    {SERVICE_SHORT[s]}
-                  </div>
-                  <div className="text-[10px] text-muted leading-none">{idr(r.pricePerKm)}/km</div>
-                </button>
-              </div>
+              <button
+                key={s}
+                type="button"
+                onClick={() => { setService(s); haptic.tap() }}
+                className="w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
+                style={{
+                  background:   '#0A0A0A',
+                  border:       '1px solid rgba(255,255,255,0.08)',
+                  boxShadow:    active
+                    ? '0 14px 24px -8px rgba(250,204,21,0.55)'
+                    : 'none',
+                }}
+              >
+                <img
+                  src={SERVICE_TILE_IMAGES[s]}
+                  alt=""
+                  className="h-9 w-auto object-contain"
+                  loading="eager"
+                  style={{ opacity: 1, filter: 'none' }}
+                />
+                <div className="text-[11px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
+                  {SERVICE_SHORT[s]}
+                </div>
+                <div className="text-[10px] text-muted leading-none">{idr(r.pricePerKm)}/km</div>
+              </button>
             )
           })}
           {/* Places tile — opens picker drawer */}
-          <div className="relative">
-            {dropoffLabel && (
-              <span
-                aria-hidden
-                className="absolute -inset-1 rounded-2xl pointer-events-none"
-                style={{
-                  background: 'rgba(250,204,21,0.45)',
-                  filter: 'blur(14px)',
-                  zIndex: 0,
-                }}
-              />
-            )}
-            <button
-              type="button"
-              onClick={() => { setPlacesOpen(true); haptic.tap() }}
-              className="relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
-              style={{
-                background:   '#0A0A0A',
-                border:       '1px solid rgba(255,255,255,0.08)',
-                boxShadow:    'none',
-                zIndex: 1,
-              }}
-            >
+          <button
+            type="button"
+            onClick={() => { setPlacesOpen(true); haptic.tap() }}
+            className="w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
+            style={{
+              background:   '#0A0A0A',
+              border:       '1px solid rgba(255,255,255,0.08)',
+              boxShadow:    dropoffLabel
+                ? '0 14px 24px -8px rgba(250,204,21,0.55)'
+                : 'none',
+            }}
+          >
               <img
                 src={PLACES_TILE_IMAGE}
                 alt=""
@@ -413,7 +385,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 {citySlugLabel(rider.city) || rider.city}
               </div>
             </button>
-          </div>
         </div>
 
         {showLocChip && (
@@ -615,15 +586,8 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
             >
-              <div className="flex items-center justify-between mb-1">
+              <div className="mb-1">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
-                <button
-                  type="button"
-                  onClick={() => { setPlacesOpen(true); haptic.tap() }}
-                  className="text-[11px] font-extrabold uppercase tracking-wider opacity-90 hover:opacity-100"
-                >
-                  Pick from Places
-                </button>
               </div>
               <PlaceAutocomplete
                 value={dropoffLabel}
