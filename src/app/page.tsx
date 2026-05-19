@@ -158,21 +158,21 @@ export default function LandingPage() {
               <button
                 key={tile.id}
                 onClick={() => pickService(tile.href)}
-                className="w-full flex items-center gap-2.5 p-2 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(250,204,21,0.30)]"
+                className="w-full flex items-center gap-2 p-1.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(250,204,21,0.30)]"
                 style={{ animation: `fadeUp 0.55s ease-out ${i * 0.08}s both` }}
                 aria-label={`Enter — ${tile.label}`}
               >
                 <span
-                  className="shrink-0 w-10 h-10 rounded-xl bg-bg/15 flex items-center justify-center"
+                  className="shrink-0 w-9 h-9 rounded-xl bg-bg/15 flex items-center justify-center"
                   aria-hidden
                 >
-                  <img src={tile.img} alt="" className="h-8 w-auto object-contain" loading="eager" />
+                  <img src={tile.img} alt="" className="h-7 w-auto object-contain" loading="eager" />
                 </span>
                 <span className="flex-1 text-left">
-                  <span className="block font-extrabold text-[15px] leading-tight">{tile.label}</span>
-                  <span className="block text-[11px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
+                  <span className="block font-extrabold text-[14px] leading-tight">{tile.label}</span>
+                  <span className="block text-[10px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
                 </span>
-                <ArrowRight className="w-5 h-5 shrink-0 opacity-80" />
+                <ArrowRight className="w-4 h-4 shrink-0 opacity-80" />
               </button>
             ))}
 
