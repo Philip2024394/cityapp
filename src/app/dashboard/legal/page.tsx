@@ -15,44 +15,78 @@ import DashboardNav from '@/components/layout/DashboardNav'
 // motorbike commercial-use practice.
 
 type RequirementId =
-  | 'sim-c' | 'stnk' | 'helmet' | 'jaket' | 'whatsapp-business'
-  | 'insurance' | 'npwp' | 'nib'
+  | 'ktp' | 'sim-c' | 'stnk' | 'pkb' | 'helmet' | 'headlights'
+  | 'bpjs-kes' | 'bpjs-tk' | 'insurance' | 'jaket' | 'whatsapp-business'
+  | 'npwp' | 'nib' | 'pramuwisata'
 
 const REQUIREMENTS: Array<{
   id: RequirementId
   category: 'Required by law' | 'Strongly recommended' | 'Optional but professional'
   title: string
   desc: string
+  fine?: string
   link?: { label: string; href: string }
 }> = [
+  // ─── Required by law ───────────────────────────────────────────
+  { id: 'ktp', category: 'Required by law',
+    title: 'KTP — National ID',
+    desc: 'Kartu Tanda Penduduk must be valid + carried. Baseline ID; you cannot obtain SIM C, NPWP, or BPJS without it.',
+    link: { label: 'Disdukcapil', href: 'https://www.dukcapil.kemendagri.go.id' } },
   { id: 'sim-c', category: 'Required by law',
     title: 'SIM C — Motorcycle licence',
-    desc: 'Valid Indonesian motorcycle licence (SIM C). Driving without one is illegal under UU 22/2009 and renders any insurance void.',
+    desc: 'Valid Indonesian motorcycle licence (SIM C). Driving without one is illegal under UU 22/2009 and renders any insurance claim void.',
+    fine: 'Pasal 281: max Rp 1.000.000 fine or 4 months jail',
     link: { label: 'Apply at SATPAS', href: 'https://www.korlantas.polri.go.id' } },
   { id: 'stnk', category: 'Required by law',
     title: 'STNK — Vehicle registration',
-    desc: 'Surat Tanda Nomor Kendaraan must be valid + carried while riding. Annual tax (PKB) must be paid on time.' },
+    desc: 'Surat Tanda Nomor Kendaraan must be valid + carried while riding. Mandatory under UU 22/2009 Pasal 70.',
+    fine: 'Pasal 288(1): max Rp 500.000 fine or 2 months jail' },
+  { id: 'pkb', category: 'Required by law',
+    title: 'Pajak Kendaraan Bermotor (PKB) — Active vehicle tax',
+    desc: 'Annual motor-vehicle tax must be paid on time. Visible on your STNK as the next-due date. Lapsed PKB = unregistered vehicle in the eyes of police.',
+    fine: 'Pasal 288: same as STNK violation' },
   { id: 'helmet', category: 'Required by law',
-    title: 'SNI-standard helmet',
-    desc: 'Both rider and passenger (for Bike Ride service) must wear SNI-certified helmets. Mandatory under UU 22/2009 Article 106.' },
+    title: 'Helm SNI — Standard helmet',
+    desc: 'Both rider AND passenger must wear SNI-certified helmets. Mandatory under UU 22/2009 Pasal 106(8).',
+    fine: 'Pasal 291: max Rp 250.000 fine or 1 month jail (per person)' },
+  { id: 'headlights', category: 'Required by law',
+    title: 'Daytime headlights on',
+    desc: 'Motorcycle headlights must be lit at all times when riding — day and night. UU 22/2009 Pasal 107(2). Common ticket.',
+    fine: 'Pasal 293(2): max Rp 100.000 fine or 15 days jail' },
+  { id: 'bpjs-kes', category: 'Required by law',
+    title: 'BPJS Kesehatan — Health insurance',
+    desc: 'Mandatory for every Indonesian citizen under UU 24/2011 (SJSN). Independent-worker class: PBPU. Currently underenforced but technically required.',
+    link: { label: 'bpjs-kesehatan.go.id', href: 'https://www.bpjs-kesehatan.go.id' } },
+
+  // ─── Strongly recommended ───────────────────────────────────────
+  { id: 'bpjs-tk', category: 'Strongly recommended',
+    title: 'BPJS Ketenagakerjaan (BPU) — Work-accident protection',
+    desc: 'PP 44/2015 lets self-employed riders enrol under the BPU (Bukan Penerima Upah) scheme. From ~Rp 16.800/month for Jaminan Kecelakaan Kerja + Jaminan Kematian. Single biggest financial risk-reducer.',
+    link: { label: 'bpjsketenagakerjaan.go.id', href: 'https://www.bpjsketenagakerjaan.go.id' } },
   { id: 'insurance', category: 'Strongly recommended',
     title: 'Personal accident insurance',
-    desc: 'Jasa Raharja covers traffic accident victims, but additional personal accident insurance (e.g. AXA Mandiri, Allianz) costs ~Rp 50-100K/year and covers loss of income.' },
+    desc: 'Jasa Raharja (built into your STNK via SWDKLLJ) covers other-party injury but NOT loss of income. Add commercial cover (Allianz, Axa Mandiri, Sompo) ~Rp 50–100K/year for your own income protection.' },
   { id: 'jaket', category: 'Strongly recommended',
     title: 'Safety gear',
-    desc: 'Riding jacket, gloves, closed shoes. Required if you transport passengers (Bike Ride service). Visibility vest helpful for night work.' },
+    desc: 'Riding jacket, gloves, closed shoes. Required mindset if you transport passengers. Visibility vest helpful for night work — saves your life, not just legal exposure.' },
   { id: 'whatsapp-business', category: 'Strongly recommended',
     title: 'WhatsApp Business account',
-    desc: 'Free WhatsApp Business app gives you a business profile, quick replies, and labels for organising customer chats. Looks more professional to customers.',
+    desc: 'Free app gives you a business profile, quick replies, and labels for organising customer chats. Looks more professional + lets you set away-hours.',
     link: { label: 'WhatsApp Business', href: 'https://business.whatsapp.com' } },
+
+  // ─── Optional but professional ──────────────────────────────────
   { id: 'npwp', category: 'Optional but professional',
     title: 'NPWP — Tax number',
-    desc: 'Required if your annual income exceeds Rp 60M (≈ Rp 5M/month). Under UU 7/2021 you can use PPh Final 0.5% as an MSME — straightforward and cheap.',
+    desc: 'Required if your annual income exceeds PTKP (Rp 54.000.000/year for single status TK0, Rp 58.500.000 for married K0). Under UU 7/2021 you can use PPh Final 0.5% as an MSME — straightforward and cheap.',
     link: { label: 'Register at pajak.go.id', href: 'https://www.pajak.go.id' } },
   { id: 'nib', category: 'Optional but professional',
     title: 'NIB — Business ID number',
     desc: 'Nomor Induk Berusaha via OSS (Online Single Submission). Free, ~30 min online. Marks you as a legal usaha mikro and unlocks bank business accounts, supplier credit, etc.',
     link: { label: 'oss.go.id', href: 'https://oss.go.id' } },
+  { id: 'pramuwisata', category: 'Optional but professional',
+    title: 'Pramuwisata licence — Bali tour drivers only',
+    desc: 'If you guide tourists (not just drive them), Perda Bali 5/2020 + Permenparekraf 8/2021 require a Pramuwisata Madya/Muda card from Dinas Pariwisata. Skip if you only do transport, not guiding.',
+    link: { label: 'Disparda Bali', href: 'https://disparda.baliprov.go.id' } },
 ]
 
 export default function DashboardLegalPage() {
@@ -158,13 +192,21 @@ export default function DashboardLegalPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-extrabold text-[14px]">{r.title}</div>
                         <p className="text-[13px] text-muted leading-relaxed mt-1">{r.desc}</p>
+                        {r.fine && (
+                          <div
+                            className="text-[11px] font-bold mt-1.5 px-2 py-1 rounded-md inline-block"
+                            style={{ background: 'rgba(239,68,68,0.10)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.30)' }}
+                          >
+                            ⚠ {r.fine}
+                          </div>
+                        )}
                         {r.link && (
                           <a
                             href={r.link.href}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 text-[12px] font-bold text-brand mt-2 hover:underline"
+                            className="inline-flex items-center gap-1 text-[12px] font-bold text-brand mt-2 hover:underline ml-2 first:ml-0"
                           >
                             {r.link.label} →
                           </a>
