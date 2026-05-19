@@ -348,10 +348,15 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 <button
                   type="button"
                   onClick={() => { setService(s); haptic.tap() }}
-                  className="relative w-full rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
+                  className="relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
                   style={{
+                    // Pure black button. The selection signal is the yellow
+                    // halo behind (rendered by the sibling above) plus the
+                    // label colour change — the button face itself never
+                    // gains a tint, border, or shadow that could dirty the
+                    // PNG icon's transparent edges.
                     background:   '#0A0A0A',
-                    borderColor:  active ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
+                    border:       '1px solid rgba(255,255,255,0.08)',
                     boxShadow:    'none',
                     opacity:      offered ? 1 : 0.6,
                     zIndex: 1,
@@ -387,10 +392,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             <button
               type="button"
               onClick={() => { setPlacesOpen(true); haptic.tap() }}
-              className="relative w-full rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
+              className="relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
               style={{
                 background:   '#0A0A0A',
-                borderColor:  dropoffLabel ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
+                border:       '1px solid rgba(255,255,255,0.08)',
                 boxShadow:    'none',
                 zIndex: 1,
               }}

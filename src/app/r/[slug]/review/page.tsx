@@ -120,13 +120,34 @@ export default function ReviewPage({ params }: { params: Promise<{ slug: string 
           </header>
 
           {done ? (
-            <div className="card p-6 text-center space-y-2">
+            <div
+              className="rounded-2xl p-6 text-center space-y-2"
+              style={{
+                background: 'rgba(250,204,21,0.10)',
+                border: '1px solid rgba(250,204,21,0.40)',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(250,204,21,0.08) inset',
+              }}
+            >
               <CheckCircle2 className="w-10 h-10 text-brand mx-auto" />
               <p className="text-[15px] font-extrabold">Terima kasih!</p>
               <p className="text-[12px] text-muted">Returning to {rider.name.split(' ')[0]}&apos;s page…</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="card p-4 space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className="rounded-2xl p-4 space-y-4"
+              style={{
+                // Yellow-tinted glass container so the review form pops
+                // against the dark background image. Visible whether the
+                // user is reading "Your rating" or scrolled to the comment
+                // textarea — gives the whole section a clear boundary.
+                background: 'rgba(250,204,21,0.08)',
+                border: '1px solid rgba(250,204,21,0.40)',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(250,204,21,0.08) inset',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+              }}
+            >
               {/* Stars */}
               <div>
                 <div className="text-[12px] font-extrabold uppercase tracking-wider text-dim mb-2 text-center">
