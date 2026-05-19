@@ -130,6 +130,40 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   }
   const [allPlaces, setAllPlaces] = useState<PickablePlace[]>([])
 
+  // Auto-suggest focus state — controls visibility of the 3-row
+  // suggestion dropdown under each input. Blur is intentionally delayed
+  // (in the input's onBlur) so a click on a suggestion fires before
+  // the panel collapses.
+  const [pickupFocused, setPickupFocused]   = useState(false)
+  const [dropoffFocused, setDropoffFocused] = useState(false)
+
+  // Build top-3 suggestions for a given input label. Prefers matches
+  // by name first; falls back to category contains; ranks driver-city
+  // matches higher when scores tie. Always returns ≤3 rows.
+  function suggestForLabel(label: string): PickablePlace[] {
+    const q = label.trim().toLowerCase()
+    if (!q || q.length < 1) return []
+    const driverCity = maybeRider?.city
+    const candidates = allPlaces
+      .map((p) => {
+        const name = p.name.toLowerCase()
+        let score = 0
+        if (name === q)             score = 100
+        else if (name.startsWith(q)) score = 60
+        else if (name.includes(q))   score = 40
+        else if (p.category.toLowerCase().includes(q)) score = 20
+        if (score === 0) return null
+        if (p.city === driverCity)  score += 10
+        if (p.isFavourite)          score += 5
+        return { p, score }
+      })
+      .filter((x): x is { p: PickablePlace; score: number } => !!x)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((x) => x.p)
+    return candidates
+  }
+
   // Selected service — defaults to the first one the rider offers.
   // Declared up here so the quote useMemo below can reference it.
   const [service, setService] = useState<ServiceType | null>(
@@ -378,12 +412,26 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                       {geo.status === 'requesting' ? 'Searching…' : 'My location'}
                     </button>
                   </div>
-                  <input
-                    className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
-                    placeholder={pickup ? 'Set — name the place (optional)' : 'Type pickup address or tap My location'}
-                    value={pickupLabel ?? ''}
-                    onChange={(e) => setPickupLabel(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
+                      placeholder={pickup ? 'Set — name the place (optional)' : 'Type pickup address or tap My location'}
+                      value={pickupLabel ?? ''}
+                      onChange={(e) => setPickupLabel(e.target.value)}
+                      onFocus={() => setPickupFocused(true)}
+                      onBlur={() => setTimeout(() => setPickupFocused(false), 150)}
+                    />
+                    <SuggestPanel
+                      visible={pickupFocused}
+                      items={suggestForLabel(pickupLabel ?? '')}
+                      onPick={(p) => {
+                        setPickup({ lat: p.lat, lng: p.lng, accuracyM: 0 })
+                        setPickupLabel(p.name)
+                        setPickupFocused(false)
+                        haptic.tap()
+                      }}
+                    />
+                  </div>
                 </div>
                 {/* Pit stop */}
                 <div>
@@ -402,12 +450,26 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                   <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/70 mb-1">
                     Drop off
                   </div>
-                  <input
-                    className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
-                    placeholder="Destination address"
-                    value={dropoffLabel ?? ''}
-                    onChange={(e) => setDropoffLabel(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
+                      placeholder="Destination address"
+                      value={dropoffLabel ?? ''}
+                      onChange={(e) => setDropoffLabel(e.target.value)}
+                      onFocus={() => setDropoffFocused(true)}
+                      onBlur={() => setTimeout(() => setDropoffFocused(false), 150)}
+                    />
+                    <SuggestPanel
+                      visible={dropoffFocused}
+                      items={suggestForLabel(dropoffLabel ?? '')}
+                      onPick={(p) => {
+                        setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
+                        setDropoffLabel(p.name)
+                        setDropoffFocused(false)
+                        haptic.tap()
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -690,6 +752,70 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         </Drawer.Portal>
       </Drawer.Root>
     </main>
+  )
+}
+
+// SuggestPanel — small absolutely-positioned dropdown shown under the
+// pickup and drop-off inputs. Lists up to 3 places matched against the
+// label the user is typing. Click handler uses onMouseDown to fire
+// before the input's blur collapses the panel. Renders nothing when
+// invisible or when no items match — keeps the booking card clean
+// when the user is just typing freely.
+function SuggestPanel({
+  visible,
+  items,
+  onPick,
+}: {
+  visible: boolean
+  items: Array<{ id: string; name: string; city: string; category: string; rating: number | null; image_urls: string[] | null; lat: number; lng: number }>
+  onPick: (p: { id: string; name: string; city: string; category: string; rating: number | null; image_urls: string[] | null; lat: number; lng: number }) => void
+}) {
+  if (!visible || items.length === 0) return null
+  return (
+    <div
+      className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-30"
+      style={{
+        background: 'rgba(10,10,10,0.96)',
+        border: '1px solid rgba(250,204,21,0.55)',
+        boxShadow: '0 12px 28px rgba(0,0,0,0.55)',
+      }}
+    >
+      <ul>
+        {items.map((p, i) => {
+          const photo = p.image_urls?.[0] ?? null
+          return (
+            <li
+              key={p.id}
+              className={i > 0 ? 'border-t border-white/5' : ''}
+            >
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onPick(p) }}
+                className="w-full px-2.5 py-2 flex items-center gap-2.5 text-left hover:bg-white/5 transition"
+              >
+                <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-black/60 border border-white/10">
+                  {photo ? (
+                    <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <MapPin className="w-3.5 h-3.5 text-dim" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-extrabold text-ink truncate">{p.name}</div>
+                  <div className="text-[11px] text-muted truncate flex items-center gap-1">
+                    <MapPin className="w-3 h-3 shrink-0" style={{ color: '#EF4444' }} />
+                    {citySlugLabel(p.city) || p.city}
+                    {p.rating != null && <span className="text-brand">· ★ {p.rating.toFixed(1)}</span>}
+                  </div>
+                </div>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
