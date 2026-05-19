@@ -760,21 +760,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           </div>
         )}
 
-        {/* Empty-state CTA so even drivers with zero reviews give
-            customers a path to leave the first one. */}
-        {reviews.length === 0 && (
-          <Link
-            href={`/r/${rider.slug}/review`}
-            className="card card-interactive p-3 flex items-center justify-between text-[13px] font-bold"
-          >
-            <span className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-brand" />
-              Be the first to review {rider.name.split(' ')[0]}
-            </span>
-            <span className="text-brand">→</span>
-          </Link>
-        )}
-
         {/* My favourite places — Layer 1 ↔ Layer 2 bridge. Each tile links
             to the public place page, which in turn lists drivers who tour
             that place (network compounding loop). */}
