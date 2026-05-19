@@ -48,10 +48,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   switch (body.action) {
     case 'approve': {
-      // Auto-grants a 2-month free trial: paid_until = today + 60 days.
+      // Auto-grants a 7-day free trial: paid_until = today + 7 days.
       // listing_tier stays 'free' so the renewal flow still applies.
+      // Shortened from 60 → 7 days because public driver pages are
+      // now demoable, so customers + drivers can see the product
+      // before commitment.
       const trialEnd = new Date()
-      trialEnd.setDate(trialEnd.getDate() + 60)
+      trialEnd.setDate(trialEnd.getDate() + 7)
       update = {
         status: 'approved',
         verified: true,

@@ -5,7 +5,7 @@ import AppNav from '@/components/layout/AppNav'
 export const metadata = {
   title: 'List Your Bike · City Rider',
   description:
-    'Daftarkan motormu untuk disewakan di City Riders. GRATIS 2 bulan pertama, lalu Rp 30.000/bulan — ' +
+    'Daftarkan motormu untuk disewakan di City Riders. GRATIS 7 hari pertama, lalu Rp 30.000/bulan — ' +
     'tayang setelah ditinjau admin.',
 }
 
@@ -51,7 +51,7 @@ export default function ListBikePage() {
           </h1>
           <p className="mt-2 text-[14px] text-muted leading-snug">
             Punya motor yang nganggur saat kamu nggak kerja? Sewakan di City Riders dan dapatkan
-            passive income. <strong className="text-ink">GRATIS 2 bulan pertama</strong> — lalu hanya
+            passive income. <strong className="text-ink">GRATIS 7 hari pertama</strong> — lalu hanya
             <strong className="text-ink"> Rp 30.000/bulan per listing</strong>, tayang setelah ditinjau admin.
           </p>
         </header>
@@ -88,12 +88,20 @@ export default function ListBikePage() {
             Isi detail motormu, upload foto, dan kirim — admin City Riders akan meninjau dalam
             24–48 jam.
           </p>
-          <Link
-            href="/rent/list/new"
-            className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-bg text-brand font-extrabold text-[13px] uppercase tracking-wider hover:bg-black transition"
-          >
-            Start listing
-          </Link>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <Link
+              href="/rent/list/new"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-bg text-brand font-extrabold text-[13px] uppercase tracking-wider hover:bg-black transition"
+            >
+              Start listing
+            </Link>
+            <Link
+              href="/r/andi-pratama-yogya?utm_source=rent-list-demo"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-bg text-bg font-extrabold text-[13px] uppercase tracking-wider hover:bg-bg/10 transition"
+            >
+              See live demo →
+            </Link>
+          </div>
         </div>
       </main>
     </>

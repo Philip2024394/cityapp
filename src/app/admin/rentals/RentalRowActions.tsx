@@ -35,7 +35,7 @@ export default function RentalRowActions({
   }
 
   async function approve() {
-    if (!confirm('Approve this rental? It becomes publicly visible on /rent immediately and starts a 2-month free trial (paid_until = today + 60 days).')) return
+    if (!confirm('Approve this rental? It becomes publicly visible on /rent immediately and starts a 7-day free trial (paid_until = today + 7 days).')) return
     await call({ action: 'approve' })
   }
   async function reject() {
