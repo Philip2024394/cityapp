@@ -542,7 +542,16 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                     onClick={() => { setPitstopOpen(true); haptic.tap() }}
                     className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
                   >
-                    <Plus className="w-4 h-4 shrink-0" strokeWidth={3} />
+                    <span
+                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{
+                        background: '#0A0A0A',
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.18) inset',
+                      }}
+                      aria-hidden
+                    >
+                      <Plus className="w-4 h-4 text-brand" strokeWidth={3.5} />
+                    </span>
                     <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
                   </button>
                 )
