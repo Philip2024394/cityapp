@@ -345,6 +345,13 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     haptic.tap()
   }
 
+  // Inline location-allow chip — visible above the booking card when
+  // GPS hasn't been granted yet and the customer hasn't explicitly
+  // dismissed the prompt. Soft nudge, never blocks browsing.
+  const [locChipDismissed, setLocChipDismissed] = useState(false)
+  const showLocChip =
+    !locChipDismissed && !geo.coords && geo.status !== 'requesting'
+
   // Auto-fill pickup with customer GPS on grant
   useMemo(() => {
     if (geo.coords && !pickup) setPickup(geo.coords)
@@ -445,6 +452,36 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             </div>
           </button>
         </div>
+
+        {showLocChip && (
+          <div
+            className="rounded-xl px-3 py-2.5 flex items-center gap-3"
+            style={{
+              background: 'rgba(250,204,21,0.10)',
+              border: '1px solid rgba(250,204,21,0.40)',
+            }}
+          >
+            <MapPin className="w-4 h-4 shrink-0" style={{ color: '#EF4444' }} />
+            <p className="flex-1 min-w-0 text-[12px] text-ink leading-snug">
+              Allow location for accurate distance + fair price estimate.
+            </p>
+            <button
+              type="button"
+              onClick={() => { haptic.tap(); geo.request() }}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-brand text-bg font-extrabold text-[11px] uppercase tracking-wider"
+            >
+              Allow
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocChipDismissed(true)}
+              aria-label="Dismiss"
+              className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted hover:text-ink"
+            >
+              <XIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {cityMismatch ? (
           /* City-mismatch state — driver doesn't service the user's
