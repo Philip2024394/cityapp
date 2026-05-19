@@ -16,7 +16,7 @@ import { rateFor, quoteBreakdown } from '@/lib/pricing/quote'
 import { haversineKm } from '@/lib/geo/haversine'
 import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
-import { nearestCity, citySlugLabel } from '@/lib/cities'
+import { nearestCity, citySlugLabel, SUPPORTED_CITIES } from '@/lib/cities'
 import { SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
 
 // Landing-page brand images — reused on the driver-page service tiles
@@ -137,32 +137,97 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   const [pickupFocused, setPickupFocused]   = useState(false)
   const [dropoffFocused, setDropoffFocused] = useState(false)
 
-  // Build top-3 suggestions for a given input label. Prefers matches
-  // by name first; falls back to category contains; ranks driver-city
-  // matches higher when scores tie. Always returns ≤3 rows.
-  function suggestForLabel(label: string): PickablePlace[] {
-    const q = label.trim().toLowerCase()
-    if (!q || q.length < 1) return []
-    const driverCity = maybeRider?.city
-    const candidates = allPlaces
-      .map((p) => {
-        const name = p.name.toLowerCase()
-        let score = 0
-        if (name === q)             score = 100
-        else if (name.startsWith(q)) score = 60
-        else if (name.includes(q))   score = 40
-        else if (p.category.toLowerCase().includes(q)) score = 20
-        if (score === 0) return null
-        if (p.city === driverCity)  score += 10
-        if (p.isFavourite)          score += 5
-        return { p, score }
+  // Real-address autocomplete via Photon (komoot.io) — free, no API
+  // key, OSM-backed, biased to the driver's service city so results
+  // are local-first. Debounced 300ms per input. Returns up to 3.
+  type Suggestion = { id: string; label: string; sublabel: string; lat: number; lng: number }
+  const [pickupSuggestions, setPickupSuggestions]   = useState<Suggestion[]>([])
+  const [dropoffSuggestions, setDropoffSuggestions] = useState<Suggestion[]>([])
+
+  // Centroid used as the Photon `lat`/`lon` bias so OSM ranks local
+  // addresses higher than ones halfway across the country.
+  const driverCityCentroid = useMemo(() => {
+    if (!maybeRider?.city) return null
+    return SUPPORTED_CITIES.find((c) => c.slug === maybeRider.city) ?? null
+  }, [maybeRider?.city])
+
+  // Generic Photon fetch — returns up to N place suggestions sorted by
+  // distance from the bias point. Photon's `properties.name` is the
+  // primary label; the sublabel is the city / county / country if
+  // present so the user can distinguish similar names.
+  async function photonSearch(q: string, limit = 3): Promise<Suggestion[]> {
+    if (!q || q.trim().length < 3) return []
+    const params = new URLSearchParams({
+      q: q.trim(),
+      limit: String(limit),
+      lang: 'en',
+    })
+    if (driverCityCentroid) {
+      params.set('lat', String(driverCityCentroid.lat))
+      params.set('lon', String(driverCityCentroid.lng))
+    }
+    try {
+      const res = await fetch(`https://photon.komoot.io/api/?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
       })
-      .filter((x): x is { p: PickablePlace; score: number } => !!x)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .map((x) => x.p)
-    return candidates
+      if (!res.ok) return []
+      const json = (await res.json()) as {
+        features?: Array<{
+          properties?: { name?: string; city?: string; state?: string; country?: string; type?: string; osm_id?: number | string }
+          geometry?: { coordinates?: [number, number] }
+        }>
+      }
+      const feats = json.features ?? []
+      return feats
+        .filter((f) => f.geometry?.coordinates?.length === 2 && f.properties?.name)
+        .map((f, i): Suggestion => {
+          const [lng, lat] = f.geometry!.coordinates!
+          const p = f.properties!
+          const parts = [p.city, p.state, p.country].filter(Boolean)
+          return {
+            id: `${p.osm_id ?? i}-${lat}-${lng}`,
+            label: p.name!,
+            sublabel: parts.join(' · '),
+            lat,
+            lng,
+          }
+        })
+    } catch {
+      return []
+    }
   }
+
+  // Debounced search for the pickup input
+  useEffect(() => {
+    if (!pickupFocused) return
+    const q = (pickupLabel ?? '').trim()
+    // Skip the "My location" default — that's a sentinel, not a query
+    if (q === 'My location' || q.length < 3) {
+      setPickupSuggestions([])
+      return
+    }
+    const t = setTimeout(() => {
+      photonSearch(q).then(setPickupSuggestions)
+    }, 300)
+    return () => clearTimeout(t)
+  // photonSearch closes over driverCityCentroid only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickupLabel, pickupFocused, driverCityCentroid])
+
+  // Debounced search for the drop-off input
+  useEffect(() => {
+    if (!dropoffFocused) return
+    const q = (dropoffLabel ?? '').trim()
+    if (q.length < 3) {
+      setDropoffSuggestions([])
+      return
+    }
+    const t = setTimeout(() => {
+      photonSearch(q).then(setDropoffSuggestions)
+    }, 300)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dropoffLabel, dropoffFocused, driverCityCentroid])
 
   // Selected service — defaults to the first one the rider offers.
   // Declared up here so the quote useMemo below can reference it.
@@ -423,10 +488,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                     />
                     <SuggestPanel
                       visible={pickupFocused}
-                      items={suggestForLabel(pickupLabel ?? '')}
-                      onPick={(p) => {
-                        setPickup({ lat: p.lat, lng: p.lng, accuracyM: 0 })
-                        setPickupLabel(p.name)
+                      items={pickupSuggestions}
+                      onPick={(s) => {
+                        setPickup({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                        setPickupLabel(s.label)
                         setPickupFocused(false)
                         haptic.tap()
                       }}
@@ -461,10 +526,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                     />
                     <SuggestPanel
                       visible={dropoffFocused}
-                      items={suggestForLabel(dropoffLabel ?? '')}
-                      onPick={(p) => {
-                        setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
-                        setDropoffLabel(p.name)
+                      items={dropoffSuggestions}
+                      onPick={(s) => {
+                        setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                        setDropoffLabel(s.label)
                         setDropoffFocused(false)
                         haptic.tap()
                       }}
@@ -756,19 +821,25 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 }
 
 // SuggestPanel — small absolutely-positioned dropdown shown under the
-// pickup and drop-off inputs. Lists up to 3 places matched against the
-// label the user is typing. Click handler uses onMouseDown to fire
-// before the input's blur collapses the panel. Renders nothing when
-// invisible or when no items match — keeps the booking card clean
-// when the user is just typing freely.
+// pickup and drop-off inputs. Lists up to 3 real-address suggestions
+// returned by Photon (komoot.io) geocoding. Click handler uses
+// onMouseDown so it fires before the input's delayed blur collapses
+// the panel. Hidden when no items.
+type AddressSuggestion = {
+  id: string
+  label: string
+  sublabel: string
+  lat: number
+  lng: number
+}
 function SuggestPanel({
   visible,
   items,
   onPick,
 }: {
   visible: boolean
-  items: Array<{ id: string; name: string; city: string; category: string; rating: number | null; image_urls: string[] | null; lat: number; lng: number }>
-  onPick: (p: { id: string; name: string; city: string; category: string; rating: number | null; image_urls: string[] | null; lat: number; lng: number }) => void
+  items: AddressSuggestion[]
+  onPick: (s: AddressSuggestion) => void
 }) {
   if (!visible || items.length === 0) return null
   return (
@@ -781,39 +852,23 @@ function SuggestPanel({
       }}
     >
       <ul>
-        {items.map((p, i) => {
-          const photo = p.image_urls?.[0] ?? null
-          return (
-            <li
-              key={p.id}
-              className={i > 0 ? 'border-t border-white/5' : ''}
+        {items.map((s, i) => (
+          <li key={s.id} className={i > 0 ? 'border-t border-white/5' : ''}>
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onPick(s) }}
+              className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-white/5 transition"
             >
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); onPick(p) }}
-                className="w-full px-2.5 py-2 flex items-center gap-2.5 text-left hover:bg-white/5 transition"
-              >
-                <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-black/60 border border-white/10">
-                  {photo ? (
-                    <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <MapPin className="w-3.5 h-3.5 text-dim" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-extrabold text-ink truncate">{p.name}</div>
-                  <div className="text-[11px] text-muted truncate flex items-center gap-1">
-                    <MapPin className="w-3 h-3 shrink-0" style={{ color: '#EF4444' }} />
-                    {citySlugLabel(p.city) || p.city}
-                    {p.rating != null && <span className="text-brand">· ★ {p.rating.toFixed(1)}</span>}
-                  </div>
-                </div>
-              </button>
-            </li>
-          )
-        })}
+              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#EF4444' }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-extrabold text-ink truncate">{s.label}</div>
+                {s.sublabel && (
+                  <div className="text-[11px] text-muted truncate">{s.sublabel}</div>
+                )}
+              </div>
+            </button>
+          </li>
+        ))}
       </ul>
     </div>
   )
