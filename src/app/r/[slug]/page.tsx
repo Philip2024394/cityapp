@@ -2,18 +2,26 @@
 import { use, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, MapPin, Bike as BikeIcon, Star } from 'lucide-react'
-import PickupDropoffPicker from '@/components/rider/PickupDropoffPicker'
+import { MapPin, Bike as BikeIcon, Star, X as XIcon, Crosshair, Search as SearchIcon } from 'lucide-react'
 import OfflineFallback from '@/components/rider/OfflineFallback'
 import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
 import { fetchDriverBySlugBrowser } from '@/lib/drivers/queries'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
-import { haversineKm } from '@/lib/geo/haversine'
 import { rateFor } from '@/lib/pricing/quote'
 import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
-import { SERVICE_ICONS, SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
+import { nearestCity, citySlugLabel } from '@/lib/cities'
+import { SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
+
+// Landing-page brand images — reused on the driver-page service tiles
+// so the visual language stays consistent between marketplace and
+// driver storefront.
+const SERVICE_TILE_IMAGES: Record<ServiceType, string> = {
+  person: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
+  parcel: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
+  food:   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
+}
 
 // Shape of a curated place tile rendered in "My favourite places"
 type FavePlace = {
@@ -95,6 +103,23 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   const [dropoff, setDropoff] = useState<GeoPoint | null>(null)
   const [pickupLabel, setPickupLabel] = useState('My location')
   const [dropoffLabel, setDropoffLabel] = useState('')
+  // Pit-stop note — free-text request the rider should make on the way
+  // (e.g. "buy 1 Coca-Cola at warung depan"). Carried through to the
+  // WhatsApp deep-link so the driver sees it in the booking message.
+  const [pitstop, setPitstop] = useState('')
+
+  // City-mismatch detection — once GPS lands, find the customer's
+  // nearest supported city and compare to the driver's service city.
+  // If they don't match, the booking card is replaced with a
+  // "Driver doesn't service your city" container.
+  const userCity = useMemo(() => {
+    if (!geo.coords) return null
+    return nearestCity(geo.coords.lat, geo.coords.lng)
+  }, [geo.coords])
+  const cityMismatch = !!(
+    userCity && maybeRider?.city &&
+    userCity.city.slug.toLowerCase() !== maybeRider.city.toLowerCase()
+  )
 
   // Selected service — defaults to the first one the rider offers.
   const [service, setService] = useState<ServiceType | null>(
@@ -146,76 +171,160 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       <div className="max-w-2xl mx-auto px-4 pt-2 space-y-3">
         <RiderHero rider={rider} />
 
-        {/* Service picker — 3 big tile-buttons (Bike / Parcel / Food).
-            Always renders all 3 even if the rider only offers some,
-            so the booking UX is consistent across every driver page.
-            Services the rider doesn't actually offer fall back to the
-            default per-km rate from rateFor(). */}
-        <div className="card p-4">
-          <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold mb-2.5">
-            Service
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {(['person','parcel','food'] as const).map(s => {
-              const r = rateFor(rider, s)
-              const active = service === s
-              const offered = rider.services.includes(s)
-              return (
-                <button
-                  key={s}
-                  onClick={() => { setService(s); haptic.tap() }}
-                  className="rounded-2xl border text-center py-3 px-2 transition flex flex-col items-center gap-1.5"
-                  style={{
-                    background:   active ? 'rgba(250,204,21,0.10)' : 'rgba(255,255,255,0.04)',
-                    borderColor:  active ? 'rgba(250,204,21,0.45)' : 'rgba(255,255,255,0.08)',
-                    opacity:      offered ? 1 : 0.55,
-                  }}
-                >
-                  <div className="text-[34px] leading-none">{SERVICE_ICONS[s]}</div>
-                  <div className="text-[14px] font-extrabold mt-1" style={{ color: active ? '#FACC15' : '#fff' }}>
-                    {SERVICE_SHORT[s]}
-                  </div>
-                  <div className="text-[12px] text-muted">{idr(r.pricePerKm)}/km</div>
-                </button>
-              )
-            })}
-          </div>
+        {/* Service picker — 3 black tile-buttons with brand images from
+            the landing page. Active state outlined in brand-yellow. */}
+        <div className="grid grid-cols-3 gap-2">
+          {(['person','parcel','food'] as const).map(s => {
+            const r = rateFor(rider, s)
+            const active = service === s
+            const offered = rider.services.includes(s)
+            return (
+              <button
+                key={s}
+                onClick={() => { setService(s); haptic.tap() }}
+                className="rounded-2xl border text-center py-3 px-2 transition flex flex-col items-center gap-1.5"
+                style={{
+                  background:   '#0A0A0A',
+                  borderColor:  active ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
+                  boxShadow:    active ? '0 4px 14px rgba(250,204,21,0.20)' : 'none',
+                  opacity:      offered ? 1 : 0.6,
+                }}
+              >
+                <img
+                  src={SERVICE_TILE_IMAGES[s]}
+                  alt=""
+                  className="h-12 w-auto object-contain"
+                  loading="eager"
+                />
+                <div className="text-[14px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
+                  {SERVICE_SHORT[s]}
+                </div>
+                <div className="text-[11px] text-muted">{idr(r.pricePerKm)}/km</div>
+              </button>
+            )
+          })}
         </div>
 
-        <PickupDropoffPicker
-          pickup={pickup}
-          dropoff={dropoff}
-          pickupLabel={pickupLabel}
-          dropoffLabel={dropoffLabel}
-          onUseMyLocation={onUseMyLocation}
-          onPickupLabelChange={setPickupLabel}
-          onDropoffLabelChange={setDropoffLabel}
-          status={geo.status}
-        />
+        {cityMismatch ? (
+          /* City-mismatch state — driver doesn't service the user's
+             city. Replaces the booking flow with a clear redirect to
+             the main app's drivers-in-your-city search. */
+          <div
+            className="rounded-2xl p-5 text-center border"
+            style={{
+              background: 'rgba(239,68,68,0.10)',
+              borderColor: 'rgba(239,68,68,0.40)',
+            }}
+          >
+            <MapPin className="w-6 h-6 mx-auto mb-2" style={{ color: '#EF4444' }} />
+            <p className="text-[14px] font-extrabold text-ink leading-snug">
+              {rider.name} is not servicing your city
+            </p>
+            <p className="text-[13px] text-muted leading-snug mt-1">
+              You appear to be near <strong className="text-ink">{userCity?.city.label}</strong>.
+              Search for drivers within your area on the main app.
+            </p>
+            <Link
+              href={`/cari?city=${encodeURIComponent(userCity?.city.slug ?? '')}`}
+              className="mt-4 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
+            >
+              <SearchIcon className="w-4 h-4" />
+              Find drivers near me
+            </Link>
+          </div>
+        ) : (
+          /* Yellow booking card — pickup → pit-stop → drop off, all in
+             one stacked container. Pickup and drop-off are the trip
+             endpoints; the pit-stop is a free-text request along the
+             way (e.g. "pick me up a Coca-Cola"). */
+          <div
+            className="rounded-2xl p-4 space-y-3 border"
+            style={{
+              background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
+              borderColor: '#000',
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex flex-col items-center pt-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-black/85" />
+                <div className="w-px h-7 bg-black/30 my-1" />
+                <div className="w-2.5 h-2.5 rounded-sm bg-black/55" />
+                <div className="w-px h-7 bg-black/30 my-1" />
+                <div className="w-2.5 h-2.5 rounded-sm bg-black/85" />
+              </div>
+              <div className="flex-1 min-w-0 space-y-3">
+                {/* Pick up */}
+                <div>
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/70 mb-1 flex items-center justify-between">
+                    <span>Pick up</span>
+                    <button
+                      onClick={onUseMyLocation}
+                      className="text-black text-[11px] font-extrabold flex items-center gap-1 normal-case"
+                    >
+                      <Crosshair className="w-3 h-3" />
+                      {geo.status === 'requesting' ? 'Searching…' : 'My location'}
+                    </button>
+                  </div>
+                  <input
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
+                    placeholder={pickup ? 'Set — name the place (optional)' : 'Type pickup address or tap My location'}
+                    value={pickupLabel ?? ''}
+                    onChange={(e) => setPickupLabel(e.target.value)}
+                  />
+                </div>
+                {/* Pit stop */}
+                <div>
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/70 mb-1">
+                    Pit stop <span className="font-normal opacity-70">(optional)</span>
+                  </div>
+                  <input
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
+                    placeholder="e.g. pick me up a Coca-Cola on the way"
+                    value={pitstop}
+                    onChange={(e) => setPitstop(e.target.value)}
+                  />
+                </div>
+                {/* Drop off */}
+                <div>
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/70 mb-1">
+                    Drop off
+                  </div>
+                  <input
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
+                    placeholder="Destination address"
+                    value={dropoffLabel ?? ''}
+                    onChange={(e) => setDropoffLabel(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
 
-        {/* Contact Driver — primary CTA. Opens WhatsApp with a prefilled
-            message that carries the customer's pickup + dropoff if they
-            entered them above; otherwise a generic intro. Keeps the page
-            single-screen and replaces the old fare-estimate + sticky bar. */}
-        <button
-          type="button"
-          onClick={() => {
-            const lines = [`Hi ${rider.name}, saya lihat profilmu di City Rider.`]
-            if (pickupLabel || dropoffLabel) {
-              lines.push('')
-              if (pickupLabel)  lines.push(`Pickup:  ${pickupLabel}`)
-              if (dropoffLabel) lines.push(`Drop off: ${dropoffLabel}`)
-            }
-            if (service) lines.push('', `Service: ${SERVICE_SHORT[service]}`)
-            lines.push('', 'Apakah tersedia?')
-            const url = `https://wa.me/${rider.whatsappE164.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`
-            haptic.buzz()
-            window.open(url, '_blank', 'noopener,noreferrer')
-          }}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[15px] uppercase tracking-wider border border-black/85 shadow-[0_8px_22px_rgba(250,204,21,0.30)] active:scale-[0.99]"
-        >
-          Contact Driver
-        </button>
+            {/* Contact Driver — primary CTA below the booking inputs.
+                WhatsApp deep-link carries pickup + pit-stop + dropoff
+                + service so the driver gets a complete brief in one
+                message. Platform never sees the booking. */}
+            <button
+              type="button"
+              onClick={() => {
+                const lines = [`Hi ${rider.name}, saya lihat profilmu di City Rider.`]
+                if (pickupLabel || dropoffLabel || pitstop) {
+                  lines.push('')
+                  if (pickupLabel) lines.push(`Pickup:    ${pickupLabel}`)
+                  if (pitstop)     lines.push(`Pit stop:  ${pitstop}`)
+                  if (dropoffLabel) lines.push(`Drop off:  ${dropoffLabel}`)
+                }
+                if (service) lines.push('', `Service:   ${SERVICE_SHORT[service]}`)
+                lines.push('', 'Apakah tersedia?')
+                const url = `https://wa.me/${rider.whatsappE164.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`
+                haptic.buzz()
+                window.open(url, '_blank', 'noopener,noreferrer')
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-black text-brand font-extrabold text-[14px] uppercase tracking-wider border border-black active:scale-[0.99]"
+            >
+              Contact Driver
+            </button>
+          </div>
+        )}
 
         {/* My favourite places — Layer 1 ↔ Layer 2 bridge. Each tile links
             to the public place page, which in turn lists drivers who tour
@@ -342,49 +451,69 @@ function PageBackground() {
   )
 }
 
+// Minimal header — just the City Rider logo + name on the left and a
+// close-X on the right. No back arrow, no glass blur, no dark band.
+// Close routes to "/" (marketplace home) since "close" implies leaving
+// the driver page entirely.
 function BackNav() {
   return (
-    <header className="sticky top-0 z-40 glass-strong pt-safe">
+    <header className="pt-safe">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1.5 text-[14px] font-bold text-muted hover:text-ink">
-          <ChevronLeft className="w-4 h-4" />
-          Marketplace
+        <Link href="/" className="flex items-center gap-2 min-w-0">
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714"
+            alt=""
+            className="h-7 w-auto shrink-0"
+            loading="eager"
+          />
+          <span className="text-[15px] font-extrabold tracking-tight">
+            City <span className="gradient-text">Rider</span>
+          </span>
         </Link>
-        <div className="text-[15px] font-extrabold gradient-text">City Rider</div>
+        <Link
+          href="/"
+          aria-label="Close"
+          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-ink hover:bg-white/5 active:scale-95 transition"
+        >
+          <XIcon className="w-5 h-5" strokeWidth={2.5} />
+        </Link>
       </div>
     </header>
   )
 }
 
+// RiderHero — no card container. Just photo + name + bike + a red
+// map-pin row showing the city this driver services. Sits flush
+// against the page background.
 function RiderHero({ rider, dimmed }: { rider: ReturnType<typeof findRiderBySlug>; dimmed?: boolean }) {
   if (!rider) return null
   return (
-    <div className="card p-5 grid-bg relative overflow-hidden">
-      <div className="flex items-start gap-4">
-        <div className="relative">
-          <img
-            src={rider.photoUrl}
-            alt={rider.name}
-            className="w-20 h-20 rounded-2xl object-cover ring-2 ring-line"
-            style={{ filter: dimmed ? 'grayscale(1) brightness(0.6)' : undefined }}
-          />
-          {!dimmed && rider.isOnline && (
-            <span className="dot-online absolute -bottom-1 -right-1 ring-2 ring-bg2 !w-3.5 !h-3.5" />
-          )}
+    <div className="flex items-start gap-4 px-1">
+      <div className="relative shrink-0">
+        <img
+          src={rider.photoUrl}
+          alt={rider.name}
+          className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white/15"
+          style={{ filter: dimmed ? 'grayscale(1) brightness(0.6)' : undefined }}
+        />
+        {!dimmed && rider.isOnline && (
+          <span className="dot-online absolute -bottom-1 -right-1 ring-2 ring-bg2 !w-3.5 !h-3.5" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h1 className="text-2xl font-extrabold leading-tight">{rider.name}</h1>
+        <div className="flex items-center gap-1.5 text-[13px] mt-1.5">
+          <MapPin className="w-4 h-4 shrink-0" style={{ color: '#EF4444' }} />
+          <span className="text-ink/90 font-extrabold">
+            {citySlugLabel(rider.city) || rider.city}
+          </span>
+          <span className="text-[11px] text-muted">· service area</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-extrabold leading-tight">{rider.name}</h1>
-          <div className="flex items-center gap-1.5 text-[13px] text-muted mt-1">
-            <MapPin className="w-3.5 h-3.5" />
-            {rider.area} · {rider.city}
-          </div>
-          <div className="flex items-center gap-1.5 text-[13px] mt-1">
-            <BikeIcon className="w-3.5 h-3.5 text-brand" />
-            <span className="text-ink/90 font-bold">{rider.bike.make} {rider.bike.model} {rider.bike.year}</span>
-          </div>
-          <div className="text-[12px] text-dim mt-0.5">
-            {rider.bike.color} · {rider.bike.type[0]!.toUpperCase() + rider.bike.type.slice(1)}
-          </div>
+        <div className="flex items-center gap-1.5 text-[12px] text-muted mt-1">
+          <BikeIcon className="w-3.5 h-3.5 text-brand" />
+          <span className="font-bold">
+            {rider.bike.make} {rider.bike.model} · {rider.bike.year}
+          </span>
         </div>
       </div>
     </div>
