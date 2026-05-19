@@ -971,11 +971,21 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-50 bg-black/60" />
           <Drawer.Content
-            className="fixed bottom-0 left-0 right-0 z-50 bg-bg2 rounded-t-3xl flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl flex flex-col overflow-hidden"
             style={{
               // 90px taller than the previous 85vh cap — gives more room
               // for browsing the full main-app place directory.
               maxHeight: 'calc(85vh + 90px)',
+              // Brand background image + dark gradient overlay so each
+              // place row stays legible while the drawer carries the
+              // brand mood. Two backgrounds in one shorthand: top layer
+              // is the linear-gradient scrim, bottom layer is the image.
+              backgroundImage:
+                'linear-gradient(rgba(10,10,10,0.78), rgba(10,10,10,0.88)),' +
+                " url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2008_23_29%20PM.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               // Yellow top edge per design: a thick brand-yellow strip
               // along the very top of the drawer.
               borderTop: '4px solid #FACC15',
