@@ -637,13 +637,26 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                             boxShadow: '0 1px 0 rgba(250,204,21,0.10) inset',
                           }}
                         >
-                          <div className="w-14 shrink-0 rounded-lg overflow-hidden bg-black/60 border border-white/10">
+                          <div className="w-14 h-14 shrink-0 relative rounded-lg overflow-hidden bg-black/60 border border-white/10">
                             {photo ? (
                               <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <MapPin className="w-4 h-4 text-dim" />
                               </div>
+                            )}
+                            {p.rating != null && (
+                              <span
+                                className="absolute bottom-0.5 left-0.5 inline-flex items-center gap-0.5 px-1 py-[1px] rounded-md text-[9px] font-extrabold leading-none"
+                                style={{
+                                  background: 'rgba(0,0,0,0.78)',
+                                  color: '#FACC15',
+                                  border: '1px solid rgba(250,204,21,0.50)',
+                                }}
+                              >
+                                <Star className="w-2 h-2 fill-current" strokeWidth={0} />
+                                {p.rating.toFixed(1)}
+                              </span>
                             )}
                           </div>
                           <div className="flex-1 min-w-0 self-center">
@@ -656,7 +669,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                               {citySlugLabel(p.city) || p.city}
                               <span className="opacity-60">·</span>
                               {p.category.replace(/_/g, ' ')}
-                              {p.rating != null ? ` · ★ ${p.rating.toFixed(1)}` : ''}
                             </div>
                           </div>
                           {perPlaceFare != null && (
