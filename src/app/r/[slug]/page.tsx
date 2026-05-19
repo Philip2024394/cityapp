@@ -545,19 +545,44 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 live fare on the right when both pickup + drop-off set. */}
             <button
               onClick={() => {
+                // Build the WhatsApp message with tappable Google Maps
+                // pins for each endpoint + a directions link the driver
+                // can open straight into navigation. WhatsApp auto-
+                // linkifies these so the driver just taps to launch the
+                // Maps app.
+                const mapPin = (lat: number, lng: number) =>
+                  `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`
                 const lines = [`Hi ${rider.name}, saya mau booking via City Rider.`]
-                if (pickupLabel || dropoffLabel || pitstop) {
+                if (pickupLabel || pickup || dropoffLabel || dropoff || pitstop) {
                   lines.push('')
-                  if (pickupLabel)  lines.push(`Pickup:    ${pickupLabel}`)
-                  if (pitstop)      lines.push(`Pit stop:  ${pitstop}`)
-                  if (dropoffLabel) lines.push(`Drop off:  ${dropoffLabel}`)
+                  if (pickupLabel || pickup) {
+                    lines.push(`📍 Pickup: ${pickupLabel || 'My location'}`)
+                    if (pickup) lines.push(mapPin(pickup.lat, pickup.lng))
+                  }
+                  if (pitstop) {
+                    if (pickup) lines.push('')
+                    lines.push(`🛑 Pit stop: ${pitstop}`)
+                  }
+                  if (dropoffLabel || dropoff) {
+                    if (pickup || pitstop) lines.push('')
+                    lines.push(`🏁 Drop off: ${dropoffLabel || '—'}`)
+                    if (dropoff) lines.push(mapPin(dropoff.lat, dropoff.lng))
+                  }
+                  // Single tap-to-navigate link when both endpoints are set
+                  if (pickup && dropoff) {
+                    lines.push(
+                      '',
+                      'Directions:',
+                      `https://www.google.com/maps/dir/?api=1&origin=${pickup.lat.toFixed(6)},${pickup.lng.toFixed(6)}&destination=${dropoff.lat.toFixed(6)},${dropoff.lng.toFixed(6)}&travelmode=driving`,
+                    )
+                  }
                 }
-                if (service) lines.push('', `Service:   ${SERVICE_SHORT[service]}`)
+                if (service) lines.push('', `Service: ${SERVICE_SHORT[service]}`)
                 if (quote) {
                   lines.push(
                     '',
-                    `Distance:  ${quote.distanceKm.toFixed(1)} km`,
-                    `Fare est:  ${idr(quote.fare)}${quote.minApplied ? ' (min fare)' : ''}`,
+                    `Distance: ${quote.distanceKm.toFixed(1)} km`,
+                    `Fare est: ${idr(quote.fare)}${quote.minApplied ? ' (min fare)' : ''}`,
                   )
                 }
                 lines.push('', 'Apakah tersedia?')
