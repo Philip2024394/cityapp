@@ -227,6 +227,11 @@ function OnboardingInner() {
           accepts_transfer: acceptsTransfer,
           qr_payment_url: qrPaymentUrl,
           transfer_details: transferDetails,
+          // Optional affiliate attribution — agent code stashed by
+          // captureReferrerFromUrl() on landing visit, expires after 30
+          // days, ignored server-side if unknown/inactive.
+          referrer_agent_code:
+            (await import('@/lib/affiliate/referrer')).getStoredReferrer() ?? undefined,
         }),
       })
       if (!r.ok) {
@@ -235,6 +240,8 @@ function OnboardingInner() {
         setSubmitting(false)
         return
       }
+      // Clear the referrer cookie — attribution is locked at the trigger.
+      ;(await import('@/lib/affiliate/referrer')).clearStoredReferrer()
       router.push('/dashboard')
       router.refresh()
     } catch (e: unknown) {
@@ -587,7 +594,7 @@ function OnboardingInner() {
                   className="btn-primary flex-1"
                   disabled={!stepValid || submitting}
                 >
-                  {submitting ? 'Setting up…' : 'Finish & start 14-day trial'}
+                  {submitting ? 'Setting up…' : 'Finish & start 7-day trial'}
                   <Check className="w-4 h-4" />
                 </button>
               )}

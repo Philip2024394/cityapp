@@ -85,6 +85,14 @@ export default function LandingPage() {
   // paint is acceptable for a landing page.
   const [locale, setLocale] = useState<Locale>('id')
   useEffect(() => { setLocale(getStoredLocale()) }, [])
+
+  // Capture ?ref=AGENTCODE on first paint and stash it for 30 days. If
+  // the customer signs up later (any tab, any time within the window),
+  // the agent code rides along to the drivers row → trigger inserts the
+  // affiliate_referrals entry. See src/lib/affiliate/referrer.ts.
+  useEffect(() => {
+    import('@/lib/affiliate/referrer').then((m) => m.captureReferrerFromUrl())
+  }, [])
   const t = STRINGS[locale]
 
   function pickService(href: string) {

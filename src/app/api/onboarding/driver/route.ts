@@ -45,6 +45,11 @@ type OnboardingPayload = {
   accepts_transfer?: boolean
   qr_payment_url?: string
   transfer_details?: string
+  /** Optional affiliate attribution — agent_code from streetlocal landing
+   *  ?ref= URL. Persisted onto drivers row; a trigger then creates the
+   *  matching affiliate_referrals entry. Invalid / unknown codes are
+   *  silently ignored at the DB layer. */
+  referrer_agent_code?: string
 }
 
 export async function POST(req: Request) {
@@ -163,6 +168,7 @@ export async function POST(req: Request) {
     accepts_transfer: body.accepts_transfer ?? false,
     qr_payment_url: body.qr_payment_url?.trim() || null,
     transfer_details: body.transfer_details?.trim() || null,
+    referrer_agent_code: body.referrer_agent_code?.trim().toUpperCase() || null,
     status: 'active',
     availability: 'offline',
   })
