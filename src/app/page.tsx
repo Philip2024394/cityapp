@@ -8,23 +8,21 @@ import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 // Service tiles — the primary CTA on landing. Routes:
 //   person / parcel / food → /cari?service=<id>
 //   rental                  → /rent (own marketplace, separate flow)
-// Order: Ride (top, most-common ask) → Rental → Parcel → Food.
+// Order: Ride → Parcel → Food → Rental.
 type TileId = 'person' | 'parcel' | 'food' | 'rental'
 const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img: string; href: string }> = [
   { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
     href: '/cari?service=person' },
-  { id: 'rental', label: 'Bike Rental', sub: 'Self-ride · With driver',
-    // Reusing the Bike Ride image until a dedicated rental hero asset
-    // ships. Swap when you have a rental-specific transparent PNG.
-    img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
-    href: '/rent' },
   { id: 'parcel', label: 'Bike Parcel', sub: 'Package · Courier',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
     href: '/cari?service=parcel' },
   { id: 'food',   label: 'Bike Food',   sub: 'Resto · Warung',
     img: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
     href: '/cari?service=food' },
+  { id: 'rental', label: 'Bike Rental', sub: 'Self-ride · With driver',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledwrrssswdqw-removebg-preview.png?updatedAt=1778253308442',
+    href: '/rent' },
 ]
 
 // Background map (dark Yogyakarta + 42 pulsing rider pings + autoPan) now
