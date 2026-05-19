@@ -584,9 +584,8 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-[16px] font-extrabold leading-tight">Pick a place</h3>
-                <p className="text-[12px] text-muted leading-snug mt-0.5">
-                  Fare uses {rider.name.split(' ')[0]}&apos;s rate ({idr(rider.pricePerKm)}/km) ·
-                  showing all City Riders places
+                <p className="text-[11px] text-muted leading-snug mt-0.5">
+                  {citySlugLabel(rider.city) || rider.city} directory Places
                 </p>
               </div>
               <button
