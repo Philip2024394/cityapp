@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import { Drawer } from 'vaul'
 import {
   MapPin, Bike as BikeIcon, Star, X as XIcon,
-  Search as SearchIcon, Compass, Check, Plus,
+  Search as SearchIcon, Check, Plus,
 } from 'lucide-react'
 import OfflineFallback from '@/components/rider/OfflineFallback'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
@@ -28,6 +28,8 @@ const SERVICE_TILE_IMAGES: Record<ServiceType, string> = {
   parcel: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
   food:   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
 }
+const PLACES_TILE_IMAGE =
+  'https://ik.imagekit.io/nepgaxllc/Untitledwrr-removebg-preview.png?updatedAt=1778253100200'
 
 // Public review rendered in the "What riders say" section
 type ReviewRow = {
@@ -151,6 +153,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   // collapsed-with-note (tap to edit), or expanded textarea.
   const [pitstop, setPitstop] = useState('')
   const [pitstopOpen, setPitstopOpen] = useState(false)
+
+  // Reviews popup state — opened from the small button next to the
+  // 'Pick up' label. Shows last 4 reviews, refreshes live from the
+  // `reviews` array already fetched (limit 5 in the load effect).
+  const [reviewsOpen, setReviewsOpen] = useState(false)
 
   // Places picker drawer state
   const [placesOpen, setPlacesOpen] = useState(false)
@@ -315,60 +322,93 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       <div className="max-w-2xl mx-auto px-4 pt-2 space-y-3">
         <RiderHero rider={rider} />
 
-        {/* Service picker — 4 black tile-buttons (20% smaller than before)
-            with brand images from the landing page. Fourth tile opens the
-            Places drawer so customers can pick a destination from the
-            directory; selecting a place autofills the booking drop-off. */}
+        {/* Service picker — 4 black tile-buttons with brand images.
+            No drop-shadows in the unselected state. Selected tile gets
+            a soft yellow halo glow BEHIND the button (via an absolute-
+            positioned blurred sibling) so the selection reads visually
+            without modifying the button itself. */}
         <div className="grid grid-cols-4 gap-1.5">
           {(['person','parcel','food'] as const).map(s => {
             const r = rateFor(rider, s)
             const active = service === s
             const offered = rider.services.includes(s)
             return (
-              <button
-                key={s}
-                onClick={() => { setService(s); haptic.tap() }}
-                className="rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
-                style={{
-                  background:   '#0A0A0A',
-                  borderColor:  active ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
-                  boxShadow:    active ? '0 3px 10px rgba(250,204,21,0.20)' : 'none',
-                  opacity:      offered ? 1 : 0.6,
-                }}
-              >
-                <img
-                  src={SERVICE_TILE_IMAGES[s]}
-                  alt=""
-                  className="h-9 w-auto object-contain"
-                  loading="eager"
-                />
-                <div className="text-[11px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
-                  {SERVICE_SHORT[s]}
-                </div>
-                <div className="text-[10px] text-muted leading-none">{idr(r.pricePerKm)}/km</div>
-              </button>
+              <div key={s} className="relative">
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute -inset-1 rounded-2xl pointer-events-none"
+                    style={{
+                      background: 'rgba(250,204,21,0.45)',
+                      filter: 'blur(14px)',
+                      zIndex: 0,
+                    }}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setService(s); haptic.tap() }}
+                  className="relative w-full rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
+                  style={{
+                    background:   '#0A0A0A',
+                    borderColor:  active ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
+                    boxShadow:    'none',
+                    opacity:      offered ? 1 : 0.6,
+                    zIndex: 1,
+                  }}
+                >
+                  <img
+                    src={SERVICE_TILE_IMAGES[s]}
+                    alt=""
+                    className="h-9 w-auto object-contain"
+                    loading="eager"
+                  />
+                  <div className="text-[11px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
+                    {SERVICE_SHORT[s]}
+                  </div>
+                  <div className="text-[10px] text-muted leading-none">{idr(r.pricePerKm)}/km</div>
+                </button>
+              </div>
             )
           })}
           {/* Places tile — opens picker drawer */}
-          <button
-            type="button"
-            onClick={() => { setPlacesOpen(true); haptic.tap() }}
-            className="rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
-            style={{
-              background:   '#0A0A0A',
-              borderColor:  dropoffLabel ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
-            }}
-          >
-            <div className="h-9 flex items-center justify-center">
-              <Compass className="w-7 h-7 text-brand" strokeWidth={2.2} />
-            </div>
-            <div className="text-[11px] font-extrabold mt-0.5" style={{ color: dropoffLabel ? '#FACC15' : '#fff' }}>
-              Places
-            </div>
-            <div className="text-[10px] text-muted leading-none">
-              {dropoffLabel ? 'picked ✓' : 'pick dropoff'}
-            </div>
-          </button>
+          <div className="relative">
+            {dropoffLabel && (
+              <span
+                aria-hidden
+                className="absolute -inset-1 rounded-2xl pointer-events-none"
+                style={{
+                  background: 'rgba(250,204,21,0.45)',
+                  filter: 'blur(14px)',
+                  zIndex: 0,
+                }}
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => { setPlacesOpen(true); haptic.tap() }}
+              className="relative w-full rounded-xl border text-center py-2 px-1.5 transition flex flex-col items-center gap-0.5"
+              style={{
+                background:   '#0A0A0A',
+                borderColor:  dropoffLabel ? 'rgba(250,204,21,0.65)' : 'rgba(255,255,255,0.10)',
+                boxShadow:    'none',
+                zIndex: 1,
+              }}
+            >
+              <img
+                src={PLACES_TILE_IMAGE}
+                alt=""
+                className="h-9 w-auto object-contain"
+                loading="eager"
+              />
+              <div className="text-[11px] font-extrabold mt-0.5" style={{ color: dropoffLabel ? '#FACC15' : '#fff' }}>
+                Places
+              </div>
+              <div className="text-[10px] text-muted leading-none">
+                {dropoffLabel ? 'picked ✓' : 'pick dropoff'}
+              </div>
+            </button>
+          </div>
         </div>
 
         {showLocChip && (
@@ -440,8 +480,20 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
             >
-              <div className="mb-1">
+              <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
+                <button
+                  type="button"
+                  onClick={() => { setReviewsOpen(true); haptic.tap() }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-bg/85 text-brand text-[10px] font-extrabold uppercase tracking-wider border border-bg/30 active:scale-95 transition"
+                  aria-label="Show recent reviews"
+                >
+                  <Star className="w-3 h-3 fill-current" strokeWidth={0} />
+                  Reviews
+                  {reviewStats && (
+                    <span className="opacity-80">· {reviewStats.count}</span>
+                  )}
+                </button>
               </div>
               <PlaceAutocomplete
                 value={pickupLabel}
@@ -807,6 +859,105 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         )}
       </div>
 
+      {/* Reviews popup — fires from the small 'Reviews' button on the
+          Pick up tile. Renders last 4 visible reviews from `reviews`
+          (the same array fed into the on-page reviews section, sorted
+          newest-first by the load effect). Auto-refreshes whenever
+          the parent reload runs. */}
+      {reviewsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/65 backdrop-blur-sm"
+          onClick={() => setReviewsOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-label="Recent reviews"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"
+            style={{
+              background: '#0E0E0E',
+              border: '1px solid rgba(250,204,21,0.40)',
+              boxShadow: '0 16px 38px rgba(0,0,0,0.55)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-brand fill-brand" strokeWidth={0} />
+                <h3 className="text-[15px] font-extrabold">
+                  Reviews for {rider.name.split(' ')[0]}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewsOpen(false)}
+                aria-label="Close reviews"
+                className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted hover:bg-white/5 transition"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            {reviewStats && (
+              <div className="text-[12px] text-muted">
+                ★ <span className="text-brand font-extrabold">{reviewStats.avg?.toFixed(1) ?? '—'}</span>
+                {' '}from {reviewStats.count} review{reviewStats.count === 1 ? '' : 's'}
+              </div>
+            )}
+
+            {reviews.length === 0 ? (
+              <div className="card p-5 text-center">
+                <p className="text-[13px] text-muted">
+                  No reviews yet. Be the first.
+                </p>
+                <Link
+                  href={`/r/${rider.slug}/review`}
+                  className="mt-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[12px] uppercase tracking-wider"
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  Leave a review
+                </Link>
+              </div>
+            ) : (
+              <ul className="space-y-2.5">
+                {reviews.slice(0, 4).map((r) => (
+                  <li
+                    key={r.id}
+                    className="rounded-xl p-3"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(250,204,21,0.18)' }}
+                  >
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-[12px] text-brand">
+                        {'★'.repeat(r.rating)}<span className="text-dim">{'★'.repeat(5 - r.rating)}</span>
+                      </span>
+                      <span className="text-[13px] font-extrabold text-ink">{r.reviewer_name}</span>
+                      {r.reviewer_country && (
+                        <span className="text-[11px] text-muted">· {r.reviewer_country}</span>
+                      )}
+                    </div>
+                    {r.comment && (
+                      <p className="text-[13px] text-ink/85 mt-1 leading-snug">{r.comment}</p>
+                    )}
+                    <div className="text-[10px] text-dim mt-1.5 font-mono">
+                      {new Date(r.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {reviews.length > 0 && (
+              <Link
+                href={`/r/${rider.slug}/review`}
+                className="mt-1 inline-flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-xl border border-brand/40 text-[12px] font-extrabold uppercase tracking-wider text-brand hover:bg-brand/10 transition"
+              >
+                <Star className="w-3.5 h-3.5" />
+                Leave a review
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Places picker — opens when the "Places" service tile is tapped.
           Bottom-sheet drawer with search + scrollable list. Favourites
           (curated by this driver) are tagged with a star and float to
@@ -991,9 +1142,13 @@ function BackNav() {
         <Link
           href="/"
           aria-label="Close"
-          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-ink hover:bg-white/5 active:scale-95 transition"
+          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-bg active:scale-95 transition"
+          style={{
+            background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
+            boxShadow: '0 4px 12px rgba(250,204,21,0.35), 0 0 0 1px rgba(0,0,0,0.18) inset',
+          }}
         >
-          <XIcon className="w-5 h-5" strokeWidth={2.5} />
+          <XIcon className="w-4 h-4" strokeWidth={3} />
         </Link>
       </div>
     </header>
