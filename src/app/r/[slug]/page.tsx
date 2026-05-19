@@ -151,21 +151,30 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     return SUPPORTED_CITIES.find((c) => c.slug === maybeRider.city) ?? null
   }, [maybeRider?.city])
 
-  // Generic Photon fetch — returns up to N place suggestions sorted by
-  // distance from the bias point. Photon's `properties.name` is the
-  // primary label; the sublabel is the city / county / country if
-  // present so the user can distinguish similar names.
+  // Photon geocode — STRICTLY scoped to the driver's city via bbox + a
+  // belt-and-braces country filter. Two-layer constraint so we never
+  // surface "Same name, different country" suggestions:
+  //   1. bbox=±0.45° (~50 km) around the driver's city centroid
+  //   2. client-side reject any result where country isn't Indonesia
+  // location_bias_scale=1.0 means proximity to centroid dominates
+  // ranking inside the bbox, so village + landmark hits float to top.
   async function photonSearch(q: string, limit = 3): Promise<Suggestion[]> {
     if (!q || q.trim().length < 3) return []
+    if (!driverCityCentroid) return []  // no centroid = can't safely scope
+    const RADIUS_DEG = 0.45  // ~50 km, generous enough to cover the city + outskirts/villages
+    const minLon = driverCityCentroid.lng - RADIUS_DEG
+    const maxLon = driverCityCentroid.lng + RADIUS_DEG
+    const minLat = driverCityCentroid.lat - RADIUS_DEG
+    const maxLat = driverCityCentroid.lat + RADIUS_DEG
     const params = new URLSearchParams({
       q: q.trim(),
-      limit: String(limit),
+      limit: String(limit * 4),  // overfetch — we drop any non-ID results client-side
       lang: 'en',
+      lat: String(driverCityCentroid.lat),
+      lon: String(driverCityCentroid.lng),
+      location_bias_scale: '1.0',
+      bbox: `${minLon},${minLat},${maxLon},${maxLat}`,
     })
-    if (driverCityCentroid) {
-      params.set('lat', String(driverCityCentroid.lat))
-      params.set('lon', String(driverCityCentroid.lng))
-    }
     try {
       const res = await fetch(`https://photon.komoot.io/api/?${params.toString()}`, {
         headers: { Accept: 'application/json' },
@@ -173,17 +182,37 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       if (!res.ok) return []
       const json = (await res.json()) as {
         features?: Array<{
-          properties?: { name?: string; city?: string; state?: string; country?: string; type?: string; osm_id?: number | string }
+          properties?: {
+            name?: string
+            city?: string
+            district?: string
+            state?: string
+            country?: string
+            countrycode?: string
+            type?: string
+            osm_id?: number | string
+          }
           geometry?: { coordinates?: [number, number] }
         }>
       }
       const feats = json.features ?? []
       return feats
-        .filter((f) => f.geometry?.coordinates?.length === 2 && f.properties?.name)
+        .filter((f) => {
+          if (f.geometry?.coordinates?.length !== 2) return false
+          if (!f.properties?.name) return false
+          // Reject anything outside Indonesia even if the bbox math
+          // sneaks a border-crossing point through.
+          const cc = (f.properties.countrycode || '').toUpperCase()
+          const country = (f.properties.country || '').toLowerCase()
+          return cc === 'ID' || country === 'indonesia'
+        })
+        .slice(0, limit)
         .map((f, i): Suggestion => {
           const [lng, lat] = f.geometry!.coordinates!
           const p = f.properties!
-          const parts = [p.city, p.state, p.country].filter(Boolean)
+          // Sublabel: district → city → state — drop "Indonesia" since
+          // every row is in Indonesia by construction.
+          const parts = [p.district, p.city, p.state].filter(Boolean)
           return {
             id: `${p.osm_id ?? i}-${lat}-${lng}`,
             label: p.name!,
