@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike, Star, Copy, Check, MessageCircle, Facebook, Instagram } from 'lucide-react'
+import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike, Star, Copy, Check, MessageCircle, Facebook, Instagram, ClipboardList } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
@@ -136,13 +136,21 @@ export default function DashboardPage() {
           </div>
 
           {/* Rider-tools row */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <ToolCard
+              href="/dashboard/operations"
+              icon={<ClipboardList className="w-4 h-4" />}
+              label="Operations log"
+              hint="Rides · NPWP · CSV"
+            />
             <ToolCard
               href="/dashboard/customers"
               icon={<Users className="w-4 h-4" />}
               label="Customer Book"
               hint={`${MOCK_CUSTOMERS.length} · ${repeatCustomers().length} repeat`}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <ToolCard
               href="/dashboard/card"
               icon={<IdCard className="w-4 h-4" />}
