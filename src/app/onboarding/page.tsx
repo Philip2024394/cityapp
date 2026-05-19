@@ -9,6 +9,12 @@ import {
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { slugify, slugReason } from '@/lib/slug'
+import {
+  getTariffForCity,
+  lawRatePerKm,
+  lawMinFare,
+  isPerKmWithinLaw,
+} from '@/lib/tariffs/zones'
 import type { ServiceType, BikeType } from '@/types/database'
 
 const STEPS = ['Business', 'Link', 'Bike', 'Services & price', 'Payment', 'Location'] as const
@@ -438,6 +444,12 @@ function OnboardingInner() {
                     onChange={(e) => setPricePerKm(parseInt(e.target.value, 10))}
                     className="w-full accent-[#FACC15]"
                   />
+                  <TariffHint
+                    city={city}
+                    kind="perKm"
+                    currentValue={pricePerKm}
+                    onResetToLaw={(v) => setPricePerKm(v)}
+                  />
                 </Field>
                 <Field label={`Minimum fee · Rp ${minFee.toLocaleString('id-ID')}`} hint="Charged for very short trips.">
                   <input
@@ -445,6 +457,12 @@ function OnboardingInner() {
                     value={minFee}
                     onChange={(e) => setMinFee(parseInt(e.target.value, 10))}
                     className="w-full accent-[#FACC15]"
+                  />
+                  <TariffHint
+                    city={city}
+                    kind="minFare"
+                    currentValue={minFee}
+                    onResetToLaw={(v) => setMinFee(v)}
                   />
                 </Field>
                 <Field label={`Pit-stop fee · Rp ${pitstopFee.toLocaleString('id-ID')}`} hint="0 = free pit stops. Charged when customer requests a stop along the way.">
@@ -676,3 +694,65 @@ function PaymentToggle({
 }
 
 function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
+
+// TariffHint — advisory note under the per-km and min-fare sliders.
+// Shows the government zone range for the driver's selected city and a
+// one-tap reset button that snaps the slider to the midpoint of the
+// legal range. Never blocks the driver from setting any value they
+// want — the platform is a directory, not a tariff enforcer.
+function TariffHint({
+  city, kind, currentValue, onResetToLaw,
+}: {
+  city: string
+  kind: 'perKm' | 'minFare'
+  currentValue: number
+  onResetToLaw: (v: number) => void
+}) {
+  const tariff = getTariffForCity(city)
+  if (!tariff) {
+    // City not mapped to a zone yet — show a neutral hint, no reset button.
+    return (
+      <div className="text-[11px] text-dim mt-1.5 leading-snug">
+        Pilih kota dulu untuk melihat tarif resmi pemerintah.
+      </div>
+    )
+  }
+
+  const isPerKm = kind === 'perKm'
+  const min = isPerKm ? tariff.perKmMin   : tariff.minFareMin
+  const max = isPerKm ? tariff.perKmMax   : tariff.minFareMax
+  const lawValue =
+    (isPerKm ? lawRatePerKm(city) : lawMinFare(city)) ?? Math.round((min + max) / 2)
+
+  const inRange =
+    isPerKm
+      ? isPerKmWithinLaw(currentValue, city)
+      : currentValue >= min && currentValue <= max
+
+  return (
+    <div className="mt-1.5 flex items-start justify-between gap-2">
+      <div className="text-[11px] leading-snug flex-1 min-w-0">
+        <div className="text-dim">
+          Zona <strong className="text-ink">{tariff.zone}</strong> ·
+          Rp {min.toLocaleString('id-ID')}–Rp {max.toLocaleString('id-ID')}
+          {isPerKm ? '/km' : ''}
+        </div>
+        <div
+          className="text-[10px] mt-0.5"
+          style={{ color: inRange ? '#22C55E' : '#F97316' }}
+        >
+          {inRange
+            ? '✓ Di dalam rentang resmi'
+            : '⚠ Di luar rentang resmi — kamu masih bisa simpan'}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onResetToLaw(lawValue)}
+        className="shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-brand px-2 py-1 rounded-lg border border-brand/30 hover:bg-brand/10 transition"
+      >
+        Reset → Rp {lawValue.toLocaleString('id-ID')}
+      </button>
+    </div>
+  )
+}
