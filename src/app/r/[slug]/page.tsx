@@ -29,6 +29,16 @@ const SERVICE_TILE_IMAGES: Record<ServiceType, string> = {
   food:   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
 }
 
+// Public review rendered in the "What riders say" section
+type ReviewRow = {
+  id: string
+  reviewer_name: string
+  reviewer_country: string | null
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
 // Shape of a curated place tile rendered in "My favourite places"
 type FavePlace = {
   place_id: string
@@ -73,13 +83,15 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   // even if the discovery layer is empty.
   const [favePlaces, setFavePlaces] = useState<FavePlace[]>([])
   const [crossSell, setCrossSell]   = useState<CrossSellDriver[]>([])
+  const [reviews, setReviews]       = useState<ReviewRow[]>([])
+  const [reviewStats, setReviewStats] = useState<{ avg: number; count: number } | null>(null)
   useEffect(() => {
     if (!maybeRider) return
     const supabase = getBrowserSupabase()
     if (!supabase) return
     let cancelled = false
     ;(async () => {
-      const [favRes, csRes] = await Promise.all([
+      const [favRes, csRes, revRes, allRevRes] = await Promise.all([
         supabase
           .from('driver_places')
           .select('place_id, note, places(slug, name, category, image_urls, city, rating)')
@@ -93,11 +105,34 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           .neq('user_id', maybeRider.id)
           .order('rating', { ascending: false, nullsFirst: false })
           .limit(4),
+        supabase
+          .from('reviews')
+          .select('id, reviewer_name, reviewer_country, rating, comment, created_at')
+          .eq('driver_user_id', maybeRider.id)
+          .eq('status', 'visible')
+          .order('created_at', { ascending: false })
+          .limit(5),
+        // Aggregate stats — fetch ratings to compute live avg + count.
+        // For ≤500 reviews per driver this scan is cheap; if a driver
+        // ever crosses that we can move it to a materialized view.
+        supabase
+          .from('reviews')
+          .select('rating')
+          .eq('driver_user_id', maybeRider.id)
+          .eq('status', 'visible'),
       ])
       if (cancelled) return
       const fav = ((favRes.data ?? []) as unknown as FavePlace[]).filter((x) => x.place)
       setFavePlaces(fav)
       setCrossSell((csRes.data ?? []) as CrossSellDriver[])
+      setReviews((revRes.data ?? []) as ReviewRow[])
+      const ratings = ((allRevRes.data ?? []) as { rating: number }[]).map((r) => r.rating)
+      if (ratings.length > 0) {
+        const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length
+        setReviewStats({ avg, count: ratings.length })
+      } else {
+        setReviewStats(null)
+      }
     })()
     return () => { cancelled = true }
   }, [maybeRider])
@@ -585,7 +620,17 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                     `Fare est: ${idr(quote.fare)}${quote.minApplied ? ' (min fare)' : ''}`,
                   )
                 }
-                lines.push('', 'Apakah tersedia?')
+                // Safety reminder embedded in the booking message — adds
+                // a paper trail of warning given (helmet, SIM C, vehicle
+                // check, ride-at-own-risk). Doesn't make the platform
+                // liable but strengthens the directory defence.
+                lines.push(
+                  '',
+                  '⚠️ Sebelum berangkat: pastikan SIM C, helm, dan kondisi motor OK.',
+                  'Perjalanan langsung antara saya & driver — di luar tanggung jawab City Rider.',
+                  '',
+                  'Apakah tersedia?',
+                )
                 const url = `https://wa.me/${rider.whatsappE164.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`
                 haptic.buzz()
                 window.open(url, '_blank', 'noopener,noreferrer')
@@ -602,6 +647,85 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               )}
             </button>
           </div>
+        )}
+
+        {/* Before you ride — safety disclosure visible above the social
+            proof so customers see it BEFORE they pick a driver. Adds a
+            paper trail of warning given without taking on liability. */}
+        <div
+          className="rounded-xl p-3 flex items-start gap-2.5 text-[12px] leading-snug"
+          style={{
+            background: 'rgba(249,115,22,0.08)',
+            border: '1px solid rgba(249,115,22,0.35)',
+            color: 'rgba(255,255,255,0.85)',
+          }}
+        >
+          <span aria-hidden className="shrink-0 text-[16px] leading-none mt-0.5">⚠️</span>
+          <p>
+            <strong className="text-ink">Before you ride:</strong> verify the driver&apos;s SIM C,
+            helmet condition, and bike before departure. The ride is between you and the driver —
+            City Rider provides the directory, not the transport.
+          </p>
+        </div>
+
+        {/* What riders say — public anonymous reviews. Same legal model
+            as Yelp / Google Reviews. */}
+        {reviews.length > 0 && (
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-brand fill-brand" strokeWidth={0} />
+                <h2 className="text-[12px] text-dim uppercase tracking-wider font-bold">
+                  What riders say
+                </h2>
+              </div>
+              {reviewStats && (
+                <span className="text-[12px] font-extrabold text-brand">
+                  ★ {reviewStats.avg.toFixed(1)} ({reviewStats.count})
+                </span>
+              )}
+            </div>
+            <ul className="space-y-3">
+              {reviews.map((r) => (
+                <li key={r.id} className="border-l-2 border-brand/40 pl-3">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[11px] text-brand">
+                      {'★'.repeat(r.rating)}<span className="text-dim">{'★'.repeat(5 - r.rating)}</span>
+                    </span>
+                    <span className="text-[13px] font-extrabold text-ink">{r.reviewer_name}</span>
+                    {r.reviewer_country && (
+                      <span className="text-[11px] text-muted">· {r.reviewer_country}</span>
+                    )}
+                  </div>
+                  {r.comment && (
+                    <p className="text-[13px] text-ink/85 mt-1 leading-snug">{r.comment}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href={`/r/${rider.slug}/review`}
+              className="mt-4 inline-flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-xl border border-brand/40 text-[12px] font-extrabold uppercase tracking-wider text-brand hover:bg-brand/10 transition"
+            >
+              <Star className="w-3.5 h-3.5" />
+              Leave a review
+            </Link>
+          </div>
+        )}
+
+        {/* Empty-state CTA so even drivers with zero reviews give
+            customers a path to leave the first one. */}
+        {reviews.length === 0 && (
+          <Link
+            href={`/r/${rider.slug}/review`}
+            className="card card-interactive p-3 flex items-center justify-between text-[13px] font-bold"
+          >
+            <span className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-brand" />
+              Be the first to review {rider.name.split(' ')[0]}
+            </span>
+            <span className="text-brand">→</span>
+          </Link>
         )}
 
         {/* My favourite places — Layer 1 ↔ Layer 2 bridge. Each tile links
