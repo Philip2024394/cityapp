@@ -206,21 +206,8 @@ export default function DashboardPage() {
               IG app via deep-link as the closest equivalent. */}
           <ShareKitCard slug={ME.slug} riderName={ME.name} city={ME.city} />
 
-          {/* Subscription card */}
-          <div className="card p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[13px] text-dim uppercase tracking-wider font-extrabold">Subscription</div>
-                <div className="font-extrabold text-lg mt-0.5">
-                  {ME.subscriptionStatus === 'trial' ? 'Trial — 14 days remaining' : 'Active'}
-                </div>
-                <div className="text-[13px] text-muted mt-1">Rp 30.000/month · Midtrans</div>
-              </div>
-              <span className={ME.subscriptionStatus === 'trial' ? 'chip' : 'chip chip-online'}>
-                {ME.subscriptionStatus === 'trial' ? '⏳ Trial' : '✓ Active'}
-              </span>
-            </div>
-          </div>
+          {/* Subscription card with working Renew button (Midtrans Snap) */}
+          <SubscriptionCard status={ME.subscriptionStatus} />
         </div>
       </main>
       <DashboardNav />
@@ -370,6 +357,76 @@ function ShareKitCard({ slug, riderName, city }: { slug: string; riderName: stri
           and reassure the maintainer that it's intentionally used in the
           shareText constant above). */}
       <span className="sr-only">{riderName}</span>
+    </div>
+  )
+}
+
+// SubscriptionCard — shows subscription status + a working Renew button
+// that opens the Midtrans Snap popup. Disabled until Midtrans client
+// key is configured (NEXT_PUBLIC_MIDTRANS_CLIENT_KEY), in which case it
+// falls back to a manual-QRIS notice.
+function SubscriptionCard({ status }: { status?: string }) {
+  const [busy, setBusy]       = useState(false)
+  const [notice, setNotice]   = useState<string | null>(null)
+  const hasClientKey = !!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
+
+  async function onRenew() {
+    setNotice(null)
+    setBusy(true)
+    const { startSnapCheckout } = await import('@/lib/midtrans/client')
+    startSnapCheckout({
+      product: 'subscription',
+      onSuccess: () => {
+        setNotice('✓ Payment received — your subscription is now active.')
+        setBusy(false)
+        // Reload after a short pause so the new paid_until shows.
+        setTimeout(() => window.location.reload(), 1500)
+      },
+      onPending: () => {
+        setNotice('Pending — Midtrans is finalising the payment. We will update your subscription once confirmed.')
+        setBusy(false)
+      },
+      onError: (msg) => {
+        setNotice(msg || 'Payment failed. Please try again.')
+        setBusy(false)
+      },
+      onClose: () => setBusy(false),
+    })
+  }
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[13px] text-dim uppercase tracking-wider font-extrabold">Subscription</div>
+          <div className="font-extrabold text-lg mt-0.5">
+            {status === 'trial' ? 'Trial — renew before it expires' : status === 'active' ? 'Active' : 'Inactive'}
+          </div>
+          <div className="text-[13px] text-muted mt-1">Rp 30.000/month · 30-day extension</div>
+        </div>
+        <span className={status === 'trial' ? 'chip' : status === 'active' ? 'chip chip-online' : 'chip chip-warn'}>
+          {status === 'trial' ? '⏳ Trial' : status === 'active' ? '✓ Active' : '◯ Inactive'}
+        </span>
+      </div>
+
+      {hasClientKey ? (
+        <button
+          type="button"
+          onClick={onRenew}
+          disabled={busy}
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99] disabled:opacity-60"
+        >
+          {busy ? 'Opening payment…' : 'Renew · Rp 30.000 / 30 days'}
+        </button>
+      ) : (
+        <div className="mt-4 rounded-xl p-3 text-[12px] leading-snug" style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.35)' }}>
+          Midtrans not configured yet. Pay via QRIS to the platform account and ping admin to mark your subscription paid for now. Set <code className="text-brand">NEXT_PUBLIC_MIDTRANS_CLIENT_KEY</code> + <code className="text-brand">MIDTRANS_SERVER_KEY</code> to enable auto-billing.
+        </div>
+      )}
+
+      {notice && (
+        <p className="mt-3 text-[12px] text-brand leading-snug">{notice}</p>
+      )}
     </div>
   )
 }

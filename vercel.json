@@ -1,4 +1,11 @@
 {
   "buildCommand": "next build",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "comment": "Weekly affiliate-payout aggregation — Mondays 1am UTC = 8am WIB. Requires CRON_SECRET env var; route returns 403 without it.",
+      "path": "/api/admin/payouts/aggregate?secret=$CRON_SECRET",
+      "schedule": "0 1 * * 1"
+    }
+  ]
 }
