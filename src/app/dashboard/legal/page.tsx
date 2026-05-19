@@ -1,7 +1,10 @@
 'use client'
 import Link from 'next/link'
-import { useState } from 'react'
-import { ChevronLeft, CheckCircle2, Circle, Scale, AlertCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import {
+  ChevronLeft, CheckCircle2, Circle, Scale, AlertCircle,
+  CalendarClock, Shield, Siren, ChevronRight, Loader2,
+} from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 
@@ -104,6 +107,97 @@ export default function DashboardLegalPage() {
   const lawDone   = REQUIREMENTS.filter(r => r.category === 'Required by law').filter(r => checked.has(r.id)).length
   const lawTotal  = REQUIREMENTS.filter(r => r.category === 'Required by law').length
 
+  // Renewal calendar — driver-entered dates for SIM C, STNK, PKB, BPJS,
+  // Pramuwisata. Each field is independent; driver fills in whichever
+  // they have. Auto-loaded from /api/driver-renewals on mount.
+  type Renewals = {
+    sim_c_expires_on: string | null
+    stnk_expires_on: string | null
+    pkb_due_on: string | null
+    bpjs_kes_paid_until: string | null
+    bpjs_tk_paid_until: string | null
+    pramuwisata_expires_on: string | null
+  }
+  const EMPTY_RENEWALS: Renewals = {
+    sim_c_expires_on: null,
+    stnk_expires_on: null,
+    pkb_due_on: null,
+    bpjs_kes_paid_until: null,
+    bpjs_tk_paid_until: null,
+    pramuwisata_expires_on: null,
+  }
+  const [renewals, setRenewals] = useState<Renewals>(EMPTY_RENEWALS)
+  const [renewalsLoading, setRenewalsLoading] = useState(true)
+  const [renewalsSaving, setRenewalsSaving]   = useState(false)
+  const [renewalsSaved, setRenewalsSaved]     = useState(false)
+  const [renewalsErr, setRenewalsErr]         = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/driver-renewals')
+      .then((r) => r.json())
+      .then((j) => {
+        if (cancelled) return
+        if (j?.row) {
+          setRenewals({
+            sim_c_expires_on:       j.row.sim_c_expires_on       ?? null,
+            stnk_expires_on:        j.row.stnk_expires_on        ?? null,
+            pkb_due_on:             j.row.pkb_due_on             ?? null,
+            bpjs_kes_paid_until:    j.row.bpjs_kes_paid_until    ?? null,
+            bpjs_tk_paid_until:     j.row.bpjs_tk_paid_until     ?? null,
+            pramuwisata_expires_on: j.row.pramuwisata_expires_on ?? null,
+          })
+        }
+        setRenewalsLoading(false)
+      })
+      .catch(() => { setRenewalsLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  async function saveRenewals() {
+    setRenewalsErr(null); setRenewalsSaved(false); setRenewalsSaving(true)
+    try {
+      const res = await fetch('/api/driver-renewals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(renewals),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { setRenewalsErr(j.error || 'Save failed'); return }
+      setRenewalsSaved(true)
+      setTimeout(() => setRenewalsSaved(false), 2000)
+    } finally {
+      setRenewalsSaving(false)
+    }
+  }
+
+  function setRenewalDate(field: keyof Renewals, v: string) {
+    setRenewals((r) => ({ ...r, [field]: v || null }))
+    setRenewalsSaved(false)
+  }
+
+  // Computed status for each renewal date: red < 14 days, amber < 30,
+  // green otherwise; "expired" for past-due. Returns null if no date.
+  function daysToGo(iso: string | null): { days: number; tone: 'expired'|'red'|'amber'|'green' } | null {
+    if (!iso) return null
+    const now = new Date()
+    const target = new Date(iso + 'T00:00:00')
+    const days = Math.ceil((target.getTime() - now.getTime()) / 86_400_000)
+    if (days < 0)    return { days, tone: 'expired' }
+    if (days <= 14)  return { days, tone: 'red' }
+    if (days <= 30)  return { days, tone: 'amber' }
+    return { days, tone: 'green' }
+  }
+
+  const RENEWAL_FIELDS: Array<{ key: keyof Renewals; label: string; hint: string }> = [
+    { key: 'sim_c_expires_on',       label: 'SIM C expires',         hint: 'Motorcycle licence — renew every 5 years' },
+    { key: 'stnk_expires_on',        label: 'STNK expires',          hint: 'Full STNK renewal — every 5 years' },
+    { key: 'pkb_due_on',             label: 'PKB next due',          hint: 'Annual vehicle tax (visible on STNK)' },
+    { key: 'bpjs_kes_paid_until',    label: 'BPJS Kesehatan paid until', hint: 'Monthly health-insurance premium' },
+    { key: 'bpjs_tk_paid_until',     label: 'BPJS TK paid until',    hint: 'Optional — work-accident protection' },
+    { key: 'pramuwisata_expires_on', label: 'Pramuwisata expires',   hint: 'Bali tour-driver only — Dispar permit' },
+  ]
+
   return (
     <>
       <AppNav />
@@ -162,6 +256,116 @@ export default function DashboardLegalPage() {
               the platform) deal with it. These requirements protect you.
             </div>
           </div>
+
+          {/* Pocket reference cards — police stop + accident protocol.
+              Both are static guidance pages, no DB. Drivers bookmark
+              these for the worst moment of a working day. */}
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              href="/dashboard/legal/police-stop"
+              className="card card-interactive p-3"
+              style={{ borderColor: 'rgba(96,165,250,0.30)', background: 'rgba(59,130,246,0.06)' }}
+            >
+              <div className="flex items-center justify-between">
+                <Shield className="w-5 h-5" style={{ color: '#60A5FA' }} />
+                <ChevronRight className="w-4 h-4 text-muted" />
+              </div>
+              <div className="text-[13px] font-extrabold mt-2">If police stop you</div>
+              <div className="text-[11px] text-muted mt-0.5 leading-snug">
+                Documents + what to say
+              </div>
+            </Link>
+            <Link
+              href="/dashboard/legal/accident"
+              className="card card-interactive p-3"
+              style={{ borderColor: 'rgba(239,68,68,0.30)', background: 'rgba(239,68,68,0.06)' }}
+            >
+              <div className="flex items-center justify-between">
+                <Siren className="w-5 h-5" style={{ color: '#EF4444' }} />
+                <ChevronRight className="w-4 h-4 text-muted" />
+              </div>
+              <div className="text-[13px] font-extrabold mt-2">In case of accident</div>
+              <div className="text-[11px] text-muted mt-0.5 leading-snug">
+                Jasa Raharja · BPJS · 110
+              </div>
+            </Link>
+          </div>
+
+          {/* Renewal calendar — driver-entered dates with countdown badges */}
+          <section className="card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="w-4 h-4 text-brand" />
+              <h2 className="text-[14px] font-extrabold">Renewal calendar</h2>
+            </div>
+            <p className="text-[12px] text-muted leading-snug">
+              Enter the expiry/due date of each document. The dashboard shows a countdown.
+              All dates stay in your private record — only you can see them.
+            </p>
+
+            {renewalsLoading ? (
+              <div className="py-4 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin text-muted" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {RENEWAL_FIELDS.map((f) => {
+                  const value = renewals[f.key] ?? ''
+                  const status = daysToGo(value || null)
+                  const toneColor =
+                    status?.tone === 'expired' ? '#EF4444'
+                    : status?.tone === 'red'    ? '#EF4444'
+                    : status?.tone === 'amber'  ? '#F97316'
+                    : status?.tone === 'green'  ? '#22C55E'
+                    : '#64748B'
+                  return (
+                    <div key={f.key} className="flex items-stretch gap-2">
+                      <div className="flex-1 min-w-0">
+                        <label className="block text-[11px] font-extrabold uppercase tracking-wider text-dim">
+                          {f.label}
+                        </label>
+                        <input
+                          type="date"
+                          value={value}
+                          onChange={(e) => setRenewalDate(f.key, e.target.value)}
+                          className="mt-1 w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-[13px] text-ink focus:outline-none focus:border-brand/40"
+                        />
+                        <p className="text-[10px] text-dim mt-1">{f.hint}</p>
+                      </div>
+                      <div
+                        className="shrink-0 self-end px-2 py-1.5 rounded-lg text-[11px] font-extrabold whitespace-nowrap min-w-[88px] text-center"
+                        style={{
+                          color: toneColor,
+                          background: status ? `${toneColor}1A` : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${status ? `${toneColor}55` : 'rgba(255,255,255,0.08)'}`,
+                        }}
+                      >
+                        {status === null && '—'}
+                        {status?.tone === 'expired' && `Expired ${Math.abs(status.days)}d`}
+                        {status?.tone === 'red'     && `${status.days}d left`}
+                        {status?.tone === 'amber'   && `${status.days}d left`}
+                        {status?.tone === 'green'   && `${status.days}d`}
+                      </div>
+                    </div>
+                  )
+                })}
+                {renewalsErr && (
+                  <div className="text-[12px] text-red-400 font-bold">{renewalsErr}</div>
+                )}
+                <button
+                  type="button"
+                  onClick={saveRenewals}
+                  disabled={renewalsSaving}
+                  className="w-full mt-2 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[12px] uppercase tracking-wider border border-black/85 active:scale-[0.99] disabled:opacity-60"
+                >
+                  {renewalsSaving
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+                    : renewalsSaved
+                      ? <><CheckCircle2 className="w-3.5 h-3.5" /> Saved</>
+                      : <><CheckCircle2 className="w-3.5 h-3.5" /> Save dates</>}
+                </button>
+              </div>
+            )}
+          </section>
 
           {/* Requirements groups */}
           {(['Required by law', 'Strongly recommended', 'Optional but professional'] as const).map(cat => {

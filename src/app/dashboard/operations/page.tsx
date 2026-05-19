@@ -113,6 +113,10 @@ export default function OperationsPage() {
   const [rows, setRows]       = useState<LogRow[]>([])
   const [reviewStats, setReviewStats] = useState<{ count: number; avg: number | null }>({ count: 0, avg: null })
   const [subStatus, setSubStatus] = useState<{ status: string; paid_until: string | null } | null>(null)
+  // YTD = sum of amount_idr for every logged ride in the current calendar year.
+  // Compared client-side against PTKP for the NPWP-threshold alert.
+  const [ytdEarnings, setYtdEarnings] = useState<number>(0)
+  const [ytdRides, setYtdRides]       = useState<number>(0)
 
   // Form state — used for both Add and Edit
   const [formOpen, setFormOpen] = useState(false)
@@ -155,8 +159,11 @@ export default function OperationsPage() {
     if (!supabase || !userId) return
     let cancelled = false
     const { start, end } = monthBounds(month)
+    const year = month.slice(0, 4)
+    const yearStart = `${year}-01-01`
+    const yearEnd   = `${Number(year) + 1}-01-01`
     ;(async () => {
-      const [logRes, reviewsRes, subRes] = await Promise.all([
+      const [logRes, reviewsRes, subRes, ytdRes] = await Promise.all([
         supabase
           .from('driver_rides_log')
           .select('id, ride_date, pickup_label, dropoff_label, pitstop_note, customer_name, customer_phone, service, distance_km, amount_idr, notes, created_at')
@@ -176,6 +183,13 @@ export default function OperationsPage() {
           .select('status, current_period_end')
           .eq('driver_id', userId)
           .maybeSingle(),
+        // YTD aggregate — current calendar year only. amount_idr only;
+        // we don't need full row data for the rolling sum.
+        supabase
+          .from('driver_rides_log')
+          .select('amount_idr')
+          .gte('ride_date', yearStart)
+          .lt('ride_date',  yearEnd),
       ])
       if (cancelled) return
       setRows((logRes.data ?? []) as LogRow[])
@@ -184,6 +198,9 @@ export default function OperationsPage() {
         ? ratings.reduce((a, b) => a + b, 0) / ratings.length
         : null
       setReviewStats({ count: ratings.length, avg })
+      const ytdRows = (ytdRes.data ?? []) as { amount_idr: number }[]
+      setYtdEarnings(ytdRows.reduce((s, r) => s + (r.amount_idr || 0), 0))
+      setYtdRides(ytdRows.length)
       setSubStatus(subRes.data
         ? { status: (subRes.data as { status: string }).status, paid_until: (subRes.data as { current_period_end: string | null }).current_period_end }
         : null)
@@ -382,6 +399,12 @@ export default function OperationsPage() {
               icon={<BadgeCheck className="w-3 h-3" />}
             />
           </section>
+
+          {/* Year-to-date tax summary — sums every logged ride in the
+              current calendar year and compares against PTKP. If the
+              driver crosses Rp 54M (TK0) they're required to register
+              NPWP under UU 7/2021. Shows the gap clearly.  */}
+          <YtdTaxCard year={month.slice(0, 4)} earnings={ytdEarnings} rides={ytdRides} />
 
           {/* Logbook */}
           <section>
@@ -632,6 +655,91 @@ export default function OperationsPage() {
         </div>
       )}
     </>
+  )
+}
+
+// YtdTaxCard — running total of logged earnings for the calendar
+// year vs the PTKP single-status threshold (Rp 54M, TK0). Tells the
+// driver whether they are below, near, or above the NPWP-registration
+// threshold under UU 7/2021. Driver self-declares; we only sum the
+// log they entered.
+function YtdTaxCard({ year, earnings, rides }: { year: string; earnings: number; rides: number }) {
+  const PTKP_TK0 = 54_000_000  // single-status threshold, Rupiah per year
+  const pct      = Math.min(100, Math.round((earnings / PTKP_TK0) * 100))
+  const crossed  = earnings >= PTKP_TK0
+  const near     = !crossed && earnings >= 0.8 * PTKP_TK0
+  const toneColor =
+    crossed ? '#EF4444' :
+    near    ? '#F97316' :
+              '#22C55E'
+
+  return (
+    <section
+      className="rounded-2xl p-4 border"
+      style={{
+        background: 'rgba(10,10,10,0.45)',
+        borderColor: 'rgba(255,255,255,0.08)',
+      }}
+    >
+      <div className="flex items-baseline justify-between">
+        <div>
+          <div className="text-[11px] uppercase tracking-wider font-extrabold text-dim">
+            YTD {year} · sole-proprietor income
+          </div>
+          <div className="text-[20px] font-extrabold mt-0.5 leading-none">
+            {idr(earnings)}{' '}
+            <span className="text-[12px] font-bold text-muted">
+              · {rides} ride{rides === 1 ? '' : 's'}
+            </span>
+          </div>
+        </div>
+        <div
+          className="px-2 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider"
+          style={{
+            color: toneColor,
+            background: `${toneColor}1A`,
+            border: `1px solid ${toneColor}55`,
+          }}
+        >
+          {crossed ? 'NPWP required' : near ? 'NPWP soon' : 'Below PTKP'}
+        </div>
+      </div>
+
+      {/* PTKP progress bar */}
+      <div className="mt-3 h-2 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: toneColor }}
+        />
+      </div>
+      <div className="flex items-baseline justify-between mt-1">
+        <span className="text-[11px] text-dim">PTKP TK0 · Rp 54.000.000</span>
+        <span className="text-[11px] font-bold" style={{ color: toneColor }}>{pct}%</span>
+      </div>
+
+      {crossed && (
+        <div className="mt-3 text-[12px] leading-snug" style={{ color: '#FCA5A5' }}>
+          You&apos;ve crossed PTKP for {year}. Under UU 7/2021 (HPP) you must register an
+          NPWP and file PPh annually. The UMKM final-tax option (PPh Final 0.5%) is the
+          simplest path — applies to gross income, no deductions.{' '}
+          <a href="https://www.pajak.go.id" target="_blank" rel="noopener noreferrer" className="text-brand font-bold underline">
+            pajak.go.id →
+          </a>
+        </div>
+      )}
+      {near && (
+        <div className="mt-3 text-[12px] leading-snug" style={{ color: '#FED7AA' }}>
+          You&apos;re close to the PTKP threshold. If you cross Rp 54.000.000 this year you&apos;ll
+          need an NPWP. Consider registering early — it&apos;s free and takes ~30 min online.
+        </div>
+      )}
+      {!crossed && !near && (
+        <p className="mt-3 text-[12px] text-muted leading-snug">
+          PTKP shown for single status (TK0). Married = Rp 58.500.000 (K0). NPWP only required
+          when you exceed your applicable PTKP.
+        </p>
+      )}
+    </section>
   )
 }
 
