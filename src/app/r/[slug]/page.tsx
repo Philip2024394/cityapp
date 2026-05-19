@@ -4,10 +4,11 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Drawer } from 'vaul'
 import {
-  MapPin, Bike as BikeIcon, Star, X as XIcon, Crosshair,
-  Search as SearchIcon, Compass, Check,
+  MapPin, Bike as BikeIcon, Star, X as XIcon,
+  Search as SearchIcon, Compass, Check, Plus,
 } from 'lucide-react'
 import OfflineFallback from '@/components/rider/OfflineFallback'
+import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
 import { fetchDriverBySlugBrowser } from '@/lib/drivers/queries'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
@@ -111,7 +112,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   // Pit-stop note — free-text request the rider should make on the way
   // (e.g. "buy 1 Coca-Cola at warung depan"). Carried through to the
   // WhatsApp deep-link so the driver sees it in the booking message.
+  // Tile has 3 states (matching /cari exactly): collapsed-CTA,
+  // collapsed-with-note (tap to edit), or expanded textarea.
   const [pitstop, setPitstop] = useState('')
+  const [pitstopOpen, setPitstopOpen] = useState(false)
 
   // Places picker drawer state
   const [placesOpen, setPlacesOpen] = useState(false)
@@ -130,133 +134,12 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   }
   const [allPlaces, setAllPlaces] = useState<PickablePlace[]>([])
 
-  // Auto-suggest focus state — controls visibility of the 3-row
-  // suggestion dropdown under each input. Blur is intentionally delayed
-  // (in the input's onBlur) so a click on a suggestion fires before
-  // the panel collapses.
-  const [pickupFocused, setPickupFocused]   = useState(false)
-  const [dropoffFocused, setDropoffFocused] = useState(false)
-
-  // Real-address autocomplete via Photon (komoot.io) — free, no API
-  // key, OSM-backed, biased to the driver's service city so results
-  // are local-first. Debounced 300ms per input. Returns up to 3.
-  type Suggestion = { id: string; label: string; sublabel: string; lat: number; lng: number }
-  const [pickupSuggestions, setPickupSuggestions]   = useState<Suggestion[]>([])
-  const [dropoffSuggestions, setDropoffSuggestions] = useState<Suggestion[]>([])
-
-  // Centroid used as the Photon `lat`/`lon` bias so OSM ranks local
-  // addresses higher than ones halfway across the country.
+  // Centroid used as the geocoder proximity bias so local addresses
+  // (street names + villages around the driver's city) rank highest.
   const driverCityCentroid = useMemo(() => {
     if (!maybeRider?.city) return null
     return SUPPORTED_CITIES.find((c) => c.slug === maybeRider.city) ?? null
   }, [maybeRider?.city])
-
-  // Photon geocode — STRICTLY scoped to the driver's city via bbox + a
-  // belt-and-braces country filter. Two-layer constraint so we never
-  // surface "Same name, different country" suggestions:
-  //   1. bbox=±0.45° (~50 km) around the driver's city centroid
-  //   2. client-side reject any result where country isn't Indonesia
-  // location_bias_scale=1.0 means proximity to centroid dominates
-  // ranking inside the bbox, so village + landmark hits float to top.
-  async function photonSearch(q: string, limit = 3): Promise<Suggestion[]> {
-    if (!q || q.trim().length < 3) return []
-    if (!driverCityCentroid) return []  // no centroid = can't safely scope
-    const RADIUS_DEG = 0.45  // ~50 km, generous enough to cover the city + outskirts/villages
-    const minLon = driverCityCentroid.lng - RADIUS_DEG
-    const maxLon = driverCityCentroid.lng + RADIUS_DEG
-    const minLat = driverCityCentroid.lat - RADIUS_DEG
-    const maxLat = driverCityCentroid.lat + RADIUS_DEG
-    const params = new URLSearchParams({
-      q: q.trim(),
-      limit: String(limit * 4),  // overfetch — we drop any non-ID results client-side
-      lang: 'en',
-      lat: String(driverCityCentroid.lat),
-      lon: String(driverCityCentroid.lng),
-      location_bias_scale: '1.0',
-      bbox: `${minLon},${minLat},${maxLon},${maxLat}`,
-    })
-    try {
-      const res = await fetch(`https://photon.komoot.io/api/?${params.toString()}`, {
-        headers: { Accept: 'application/json' },
-      })
-      if (!res.ok) return []
-      const json = (await res.json()) as {
-        features?: Array<{
-          properties?: {
-            name?: string
-            city?: string
-            district?: string
-            state?: string
-            country?: string
-            countrycode?: string
-            type?: string
-            osm_id?: number | string
-          }
-          geometry?: { coordinates?: [number, number] }
-        }>
-      }
-      const feats = json.features ?? []
-      return feats
-        .filter((f) => {
-          if (f.geometry?.coordinates?.length !== 2) return false
-          if (!f.properties?.name) return false
-          // Reject anything outside Indonesia even if the bbox math
-          // sneaks a border-crossing point through.
-          const cc = (f.properties.countrycode || '').toUpperCase()
-          const country = (f.properties.country || '').toLowerCase()
-          return cc === 'ID' || country === 'indonesia'
-        })
-        .slice(0, limit)
-        .map((f, i): Suggestion => {
-          const [lng, lat] = f.geometry!.coordinates!
-          const p = f.properties!
-          // Sublabel: district → city → state — drop "Indonesia" since
-          // every row is in Indonesia by construction.
-          const parts = [p.district, p.city, p.state].filter(Boolean)
-          return {
-            id: `${p.osm_id ?? i}-${lat}-${lng}`,
-            label: p.name!,
-            sublabel: parts.join(' · '),
-            lat,
-            lng,
-          }
-        })
-    } catch {
-      return []
-    }
-  }
-
-  // Debounced search for the pickup input
-  useEffect(() => {
-    if (!pickupFocused) return
-    const q = (pickupLabel ?? '').trim()
-    // Skip the "My location" default — that's a sentinel, not a query
-    if (q === 'My location' || q.length < 3) {
-      setPickupSuggestions([])
-      return
-    }
-    const t = setTimeout(() => {
-      photonSearch(q).then(setPickupSuggestions)
-    }, 300)
-    return () => clearTimeout(t)
-  // photonSearch closes over driverCityCentroid only
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickupLabel, pickupFocused, driverCityCentroid])
-
-  // Debounced search for the drop-off input
-  useEffect(() => {
-    if (!dropoffFocused) return
-    const q = (dropoffLabel ?? '').trim()
-    if (q.length < 3) {
-      setDropoffSuggestions([])
-      return
-    }
-    const t = setTimeout(() => {
-      photonSearch(q).then(setDropoffSuggestions)
-    }, 300)
-    return () => clearTimeout(t)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dropoffLabel, dropoffFocused, driverCityCentroid])
 
   // Selected service — defaults to the first one the rider offers.
   // Declared up here so the quote useMemo below can reference it.
@@ -511,106 +394,156 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             </Link>
           </div>
         ) : (
-          /* Yellow booking card — pickup → pit-stop → drop off, all in
-             one stacked container. Pickup and drop-off are the trip
-             endpoints; the pit-stop is a free-text request along the
-             way (e.g. "pick me up a Coca-Cola"). */
-          <div
-            className="rounded-2xl p-4 space-y-3 border"
-            style={{
-              background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
-              borderColor: '#000',
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <div className="flex flex-col items-center pt-2.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-black/85" />
-                <div className="w-px h-7 bg-black/30 my-1" />
-                <div className="w-2.5 h-2.5 rounded-sm bg-black/55" />
-                <div className="w-px h-7 bg-black/30 my-1" />
-                <div className="w-2.5 h-2.5 rounded-sm bg-black/85" />
+          /* Booking stack — three separate brand-yellow tile cards
+             (Pickup, Pit stop, Drop off) mirroring the /cari main-app
+             pattern exactly, plus a dark Confirm Driver CTA tile that
+             stands out as the action terminus against the three
+             yellow controls. */
+          <div className="space-y-2">
+            {/* PICKUP TILE — yellow gradient, label + autocomplete with
+                a dark-red GPS rightSlot button. */}
+            <div
+              className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
+            >
+              <div className="mb-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
               </div>
-              <div className="flex-1 min-w-0 space-y-3">
-                {/* Pick up */}
-                <div>
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/70 mb-1 flex items-center justify-between">
-                    <span>Pick up</span>
-                    <button
-                      onClick={onUseMyLocation}
-                      className="text-black text-[11px] font-extrabold flex items-center gap-1 normal-case"
-                    >
-                      <Crosshair className="w-3 h-3" />
-                      {geo.status === 'requesting' ? 'Searching…' : 'My location'}
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input
-                      className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
-                      placeholder={pickup ? 'Set — name the place (optional)' : 'Type pickup address or tap My location'}
-                      value={pickupLabel ?? ''}
-                      onChange={(e) => setPickupLabel(e.target.value)}
-                      onFocus={() => setPickupFocused(true)}
-                      onBlur={() => setTimeout(() => setPickupFocused(false), 150)}
-                    />
-                    <SuggestPanel
-                      visible={pickupFocused}
-                      items={pickupSuggestions}
-                      onPick={(s) => {
-                        setPickup({ lat: s.lat, lng: s.lng, accuracyM: 0 })
-                        setPickupLabel(s.label)
-                        setPickupFocused(false)
-                        haptic.tap()
-                      }}
-                    />
-                  </div>
-                </div>
-                {/* Pit stop */}
-                <div>
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/70 mb-1">
-                    Pit stop <span className="font-normal opacity-70">(optional)</span>
-                  </div>
-                  <input
-                    className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
-                    placeholder="e.g. pick me up a Coca-Cola on the way"
-                    value={pitstop}
-                    onChange={(e) => setPitstop(e.target.value)}
-                  />
-                </div>
-                {/* Drop off */}
-                <div>
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/70 mb-1">
-                    Drop off
-                  </div>
-                  <div className="relative">
-                    <input
-                      className="w-full px-3 py-2.5 rounded-xl bg-white/90 border border-black/15 text-[14px] text-black font-bold placeholder:text-black/40 focus:outline-none focus:border-black/40"
-                      placeholder="Destination address"
-                      value={dropoffLabel ?? ''}
-                      onChange={(e) => setDropoffLabel(e.target.value)}
-                      onFocus={() => setDropoffFocused(true)}
-                      onBlur={() => setTimeout(() => setDropoffFocused(false), 150)}
-                    />
-                    <SuggestPanel
-                      visible={dropoffFocused}
-                      items={dropoffSuggestions}
-                      onPick={(s) => {
-                        setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
-                        setDropoffLabel(s.label)
-                        setDropoffFocused(false)
-                        haptic.tap()
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
+              <PlaceAutocomplete
+                value={pickupLabel}
+                onChange={setPickupLabel}
+                onSelect={(s) => {
+                  setPickup({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                  setPickupLabel(s.label)
+                  haptic.tap()
+                }}
+                placeholder={pickup ? 'Pick-up name (optional)' : 'Where do you want to be picked up?'}
+                className="flex-1 min-w-0 bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
+                near={geo.coords ?? driverCityCentroid}
+                countryCodes={['id']}
+                ariaLabel="Pick up location"
+                rightSlot={
+                  <button
+                    onClick={onUseMyLocation}
+                    aria-label="Auto-set my GPS location"
+                    className="shrink-0 w-12 rounded-xl flex items-center justify-center text-white transition active:scale-95"
+                    style={{
+                      background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
+                      boxShadow:
+                        '0 4px 12px rgba(127,29,29,0.55), 0 0 0 2px rgba(0,0,0,0.18) inset',
+                    }}
+                  >
+                    <MapPin className={`w-5 h-5 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} strokeWidth={2.5} />
+                  </button>
+                }
+              />
             </div>
 
-            {/* Confirm Driver — primary CTA. Carries pickup + pit-stop +
-                drop-off + service + the live fare estimate. When quote is
-                set, the price renders ON the button so the customer
-                commits with a known price. */}
+            {/* PIT STOP TILE — 3-state tile matching /cari exactly:
+                  1. collapsed + empty  → "+ Add a pit stop" CTA
+                  2. collapsed + text   → "Pit stop set: …" (tap to edit)
+                  3. expanded           → textarea + dynamic close/save */}
+            {(() => {
+              const hasNote = pitstop.trim().length > 0
+              if (!pitstopOpen && !hasNote) {
+                return (
+                  <button
+                    onClick={() => { setPitstopOpen(true); haptic.tap() }}
+                    className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+                  >
+                    <Plus className="w-4 h-4 shrink-0" strokeWidth={3} />
+                    <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
+                  </button>
+                )
+              }
+              if (!pitstopOpen && hasNote) {
+                return (
+                  <button
+                    onClick={() => { setPitstopOpen(true); haptic.tap() }}
+                    aria-label="Edit pit stop"
+                    className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+                  >
+                    <span className="shrink-0 w-7 h-7 rounded-full bg-bg flex items-center justify-center" style={{ boxShadow: '0 0 10px rgba(249,115,22,0.65)' }}>
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#F97316' }} />
+                    </span>
+                    <span className="flex-1 text-left min-w-0">
+                      <span className="block text-[10px] font-extrabold uppercase tracking-wider opacity-80">Pit stop set · tap to edit</span>
+                      <span className="block text-[13px] font-extrabold truncate">{pitstop.trim()}</span>
+                    </span>
+                  </button>
+                )
+              }
+              return (
+                <div className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] animate-[fadeUp_0.3s_ease-out_both] space-y-2">
+                  <div className="mb-1">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">Pit stop</span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    maxLength={140}
+                    className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/90 transition resize-none"
+                    placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
+                    value={pitstop}
+                    onChange={(e) => setPitstop(e.target.value)}
+                    autoFocus
+                  />
+                  {hasNote ? (
+                    <button
+                      onClick={() => { setPitstopOpen(false); haptic.tap() }}
+                      aria-label="Save pit stop"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-brand font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
+                    >
+                      <Plus className="w-4 h-4" strokeWidth={2.5} />
+                      Add pit stop
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setPitstopOpen(false); setPitstop(''); haptic.tap() }}
+                      aria-label="Close pit stop"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-ink font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
+                    >
+                      <XIcon className="w-4 h-4" strokeWidth={2.5} />
+                      Close pit stop
+                    </button>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* DROP OFF TILE — same autocomplete pattern as pickup,
+                without a GPS button (drop-off is wherever you're going). */}
+            <div
+              className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
+                <button
+                  type="button"
+                  onClick={() => { setPlacesOpen(true); haptic.tap() }}
+                  className="text-[11px] font-extrabold uppercase tracking-wider opacity-90 hover:opacity-100"
+                >
+                  Pick from Places
+                </button>
+              </div>
+              <PlaceAutocomplete
+                value={dropoffLabel}
+                onChange={setDropoffLabel}
+                onSelect={(s) => {
+                  setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                  setDropoffLabel(s.label)
+                  haptic.tap()
+                }}
+                placeholder="Where do you want to go?"
+                className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
+                near={pickup ?? geo.coords ?? driverCityCentroid}
+                countryCodes={['id']}
+                ariaLabel="Drop off location"
+              />
+            </div>
+
+            {/* CONFIRM DRIVER CTA TILE — dark with brand-yellow edge,
+                matching /cari's "View drivers" terminus exactly. Shows
+                live fare on the right when both pickup + drop-off set. */}
             <button
-              type="button"
               onClick={() => {
                 const lines = [`Hi ${rider.name}, saya mau booking via City Rider.`]
                 if (pickupLabel || dropoffLabel || pitstop) {
@@ -632,18 +565,15 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 haptic.buzz()
                 window.open(url, '_blank', 'noopener,noreferrer')
               }}
-              className="w-full inline-flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-black text-brand font-extrabold text-[14px] uppercase tracking-wider border border-black active:scale-[0.99]"
+              disabled={!pickup || !dropoff}
+              className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <span className="flex items-center gap-2">
-                <Check className="w-4 h-4" />
-                Confirm Driver
-              </span>
+              <Check className="w-4 h-4" />
+              <span>Confirm Driver</span>
               {quote ? (
-                <span className="text-[15px]">{idr(quote.fare)}</span>
+                <span className="text-[13px] font-bold text-brand/85 ml-1">· {idr(quote.fare)}</span>
               ) : (
-                <span className="text-[11px] opacity-70 normal-case tracking-normal">
-                  set pickup + drop off
-                </span>
+                <span className="text-[12px] font-bold text-dim ml-1">· set pickup + drop off</span>
               )}
             </button>
           </div>
@@ -883,60 +813,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         </Drawer.Portal>
       </Drawer.Root>
     </main>
-  )
-}
-
-// SuggestPanel — small absolutely-positioned dropdown shown under the
-// pickup and drop-off inputs. Lists up to 3 real-address suggestions
-// returned by Photon (komoot.io) geocoding. Click handler uses
-// onMouseDown so it fires before the input's delayed blur collapses
-// the panel. Hidden when no items.
-type AddressSuggestion = {
-  id: string
-  label: string
-  sublabel: string
-  lat: number
-  lng: number
-}
-function SuggestPanel({
-  visible,
-  items,
-  onPick,
-}: {
-  visible: boolean
-  items: AddressSuggestion[]
-  onPick: (s: AddressSuggestion) => void
-}) {
-  if (!visible || items.length === 0) return null
-  return (
-    <div
-      className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-30"
-      style={{
-        background: 'rgba(10,10,10,0.96)',
-        border: '1px solid rgba(250,204,21,0.55)',
-        boxShadow: '0 12px 28px rgba(0,0,0,0.55)',
-      }}
-    >
-      <ul>
-        {items.map((s, i) => (
-          <li key={s.id} className={i > 0 ? 'border-t border-white/5' : ''}>
-            <button
-              type="button"
-              onMouseDown={(e) => { e.preventDefault(); onPick(s) }}
-              className="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-white/5 transition"
-            >
-              <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#EF4444' }} />
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-extrabold text-ink truncate">{s.label}</div>
-                {s.sublabel && (
-                  <div className="text-[11px] text-muted truncate">{s.sublabel}</div>
-                )}
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
   )
 }
 
