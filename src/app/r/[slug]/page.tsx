@@ -649,25 +649,6 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
           </div>
         )}
 
-        {/* Before you ride — safety disclosure visible above the social
-            proof so customers see it BEFORE they pick a driver. Adds a
-            paper trail of warning given without taking on liability. */}
-        <div
-          className="rounded-xl p-3 flex items-start gap-2.5 text-[12px] leading-snug"
-          style={{
-            background: 'rgba(249,115,22,0.08)',
-            border: '1px solid rgba(249,115,22,0.35)',
-            color: 'rgba(255,255,255,0.85)',
-          }}
-        >
-          <span aria-hidden className="shrink-0 text-[16px] leading-none mt-0.5">⚠️</span>
-          <p>
-            <strong className="text-ink">Before you ride:</strong> verify the driver&apos;s SIM C,
-            helmet condition, and bike before departure. The ride is between you and the driver —
-            City Rider provides the directory, not the transport.
-          </p>
-        </div>
-
         {/* What riders say — public anonymous reviews. Same legal model
             as Yelp / Google Reviews. */}
         {reviews.length > 0 && (
