@@ -159,10 +159,16 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     return { distanceKm, fare: final, minApplied, pricePerKm: pricing.pricePerKm }
   }, [maybeRider, pickup, dropoff, service])
 
-  // Fetch places in this driver's city for the picker drawer. Favourites
-  // (from driver_places) get a star + sort to the top.
+  // Fetch ALL approved places from the main-app directory (not just the
+  // driver's city). The drawer is a discovery surface — let customers
+  // browse the whole catalog and pick anything. Sort order:
+  //   1. Driver's curated favourites (with ★)
+  //   2. Places in the driver's service city
+  //   3. Everything else, alphabetical
+  // Fare estimate per row uses THIS driver's per-km rate, so prices
+  // reflect the chosen driver regardless of place city.
   useEffect(() => {
-    if (!maybeRider?.city) return
+    if (!maybeRider) return
     const supabase = getBrowserSupabase()
     if (!supabase) return
     let cancelled = false
@@ -170,17 +176,21 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       const { data } = await supabase
         .from('places')
         .select('id, slug, name, category, city, lat, lng, image_urls, rating')
-        .eq('city', maybeRider.city)
         .eq('status', 'approved')
         .order('name')
-        .limit(120)
+        .limit(300)
       if (cancelled) return
       const rows = (data ?? []) as PickablePlace[]
       const favIds = new Set(favePlaces.map((f) => f.place_id))
+      const driverCity = maybeRider.city
       rows.forEach((r) => { r.isFavourite = favIds.has(r.id) })
       rows.sort((a, b) => {
         if (a.isFavourite && !b.isFavourite) return -1
         if (b.isFavourite && !a.isFavourite) return 1
+        const aLocal = a.city === driverCity
+        const bLocal = b.city === driverCity
+        if (aLocal && !bLocal) return -1
+        if (bLocal && !aLocal) return 1
         return a.name.localeCompare(b.name)
       })
       setAllPlaces(rows)
@@ -551,18 +561,32 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       <Drawer.Root open={placesOpen} onOpenChange={setPlacesOpen}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-50 bg-black/60" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] bg-bg2 rounded-t-3xl border-t border-line flex flex-col">
+          <Drawer.Content
+            className="fixed bottom-0 left-0 right-0 z-50 bg-bg2 rounded-t-3xl flex flex-col"
+            style={{
+              // 90px taller than the previous 85vh cap — gives more room
+              // for browsing the full main-app place directory.
+              maxHeight: 'calc(85vh + 90px)',
+              // Yellow top edge per design: a thick brand-yellow strip
+              // along the very top of the drawer.
+              borderTop: '4px solid #FACC15',
+              boxShadow: '0 -8px 24px rgba(0,0,0,0.45), 0 -1px 0 rgba(250,204,21,0.40) inset',
+            }}
+          >
             <Drawer.Title className="sr-only">Pick a place for drop off</Drawer.Title>
             <Drawer.Description className="sr-only">
               Search or browse places — selecting one will autofill the booking drop off.
             </Drawer.Description>
-            <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-white/15" />
+            <div
+              className="mx-auto mt-2 h-1.5 w-12 rounded-full"
+              style={{ background: 'rgba(250,204,21,0.55)' }}
+            />
             <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-[16px] font-extrabold leading-tight">Pick a place</h3>
                 <p className="text-[12px] text-muted leading-snug mt-0.5">
-                  Drop off in {citySlugLabel(rider.city) || rider.city} ·
-                  fare uses {rider.name.split(' ')[0]}&apos;s rate ({idr(rider.pricePerKm)}/km)
+                  Fare uses {rider.name.split(' ')[0]}&apos;s rate ({idr(rider.pricePerKm)}/km) ·
+                  showing all City Riders places
                 </p>
               </div>
               <button
@@ -624,7 +648,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                               {p.isFavourite && <Star className="w-3 h-3 text-brand fill-brand shrink-0" />}
                               <span className="text-[13px] font-extrabold text-ink truncate">{p.name}</span>
                             </div>
-                            <div className="text-[11px] text-muted truncate">
+                            <div className="text-[11px] text-muted truncate flex items-center gap-1">
+                              <MapPin className="w-3 h-3 shrink-0" style={{ color: '#EF4444' }} />
+                              {citySlugLabel(p.city) || p.city}
+                              <span className="opacity-60">·</span>
                               {p.category.replace(/_/g, ' ')}
                               {p.rating != null ? ` · ★ ${p.rating.toFixed(1)}` : ''}
                             </div>
