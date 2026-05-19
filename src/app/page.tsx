@@ -5,17 +5,27 @@ import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
-// Service tiles — the primary CTA on landing. Each tile routes straight to
-// /cari?service=<id> so the customer never has to make this choice twice.
-// Parcel first (most common kurir use case), then Ride, then Food.
-const SERVICE_TILES = [
-  { id: 'parcel', label: 'Bike Parcel', sub: 'Package · Courier',
-    img: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961' },
+// Service tiles — the primary CTA on landing. Routes:
+//   person / parcel / food → /cari?service=<id>
+//   rental                  → /rent (own marketplace, separate flow)
+// Order: Ride (top, most-common ask) → Rental → Parcel → Food.
+type TileId = 'person' | 'parcel' | 'food' | 'rental'
+const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img: string; href: string }> = [
   { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
-    img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png' },
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
+    href: '/cari?service=person' },
+  { id: 'rental', label: 'Bike Rental', sub: 'Self-ride · With driver',
+    // Reusing the Bike Ride image until a dedicated rental hero asset
+    // ships. Swap when you have a rental-specific transparent PNG.
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
+    href: '/rent' },
+  { id: 'parcel', label: 'Bike Parcel', sub: 'Package · Courier',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
+    href: '/cari?service=parcel' },
   { id: 'food',   label: 'Bike Food',   sub: 'Resto · Warung',
-    img: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890' },
-] as const
+    img: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
+    href: '/cari?service=food' },
+]
 
 // Background map (dark Yogyakarta + 42 pulsing rider pings + autoPan) now
 // lives in the root layout as <MapBackground />, so every page shares it.
@@ -79,8 +89,8 @@ export default function LandingPage() {
   useEffect(() => { setLocale(getStoredLocale()) }, [])
   const t = STRINGS[locale]
 
-  function pickService(id: 'parcel' | 'person' | 'food') {
-    router.push(`/cari?service=${id}`)
+  function pickService(href: string) {
+    router.push(href)
   }
 
   function setLocaleAndStore(lang: Locale) {
@@ -149,7 +159,7 @@ export default function LandingPage() {
             {SERVICE_TILES.map((tile, i) => (
               <button
                 key={tile.id}
-                onClick={() => pickService(tile.id)}
+                onClick={() => pickService(tile.href)}
                 className="w-full flex items-center gap-2.5 p-2 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(250,204,21,0.30)]"
                 style={{ animation: `fadeUp 0.55s ease-out ${i * 0.08}s both` }}
                 aria-label={`Enter — ${tile.label}`}
