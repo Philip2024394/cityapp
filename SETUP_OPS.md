@@ -133,13 +133,76 @@ MIDTRANS_PRODUCTION=true           ← when ready for real money
 # Vercel cron secret (NEW) — generate a random 32+ char string
 CRON_SECRET                        ← server only
 
+# OSRM road-routing (OPTIONAL — falls back to haversine × 1.3)
+OSRM_BASE_URL                      ← e.g. https://osrm.cityrider.id
+
 # Optional, future
 RESEND_API_KEY                     ← if you send transactional email
 ```
 
 ---
 
-## 5. Production scale-readiness checklist
+## 5. Road-distance routing (OSRM self-host)
+
+The app quotes road km by hitting `/api/quote/route-distance`, which proxies to the OSRM (Open Source Routing Machine) instance configured via `OSRM_BASE_URL`. Without that env var the proxy falls back to **haversine × 1.3** — the empirical great-circle → urban-road ratio observed in Indonesian cities. Setting OSRM up gets you real road km using OSM data (which has better alley/gang coverage than Google in many Indonesian cities).
+
+### One-time deploy (Hetzner CX21 ~€5.83/mo or DO 2GB droplet ~$12/mo)
+
+```bash
+# 1. Pull the OSRM container + Indonesia OSM extract
+docker pull osrm/osrm-backend:latest
+wget https://download.geofabrik.de/asia/indonesia-latest.osm.pbf
+
+# 2. Pre-process the graph (~10 min for Indonesia on a 2 vCPU box).
+#    Run all three passes once. Re-run only when refreshing OSM data.
+docker run -t -v "$(pwd):/data" osrm/osrm-backend osrm-extract -p /opt/car.lua /data/indonesia-latest.osm.pbf
+docker run -t -v "$(pwd):/data" osrm/osrm-backend osrm-partition /data/indonesia-latest.osrm
+docker run -t -v "$(pwd):/data" osrm/osrm-backend osrm-customize /data/indonesia-latest.osrm
+
+# 3. Serve. Bind to 0.0.0.0:5000 behind nginx with TLS.
+docker run -d --restart=always -p 5000:5000 \
+  -v "$(pwd):/data" --name osrm \
+  osrm/osrm-backend osrm-routed --algorithm mld /data/indonesia-latest.osrm
+```
+
+Front this with nginx + Let's Encrypt at `https://osrm.cityrider.id`. Then set `OSRM_BASE_URL=https://osrm.cityrider.id` in Vercel env. No code change needed; the proxy auto-detects and starts using OSRM on the next quote.
+
+### Health check
+
+```bash
+# Yogya → Bantul (~10 km)
+curl 'https://osrm.cityrider.id/route/v1/driving/110.3657,-7.7928;110.3287,-7.8881?overview=false'
+# Should return code='Ok' with routes[0].distance ≈ 11000 (metres)
+```
+
+### Refresh cadence
+
+Re-process the OSM extract monthly. Geofabrik updates `indonesia-latest.osm.pbf` daily. A cron on the OSRM box:
+
+```bash
+# /etc/cron.monthly/osrm-refresh
+0 3 1 * * cd /opt/osrm && wget -q -O indonesia-new.osm.pbf https://download.geofabrik.de/asia/indonesia-latest.osm.pbf \
+  && docker run --rm -v "$(pwd):/data" osrm/osrm-backend osrm-extract -p /opt/car.lua /data/indonesia-new.osm.pbf \
+  && docker run --rm -v "$(pwd):/data" osrm/osrm-backend osrm-partition /data/indonesia-new.osrm \
+  && docker run --rm -v "$(pwd):/data" osrm/osrm-backend osrm-customize /data/indonesia-new.osrm \
+  && docker restart osrm
+```
+
+### Cost
+
+- Hetzner CX21 (2 vCPU, 4GB): €5.83/mo
+- DigitalOcean Premium AMD 2GB: $12/mo
+- AWS t3.small: ~$15/mo
+
+Pick whichever is closest to your Vercel region. RTT under 60ms is the goal — anything further degrades the in-flight quote UX.
+
+### Legal note (important)
+
+This setup keeps City Rider on the **directory** side of PM 12/2019. The OSRM box reads OSM data (public commons) and returns a road distance per request. It does NOT record trip routes. Drivers contribute alleys to OSM under their own accounts via the "Help map your area" tile on the dashboard — the road geometry lives with OSM, not with us.
+
+---
+
+## 6. Production scale-readiness checklist
 
 Code-side (already done in commit history):
 
@@ -169,7 +232,7 @@ Monitoring (recommended):
 
 ---
 
-## 6. Manual smoke-test before flipping `MIDTRANS_PRODUCTION=true`
+## 7. Manual smoke-test before flipping `MIDTRANS_PRODUCTION=true`
 
 1. Sign up a test driver from a real phone — receive OTP, complete onboarding.
 2. Wait for trial expiry (or manually set `subscriptions.current_period_end = now()` for that test driver).

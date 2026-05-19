@@ -1,7 +1,7 @@
 'use client'
 import { use, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, useRouter } from 'next/navigation'
 import { Drawer } from 'vaul'
 import {
   MapPin, Bike as BikeIcon, Star, X as XIcon,
@@ -16,7 +16,9 @@ import { useHaptic } from '@/hooks/useHaptic'
 import { rateFor, quoteBreakdown } from '@/lib/pricing/quote'
 import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
+import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
+import { writePendingBooking } from '@/lib/booking/pending-booking'
 import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { nearestCity, citySlugLabel, SUPPORTED_CITIES } from '@/lib/cities'
@@ -143,6 +145,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
   const geo = useGeolocation(true)
   const haptic = useHaptic()
+  const router = useRouter()
 
   const [pickup, setPickup] = useState<GeoPoint | null>(null)
   const [dropoff, setDropoff] = useState<GeoPoint | null>(null)
@@ -204,15 +207,33 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     userCity.city.slug.toLowerCase() !== maybeRider.city.toLowerCase()
   )
 
+  // Road-distance state — instant haversine × 1.3 fallback, upgraded
+  // to the OSRM real road km once the proxy responds. Quote below
+  // reads from this so the price reflects the actual road, including
+  // alleys when OSRM is configured.
+  const [tripRoute, setTripRoute] = useState<RoadDistance | null>(null)
+  useEffect(() => {
+    if (!pickup || !dropoff) {
+      setTripRoute(null)
+      return
+    }
+    setTripRoute(instantRoadDistance(pickup, dropoff))
+    let cancelled = false
+    fetchRoadDistanceKm(pickup, dropoff).then((r) => {
+      if (!cancelled) setTripRoute(r)
+    })
+    return () => { cancelled = true }
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng])
+
   // Live trip quote — distance × driver's per-km, floored at min-fee.
   // Drives the price shown on the Confirm Driver button.
   const quote = useMemo(() => {
-    if (!maybeRider || !pickup || !dropoff) return null
-    const distanceKm = haversineKm(pickup, dropoff)
+    if (!maybeRider || !pickup || !dropoff || !tripRoute) return null
+    const distanceKm = tripRoute.km
     const pricing = service ? rateFor(maybeRider, service) : { pricePerKm: maybeRider.pricePerKm, minFee: maybeRider.minFee }
     const { final, minApplied } = quoteBreakdown(distanceKm, pricing)
     return { distanceKm, fare: final, minApplied, pricePerKm: pricing.pricePerKm }
-  }, [maybeRider, pickup, dropoff, service])
+  }, [maybeRider, pickup, dropoff, service, tripRoute])
 
   // Fetch ALL approved places from the main-app directory (not just the
   // driver's city). The drawer is a discovery surface — let customers
@@ -675,6 +696,35 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 const url = `https://wa.me/${wa}?text=${encodeURIComponent(lines.join('\n'))}`
                 haptic.buzz()
                 window.open(url, '_blank', 'noopener,noreferrer')
+                // Hand off to the post-WhatsApp waiting screen — same UX
+                // surface used by /cari/rider. The conversation continues
+                // on WhatsApp; this screen is only for the customer's
+                // confidence while waiting.
+                writePendingBooking({
+                  driverId: rider.id,
+                  driverSlug: rider.slug,
+                  driverName: rider.name,
+                  driverPhotoUrl: rider.photoUrl,
+                  driverWhatsAppE164: rider.whatsappE164,
+                  driverWhatsAppLink: url,
+                  trip: {
+                    pickup: pickup
+                      ? { lat: pickup.lat, lng: pickup.lng, label: pickupLabel || 'My location' }
+                      : { lat: 0, lng: 0, label: pickupLabel || 'My location' },
+                    dropoff: dropoff
+                      ? { lat: dropoff.lat, lng: dropoff.lng, label: dropoffLabel || 'Destination' }
+                      : { lat: 0, lng: 0, label: dropoffLabel || 'Destination' },
+                    distanceKm: quote?.distanceKm ?? 0,
+                    fare: quote?.fare ?? 0,
+                    pricePerKm: quote?.pricePerKm ?? rider.pricePerKm,
+                    etaMin: quote ? etaMinutes(quote.distanceKm) : 0,
+                    service: service ?? null,
+                    pitstop: pitstop ? { note: pitstop, fee: rider.pitstopFee ?? 0 } : null,
+                  },
+                  sentAtMs: Date.now(),
+                  triedDriverIds: [],
+                })
+                router.push('/cari/pending')
               }}
               disabled={!pickup || !dropoff}
               className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"

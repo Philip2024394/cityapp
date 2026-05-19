@@ -6,8 +6,10 @@ import { ChevronLeft, Star, ArrowRight } from 'lucide-react'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
+import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
+import { writePendingBooking, readTriedDriverIds } from '@/lib/booking/pending-booking'
 import { idr } from '@/lib/format/idr'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
@@ -61,6 +63,14 @@ function DriverResults() {
   const [toast, setToast] = useState<{ driverName: string } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Drivers the user has already tried in this session — surfaced as a
+  // "Tried" pill on the card so they're not re-contacted accidentally.
+  // Lives in sessionStorage; no server record.
+  const [triedIds, setTriedIds] = useState<Set<string>>(() => new Set())
+  useEffect(() => {
+    setTriedIds(new Set(readTriedDriverIds()))
+  }, [])
+
   // Independent riders fetched from Supabase (falls back to demo data when
   // env not configured). Each rider is their own independent business.
   const [riders, setRiders] = useState<Rider[]>([])
@@ -79,6 +89,26 @@ function DriverResults() {
   // reload exactly where the user left off rather than starting blank.
   const editTripHref = `/cari?${sp.toString()}`
 
+  // Road-distance fast path: render with haversine × 1.3 immediately,
+  // then upgrade to the real OSRM road km when the proxy responds. If
+  // OSRM isn't configured (or is down) the upgrade is a no-op — we
+  // keep the corrected haversine. Either way the customer sees a
+  // realistic km, never the under-quoted straight line.
+  const [tripRoute, setTripRoute] = useState<RoadDistance>(() =>
+    pickup && dropoff
+      ? instantRoadDistance(pickup, dropoff)
+      : { km: 0, source: 'haversine_corrected' },
+  )
+  useEffect(() => {
+    if (!pickup || !dropoff) return
+    setTripRoute(instantRoadDistance(pickup, dropoff))
+    let cancelled = false
+    fetchRoadDistanceKm(pickup, dropoff).then((r) => {
+      if (!cancelled) setTripRoute(r)
+    })
+    return () => { cancelled = true }
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng])
+
   // If trip missing, bounce to /cari
   if (!pickup || !dropoff) {
     return (
@@ -91,7 +121,7 @@ function DriverResults() {
     )
   }
 
-  const tripKm = haversineKm(pickup, dropoff)
+  const tripKm = tripRoute.km
 
   const enriched = useMemo(() => {
     const list = riders.filter(r =>
@@ -150,10 +180,32 @@ function DriverResults() {
       toastTimerRef.current = setTimeout(() => setToast(null), 3000)
       return
     }
+    // Open WhatsApp first (preserves the user-gesture for popup-blocker
+    // exemption), then write pending state, then navigate to the
+    // post-WhatsApp waiting screen.
     window.open(link, '_blank', 'noopener,noreferrer')
-    setToast({ driverName: rider.name })
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    toastTimerRef.current = setTimeout(() => setToast(null), 3000)
+    writePendingBooking({
+      driverId: rider.id,
+      driverSlug: rider.slug,
+      driverName: rider.name,
+      driverPhotoUrl: rider.photoUrl,
+      driverWhatsAppE164: rider.whatsappE164,
+      driverWhatsAppLink: link,
+      trip: {
+        pickup: { lat: pickup!.lat, lng: pickup!.lng, label: pickupName },
+        dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, label: dropoffName },
+        distanceKm: tripKm,
+        fare,
+        pricePerKm: perKm,
+        etaMin: etaMinutes(tripKm),
+        service: filter,
+        pitstop: pitstopNote ? { note: pitstopNote, fee: pitstopFee } : null,
+      },
+      sentAtMs: Date.now(),
+      // Carry over any drivers the user previously tried this session.
+      triedDriverIds: Array.from(triedIds),
+    })
+    router.push('/cari/pending')
   }
 
   return (
@@ -283,6 +335,7 @@ function DriverResults() {
                 key={item.rider.id}
                 item={item}
                 isCheapest={idx === 0 && sort === 'cheapest'}
+                tried={triedIds.has(item.rider.id)}
                 onWhatsApp={() => onBookRider(item.rider, item.fare, item.perKm, item.pitstopFee)}
               />
             ))}
@@ -331,7 +384,7 @@ function DriverResults() {
 }
 
 function FeaturedDriverCard({
-  item, isCheapest, onWhatsApp,
+  item, isCheapest, tried, onWhatsApp,
 }: {
   item: {
     rider: Rider
@@ -344,6 +397,10 @@ function FeaturedDriverCard({
     hasOverrides: boolean
   }
   isCheapest: boolean
+  /** True if the user already contacted this driver in this session.
+   *  We show a discreet "Tried" pill so they don't re-contact by
+   *  accident — the Book button still works for a deliberate retry. */
+  tried: boolean
   onWhatsApp: () => void
 }) {
   const { rider, fare, distanceToPickup, minApplied } = item
@@ -459,15 +516,19 @@ function FeaturedDriverCard({
               />
               <button
                 onClick={onWhatsApp}
-                aria-label={`Book ${rider.name}`}
+                aria-label={tried ? `Re-contact ${rider.name}` : `Book ${rider.name}`}
                 className="h-[39px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60"
                 style={{
-                  background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
-                  boxShadow: '0 6px 16px rgba(250,204,21,0.28)',
+                  background: tried
+                    ? 'linear-gradient(135deg, #94A3B8, #64748B)'
+                    : 'linear-gradient(135deg, #FACC15, #F59E0B)',
+                  boxShadow: tried
+                    ? '0 6px 16px rgba(100,116,139,0.28)'
+                    : '0 6px 16px rgba(250,204,21,0.28)',
                 }}
               >
                 <span className="text-[12px] font-extrabold uppercase tracking-wider text-black whitespace-nowrap">
-                  Book driver
+                  {tried ? 'Tried · retry' : 'Book driver'}
                 </span>
                 <span
                   aria-hidden

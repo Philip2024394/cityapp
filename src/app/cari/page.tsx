@@ -9,6 +9,7 @@ import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
+import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import type { Rider, ServiceType } from '@/types/rider'
 
 // Per-service placeholder text — tailors the inputs to the picked service.
@@ -148,7 +149,24 @@ function PlanTripPageInner() {
     }
   }, [geo.coords, pickup, pickupLabel])
 
-  const tripKm = pickup && dropoff ? haversineKm(pickup, dropoff) : null
+  // Road-distance preview. Renders instantly with haversine × 1.3
+  // and upgrades to the OSRM real road km once the proxy responds, so
+  // the preview here matches what /cari/rider will show on the next
+  // step (same cache key).
+  const [tripRoute, setTripRoute] = useState<RoadDistance | null>(null)
+  useEffect(() => {
+    if (!pickup || !dropoff) {
+      setTripRoute(null)
+      return
+    }
+    setTripRoute(instantRoadDistance(pickup, dropoff))
+    let cancelled = false
+    fetchRoadDistanceKm(pickup, dropoff).then((r) => {
+      if (!cancelled) setTripRoute(r)
+    })
+    return () => { cancelled = true }
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng])
+  const tripKm = tripRoute?.km ?? null
   const canSearch = !!pickup && !!dropoff
 
   const mapCenter = pickup ?? geo.coords ?? { lat: -7.7928, lng: 110.3657, accuracyM: 0 }

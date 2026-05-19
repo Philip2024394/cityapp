@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike, Star, Copy, Check, MessageCircle, Facebook, Instagram, ClipboardList } from 'lucide-react'
+import { ArrowRight, Users, IdCard, MessageSquare, Share2, Eye, Scale, Edit3, MapPin, Bike, Star, Copy, Check, MessageCircle, Facebook, Instagram, ClipboardList, Map as MapIcon, ExternalLink } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
@@ -164,6 +164,15 @@ export default function DashboardPage() {
               hint="8 templates"
             />
           </div>
+
+          {/* Help map your area — deep-links to the OpenStreetMap iD editor
+              centred on the driver's current service area. Drivers who know
+              the local alleys/gangs can add them to OSM; that improves the
+              public map for everyone. Important: the contribution is made
+              on the driver's own OSM account — City Rider is NOT the
+              recorder of trip data or road geometry, preserving the
+              software-directory legal posture. */}
+          <OsmContributeCard lat={ME.lat} lng={ME.lng} city={ME.city} />
 
           {/* Legal requirements — single-row prompt to /dashboard/legal */}
           <Link href="/dashboard/legal" className="card card-interactive p-4 flex items-center justify-between">
@@ -428,6 +437,50 @@ function SubscriptionCard({ status }: { status?: string }) {
         <p className="mt-3 text-[12px] text-brand leading-snug">{notice}</p>
       )}
     </div>
+  )
+}
+
+// OsmContributeCard — deep-links to the OpenStreetMap iD editor at the
+// driver's current location. Lets drivers improve the public map by
+// drawing alleys, gangs, and shortcuts that aren't on Google Maps.
+//
+// The contribution is made on the driver's OWN OSM account (free sign-up
+// on openstreetmap.org). City Rider is intentionally not the recorder
+// of the road geometry — it links out, the data lives with OSM. That
+// keeps the directory-only posture intact under PM 12/2019: we are not
+// building a proprietary trip-trace dataset; we're sending drivers to
+// contribute to a public commons.
+function OsmContributeCard({ lat, lng, city }: { lat: number; lng: number; city: string }) {
+  // Yogyakarta is the safe default centre when a driver's row has no
+  // current location yet (new sign-up, GPS never granted, etc.).
+  const safeLat = Number.isFinite(lat) && lat !== 0 ? lat : -7.7928
+  const safeLng = Number.isFinite(lng) && lng !== 0 ? lng : 110.3657
+  const editUrl = `https://www.openstreetmap.org/edit?editor=id#map=18/${safeLat.toFixed(5)}/${safeLng.toFixed(5)}`
+  const where = city ? `around ${city.replace(/-/g, ' ')}` : 'around your area'
+  return (
+    <a
+      href={editUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="card card-interactive p-4 flex items-center justify-between"
+      style={{ background: 'rgba(34,197,94,0.06)', borderColor: 'rgba(34,197,94,0.22)' }}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.32)' }}
+        >
+          <MapIcon className="w-4 h-4" style={{ color: '#22C55E' }} />
+        </div>
+        <div className="min-w-0">
+          <div className="font-extrabold text-[14px]">Help map your area</div>
+          <div className="text-[13px] text-muted truncate">
+            Add alleys + shortcuts {where} to OpenStreetMap — better routes for everyone
+          </div>
+        </div>
+      </div>
+      <ExternalLink className="w-4 h-4 shrink-0" style={{ color: '#22C55E' }} />
+    </a>
   )
 }
 
