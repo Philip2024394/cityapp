@@ -404,8 +404,8 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               <div className="text-[11px] font-extrabold mt-0.5" style={{ color: dropoffLabel ? '#FACC15' : '#fff' }}>
                 Places
               </div>
-              <div className="text-[10px] text-muted leading-none">
-                {dropoffLabel ? 'picked ✓' : 'pick dropoff'}
+              <div className="text-[10px] text-muted leading-none truncate max-w-full">
+                {citySlugLabel(rider.city) || rider.city}
               </div>
             </button>
           </div>
