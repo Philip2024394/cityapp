@@ -136,6 +136,20 @@ CRON_SECRET                        ← server only
 # OSRM road-routing (OPTIONAL — falls back to haversine × 1.3)
 OSRM_BASE_URL                      ← e.g. https://osrm.cityrider.id
 
+# Affiliate session secret (REQUIRED for /api/affiliate/* routes after
+# migration 0018 — generate a random 32+ char string)
+AFFILIATE_SESSION_SECRET           ← server only
+
+# Sentry (OPTIONAL — Sentry initialises silently if any of these are
+# unset). Set on Vercel Production once a project is created at
+# sentry.io. Without these, errors continue to log to Vercel function
+# logs as before (24h retention on Hobby, 30d on Pro).
+SENTRY_DSN                         ← server-side error reporting
+NEXT_PUBLIC_SENTRY_DSN             ← client-side error reporting
+SENTRY_ORG                         ← used during source-map upload
+SENTRY_PROJECT                     ← used during source-map upload
+SENTRY_AUTH_TOKEN                  ← required for source-map upload in CI
+
 # Optional, future
 RESEND_API_KEY                     ← if you send transactional email
 ```
