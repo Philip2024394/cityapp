@@ -696,10 +696,16 @@ function PaymentToggle({
 function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 // TariffHint — advisory note under the per-km and min-fare sliders.
-// Shows the government zone range for the driver's selected city and a
-// one-tap reset button that snaps the slider to the midpoint of the
-// legal range. Never blocks the driver from setting any value they
-// want — the platform is a directory, not a tariff enforcer.
+// Shows the government tariff floor (batas bawah) for the driver's
+// selected city and a Reset button that snaps the slider to the
+// LEGAL MINIMUM (the lowest rate the law allows). Drivers can save
+// any value — the platform never enforces a floor.
+//
+// Important: only PASSENGER rides are price-regulated. Parcel and
+// food delivery rates are not under government control (Permenkominfo
+// 1/2012 leaves them to each operator). The price-per-km in the
+// drivers schema applies platform-wide; in the UI we frame it as the
+// regulated passenger floor since that's the legally meaningful one.
 function TariffHint({
   city, kind, currentValue, onResetToLaw,
 }: {
@@ -710,7 +716,6 @@ function TariffHint({
 }) {
   const tariff = getTariffForCity(city)
   if (!tariff) {
-    // City not mapped to a zone yet — show a neutral hint, no reset button.
     return (
       <div className="text-[11px] text-dim mt-1.5 leading-snug">
         Pilih kota dulu untuk melihat tarif resmi pemerintah.
@@ -719,40 +724,52 @@ function TariffHint({
   }
 
   const isPerKm = kind === 'perKm'
-  const min = isPerKm ? tariff.perKmMin   : tariff.minFareMin
-  const max = isPerKm ? tariff.perKmMax   : tariff.minFareMax
-  const lawValue =
-    (isPerKm ? lawRatePerKm(city) : lawMinFare(city)) ?? Math.round((min + max) / 2)
+  const min = isPerKm ? tariff.perKmMin : tariff.minFareMin
+  const max = isPerKm ? tariff.perKmMax : tariff.minFareMax
+  // Reset → batas bawah (lowest legal rate). Drivers usually want the
+  // lowest rate they can advertise; this gives them the legally-defensible
+  // floor with one tap.
+  const legalLowest = min
 
-  const inRange =
-    isPerKm
-      ? isPerKmWithinLaw(currentValue, city)
-      : currentValue >= min && currentValue <= max
+  const belowFloor   = currentValue < min
+  const aboveCeiling = currentValue > max
+  const inRange      = !belowFloor && !aboveCeiling
 
   return (
-    <div className="mt-1.5 flex items-start justify-between gap-2">
-      <div className="text-[11px] leading-snug flex-1 min-w-0">
-        <div className="text-dim">
-          Zona <strong className="text-ink">{tariff.zone}</strong> ·
-          Rp {min.toLocaleString('id-ID')}–Rp {max.toLocaleString('id-ID')}
-          {isPerKm ? '/km' : ''}
+    <div className="mt-1.5 space-y-1">
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-[11px] leading-snug flex-1 min-w-0">
+          <div className="text-dim">
+            <span className="text-ink font-extrabold">Zona {tariff.zone}</span>
+            {' '}batas bawah <strong className="text-brand">Rp {min.toLocaleString('id-ID')}</strong>
+            {' '}· batas atas Rp {max.toLocaleString('id-ID')}
+            {isPerKm ? '/km' : ''}
+          </div>
+          <div
+            className="text-[10px] mt-0.5 font-bold"
+            style={{ color: inRange ? '#22C55E' : belowFloor ? '#EF4444' : '#F97316' }}
+          >
+            {inRange
+              ? '✓ Sesuai tarif resmi'
+              : belowFloor
+                ? '⚠ Di bawah batas bawah resmi — kamu masih bisa simpan, tapi berisiko denda'
+                : '⚠ Di atas batas atas resmi — boleh, tapi customer mungkin pindah ke driver lain'}
+          </div>
         </div>
-        <div
-          className="text-[10px] mt-0.5"
-          style={{ color: inRange ? '#22C55E' : '#F97316' }}
+        <button
+          type="button"
+          onClick={() => onResetToLaw(legalLowest)}
+          className="shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-brand px-2 py-1.5 rounded-lg border border-brand/40 hover:bg-brand/10 transition"
         >
-          {inRange
-            ? '✓ Di dalam rentang resmi'
-            : '⚠ Di luar rentang resmi — kamu masih bisa simpan'}
-        </div>
+          Reset → Rp {legalLowest.toLocaleString('id-ID')}
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => onResetToLaw(lawValue)}
-        className="shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-brand px-2 py-1 rounded-lg border border-brand/30 hover:bg-brand/10 transition"
-      >
-        Reset → Rp {lawValue.toLocaleString('id-ID')}
-      </button>
+      {isPerKm && (
+        <p className="text-[10px] text-dim leading-snug">
+          Tarif ini berlaku untuk <strong className="text-ink">penumpang</strong>.
+          Parcel + food <strong className="text-ink">tidak diatur pemerintah</strong> — kamu bebas atur sendiri.
+        </p>
+      )}
     </div>
   )
 }

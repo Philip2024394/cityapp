@@ -1,40 +1,61 @@
 // ============================================================================
-// Indonesia ojek-online tariff zones (Permenhub PM 12/2019 + KP DJPD)
+// Indonesia ojek-online tariff zones — government-regulated minimums
 // ----------------------------------------------------------------------------
-// Operative rates per Keputusan Direktur Jenderal Perhubungan Darat,
-// announced by DJPHB Aan Suhanan on 30 June 2025 (Commission V DPR
-// working session) and effective from 1 July 2025. As of May 2026
-// these remain the active legal tariff while Kemenhub continues to
-// study further adjustments. Verify against the current KP DJPD
-// before publishing externally — regulations can change.
+// LEGAL BASIS
 //
-// Sources (web research, May 2026):
-//   - hubdat.dephub.go.id (Kemenhub siaran pers)
-//   - kompas.id, tempo.co, katadata.co.id, cnbcindonesia.com
+//  * KP 667/2022 (Kemenhub) — Pedoman Perhitungan Biaya Jasa Kendaraan
+//    Bermotor Roda Dua Yang Digunakan Untuk Kepentingan Masyarakat Yang
+//    Dilakukan Dengan Aplikasi. Defines zonasi + batas bawah/atas per km
+//    and biaya jasa minimum for the first 4 km. This is the operative
+//    regulation for PASSENGER rides (antar penumpang).
 //
-// The platform uses these ONLY as advisory information shown to
-// drivers + customers. Drivers are free to set ANY rate; the
-// platform never enforces a floor or ceiling. This is a deliberate
-// product decision to keep City Rider on the "directory" side of
-// PM 12/2019 (not an aplikasi penyedia jasa angkutan / APJT).
+//  * KP-DRJD 5201/2025 — implementing/adjusting decision issued by the
+//    Direktur Jenderal Perhubungan Darat. As of May 2026 this is the
+//    most recent published instrument touching ojol tariffs. The
+//    primary sources (hukumonline.com and hubdat.dephub.go.id) are
+//    behind 403/502 from external IPs; numbers below are reconciled
+//    from Katadata + Tempo + Kompas reporting that read the document
+//    directly. VERIFY against the active KP before publishing to
+//    real drivers.
+//
+//  * Permenkominfo 1/2012 — governs courier-style tariffs. PARCEL
+//    delivery and FOOD delivery are NOT under Permenhub PM 12/2019;
+//    they are "diserahkan kepada masing-masing perusahaan"
+//    (delegated to each operator). NO government floor or ceiling
+//    applies to parcel/food rates — the driver sets these freely.
+//
+//  * Local taxi rates (online taksi 4-wheel) are set by pemda — out
+//    of scope for this directory.
+//
+// HOW THIS FILE IS USED
+//
+// Only as advisory information shown to drivers + customers on the
+// onboarding form. The platform NEVER enforces a floor or ceiling
+// — drivers can save any rate. Reset button snaps to perKmMin
+// (the legal lowest rate / batas bawah), which is what most drivers
+// want to advertise competitively. The platform stays a directory
+// under PM 12/2019, not an aplikasi penyedia jasa angkutan.
 // ============================================================================
 
 export type Zone = 'I' | 'II' | 'III'
 
 export type ZoneTariff = {
   zone: Zone
-  /** Government-advised lower bound per km (Rp). */
+  /** Government-mandated lower bound per km (Rp). The "lowest legal rate." */
   perKmMin: number
-  /** Government-advised upper bound per km (Rp). */
+  /** Government-mandated upper bound per km (Rp). */
   perKmMax: number
-  /** Minimum total fare lower bound (Rp). */
+  /** Minimum total fare floor — lower bound (Rp). For trips under ~4 km. */
   minFareMin: number
-  /** Minimum total fare upper bound (Rp). */
+  /** Minimum total fare floor — upper bound (Rp). */
   minFareMax: number
-  /** Human-readable area label, Bahasa-first for driver-facing UI. */
+  /** Human-readable area label for the UI. */
   areaLabel: string
 }
 
+// Numbers reconciled from KP 667/2022 + KP-DRJD 5201/2025 reporting.
+// PASSENGER rides only. Parcel + food are NOT regulated — see file
+// header.
 export const ZONE_TARIFFS: Record<Zone, ZoneTariff> = {
   I: {
     zone: 'I',
@@ -46,16 +67,16 @@ export const ZONE_TARIFFS: Record<Zone, ZoneTariff> = {
   },
   II: {
     zone: 'II',
-    perKmMin: 2_550,
-    perKmMax: 2_800,
-    minFareMin: 10_200,
-    minFareMax: 11_200,
+    perKmMin: 2_650,
+    perKmMax: 2_750,
+    minFareMin: 10_500,
+    minFareMax: 13_000,
     areaLabel: 'Jabodetabek (Jakarta · Bogor · Depok · Tangerang · Bekasi)',
   },
   III: {
     zone: 'III',
     perKmMin: 2_300,
-    perKmMax: 2_800,
+    perKmMax: 2_750,
     minFareMin: 9_200,
     minFareMax: 11_000,
     areaLabel: 'Kalimantan · Sulawesi · Nusa Tenggara · Maluku · Papua',
@@ -104,23 +125,70 @@ export function getTariffForCity(city: string | null | undefined): ZoneTariff | 
   return ZONE_TARIFFS[zone]
 }
 
-/** Midpoint of the per-km range — the "reset to law rate" value. */
-export function lawRatePerKm(city: string | null | undefined): number | null {
-  const t = getTariffForCity(city)
-  if (!t) return null
-  return Math.round((t.perKmMin + t.perKmMax) / 2)
+/**
+ * Lowest legal per-km rate for a city (Rp) — the batas bawah from KP 667/2022.
+ * This is what the Reset → law-rate button snaps to. Drivers can set lower
+ * but they are then below the official tariff floor.
+ */
+export function legalMinPerKm(city: string | null | undefined): number | null {
+  return getTariffForCity(city)?.perKmMin ?? null
 }
 
-/** Midpoint of the min-fare range. */
-export function lawMinFare(city: string | null | undefined): number | null {
-  const t = getTariffForCity(city)
-  if (!t) return null
-  return Math.round((t.minFareMin + t.minFareMax) / 2)
+/**
+ * Lowest legal minimum fare for a city (Rp) — biaya jasa minimum lower bound
+ * from KP 667/2022. Applies to short trips (under ~4 km).
+ */
+export function legalMinFare(city: string | null | undefined): number | null {
+  return getTariffForCity(city)?.minFareMin ?? null
 }
 
-/** True when the rate falls inside the government-advised band. */
+/** True when the per-km rate falls inside the legal band. */
 export function isPerKmWithinLaw(perKm: number, city: string | null | undefined): boolean {
   const t = getTariffForCity(city)
   if (!t) return false
   return perKm >= t.perKmMin && perKm <= t.perKmMax
+}
+
+/**
+ * Legacy helper kept for older imports. Returns the LEGAL MINIMUM (batas bawah)
+ * to match the new "reset to lowest legal rate" behaviour, not the midpoint.
+ */
+export function lawRatePerKm(city: string | null | undefined): number | null {
+  return legalMinPerKm(city)
+}
+
+/**
+ * Legacy helper kept for older imports. Returns the LEGAL MINIMUM fare.
+ */
+export function lawMinFare(city: string | null | undefined): number | null {
+  return legalMinFare(city)
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Service-level regulation status
+// ─────────────────────────────────────────────────────────────────────
+//
+// Used by the UI to render advisory hints per service tile. Only
+// PASSENGER rides (person) are price-regulated by the government;
+// the platform should make this explicit to the driver so they
+// understand which floor matters and which they set freely.
+//
+import type { ServiceType } from '@/types/rider'
+
+export const SERVICE_REGULATION: Record<ServiceType, {
+  regulated: boolean
+  basis: string
+}> = {
+  person: {
+    regulated: true,
+    basis: 'Diatur KP 667/2022 + KP-DRJD 5201/2025',
+  },
+  parcel: {
+    regulated: false,
+    basis: 'Tidak diatur pemerintah (Permenkominfo 1/2012 — operator menetapkan)',
+  },
+  food: {
+    regulated: false,
+    basis: 'Tidak diatur pemerintah (Permenkominfo 1/2012 — operator menetapkan)',
+  },
 }
