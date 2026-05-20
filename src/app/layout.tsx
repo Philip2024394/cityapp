@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import MapBackground from '@/components/layout/MapBackground'
 import RegisterServiceWorker from '@/components/pwa/RegisterServiceWorker'
+import PreloadTiles from '@/components/pwa/PreloadTiles'
 import CapacitorBoot from '@/components/pwa/CapacitorBoot'
 import DevToolbar from '@/components/dev/DevToolbar'
 
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Fixed to the viewport; doesn't scroll with content. */}
         <MapBackground />
         <RegisterServiceWorker />
+        <PreloadTiles />
         <CapacitorBoot />
         {children}
         <DevToolbar />

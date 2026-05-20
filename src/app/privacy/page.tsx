@@ -60,6 +60,34 @@ export default function PrivacyPage() {
           </ul>
         </Section>
 
+        <Section title="Customer accounts + saved places (optional)">
+          <p>
+            Customers can use City Rider without creating an account — browse drivers, tap Contact,
+            message on WhatsApp. No signup required for booking.
+          </p>
+          <p className="mt-2">
+            If a customer chooses to <strong className="text-ink">save places</strong> (Home,
+            Office, etc.) via the Saved chip on the booking page, we ask them to create an account
+            so the saved places sync across their devices. The account collects:
+          </p>
+          <ul className="list-disc list-inside space-y-0.5 mt-2">
+            <li>Phone number (verified via OTP — also the customer&apos;s WhatsApp number)</li>
+            <li>Display name</li>
+            <li>Saved drop-off places: name, emoji, latitude/longitude, optional address label</li>
+          </ul>
+          <p className="font-bold text-ink/90 mt-3">Limits + retention:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Maximum 20 saved places per account</li>
+            <li>Retained while the account is active; deleted instantly on account deletion</li>
+            <li>Never shared with drivers or third parties — purely a personal convenience feature</li>
+          </ul>
+          <p className="mt-2">
+            Delete your account + all saved places anytime via{' '}
+            <Link href="/account/delete" className="text-brand hover:underline">/account/delete</Link>{' '}
+            or Dashboard → Delete my account.
+          </p>
+        </Section>
+
         <Section title="Push notification alerts (driver-side, opt-in)">
           <p>
             Drivers who enable &quot;Loud booking alerts&quot; on the dashboard authorise us to

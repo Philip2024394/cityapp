@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
+import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -282,17 +283,11 @@ function PlanTripPageInner() {
         </button>
         {/* B2B — small businesses (Shopee/TikTok sellers, restaurants,
             warungs) browse drivers for regular delivery contracts.
-            Distinct visual treatment (green-tinted) so customers know
-            it's a different surface than the consumer marketplace. */}
+            Matches the Rent button styling for visual consistency. */}
         <button
           onClick={() => { haptic.tap(); router.push('/business') }}
           aria-label="Business contracts — find a driver for regular deliveries"
-          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-white backdrop-blur-md active:scale-95 transition"
-          style={{
-            background: 'linear-gradient(135deg, #16A34A 0%, #14532D 100%)',
-            border: '2px solid rgba(34,197,94,0.55)',
-            boxShadow: '0 10px 28px rgba(22,163,74,0.45)',
-          }}
+          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
         >
           <Briefcase className="w-6 h-6" strokeWidth={2.5} />
           <span className="text-[12px] font-extrabold uppercase tracking-wider">B2B</span>
@@ -442,10 +437,15 @@ function PlanTripPageInner() {
                   onClick={() => { setPitstopOpen(true); haptic.tap() }}
                   className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
                 >
-                  <Plus className="w-4 h-4 shrink-0" strokeWidth={3} />
+                  <span
+                    className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ background: '#0A0A0A', boxShadow: '0 0 0 2px rgba(0,0,0,0.18) inset' }}
+                  >
+                    <Plus className="w-4 h-4 text-white" strokeWidth={3} />
+                  </span>
                   <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
                   <img
-                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png?updatedAt=1779022378771"
+                    src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2007_57_14%20PM.png"
                     alt=""
                     aria-hidden
                     loading="lazy"
@@ -470,7 +470,7 @@ function PlanTripPageInner() {
                     <span className="block text-[13px] font-extrabold truncate">{pitstopNote.trim()}</span>
                   </span>
                   <img
-                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png?updatedAt=1779022378771"
+                    src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2007_57_14%20PM.png"
                     alt=""
                     aria-hidden
                     loading="lazy"
@@ -497,7 +497,7 @@ function PlanTripPageInner() {
                     autoFocus
                   />
                   <img
-                    src="https://ik.imagekit.io/nepgaxllc/Untitledasdaaaa-removebg-preview%20(1).png?updatedAt=1779022378771"
+                    src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2007_57_14%20PM.png"
                     alt=""
                     aria-hidden
                     loading="lazy"
@@ -537,9 +537,17 @@ function PlanTripPageInner() {
           <div
             className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
-              <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-75">Tap map</span>
+              <SavedPlacesChip
+                currentDropoff={dropoff}
+                currentDropoffLabel={dropoffLabel}
+                onSelect={(p) => {
+                  setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
+                  setDropoffLabel(p.label)
+                  haptic.tap()
+                }}
+              />
             </div>
             <PlaceAutocomplete
               value={dropoffLabel}

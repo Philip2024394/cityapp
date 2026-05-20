@@ -4,6 +4,7 @@ import maplibregl, { Map as MLMap, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Info, X as XIcon } from 'lucide-react'
 import type { Rider } from '@/types/rider'
+import { getResilientStyle } from '@/lib/map/resilientStyle'
 
 // Marching-ants dash cycle for the route line. Each frame shifts the dash
 // pattern so the line appears to flow from pickup → dropoff. Twelve steps
@@ -51,11 +52,10 @@ type Props = {
   pitStop?: boolean
 }
 
-// OpenFreeMap — community-run vector tiles, OSM data, no API key required.
-const OPENFREEMAP_STYLES = {
-  positron: 'https://tiles.openfreemap.org/styles/positron',
-  dark:     'https://tiles.openfreemap.org/styles/dark',
-}
+// OpenFreeMap primary + Stadia Maps backup wired via getResilientStyle().
+// On a failed OpenFreeMap tile fetch, MapLibre transparently retries
+// against Stadia using the same z/x/y. The Service Worker cache (Phase 1)
+// then captures whichever succeeded so subsequent loads are instant.
 
 // Indonesia bounding box — constrains pan so users can't accidentally
 // scroll into the Pacific. Generous margin around the real coastline
@@ -97,120 +97,140 @@ export default function RiderMap({
 
   useEffect(() => {
     if (!containerRef.current) return
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: OPENFREEMAP_STYLES[variant],
-      center: [center.lng, center.lat],
-      zoom,
-      pitch,
-      // OSM ODbL legally requires credit visible on every map view.
-      // We replace MapLibre's default attribution control with our own
-      // tiny custom pill (see AttributionPill below) for cleaner styling
-      // — the pill opens a sheet listing OSM + OpenFreeMap on tap.
-      attributionControl: false,
-      interactive,
-      maxBounds: INDONESIA_BOUNDS,
-      // Cap at 2x — high-DPR Androids (3x+) would otherwise burn battery
-      // rendering at native resolution. 2x is the sharpness sweet spot.
-      pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
-    })
-    mapRef.current = map
+    // Cancellation flag — getResilientStyle() resolves async; on unmount
+    // before the style lands we must NOT mount the map (the container is
+    // already gone). Without this guard React 18 strict-mode double-mounts
+    // would race + create orphaned MapLibre instances.
+    let cancelled = false
+    let createdMap: MLMap | null = null
+    let observer: ResizeObserver | null = null
+    const containerEl = containerRef.current
 
-    // Silence "Image 'wood-pattern' could not be loaded" warnings — the
-    // OpenFreeMap dark style references sprite patterns (wood, sand, etc.)
-    // we don't load. Substitute a 1×1 transparent placeholder so the
-    // (already-hidden) fill layers don't spam the console.
-    map.on('styleimagemissing', (e) => {
-      if (!map.hasImage(e.id)) {
-        map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) })
-      }
-    })
+    void getResilientStyle(variant).then((style) => {
+      if (cancelled || !containerEl) return
+      const map = new maplibregl.Map({
+        container: containerEl,
+        style: style as unknown as maplibregl.StyleSpecification,
+        center: [center.lng, center.lat],
+        zoom,
+        pitch,
+        // OSM ODbL legally requires credit visible on every map view.
+        // We replace MapLibre's default attribution control with our own
+        // tiny custom pill (see AttributionPill below) for cleaner styling
+        // — the pill opens a sheet listing OSM + OpenFreeMap on tap.
+        attributionControl: false,
+        interactive,
+        maxBounds: INDONESIA_BOUNDS,
+        // Cap at 2x — high-DPR Androids (3x+) would otherwise burn battery
+        // rendering at native resolution. 2x is the sharpness sweet spot.
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      })
+      createdMap = map
+      mapRef.current = map
 
-    map.on('load', () => {
-      try {
-        const layers = map.getStyle().layers
-        if (!layers) return
-        for (const layer of layers) {
-          // Force a deep-black background regardless of style
-          if (layer.type === 'background') {
-            map.setPaintProperty(layer.id, 'background-color', '#0A0A0A')
-            continue
-          }
-          // Strip text + POI labels for a clean hero look
-          if (hideLabels && layer.type === 'symbol') {
-            map.setLayoutProperty(layer.id, 'visibility', 'none')
-            continue
-          }
-          // Roads-only mode: hide everything that isn't a transportation line,
-          // then recolour roads in brand palette.
-          if (roadsOnly) {
-            const srcLayer = (layer as { 'source-layer'?: string })['source-layer']
-            const isTransport = srcLayer === 'transportation' || /road|highway|bridge|tunnel|transport/i.test(layer.id)
-            if (!isTransport) {
+      // Silence "Image 'wood-pattern' could not be loaded" warnings — the
+      // OpenFreeMap dark style references sprite patterns (wood, sand, etc.)
+      // we don't load. Substitute a 1×1 transparent placeholder so the
+      // (already-hidden) fill layers don't spam the console.
+      map.on('styleimagemissing', (e) => {
+        if (!map.hasImage(e.id)) {
+          map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) })
+        }
+      })
+
+      map.on('load', () => {
+        try {
+          const layers = map.getStyle().layers
+          if (!layers) return
+          for (const layer of layers) {
+            // Force a deep-black background regardless of style
+            if (layer.type === 'background') {
+              map.setPaintProperty(layer.id, 'background-color', '#0A0A0A')
+              continue
+            }
+            // Strip text + POI labels for a clean hero look
+            if (hideLabels && layer.type === 'symbol') {
               map.setLayoutProperty(layer.id, 'visibility', 'none')
               continue
             }
-            // Style transportation lines: primary roads brand yellow, others dim
-            if (layer.type === 'line') {
-              const isPrimary = /motorway|trunk|primary/i.test(layer.id)
-              const isSecondary = /secondary|tertiary/i.test(layer.id)
-              map.setPaintProperty(
-                layer.id,
-                'line-color',
-                isPrimary ? '#FACC15' : isSecondary ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.18)',
-              )
-              map.setPaintProperty(
-                layer.id,
-                'line-width',
-                isPrimary
-                  ? ['interpolate', ['linear'], ['zoom'], 10, 1.5, 16, 4]
-                  : ['interpolate', ['linear'], ['zoom'], 10, 0.6, 16, 2],
-              )
-              map.setPaintProperty(layer.id, 'line-opacity', isPrimary ? 0.95 : 0.75)
+            // Roads-only mode: hide everything that isn't a transportation line,
+            // then recolour roads in brand palette.
+            if (roadsOnly) {
+              const srcLayer = (layer as { 'source-layer'?: string })['source-layer']
+              const isTransport = srcLayer === 'transportation' || /road|highway|bridge|tunnel|transport/i.test(layer.id)
+              if (!isTransport) {
+                map.setLayoutProperty(layer.id, 'visibility', 'none')
+                continue
+              }
+              // Style transportation lines: primary roads brand yellow, others dim
+              if (layer.type === 'line') {
+                const isPrimary = /motorway|trunk|primary/i.test(layer.id)
+                const isSecondary = /secondary|tertiary/i.test(layer.id)
+                map.setPaintProperty(
+                  layer.id,
+                  'line-color',
+                  isPrimary ? '#FACC15' : isSecondary ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.18)',
+                )
+                map.setPaintProperty(
+                  layer.id,
+                  'line-width',
+                  isPrimary
+                    ? ['interpolate', ['linear'], ['zoom'], 10, 1.5, 16, 4]
+                    : ['interpolate', ['linear'], ['zoom'], 10, 0.6, 16, 2],
+                )
+                map.setPaintProperty(layer.id, 'line-opacity', isPrimary ? 0.95 : 0.75)
+              }
             }
           }
-        }
-      } catch { /* style not fully loaded — ignore */ }
+        } catch { /* style not fully loaded — ignore */ }
 
-      // Force a resize once styles + container are settled. Without this,
-      // the map can render at the container's initial (pre-layout) dimensions
-      // — tiles look stretched/cropped until the user interacts.
-      map.resize()
-      requestAnimationFrame(() => map.resize())
-      setTimeout(() => map.resize(), 300)
+        // Force a resize once styles + container are settled. Without this,
+        // the map can render at the container's initial (pre-layout) dimensions
+        // — tiles look stretched/cropped until the user interacts.
+        map.resize()
+        requestAnimationFrame(() => map.resize())
+        setTimeout(() => map.resize(), 300)
 
-      // Subtle hero camera animation — slow clockwise pan, restart on every load
-      if (autoPan) {
-        let bearing = 0
-        const start = performance.now()
-        const tick = (now: number) => {
-          if (!mapRef.current) return
-          const elapsed = (now - start) / 1000
-          bearing = (elapsed * 1.5) % 360 // 1.5°/sec → full rotation in 4 min
-          mapRef.current.setBearing(bearing)
+        // Subtle hero camera animation — slow clockwise pan, restart on every load
+        if (autoPan) {
+          let bearing = 0
+          const start = performance.now()
+          const tick = (now: number) => {
+            if (!mapRef.current) return
+            const elapsed = (now - start) / 1000
+            bearing = (elapsed * 1.5) % 360 // 1.5°/sec → full rotation in 4 min
+            mapRef.current.setBearing(bearing)
+            requestAnimationFrame(tick)
+          }
           requestAnimationFrame(tick)
         }
-        requestAnimationFrame(tick)
-      }
-    })
-
-    if (onDropoffSet) {
-      map.on('click', (e) => {
-        onDropoffSet({ lat: e.lngLat.lat, lng: e.lngLat.lng })
       })
-    }
 
-    // Observe container size changes — mobile URL bar toggle, parent
-    // layout changes (bottom sheet expand, keyboard), image-loaded
-    // shifts. Each change resizes the map AND re-fits the route so it
-    // stays in the now-visible hero band.
-    const ro = new ResizeObserver(() => {
-      mapRef.current?.resize()
-      fitRouteRef.current?.()
+      if (onDropoffSet) {
+        map.on('click', (e) => {
+          onDropoffSet({ lat: e.lngLat.lat, lng: e.lngLat.lng })
+        })
+      }
+
+      // Observe container size changes — mobile URL bar toggle, parent
+      // layout changes (bottom sheet expand, keyboard), image-loaded
+      // shifts. Each change resizes the map AND re-fits the route so it
+      // stays in the now-visible hero band.
+      observer = new ResizeObserver(() => {
+        mapRef.current?.resize()
+        fitRouteRef.current?.()
+      })
+      observer.observe(containerEl)
     })
-    ro.observe(containerRef.current)
 
-    return () => { ro.disconnect(); map.remove(); mapRef.current = null }
+    return () => {
+      cancelled = true
+      observer?.disconnect()
+      if (createdMap) {
+        createdMap.remove()
+        mapRef.current = null
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
