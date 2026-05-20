@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import OfflineFallback from '@/components/rider/OfflineFallback'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
+import ReportReviewButton from '@/components/reviews/ReportReviewButton'
 import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
 import { fetchDriverBySlugBrowser } from '@/lib/drivers/queries'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
@@ -782,6 +783,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                   {r.comment && (
                     <p className="text-[13px] text-ink/85 mt-1 leading-snug">{r.comment}</p>
                   )}
+                  <ReportReviewButton reviewId={r.id} />
                 </li>
               ))}
             </ul>

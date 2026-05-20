@@ -54,6 +54,11 @@ export interface DriverRow {
   b2b_score: number | null
   b2b_tier: 'top' | 'standard' | 'hidden' | 'removed' | null
   b2b_score_updated_at: string | null
+  tour_guide_enabled: boolean
+  tour_guide_day_rate_idr: number | null
+  tour_guide_languages: string[]
+  tour_guide_notes: string | null
+  tour_guide_enabled_at: string | null
   bike_make: string | null
   bike_model: string | null
   bike_year: number | null

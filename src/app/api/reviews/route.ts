@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import { getTrustedClientIp } from '@/lib/security/clientIp'
 
 // ============================================================================
 // POST /api/reviews
@@ -37,12 +38,10 @@ function hashIp(ip: string): string {
   return createHash('sha256').update(ip + IP_HASH_SALT).digest('hex').slice(0, 32)
 }
 
-function getClientIp(req: Request): string {
-  // Vercel forwards client IP via x-forwarded-for
-  const fwd = req.headers.get('x-forwarded-for')
-  if (fwd) return fwd.split(',')[0].trim()
-  return req.headers.get('x-real-ip') || '0.0.0.0'
-}
+// Trusted client IP — uses x-vercel-forwarded-for, which Vercel sets
+// AFTER stripping any spoofed client x-forwarded-for. Falls back through
+// cf-connecting-ip then x-real-ip. See src/lib/security/clientIp.ts.
+const getClientIp = getTrustedClientIp
 
 export async function POST(req: Request) {
   const admin = getAdminSupabase()

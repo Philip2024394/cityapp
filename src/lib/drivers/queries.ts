@@ -109,6 +109,11 @@ export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
     b2bScore: row.b2b_score,
     b2bTier: row.b2b_tier,
     b2bScoreUpdatedAt: row.b2b_score_updated_at,
+    tourGuideEnabled: row.tour_guide_enabled,
+    tourGuideDayRateIdr: row.tour_guide_day_rate_idr,
+    tourGuideLanguages: row.tour_guide_languages ?? [],
+    tourGuideNotes: row.tour_guide_notes,
+    tourGuideEnabledAt: row.tour_guide_enabled_at,
     lat,
     lng,
     subscriptionStatus: effectiveSubStatus(sub),
@@ -197,6 +202,37 @@ export async function fetchMyDriverBrowser(): Promise<Rider | null> {
   if (error || !data) return null
   const row = data as DriverRowWithSub
   return driverRowToRider(row, pickSub(row))
+}
+
+// ============================================================================
+// Tour-guide directory (/places → Tour Guide tab)
+// ============================================================================
+// Drivers who have opted in to day-tour service. Filtered by city when
+// provided, ordered by rating then trips_count so reviewed drivers float
+// up. Subscription gating is the same as the main marketplace — past_due
+// drivers are hidden.
+export async function fetchTourGuideDriversBrowser(city?: string): Promise<Rider[]> {
+  if (!isSupabaseConfigured()) {
+    return MOCK_RIDERS.filter((r) => r.tourGuideEnabled && (!city || r.city.toLowerCase() === city.toLowerCase()))
+  }
+  const supabase = getBrowserSupabase()
+  if (!supabase) {
+    return MOCK_RIDERS.filter((r) => r.tourGuideEnabled && (!city || r.city.toLowerCase() === city.toLowerCase()))
+  }
+  let q = supabase
+    .from('drivers')
+    .select('*, subscriptions(status, trial_ends_at, current_period_end)')
+    .eq('status', 'active')
+    .eq('tour_guide_enabled', true)
+    .order('rating', { ascending: false, nullsFirst: false })
+    .order('trips_count', { ascending: false, nullsFirst: false })
+    .limit(40)
+  if (city) q = q.ilike('city', city)
+  const { data, error } = await q
+  if (error || !data) return []
+  return (data as DriverRowWithSub[])
+    .map((row) => driverRowToRider(row, pickSub(row)))
+    .filter((r) => r.subscriptionStatus !== 'past_due' && r.subscriptionStatus !== 'canceled')
 }
 
 // Raw DriverRow for the authenticated rider — used where the UI needs

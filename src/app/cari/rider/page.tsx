@@ -15,6 +15,7 @@ import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
 import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type Rider, type ServiceType } from '@/types/rider'
 import { presenceLabel, presenceTier, presenceDotColor } from '@/lib/drivers/presence'
+import { pingDriverContact } from '@/lib/notify/clientPing'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
 // Customer-facing labels for the service-type toggle. Stable order so
@@ -182,9 +183,11 @@ function DriverResults() {
       toastTimerRef.current = setTimeout(() => setToast(null), 3000)
       return
     }
-    // Open WhatsApp first (preserves the user-gesture for popup-blocker
-    // exemption), then write pending state, then navigate to the
-    // post-WhatsApp waiting screen.
+    // Ping the driver's app FIRST (non-blocking sendBeacon — fires our
+    // loud booking-alert sound on the driver's phone). Then open WhatsApp,
+    // preserving the user-gesture for popup-blocker exemption, then write
+    // pending state, then navigate to the post-WhatsApp waiting screen.
+    pingDriverContact(rider.id, 'cari_rider')
     window.open(link, '_blank', 'noopener,noreferrer')
     writePendingBooking({
       driverId: rider.id,

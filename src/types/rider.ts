@@ -113,6 +113,16 @@ export type Rider = {
   b2bTier?: 'top' | 'standard' | 'hidden' | 'removed' | null
   /** When the score was last recomputed (UI uses this to show "scored X hours ago"). */
   b2bScoreUpdatedAt?: string | null
+  /** Tour-guide opt-in — driver offers 8-hour day-tour service via /places. */
+  tourGuideEnabled?: boolean
+  /** Full-day (8h) rate in IDR — bike, fuel, driver-as-guide. */
+  tourGuideDayRateIdr?: number | null
+  /** Spoken languages for tour-guide work — codes: 'id','en','zh','ja','ko','nl'. */
+  tourGuideLanguages?: string[]
+  /** Free-text pitch on the tour-guide card. */
+  tourGuideNotes?: string | null
+  /** When the driver first opted into tour-guide service. */
+  tourGuideEnabledAt?: string | null
   lat: number
   lng: number
   subscriptionStatus: 'trial' | 'active' | 'past_due' | 'canceled'

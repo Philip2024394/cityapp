@@ -7,6 +7,7 @@ import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { presenceLabel } from '@/lib/drivers/presence'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { MOCK_RIDERS } from '@/data/mockRiders'
+import { pingDriverContact } from '@/lib/notify/clientPing'
 import type { Rider } from '@/types/rider'
 
 // ============================================================================
@@ -183,19 +184,18 @@ export default function BusinessDirectoryPage() {
 
           {loaded && filtered.length > 0 && (
             <div className="space-y-3">
-              {/* City header — appears above the first card whenever a
-                  city filter is active. Keeps the search context visible
-                  while the buyer scrolls a long list. */}
-              {cityFilter && (
-                <div className="flex items-baseline gap-2 px-1 pt-1">
-                  <h2 className="text-[18px] font-extrabold leading-tight">
-                    Drivers <span className="gradient-text">{cityFilter}</span>
-                  </h2>
-                  <span className="text-[12px] text-muted font-bold">
-                    · {filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}
-                  </span>
-                </div>
-              )}
+              {/* Section header — always reads "Contract Drivers", with
+                  the city name appended in brand yellow when the buyer
+                  has filtered. Listing count to the right. */}
+              <div className="flex items-baseline gap-2 px-1 pt-1 flex-wrap">
+                <h2 className="text-[18px] font-extrabold leading-tight">
+                  Contract Drivers
+                  {cityFilter && <> <span className="gradient-text">{cityFilter}</span></>}
+                </h2>
+                <span className="text-[12px] text-muted font-bold">
+                  · {filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}
+                </span>
+              </div>
               {filtered.map((d) => (
                 <BusinessDriverCard key={d.id} driver={d} />
               ))}
@@ -368,6 +368,7 @@ function BusinessDriverCard({ driver }: { driver: Rider }) {
                   href={waLink}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => pingDriverContact(driver.id, 'business')}
                   aria-label={`Contact ${driver.name} for a B2B contract`}
                   className="h-[39px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60"
                   style={{

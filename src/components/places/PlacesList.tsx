@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Drawer } from 'vaul'
-import { MapPin, AlertCircle, Search, X, Building2, Check, Plus } from 'lucide-react'
+import { MapPin, MapPinned, AlertCircle, Search, X, Building2, Check, Plus } from 'lucide-react'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
 import CategoryChips, { type PlaceFilter } from './CategoryChips'
 import PlaceCard from './PlaceCard'
+import TourGuideSection from './TourGuideSection'
 import { quotePlace, type PlaceQuote } from '@/lib/places/pricing'
 import { categoryMeta, groupOf } from '@/lib/places/categories'
 import { haversineKm } from '@/lib/geo/haversine'
@@ -60,6 +61,7 @@ export default function PlacesList({
   currentCity: string
 }) {
   const router = useRouter()
+  const sp = useSearchParams()
   const haptic = useHaptic()
   // autoRequest=true: prompt on mount so distances start filling in
   // immediately. If denied/blocked, the page still functions — cards
@@ -69,6 +71,12 @@ export default function PlacesList({
   const [filter, setFilter] = useState<PlaceFilter>('all')
   const [query, setQuery] = useState('')
   const [cityPickerOpen, setCityPickerOpen] = useState(false)
+  // Discovery mode — 'places' (default) or 'tour' (day-tour drivers in
+  // this city). Switches the section under the search bar without
+  // touching the rest of the page chrome. `?tour=1` lands directly on
+  // the tour-guide tab — used by the dashboard's "View my tour-guide
+  // card" link so drivers see their listing without an extra tap.
+  const [mode, setMode] = useState<'places' | 'tour'>(sp.get('tour') === '1' ? 'tour' : 'places')
 
   // Auto-detect: when GPS lands and the current page wasn't reached via an
   // explicit ?city= choice (i.e. we're sitting on the default 'yogyakarta'),
@@ -219,38 +227,90 @@ export default function PlacesList({
         </button>
       </div>
 
-      <CategoryChips value={filter} onChange={setFilter} />
-
-      {/* City header — sits above the first card so the user always sees
-          which area's places they're browsing. */}
-      <div className="flex items-center gap-2 pt-1">
-        <MapPin className="w-4 h-4 text-brand" strokeWidth={2.5} aria-hidden />
-        <span className="text-[14px] font-extrabold uppercase tracking-wider text-ink">
-          {cityLabel(currentCity)} City
-        </span>
+      {/* Mode toggle — sits directly under the search bar. Default
+          'places' preserves the existing landmark-browsing flow; 'tour'
+          flips to the day-tour driver directory for the same city. */}
+      <div
+        className="flex p-0.5 rounded-xl"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.10)',
+        }}
+        role="tablist"
+        aria-label="Discovery mode"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'places'}
+          onClick={() => { haptic.tap(); setMode('places') }}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-extrabold uppercase tracking-wider transition"
+          style={{
+            background: mode === 'places' ? 'linear-gradient(135deg, #FACC15, #EAB308)' : 'transparent',
+            color: mode === 'places' ? '#0A0A0A' : 'rgba(255,255,255,0.65)',
+            minHeight: 40,
+          }}
+        >
+          <MapPin className="w-3.5 h-3.5" strokeWidth={2.75} />
+          Places
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'tour'}
+          onClick={() => { haptic.tap(); setMode('tour') }}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-extrabold uppercase tracking-wider transition"
+          style={{
+            background: mode === 'tour' ? 'linear-gradient(135deg, #FACC15, #EAB308)' : 'transparent',
+            color: mode === 'tour' ? '#0A0A0A' : 'rgba(255,255,255,0.65)',
+            minHeight: 40,
+          }}
+        >
+          <MapPinned className="w-3.5 h-3.5" strokeWidth={2.75} />
+          Tour Guide
+        </button>
       </div>
 
-      <div className="space-y-3">
-        {sorted.length === 0 && (
-          <div className="card-dark p-6 text-center">
-            <p className="text-[14px] text-muted">
-              {query.trim()
-                ? `Tidak ada hasil untuk "${query.trim()}". Coba kata kunci lain.`
-                : 'Tidak ada tempat di kategori ini. Coba kategori lain.'}
-            </p>
+      {mode === 'places' && <CategoryChips value={filter} onChange={setFilter} />}
+
+      {mode === 'places' && (
+        <>
+          {/* City header — sits above the first card so the user always
+              sees which area's places they're browsing. */}
+          <div className="flex items-center gap-2 pt-1">
+            <MapPin className="w-4 h-4 text-brand" strokeWidth={2.5} aria-hidden />
+            <span className="text-[14px] font-extrabold uppercase tracking-wider text-ink">
+              {cityLabel(currentCity)} City
+            </span>
           </div>
-        )}
 
-        {sorted.map((p) => (
-          <PlaceCard
-            key={p.id}
-            place={p}
-            quote={quotes.get(p.id) ?? null}
-            onVisit={handleVisit}
-            currentCity={currentCity}
-          />
-        ))}
-      </div>
+          <div className="space-y-3">
+            {sorted.length === 0 && (
+              <div className="card-dark p-6 text-center">
+                <p className="text-[14px] text-muted">
+                  {query.trim()
+                    ? `Tidak ada hasil untuk "${query.trim()}". Coba kata kunci lain.`
+                    : 'Tidak ada tempat di kategori ini. Coba kategori lain.'}
+                </p>
+              </div>
+            )}
+
+            {sorted.map((p) => (
+              <PlaceCard
+                key={p.id}
+                place={p}
+                quote={quotes.get(p.id) ?? null}
+                onVisit={handleVisit}
+                currentCity={currentCity}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {mode === 'tour' && (
+        <TourGuideSection city={currentCity} cityLabel={cityLabel(currentCity)} />
+      )}
 
       {/* City-picker drawer — slides in from the right with the supported
           city list. Selecting a row routes to /places?city=<slug> and the

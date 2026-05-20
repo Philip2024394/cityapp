@@ -50,6 +50,31 @@ export default function PrivacyPage() {
             <li>GPS location (only with browser permission, used to find nearby riders)</li>
             <li>Anonymous session ID for analytics (no PII)</li>
             <li>Quote events: pickup / dropoff coordinates + distance + estimated fare per tap</li>
+            <li>Contact-tap events: anonymous ID + driver ID + page name when you tap the Contact button on a driver listing (used to alert the driver and to rate-limit duplicate taps)</li>
+          </ul>
+          <p className="font-bold text-ink/90 mt-3">From riders who opt in to booking alerts or tour-guide service:</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            <li>Device push-notification token (FCM token) — required to deliver the loud booking-alert sound when a customer taps Contact</li>
+            <li>Acknowledgement timestamp when the rider taps the in-app alert (used for response-time metrics on the public B2B score)</li>
+            <li>Tour-guide opt-in fields: day rate (Rp/8h), spoken languages, optional pitch notes — shown on /places when displayed</li>
+          </ul>
+        </Section>
+
+        <Section title="Push notification alerts (driver-side, opt-in)">
+          <p>
+            Drivers who enable &quot;Loud booking alerts&quot; on the dashboard authorise us to
+            deliver a high-priority push notification to their device the instant a customer taps
+            Contact on their listing. Delivery is routed through Google&apos;s Firebase Cloud
+            Messaging (FCM) service. We send the alert title, a short body, and a small data
+            payload (the ping ID + source page) — never the customer&apos;s identity or message
+            content.
+          </p>
+          <p className="font-bold text-ink/90 mt-3">Your control:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Toggle &quot;Loud booking alerts&quot; OFF on the dashboard at any time — delivery stops immediately</li>
+            <li>Revoke the Android notification permission in Settings → Apps → City Rider → Notifications</li>
+            <li>Sign out of a specific device to remove its registered FCM token</li>
+            <li>Delete your account to remove every registered token across every device</li>
           </ul>
         </Section>
 
@@ -109,13 +134,17 @@ export default function PrivacyPage() {
           </ul>
         </Section>
 
-        <Section title="Sharing">
-          <p>We share only as needed:</p>
+        <Section title="Sharing + third-party processors">
+          <p>We share only as needed, with these named processors:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Rider profile data (name, photo, WhatsApp, pricing, GPS) is shown on the public directory and to customers — that&apos;s the product</li>
-            <li>Payment data is processed by Midtrans under their own data agreement</li>
-            <li>Hosting and tile data: Vercel (Next.js hosting), OpenFreeMap (map tiles)</li>
-            <li>Analytics: aggregated, anonymous</li>
+            <li><strong className="text-ink">Customers browsing the directory</strong> — see rider profile data (name, photo, WhatsApp, pricing, GPS); that&apos;s the product</li>
+            <li><strong className="text-ink">Midtrans (PT Midtrans)</strong> — payment processing under their own data agreement; PCI-DSS compliant</li>
+            <li><strong className="text-ink">Vercel</strong> — Next.js hosting (servers in Singapore region)</li>
+            <li><strong className="text-ink">Supabase</strong> — managed PostgreSQL database + auth; storage region Singapore</li>
+            <li><strong className="text-ink">Google LLC (Firebase Cloud Messaging)</strong> — delivers driver booking-alert push notifications; receives only the alert title, body, and our internal ping ID — never customer identity</li>
+            <li><strong className="text-ink">Sentry</strong> — crash reporting + error telemetry; configured to redact PII, no session replay enabled</li>
+            <li><strong className="text-ink">OpenFreeMap</strong> — public map tiles (no per-user tracking)</li>
+            <li><strong className="text-ink">Nominatim (OpenStreetMap Foundation)</strong> — reverse geocoding for place names</li>
           </ul>
           <p className="mt-2">We do not sell personal data to third parties. We do not share customer GPS with any party other than the customer&apos;s own browser session.</p>
         </Section>
@@ -124,9 +153,26 @@ export default function PrivacyPage() {
           <ul className="list-disc list-inside space-y-1">
             <li>Rider profile data: retained while subscription is active + 30 days after cancellation, then deleted unless legally required to keep longer</li>
             <li>Quote events: 12 months for rider analytics, then anonymised</li>
+            <li>Contact-ping events: 90 days for B2B response-time metric, then deleted</li>
+            <li>Push notification tokens: pruned automatically after 90 days of inactivity; removed immediately on sign-out, app uninstall, or token rotation by the OS</li>
             <li>GPS location: only the latest position is kept; not stored as history</li>
+            <li>Sentry crash reports: 30 days, then deleted</li>
             <li>Logs: 90 days for security + debugging</li>
           </ul>
+        </Section>
+
+        <Section title="Deleting your account">
+          <p>
+            You can permanently delete your account at any time:
+          </p>
+          <ul className="list-disc list-inside space-y-1">
+            <li><strong className="text-ink">From inside the app:</strong> Dashboard → scroll to the bottom → &quot;Delete my account&quot; → type DELETE to confirm</li>
+            <li><strong className="text-ink">From a browser:</strong> visit <Link href="/account/delete" className="text-brand hover:underline">/account/delete</Link> for full step-by-step instructions</li>
+            <li><strong className="text-ink">If you have lost access:</strong> email <a href="mailto:streetlocallive@gmail.com" className="text-brand hover:underline">streetlocallive@gmail.com</a> from your registered address — processed within 14 days</li>
+          </ul>
+          <p className="mt-2 text-[13px] text-muted">
+            Deletion removes your auth record, profile, listings, push tokens, subscription, and the reviews you authored. Reviews other users wrote about you remain visible but display your profile as &quot;[deleted account]&quot;. Tax records may be retained per Indonesian tax law (up to 10 years).
+          </p>
         </Section>
 
         <Section title="Your rights (UU PDP)">

@@ -10,6 +10,8 @@ type Props = {
   onSelect: (suggestion: PlaceSuggestion) => void
   placeholder?: string
   className?: string
+  /** Optional left-side adornment. */
+  leftSlot?: React.ReactNode
   /** Optional right-side adornment (e.g. the dark-red GPS button). */
   rightSlot?: React.ReactNode
   /** Bias suggestions around this point (e.g. customer GPS). */
@@ -27,7 +29,7 @@ type Props = {
 // AND any other market. Suggestions render in a dropdown ABOVE the
 // input (the input lives in the bottom sheet so down would clip).
 export default function PlaceAutocomplete({
-  value, onChange, onSelect, placeholder, className, rightSlot, near, countryCodes, ariaLabel,
+  value, onChange, onSelect, placeholder, className, leftSlot, rightSlot, near, countryCodes, ariaLabel,
 }: Props) {
   const [focused, setFocused] = useState(false)
   const { suggestions, loading } = usePlaceSearch(value, { near, countryCodes })
@@ -49,6 +51,7 @@ export default function PlaceAutocomplete({
   return (
     <div ref={wrapRef} className="relative">
       <div className="flex items-stretch gap-1.5">
+        {leftSlot}
         <input
           className={className}
           placeholder={placeholder}

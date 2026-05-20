@@ -4,6 +4,57 @@ import { withSentryConfig } from '@sentry/nextjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// ============================================================================
+// Security headers — applied to every response.
+// ----------------------------------------------------------------------------
+// CSP allowlist covers everything the app actually loads:
+//   • Supabase (auth + DB)            — *.supabase.co
+//   • Midtrans Snap (payment)         — app.midtrans.com + app.sandbox
+//   • Map tiles                       — tiles.openfreemap.org, demotiles.maplibre.org
+//   • Geocoder                        — nominatim.openstreetmap.org
+//   • Image hosts                     — ik.imagekit.io, *.unsplash.com, i.pravatar.cc
+//   • FCM (push send is server-side)  — fcm.googleapis.com, oauth2.googleapis.com
+//   • Sentry                          — *.ingest.sentry.io
+//   • Self                            — for our own API + assets
+//
+// 'unsafe-inline' on style-src is required by Next.js + Tailwind JIT.
+// 'unsafe-inline' on script-src is required by Next.js bootstrap + the
+// Midtrans Snap widget. Both are unavoidable today without nonce-based CSP
+// (which Next 15 still doesn't natively support per-request).
+// ============================================================================
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com https://tiles.openfreemap.org https://demotiles.maplibre.org https://nominatim.openstreetmap.org https://ik.imagekit.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://fcm.googleapis.com https://oauth2.googleapis.com",
+  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests",
+].join('; ')
+
+const SECURITY_HEADERS = [
+  { key: 'Content-Security-Policy', value: CSP },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  // geolocation=self  : we use it for marketplace search + driver pings
+  // camera=()         : never used
+  // microphone=()     : never used
+  // payment=()        : Midtrans Snap is iframe-based, not Payment Request API
+  // interest-cohort=(): no FLoC / Topics
+  {
+    key: 'Permissions-Policy',
+    value: 'geolocation=(self), camera=(), microphone=(), payment=(), interest-cohort=()',
+  },
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -15,6 +66,15 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'i.pravatar.cc' },
     ],
+  },
+  async headers() {
+    return [
+      {
+        // Apply to every route.
+        source: '/:path*',
+        headers: SECURITY_HEADERS,
+      },
+    ]
   },
 }
 

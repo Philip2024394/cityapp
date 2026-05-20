@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { haversineKm } from '@/lib/geo/haversine'
+import { rateLimit } from '@/lib/security/rateLimit'
 
 // ============================================================================
 // POST /api/drivers/location
@@ -45,6 +46,17 @@ export async function POST(req: Request) {
 
   const { data: { user } } = await userClient.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
+
+  // Per-user throttle. The legitimate client pings every ~30s, so 4
+  // calls per 60s window leaves comfortable headroom for retries +
+  // race conditions while stopping a runaway loop from punishing the DB.
+  const limit = rateLimit(`loc:${user.id}`, 4, 60_000)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many location pings — slow down' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(limit.resetMs / 1000)) } },
+    )
+  }
 
   let body: { lat?: number; lng?: number }
   try {

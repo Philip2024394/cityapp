@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [agree, setAgree] = useState(false)
+  const [age18, setAge18] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,6 +40,10 @@ export default function SignupPage() {
     }
     if (role === 'driver' && !agree) {
       setError('You must confirm you are an independent rider business to continue')
+      return
+    }
+    if (!age18) {
+      setError('You must confirm you are 18 years or older to use City Rider')
       return
     }
     const supabase = getBrowserSupabase()
@@ -177,6 +182,26 @@ export default function SignupPage() {
                       </span>
                     </label>
                   )}
+
+                  {/* 18+ age confirmation — required for BOTH roles. Play
+                      Store policy requires explicit age gating for apps
+                      that create accounts AND for apps related to motor-
+                      vehicle operation. Customers must be 18 to enter
+                      transport service contracts under KUH Perdata. */}
+                  <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={age18}
+                      onChange={(e) => setAge18(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 accent-[#FACC15] shrink-0 cursor-pointer"
+                    />
+                    <span className="text-[13px] text-muted leading-relaxed">
+                      I confirm I am <strong className="text-ink">18 years of age or older</strong>.
+                      {role === 'driver' && (
+                        <> Riders must hold a valid <strong className="text-ink">SIM C</strong> motorcycle licence.</>
+                      )}
+                    </span>
+                  </label>
 
                   {error && <p className="text-[13px] text-red-400">{error}</p>}
 

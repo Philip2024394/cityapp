@@ -2,6 +2,7 @@
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { SplashScreen } from '@capacitor/splash-screen'
 import { isNative } from './isNative'
+import { createNotificationChannels } from './pushChannel'
 
 // ============================================================================
 // One-time native shell initialization.
@@ -30,4 +31,9 @@ export async function initCapacitorShell(): Promise<void> {
   } catch {
     /* splash already hidden or plugin unavailable — ignore */
   }
+
+  // Register the HIGH-importance "bookings" notification channel so
+  // booking alerts arrive with the loud custom sound and bypass
+  // ringer/DND. Idempotent — calling on an existing channel is a no-op.
+  await createNotificationChannels()
 }

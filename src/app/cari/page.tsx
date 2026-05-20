@@ -273,14 +273,6 @@ function PlanTripPageInner() {
         }}
       >
         <button
-          onClick={() => { haptic.tap(); router.push('/places') }}
-          aria-label="Browse places in Yogyakarta"
-          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-bg bg-gradient-to-br from-brand to-brand2 shadow-[0_10px_28px_rgba(250,204,21,0.45)] active:scale-95 transition"
-        >
-          <Landmark className="w-6 h-6" strokeWidth={2.5} />
-          <span className="text-[11px] font-extrabold uppercase tracking-wider">Places</span>
-        </button>
-        <button
           onClick={() => { haptic.tap(); router.push('/rent') }}
           aria-label="Rent a motorbike"
           className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
@@ -391,8 +383,22 @@ function PlanTripPageInner() {
           <div
             className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
           >
-            <div className="mb-1">
+            <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
+              <button
+                type="button"
+                onClick={() => { haptic.tap(); router.push('/places') }}
+                aria-label="Browse places in Yogyakarta"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
+                style={{
+                  background: '#0A0A0A',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  minHeight: 24,
+                }}
+              >
+                <Landmark className="w-3 h-3" strokeWidth={2.5} />
+                Places
+              </button>
             </div>
             <PlaceAutocomplete
               value={pickupLabel}
@@ -407,7 +413,7 @@ function PlanTripPageInner() {
               near={geo.coords ?? null}
               countryCodes={countryCodes}
               ariaLabel="Pick up location"
-              rightSlot={
+              leftSlot={
                 <button
                   onClick={handleUseLocation}
                   aria-label="Auto-set my GPS location"

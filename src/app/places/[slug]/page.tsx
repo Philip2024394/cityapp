@@ -1,8 +1,10 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, MapPin, Phone, MessageCircle, Tag } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+import JsonLd from '@/components/seo/JsonLd'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { CATEGORIES } from '@/lib/places/categories'
 import type { PlaceCategory } from '@/lib/places/types'
@@ -10,8 +12,53 @@ import type { PlaceCategory } from '@/lib/places/types'
 // Public detail page for an approved place. Server-rendered for SEO so
 // every place gets its own indexable URL. Status filter is 'approved'
 // so pending/rejected/suspended rows don't leak.
+//
+// revalidate=300 (5 min) replaces force-dynamic so we get edge-cached
+// HTML between updates while still picking up moderation changes quickly.
+export const revalidate = 300
 
-export const dynamic = 'force-dynamic'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityrider.id'
+
+async function loadPlace(slug: string) {
+  const supabase = await getServerSupabase()
+  if (!supabase) return null
+  const { data } = await supabase
+    .from('places')
+    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, opening_hours, rating, review_count')
+    .eq('slug', slug)
+    .eq('status', 'approved')
+    .maybeSingle()
+  return data as Row | null
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const place = await loadPlace(slug).catch(() => null)
+  if (!place) {
+    return { title: 'Place not found', robots: { index: false, follow: false } }
+  }
+  const categoryLabel = CATEGORIES[place.category]?.label ?? place.category
+  const title = `${place.name} · ${place.city}`
+  const description = place.description?.slice(0, 160) || `${place.name} di ${place.city} — ${categoryLabel}. Pesan rider untuk berangkat lewat City Rider.`
+  return {
+    title,
+    description,
+    alternates: { canonical: `${SITE_URL}/places/${place.slug}` },
+    openGraph: {
+      type: 'website',
+      url: `${SITE_URL}/places/${place.slug}`,
+      title,
+      description,
+      images: place.image_urls?.[0] ? [{ url: place.image_urls[0], alt: place.name }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: place.image_urls?.[0] ? [place.image_urls[0]] : undefined,
+    },
+  }
+}
 
 type Row = {
   id: string
@@ -33,18 +80,8 @@ type Row = {
 
 export default async function PlaceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const supabase = await getServerSupabase()
-  if (!supabase) notFound()
-
-  const { data } = await supabase
-    .from('places')
-    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, opening_hours, rating, review_count')
-    .eq('slug', slug)
-    .eq('status', 'approved')
-    .maybeSingle()
-
-  if (!data) notFound()
-  const place = data as Row
+  const place = await loadPlace(slug)
+  if (!place) notFound()
 
   const photos = place.image_urls ?? []
   const cover = photos[0] ?? null
@@ -54,8 +91,41 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ sl
   const waText = encodeURIComponent(`Halo ${place.name}, saya lihat listingmu di City Rider.`)
   const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : null
 
+  // Schema.org Place — gives Google a structured handle on each landmark
+  // so they can surface in Maps / Knowledge Graph results.
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Place',
+    '@id': `${SITE_URL}/places/${place.slug}`,
+    name: place.name,
+    description: place.description || undefined,
+    url: `${SITE_URL}/places/${place.slug}`,
+    image: place.image_urls?.[0] || undefined,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: place.address || undefined,
+      addressLocality: place.city,
+      addressCountry: 'ID',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: place.lat,
+      longitude: place.lng,
+    },
+    aggregateRating: place.rating != null && place.review_count != null && place.review_count > 0
+      ? {
+          '@type': 'AggregateRating',
+          ratingValue: place.rating,
+          reviewCount: place.review_count,
+          bestRating: 5,
+          worstRating: 1,
+        }
+      : undefined,
+  }
+
   return (
     <>
+      <JsonLd data={jsonLd} />
       <AppNav />
       <main className="min-h-screen pb-16">
         <div className="max-w-2xl mx-auto px-4 pt-3">

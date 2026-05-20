@@ -9,7 +9,10 @@ import ROIHero from '@/components/rider/ROIHero'
 import ViralityPanel from '@/components/rider/ViralityPanel'
 import RentalToggles from '@/components/rider/RentalToggles'
 import BusinessContractToggle from '@/components/rider/BusinessContractToggle'
+import BookingAlertsToggle from '@/components/rider/BookingAlertsToggle'
+import TourGuideToggle from '@/components/rider/TourGuideToggle'
 import B2BScoreCard from '@/components/rider/B2BScoreCard'
+import DeleteAccountSection from '@/components/settings/DeleteAccountSection'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { MOCK_CUSTOMERS, repeatCustomers } from '@/data/mockCustomers'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
@@ -86,6 +89,12 @@ export default function DashboardPage() {
           {/* GO ONLINE */}
           <GoOnlineToggle defaultOnline={online} defaultOnlineUntil={ME.onlineUntil ?? null} onChange={setOnline} />
 
+          {/* Loud booking alerts — opt-in to the 10-second alarm sound when
+              a customer taps Contact. Highest-leverage retention surface:
+              drivers who hear the ping respond faster, convert more
+              bookings, churn less. Requires Android app from Play Store. */}
+          <BookingAlertsToggle />
+
           {/* ROI Hero — replaces the old 3-tile stats */}
           <ROIHero
             monthlyQuotes={monthQuoteCount}
@@ -109,6 +118,12 @@ export default function DashboardPage() {
               Zero-think toggle with sane defaults (30 parcels/day,
               parcels+documents services). */}
           <BusinessContractToggle />
+
+          {/* Tour guide — driver opt-in to appear on /places under the
+              Tour Guide tab. Sets full-day (8h) rate + spoken languages.
+              Independent from B2B contracts and bike rentals — a driver
+              can do tours, contracts, both, or neither. */}
+          <TourGuideToggle />
 
           {/* B2B reliability score — transparency card that shows the
               driver their rank, tier, score breakdown, and actionable
@@ -244,6 +259,12 @@ export default function DashboardPage() {
 
           {/* Subscription card with working Renew button (Midtrans Snap) */}
           <SubscriptionCard status={ME.subscriptionStatus} />
+
+          {/* Destructive — permanent account deletion. Sits at the very
+              bottom of the dashboard so the user has to scroll through
+              everything they're about to lose first. Required by Google
+              Play Store policy AND UU 27/2022 right-to-be-forgotten. */}
+          <DeleteAccountSection />
         </div>
       </main>
       <DashboardNav />
