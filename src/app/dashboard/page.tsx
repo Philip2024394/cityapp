@@ -6,6 +6,10 @@ import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
+import ViralityPanel from '@/components/rider/ViralityPanel'
+import RentalToggles from '@/components/rider/RentalToggles'
+import BusinessContractToggle from '@/components/rider/BusinessContractToggle'
+import B2BScoreCard from '@/components/rider/B2BScoreCard'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { MOCK_CUSTOMERS, repeatCustomers } from '@/data/mockCustomers'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
@@ -80,7 +84,7 @@ export default function DashboardPage() {
           </div>
 
           {/* GO ONLINE */}
-          <GoOnlineToggle defaultOnline={online} onChange={setOnline} />
+          <GoOnlineToggle defaultOnline={online} defaultOnlineUntil={ME.onlineUntil ?? null} onChange={setOnline} />
 
           {/* ROI Hero — replaces the old 3-tile stats */}
           <ROIHero
@@ -88,6 +92,29 @@ export default function DashboardPage() {
             monthlyLeadsValue={monthLeadsValue}
             subscriptionMonthly={SUBSCRIPTION_MONTHLY}
           />
+
+          {/* Virality panel — rank, referrals, buddy pairing, driver group.
+              Single fetch from /api/drivers/me/virality, self-hides empty
+              sub-cards. The single highest-leverage growth surface. */}
+          <ViralityPanel />
+
+          {/* Rental toggles — one-tap activation for self-ride rental and
+              bike+driver tour service. Pre-fills everything from the
+              driver's profile + city-tier defaults. */}
+          <RentalToggles />
+
+          {/* Business contracts — driver opt-in to appear on the public
+              /business directory where small businesses (Shopee sellers,
+              restaurants, warungs) browse for regular delivery contracts.
+              Zero-think toggle with sane defaults (30 parcels/day,
+              parcels+documents services). */}
+          <BusinessContractToggle />
+
+          {/* B2B reliability score — transparency card that shows the
+              driver their rank, tier, score breakdown, and actionable
+              "how to climb" hints. Self-hides for drivers who haven't
+              enabled business contracts. */}
+          <B2BScoreCard />
 
           {/* Edit listing — sends rider back through /onboarding which
               upserts the drivers row. Top-level CTA because it's the most

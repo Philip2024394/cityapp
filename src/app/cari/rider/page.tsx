@@ -14,6 +14,7 @@ import { idr } from '@/lib/format/idr'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
 import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type Rider, type ServiceType } from '@/types/rider'
+import { presenceLabel, presenceTier, presenceDotColor } from '@/lib/drivers/presence'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
 // Customer-facing labels for the service-type toggle. Stable order so
@@ -135,9 +136,10 @@ function DriverResults() {
       const { final, minApplied } = quoteBreakdown(tripKm, pricing)
       const distanceToPickup = haversineKm(pickup, { lat: r.lat, lng: r.lng })
       const hasOverrides = false
-      const pitstopFee = pitstopNote ? (r.pitstopFee ?? 0) : 0
+      const hasPitstop = !!pitstopNote
+      const pitstopFee = hasPitstop ? (r.pitstopFee ?? 0) : 0
       const totalFare = final + pitstopFee
-      return { rider: r, fare: final, pitstopFee, totalFare, minApplied, distanceToPickup, perKm: pricing.pricePerKm, hasOverrides }
+      return { rider: r, fare: final, pitstopFee, hasPitstop, totalFare, minApplied, distanceToPickup, perKm: pricing.pricePerKm, hasOverrides }
     })
     e.sort((a, b) =>
       sort === 'cheapest' ? a.totalFare - b.totalFare : a.distanceToPickup - b.distanceToPickup,
@@ -191,6 +193,9 @@ function DriverResults() {
       driverPhotoUrl: rider.photoUrl,
       driverWhatsAppE164: rider.whatsappE164,
       driverWhatsAppLink: link,
+      driverLastSeenAt: rider.lastSeenAt,
+      driverSessionStartedAt: rider.sessionStartedAt ?? null,
+      parallelAttempts: [],
       trip: {
         pickup: { lat: pickup!.lat, lng: pickup!.lng, label: pickupName },
         dropoff: { lat: dropoff!.lat, lng: dropoff!.lng, label: dropoffName },
@@ -390,6 +395,7 @@ function FeaturedDriverCard({
     rider: Rider
     fare: number
     pitstopFee: number
+    hasPitstop: boolean
     totalFare: number
     minApplied: boolean
     distanceToPickup: number
@@ -480,9 +486,54 @@ function FeaturedDriverCard({
       {/* Bottom info panel — overlays the lower portion of the image */}
       <div className="absolute inset-x-0 bottom-0 pointer-events-none">
         <div className="relative px-3.5 pt-2.5 pb-3 space-y-1.5 pointer-events-auto">
-          {/* Trust chips: services offered (excl. parcel + food). Box
-              badge was removed — drivers can mention a box in their bio. */}
+          {/* Trust chips: services offered + live presence pill + optional
+              "Online until 17:00" shift badge. All driver-self telemetry
+              — no customer event data. */}
           <div className="flex flex-wrap items-center gap-1.5">
+            {(() => {
+              const tier = presenceTier(rider.lastSeenAt)
+              const label = presenceLabel(rider.lastSeenAt)
+              const dotColor = presenceDotColor(tier)
+              const isFresh = tier === 'active_now' || tier === 'recent'
+              return (
+                <span
+                  className="pill-soft inline-flex items-center gap-1.5"
+                  style={{
+                    background: isFresh ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.55)',
+                    color: '#0A0A0A',
+                  }}
+                  aria-label={label}
+                  title={label}
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block w-2 h-2 rounded-full"
+                    style={{
+                      background: dotColor,
+                      boxShadow: tier === 'active_now' ? `0 0 6px ${dotColor}` : undefined,
+                      animation: tier === 'active_now' ? 'pulse 1.6s ease-in-out infinite' : undefined,
+                    }}
+                  />
+                  <span className="text-[12px] font-bold">{label}</span>
+                </span>
+              )
+            })()}
+            {rider.onlineUntil && (() => {
+              const t = Date.parse(rider.onlineUntil)
+              if (!Number.isFinite(t)) return null
+              const d = new Date(t)
+              const hh = d.getHours().toString().padStart(2, '0')
+              const mm = d.getMinutes().toString().padStart(2, '0')
+              return (
+                <span
+                  className="pill-soft text-[12px] font-bold"
+                  style={{ background: 'rgba(255,255,255,0.55)', color: '#0A0A0A' }}
+                  title={`Online until ${hh}:${mm}`}
+                >
+                  Until {hh}:{mm}
+                </span>
+              )
+            })()}
             {rider.services.filter(s => s !== 'parcel' && s !== 'food').map(s => (
               <span key={s} className="pill-soft" aria-label={SERVICE_LABELS[s]}>
                 <span aria-hidden>{SERVICE_ICONS[s]}</span>
@@ -491,16 +542,38 @@ function FeaturedDriverCard({
             ))}
           </div>
 
-          {/* Price block (left) + Primary CTA (right) */}
+          {/* Price block (left) + Primary CTA (right). When the driver's
+              GPS is stale (>15 min) we refuse to render an ETA — it would
+              be derived from a wrong distance. Falls back to "Based in
+              {area}" using their declared service zone. */}
           <div className="pt-1 flex items-end justify-between gap-3">
             <div className="flex flex-col leading-none drop-shadow min-w-0">
               <span className="text-[17px] font-extrabold text-gray-700 whitespace-nowrap">
                 {idr(fare)}
               </span>
               <span className="mt-1.5 text-[12px] font-bold text-gray-700 whitespace-nowrap">
-                ~{eta} {eta === 1 ? 'min' : 'mins'} away
+                {rider.locationFresh
+                  ? <>~{eta} {eta === 1 ? 'min' : 'mins'} away</>
+                  : <>Based in {rider.area || rider.city || 'service zone'}</>}
                 {minApplied && <span className="text-brand ml-1.5">· min fare</span>}
               </span>
+              {/* Pit-stop fee line — only shown when the customer asked
+                  for a pit stop (item.pitstopFee comes from the per-driver
+                  pitstop_fee column). Free pit stop reads as "Free pitstop",
+                  paid reads as "+Rp X pitstop". */}
+              {item.pitstopFee >= 0 && item.hasPitstop && (
+                <span
+                  className="mt-1 inline-flex items-center gap-1 text-[12px] font-extrabold whitespace-nowrap"
+                  style={{
+                    color: item.pitstopFee === 0 ? '#16A34A' : '#0A0A0A',
+                  }}
+                >
+                  <span aria-hidden>🛑</span>
+                  {item.pitstopFee === 0
+                    ? <>Free pitstop</>
+                    : <>+{idr(item.pitstopFee)} pitstop</>}
+                </span>
+              )}
             </div>
             <div className="flex flex-col items-center gap-1 shrink-0">
               <img

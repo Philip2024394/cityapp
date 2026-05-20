@@ -15,18 +15,24 @@
 const STORAGE_KEY = 'cityrider:referrer_agent_code'
 const TTL_MS = 30 * 24 * 60 * 60 * 1000  // 30 days
 
-type Stored = { code: string; capturedAt: number }
+// Stored shape now carries BOTH a normalised uppercase form (for agent
+// codes) AND the raw input (for driver-to-driver referrals where the code
+// is a lowercase slug). The two channels share the same ?ref= URL
+// parameter and are disambiguated at the API by trying each in turn.
+type Stored = { code: string; raw?: string; capturedAt: number }
 
 /** Read ?ref= from the current URL (if any) and persist it. Idempotent. */
 export function captureReferrerFromUrl(): string | null {
   if (typeof window === 'undefined') return null
   const params = new URLSearchParams(window.location.search)
-  const code = (params.get('ref') || '').trim().toUpperCase()
-  if (!code || code.length > 24) return getStoredReferrer()
-  // Light validation: alphanumeric only
-  if (!/^[A-Z0-9_-]+$/.test(code)) return getStoredReferrer()
+  const raw = (params.get('ref') || '').trim()
+  if (!raw || raw.length > 48) return getStoredReferrer()
+  const code = raw.toUpperCase()
+  // Light validation: alphanumeric, hyphen, underscore. Same charset as
+  // both agent codes (uppercase) and driver slugs (lowercase + hyphen).
+  if (!/^[A-Za-z0-9_-]+$/.test(raw)) return getStoredReferrer()
   try {
-    const payload: Stored = { code, capturedAt: Date.now() }
+    const payload: Stored = { code, raw, capturedAt: Date.now() }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
   } catch {
     // localStorage blocked — fall through
@@ -56,4 +62,23 @@ export function getStoredReferrer(): string | null {
 export function clearStoredReferrer(): void {
   if (typeof window === 'undefined') return
   try { localStorage.removeItem(STORAGE_KEY) } catch { /* noop */ }
+}
+
+/** Return the RAW captured referrer (case preserved). Used to resolve a
+ *  driver-to-driver referral (`drivers.referral_code` is lowercase). */
+export function getStoredReferrerRaw(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const payload = JSON.parse(raw) as Stored
+    if (!payload?.code) return null
+    if (Date.now() - payload.capturedAt > TTL_MS) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+    return payload.raw ?? payload.code.toLowerCase()
+  } catch {
+    return null
+  }
 }

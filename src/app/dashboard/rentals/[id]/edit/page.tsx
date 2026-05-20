@@ -2,10 +2,17 @@
 import { use, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, CheckCircle2, Upload, X as XIcon, Camera, Banknote, Bike, Settings2 } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle2, Upload, X as XIcon, Camera, Banknote, Bike, Settings2, Clock, RotateCcw, Fuel, AlertTriangle } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import type { RentalMode, Transmission } from '@/lib/rentals/types'
+import {
+  suggestedDailyRate,
+  deriveWeeklyMonthly,
+  isMultiDayDiscountOff,
+  ABSOLUTE_DAILY_FLOOR_IDR,
+} from '@/data/bikeRentalDefaults'
+import BikeColorPicker from '@/components/rider/BikeColorPicker'
 
 // Owner-facing edit page for bike_rentals. PATCHes /api/rentals/[id] which
 // runs through owner-scoped RLS (migration 0011). Status / paid_until /
@@ -26,6 +33,10 @@ type RentalRow = {
   monthly_price_idr: number | null
   security_deposit_idr: number | null
   driver_rate_per_day_idr: number | null
+  tour_3h_idr: number | null
+  tour_6h_idr: number | null
+  tour_8h_idr: number | null
+  fuel_included: boolean | null
   helmet_count: number | null
   raincoat_count: number | null
   has_phone_holder: boolean
@@ -77,6 +88,13 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
   const [monthlyPrice, setMonthlyPrice] = useState('')
   const [deposit, setDeposit] = useState('')
   const [driverRate, setDriverRate] = useState('')
+  // Hourly bike+driver tour rates — 3hr/6hr/8hr blocks. Defaults match
+  // the legal lowest rates from the user's spec: 150k / 280k / 350k.
+  // Reset button snaps back to these baseline values.
+  const [tour3h, setTour3h] = useState('')
+  const [tour6h, setTour6h] = useState('')
+  const [tour8h, setTour8h] = useState('')
+  const [fuelIncluded, setFuelIncluded] = useState(false)
   const [helmetCount, setHelmetCount] = useState('')
   const [raincoatCount, setRaincoatCount] = useState('')
   const [hasPhoneHolder, setHasPhoneHolder] = useState(false)
@@ -128,6 +146,11 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
       setMonthlyPrice(String(r.monthly_price_idr ?? ''))
       setDeposit(String(r.security_deposit_idr ?? ''))
       setDriverRate(String(r.driver_rate_per_day_idr ?? ''))
+      // Tour defaults bumped per May 2026 market research (was 150/280/350).
+      setTour3h(String(r.tour_3h_idr ?? '175000'))
+      setTour6h(String(r.tour_6h_idr ?? '325000'))
+      setTour8h(String(r.tour_8h_idr ?? '425000'))
+      setFuelIncluded(!!r.fuel_included)
       setHelmetCount(String(r.helmet_count ?? '2'))
       setRaincoatCount(String(r.raincoat_count ?? '1'))
       setHasPhoneHolder(!!r.has_phone_holder)
@@ -197,6 +220,10 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
           monthly_price_idr: num(monthlyPrice) || null,
           security_deposit_idr: num(deposit) || null,
           driver_rate_per_day_idr: rentalMode !== 'self_ride' && driverRate ? num(driverRate) : null,
+          tour_3h_idr: rentalMode !== 'self_ride' && tour3h ? num(tour3h) : null,
+          tour_6h_idr: rentalMode !== 'self_ride' && tour6h ? num(tour6h) : null,
+          tour_8h_idr: rentalMode !== 'self_ride' && tour8h ? num(tour8h) : null,
+          fuel_included: fuelIncluded,
           helmet_count: num(helmetCount),
           raincoat_count: num(raincoatCount),
           has_phone_holder: hasPhoneHolder,
@@ -323,8 +350,11 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
                 </select>
               </div>
               <div>
-                <label className="label">Color</label>
-                <input className="input" value={color} onChange={(e) => setColor(e.target.value)} />
+                <BikeColorPicker
+                  label="Color"
+                  value={color}
+                  onChange={setColor}
+                />
               </div>
             </div>
             <div>
@@ -333,18 +363,106 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
             </div>
           </section>
 
-          {/* Pricing */}
+          {/* Pricing — daily auto-suggests from city × model class; weekly +
+              monthly auto-derive from daily × 6 / × 20 unless the owner
+              customises. Warning surfaces if their discount is way off market. */}
           <section className="card p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Banknote className="w-4 h-4 text-brand" />
-              <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-dim">Pricing (IDR)</h2>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Banknote className="w-4 h-4 text-brand" />
+                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-dim">Pricing (IDR)</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const cityForLookup = row?.city ?? ''
+                  const d = suggestedDailyRate(brand, model, cityForLookup)
+                  setDailyPrice(String(d))
+                  const { weekly, monthly } = deriveWeeklyMonthly(d)
+                  setWeeklyPrice(String(weekly))
+                  setMonthlyPrice(String(monthly))
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-extrabold transition active:scale-95"
+                style={{
+                  background: 'rgba(34,197,94,0.10)',
+                  border: '1px solid rgba(34,197,94,0.30)',
+                  color: '#22C55E',
+                  minHeight: 36,
+                }}
+              >
+                <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
+                Reset to market floor
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div><label className="label">Daily *</label><input className="input font-mono" value={dailyPrice} onChange={(e) => setDailyPrice(e.target.value)} required /></div>
-              <div><label className="label">Weekly</label><input className="input font-mono" value={weeklyPrice} onChange={(e) => setWeeklyPrice(e.target.value)} /></div>
-              <div><label className="label">Monthly</label><input className="input font-mono" value={monthlyPrice} onChange={(e) => setMonthlyPrice(e.target.value)} /></div>
+              <div>
+                <label className="label">Daily *</label>
+                <input
+                  className="input font-mono"
+                  value={dailyPrice}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setDailyPrice(v)
+                    // Auto-fill weekly/monthly from formula whenever the
+                    // owner edits daily, IF weekly/monthly are still at
+                    // their formula-derived value (preserve manual overrides).
+                    const d = num(v)
+                    if (!d) return
+                    const { weekly, monthly } = deriveWeeklyMonthly(d)
+                    const curDaily = num(dailyPrice) || 0
+                    const formulaPrevWeekly  = deriveWeeklyMonthly(curDaily).weekly
+                    const formulaPrevMonthly = deriveWeeklyMonthly(curDaily).monthly
+                    if (!weeklyPrice  || num(weeklyPrice)  === formulaPrevWeekly)  setWeeklyPrice(String(weekly))
+                    if (!monthlyPrice || num(monthlyPrice) === formulaPrevMonthly) setMonthlyPrice(String(monthly))
+                  }}
+                  required
+                />
+                {num(dailyPrice) > 0 && num(dailyPrice) < ABSOLUTE_DAILY_FLOOR_IDR && (
+                  <p className="text-[12px] mt-1 leading-relaxed" style={{ color: '#EF4444' }}>
+                    Below platform floor (Rp {ABSOLUTE_DAILY_FLOOR_IDR.toLocaleString('id-ID')}). Owners typically can&apos;t cover insurance + wear at this rate.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="label">Weekly</label>
+                <input
+                  className="input font-mono"
+                  value={weeklyPrice}
+                  onChange={(e) => setWeeklyPrice(e.target.value)}
+                  placeholder={num(dailyPrice) ? String(deriveWeeklyMonthly(num(dailyPrice)).weekly) : ''}
+                />
+              </div>
+              <div>
+                <label className="label">Monthly</label>
+                <input
+                  className="input font-mono"
+                  value={monthlyPrice}
+                  onChange={(e) => setMonthlyPrice(e.target.value)}
+                  placeholder={num(dailyPrice) ? String(deriveWeeklyMonthly(num(dailyPrice)).monthly) : ''}
+                />
+              </div>
               <div><label className="label">Deposit</label><input className="input font-mono" value={deposit} onChange={(e) => setDeposit(e.target.value)} /></div>
             </div>
+            {(() => {
+              const { weeklyOff, monthlyOff } = isMultiDayDiscountOff(
+                num(dailyPrice),
+                num(weeklyPrice) || null,
+                num(monthlyPrice) || null,
+              )
+              if (!weeklyOff && !monthlyOff) return null
+              return (
+                <div
+                  className="rounded-xl p-3 flex items-start gap-2 text-[12px] leading-relaxed"
+                  style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.30)' }}
+                >
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
+                  <span className="text-ink/90">
+                    Renters typically expect a 30–40% discount for {weeklyOff && 'weekly'}{weeklyOff && monthlyOff && ' + '}{monthlyOff && 'monthly'} bookings.
+                    Standard formula: weekly = daily × 6, monthly = daily × 20.
+                  </span>
+                </div>
+              )
+            })()}
             <div>
               <label className="label">Rental mode</label>
               <select className="input" value={rentalMode} onChange={(e) => setRentalMode(e.target.value as RentalMode)}>
@@ -360,6 +478,117 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
           </section>
+
+          {/* HOURLY BIKE + DRIVER TOUR RATES — only visible when rental
+              mode includes with_driver. Lowest-rate baseline: 3h=150k,
+              6h=280k, 8h=350k. Petrol charged separately unless fuel
+              included. Reset button snaps back to the baseline. */}
+          {rentalMode !== 'self_ride' && (
+            <section className="card p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-brand" />
+                  <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-dim">
+                    Bike + Driver tour rates
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTour3h('175000')
+                    setTour6h('325000')
+                    setTour8h('425000')
+                    setFuelIncluded(true)
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-extrabold transition active:scale-95"
+                  style={{
+                    background: 'rgba(34,197,94,0.10)',
+                    border: '1px solid rgba(34,197,94,0.30)',
+                    color: '#22C55E',
+                    minHeight: 36,
+                  }}
+                >
+                  <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
+                  Reset to baseline
+                </button>
+              </div>
+              <p className="text-[12px] text-muted leading-relaxed">
+                Industry-baseline rates for Indonesian motor-tour services. Raise these if
+                you offer premium routes, multi-language guiding, or longer distances. Petrol
+                is charged separately unless you toggle &quot;Fuel included&quot; below.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="label">3 hours</label>
+                  <input
+                    className="input font-mono"
+                    value={tour3h}
+                    onChange={(e) => setTour3h(e.target.value)}
+                    placeholder="175000"
+                  />
+                  <p className="text-[12px] text-dim mt-1">baseline 175.000</p>
+                </div>
+                <div>
+                  <label className="label">6 hours</label>
+                  <input
+                    className="input font-mono"
+                    value={tour6h}
+                    onChange={(e) => setTour6h(e.target.value)}
+                    placeholder="325000"
+                  />
+                  <p className="text-[12px] text-dim mt-1">baseline 325.000</p>
+                </div>
+                <div>
+                  <label className="label">8 hours</label>
+                  <input
+                    className="input font-mono"
+                    value={tour8h}
+                    onChange={(e) => setTour8h(e.target.value)}
+                    placeholder="425000"
+                  />
+                  <p className="text-[12px] text-dim mt-1">baseline 425.000</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFuelIncluded(!fuelIncluded)}
+                className="w-full p-3 rounded-2xl flex items-center justify-between transition active:scale-[0.99]"
+                style={{
+                  background: fuelIncluded ? 'rgba(250,204,21,0.08)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${fuelIncluded ? 'rgba(250,204,21,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                  minHeight: 48,
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center"
+                    style={{
+                      background: fuelIncluded ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.05)',
+                    }}
+                  >
+                    <Fuel className="w-4 h-4 text-brand" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-[13px] font-extrabold">Petrol included in tour rate</div>
+                    <div className="text-[12px] text-muted mt-0.5">
+                      {fuelIncluded
+                        ? "Customer doesn't pay extra for fuel"
+                        : 'Customer pays petrol on top of the tour rate'}
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="w-12 h-7 rounded-full p-0.5 transition shrink-0"
+                  style={{ background: fuelIncluded ? '#22C55E' : 'rgba(255,255,255,0.12)' }}
+                >
+                  <div
+                    className="w-6 h-6 rounded-full bg-white transition-transform"
+                    style={{ transform: fuelIncluded ? 'translateX(20px)' : 'translateX(0)' }}
+                  />
+                </div>
+              </button>
+            </section>
+          )}
 
           {/* Inclusions */}
           <section className="card p-4 space-y-3">

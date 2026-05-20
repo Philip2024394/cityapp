@@ -1,11 +1,13 @@
 import Link from 'next/link'
-import { ChevronLeft, AlertCircle } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 
 // Privacy Policy — anchors UU 27/2022 (UU PDP — Indonesia's Personal Data
 // Protection Law) compliance. Covers what we collect, why, with whom we
 // share, retention, user rights, and contact for data subject requests.
 //
-// DRAFT — Indonesian counsel review required before production use.
+// Includes the explicit background-location disclosure required by
+// Google Play Store review for apps declaring ACCESS_BACKGROUND_LOCATION
+// in their AndroidManifest.
 export const metadata = {
   title: 'Privacy Policy · City Rider',
   description: 'How City Rider handles your personal data, under UU 27/2022.',
@@ -32,14 +34,6 @@ export default function PrivacyPage() {
           </p>
         </div>
 
-        <div className="card p-4 border-brand/25 bg-brand/5 flex gap-3 text-[13px]">
-          <AlertCircle className="w-4 h-4 text-brand shrink-0 mt-0.5" />
-          <div className="text-ink/85 leading-relaxed">
-            <strong className="text-brand">Draft notice:</strong> This policy is a working draft
-            for review by Indonesian counsel before production.
-          </div>
-        </div>
-
         <Section title="What we collect">
           <p className="font-bold text-ink/90">From riders (Subscribers):</p>
           <ul className="list-disc list-inside space-y-0.5">
@@ -57,6 +51,41 @@ export default function PrivacyPage() {
             <li>Anonymous session ID for analytics (no PII)</li>
             <li>Quote events: pickup / dropoff coordinates + distance + estimated fare per tap</li>
           </ul>
+        </Section>
+
+        <Section title="Background location (Android app only)">
+          <p>
+            The City Rider Android app collects your device&apos;s GPS location
+            <strong className="text-ink"> in the background</strong> — meaning while the app is
+            not visible on screen, while the phone is locked, or while you are using other apps.
+            This applies <strong className="text-ink">only to riders</strong> who have completed
+            onboarding and tapped &quot;Go Online&quot; in the driver dashboard. It never applies
+            to customers.
+          </p>
+          <p className="font-bold text-ink/90 mt-3">Why:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>To keep your live position visible to customers searching the marketplace</li>
+            <li>To compute accurate distance and ETA for nearby customers</li>
+            <li>To detect movement so we can mark you &quot;busy&quot; (mid-trip) vs &quot;online&quot; (available)</li>
+          </ul>
+          <p className="font-bold text-ink/90 mt-3">What we do NOT do with background location:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>We do not store a history of where you have been — only your most recent position is kept</li>
+            <li>We do not share your location with any third party other than the customers searching the directory</li>
+            <li>We do not use location for advertising, profiling, or analytics beyond the marketplace</li>
+            <li>We do not track location while you are offline — the moment you tap &quot;Go Offline&quot; the foreground location service stops</li>
+          </ul>
+          <p className="font-bold text-ink/90 mt-3">Your control:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Tap &quot;Go Offline&quot; in the dashboard to stop all location collection immediately</li>
+            <li>Revoke the Android &quot;Allow all the time&quot; location permission in Android Settings → Apps → City Rider → Permissions</li>
+            <li>Uninstall the app to remove all stored location data along with your subscription cancellation</li>
+          </ul>
+          <p className="text-muted text-[13px] mt-3">
+            While location is active, Android displays a persistent notification (&quot;City
+            Rider is online&quot;) as a system-level reminder — this notification is required by
+            Android and cannot be hidden while the foreground location service is running.
+          </p>
         </Section>
 
         <Section title="Why we collect it">
@@ -112,8 +141,9 @@ export default function PrivacyPage() {
             <li>File a complaint with Lembaga Pelindungan Data Pribadi</li>
           </ul>
           <p className="mt-2">
-            To exercise these rights, contact us via the email listed on the{' '}
-            <Link href="/about" className="text-brand hover:underline">About</Link> page. We respond within 14 days.
+            To exercise these rights, use the{' '}
+            <Link href="/contact" className="text-brand hover:underline">Contact</Link> page —
+            we respond to all UU PDP data-subject requests within 14 days.
           </p>
         </Section>
 

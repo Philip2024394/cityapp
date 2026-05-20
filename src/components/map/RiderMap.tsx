@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import maplibregl, { Map as MLMap, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { Info, X as XIcon } from 'lucide-react'
 import type { Rider } from '@/types/rider'
 
 // Marching-ants dash cycle for the route line. Each frame shifts the dash
@@ -102,10 +103,11 @@ export default function RiderMap({
       center: [center.lng, center.lat],
       zoom,
       pitch,
-      // OpenFreeMap ToS requires OSM/OpenFreeMap credit visible on every
-      // map view. We use compact attribution — a tiny "i" pill in the
-      // bottom-right that expands on tap, low visual cost.
-      attributionControl: { compact: true },
+      // OSM ODbL legally requires credit visible on every map view.
+      // We replace MapLibre's default attribution control with our own
+      // tiny custom pill (see AttributionPill below) for cleaner styling
+      // — the pill opens a sheet listing OSM + OpenFreeMap on tap.
+      attributionControl: false,
       interactive,
       maxBounds: INDONESIA_BOUNDS,
       // Cap at 2x — high-DPR Androids (3x+) would otherwise burn battery
@@ -615,9 +617,138 @@ export default function RiderMap({
 
   return (
     <div
-      ref={containerRef}
       style={{ height, width: '100%', borderRadius: 20, overflow: 'hidden', position: 'relative' }}
       className="border border-line"
-    />
+    >
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <AttributionPill />
+    </div>
+  )
+}
+
+// ============================================================================
+// AttributionPill — tiny "ⓘ" button in the bottom-right corner that opens
+// a small sheet listing the map attributions. Replaces MapLibre's default
+// AttributionControl so we get full styling control while still meeting
+// the ODbL "© OpenStreetMap contributors" requirement.
+//
+// Why a custom button: MapLibre's compact attribution shows as a visible
+// text pill on wider viewports. We want a single ~26px icon at all sizes,
+// matching the rest of the app's dark glass aesthetic.
+//
+// pointer-events: auto is explicit because some parents (the global
+// MapBackground at the root layout) set pointer-events: none on the map
+// wrapper to keep clicks passing through to UI underneath. The pill
+// itself must stay tappable regardless.
+// ============================================================================
+function AttributionPill() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Map attributions"
+        onClick={(e) => { e.stopPropagation(); setOpen(true) }}
+        style={{
+          position: 'absolute',
+          bottom: 8,
+          right: 8,
+          width: 26,
+          height: 26,
+          borderRadius: 999,
+          background: 'rgba(10,10,10,0.6)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          pointerEvents: 'auto',
+          cursor: 'pointer',
+        }}
+      >
+        <Info size={14} strokeWidth={2.25} />
+      </button>
+
+      {open && (
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.35)',
+              pointerEvents: 'auto',
+              zIndex: 1,
+            }}
+          />
+          <div
+            role="dialog"
+            aria-label="Map attributions"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute',
+              bottom: 44,
+              right: 8,
+              maxWidth: 260,
+              padding: '12px 14px',
+              borderRadius: 14,
+              background: 'rgba(15,15,20,0.95)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.92)',
+              fontSize: 12,
+              lineHeight: 1.5,
+              boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
+              pointerEvents: 'auto',
+              zIndex: 2,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+              <div style={{ fontWeight: 800, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>
+                Map credits
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                style={{
+                  width: 22, height: 22, borderRadius: 999,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.7)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <XIcon size={12} strokeWidth={2.5} />
+              </button>
+            </div>
+            <div>
+              Data ©{' '}
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#FACC15', textDecoration: 'underline' }}
+              >
+                OpenStreetMap contributors
+              </a>
+            </div>
+            <div style={{ marginTop: 4 }}>
+              Tiles ©{' '}
+              <a
+                href="https://openfreemap.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#FACC15', textDecoration: 'underline' }}
+              >
+                OpenFreeMap
+              </a>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   )
 }

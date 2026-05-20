@@ -31,6 +31,10 @@ type RentalRow = {
   delivers_to_hotel: boolean
   delivers_to_villa: boolean
   pickup_dropoff: boolean
+  tour_3h_idr: number | null
+  tour_6h_idr: number | null
+  tour_8h_idr: number | null
+  fuel_included: boolean
   rental_mode: RentalMode
   city: string
   address: string | null
@@ -67,6 +71,10 @@ function rowToRental(r: RentalRow): BikeRental {
     monthlyPriceIdr: r.monthly_price_idr,
     securityDepositIdr: r.security_deposit_idr,
     driverRatePerDayIdr: r.driver_rate_per_day_idr,
+    tour3hIdr: r.tour_3h_idr,
+    tour6hIdr: r.tour_6h_idr,
+    tour8hIdr: r.tour_8h_idr,
+    fuelIncluded: r.fuel_included,
     helmetCount: r.helmet_count,
     raincoatCount: r.raincoat_count,
     hasPhoneHolder: r.has_phone_holder,
@@ -107,6 +115,7 @@ export async function listRentalsForCity(city: string): Promise<BikeRental[]> {
       'daily_price_idr, weekly_price_idr, monthly_price_idr, security_deposit_idr, driver_rate_per_day_idr, ' +
       'helmet_count, raincoat_count, has_phone_holder, has_phone_charger, has_delivery_box, ready_to_work, ' +
       'delivers_to_hotel, delivers_to_villa, pickup_dropoff, ' +
+      'tour_3h_idr, tour_6h_idr, tour_8h_idr, fuel_included, ' +
       'rental_mode, city, address, lat, lng, image_urls, description, tags, rating, review_count, ' +
       'verified, available_now, listing_tier',
     )

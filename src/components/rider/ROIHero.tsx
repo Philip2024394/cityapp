@@ -1,5 +1,5 @@
 'use client'
-import { TrendingUp, ArrowUpRight } from 'lucide-react'
+import { TrendingUp, ArrowUpRight, MessageCircle } from 'lucide-react'
 import { idr } from '@/lib/format/idr'
 
 type Props = {
@@ -8,11 +8,40 @@ type Props = {
   subscriptionMonthly: number   // typically Rp 30,000
 }
 
+// Indonesian motorcycle ride-hail commission benchmark.
+//
+// Pre-June 2026: Gojek/Grab took ~20% of gross fare (driver kept 80%).
+// From June 2026: Perpres No. 27/2026 signed 1 May 2026 caps platform
+// commission at 8% MAXIMUM, guaranteeing drivers ≥92%. City Rider
+// still takes 0% commission (subscription model) — so the honest pitch
+// is "save the 8% Gojek now takes", not 20%.
+//
+// If you're rolling out before 1 June 2026 the 0.20 number is briefly
+// still accurate. Default to the post-Perpres 8% rate since the app
+// goes live in/after June.
+const COMPETITOR_COMMISSION_RATE = 0.08
+const COMPETITOR_COMMISSION_BASIS = 'Perpres 27/2026 — komisi maksimal 8% per pesanan, berlaku Juni 2026'
+
 export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscriptionMonthly }: Props) {
   const roi = subscriptionMonthly > 0 ? monthlyLeadsValue / subscriptionMonthly : 0
   const winning = roi >= 3   // 3× is the threshold I'd consider "obvious win"
   const target = 5            // 5× is the goal we steer riders toward
   const progressPct = Math.min(100, Math.round((roi / target) * 100))
+
+  // "vs Gojek" savings — gross fare × competitor commission rate − our
+  // flat subscription. This is the shareable headline that drivers
+  // screenshot into WhatsApp groups.
+  const competitorCommission = Math.round(monthlyLeadsValue * COMPETITOR_COMMISSION_RATE)
+  const netSavedVsCompetitor = Math.max(0, competitorCommission - subscriptionMonthly)
+
+  function onShareSavings() {
+    if (typeof window === 'undefined') return
+    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan City Rider — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali (Gojek/Grab masih potong 8% per Perpres 27/2026).
+
+Cek di cityrider.streetlocal.live`
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="card card-driver p-5 relative overflow-hidden">
@@ -72,6 +101,40 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
           subscription · if you close <span className="text-brand font-bold">all</span>{' '}
           quotes, you make <span className="text-online font-bold">{idr(Math.max(0, monthlyLeadsValue - subscriptionMonthly))}</span> net this month.
         </div>
+
+        {/* vs Gojek savings line — the shareable headline. Only shows when
+            there's an actual saving (zero leads = nothing to brag about). */}
+        {netSavedVsCompetitor > 0 && (
+          <div
+            className="mt-3 rounded-2xl p-3.5"
+            style={{
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.04))',
+              border: '1px solid rgba(34,197,94,0.30)',
+            }}
+          >
+            <div className="text-[12px] uppercase tracking-wider font-extrabold" style={{ color: '#22C55E' }}>
+              vs Gojek / Grab
+            </div>
+            <div className="text-[15px] font-extrabold mt-1 leading-snug">
+              You saved <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
+            </div>
+            <div className="text-[12px] text-muted mt-1">
+              They&apos;d have taken {idr(competitorCommission)} (8% of {idr(monthlyLeadsValue)} — {COMPETITOR_COMMISSION_BASIS}). City Rider takes Rp 0.
+            </div>
+            <button
+              onClick={onShareSavings}
+              className="mt-3 w-full p-2.5 rounded-xl font-extrabold text-[13px] text-bg active:scale-[0.99] transition flex items-center justify-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                boxShadow: '0 6px 16px rgba(37,211,102,0.30)',
+                minHeight: 44,
+              }}
+            >
+              <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+              Share this on WhatsApp
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

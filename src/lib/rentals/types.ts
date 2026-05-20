@@ -27,12 +27,19 @@ export type BikeRental = {
   bikeType: string | null
   color: string | null
 
-  // Pricing
+  // Pricing — bike rental (self-ride or with-driver baseline)
   dailyPriceIdr: number
   weeklyPriceIdr: number | null
   monthlyPriceIdr: number | null
   securityDepositIdr: number | null
   driverRatePerDayIdr: number | null
+  // Pricing — hourly bike+driver tour blocks (3 / 6 / 8 hours)
+  // Default lowest-rate baseline: 150k / 280k / 350k IDR. Petrol charged
+  // separately by default (see fuelIncluded).
+  tour3hIdr: number | null
+  tour6hIdr: number | null
+  tour8hIdr: number | null
+  fuelIncluded: boolean
 
   // Inclusions
   helmetCount: number

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Save, Info, Settings2, StopCircle } from 'lucide-react'
+import { Save, Info, Settings2, StopCircle, Scale, RotateCcw } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import SuggestedPricingCard from '@/components/rider/SuggestedPricingCard'
@@ -9,6 +9,7 @@ import { idr } from '@/lib/format/idr'
 import { quoteFare } from '@/lib/pricing/quote'
 import type { ServiceType } from '@/types/rider'
 import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT } from '@/types/rider'
+import { legalMinPerKm, legalMinFare, SERVICE_REGULATION, suggestedPerKm, suggestedMinFee } from '@/lib/tariffs/zones'
 
 const ME = MOCK_RIDERS[0]!
 
@@ -32,26 +33,55 @@ const ALL_SERVICES: ServiceType[] = ['parcel', 'food', 'person']
 type ServiceOverride = { perKm: number; minFee: number; enabled: boolean }
 
 export default function PricingPage() {
+  // Resolve legal-minimum per-km + min-fee for this driver's city
+  // (KP 667/2022 + KP-DRJD 5201/2025). Only applies to passenger
+  // (`person`) rides — parcel + food are NOT government-regulated, so
+  // we use the same number as a market-rate suggestion but never call
+  // it "legal minimum" for those.
+  const lawPerKm  = legalMinPerKm(ME.city?.toLowerCase()) ?? 2_000
+  const lawMinFee = legalMinFare(ME.city?.toLowerCase()) ?? 8_000
+
   const [perKm, setPerKm] = useState(ME.pricePerKm)
   const [minFee, setMinFee] = useState(ME.minFee)
+
+  // True when both current values match the law minimum for this city.
+  const isAtLawMinimum = perKm === lawPerKm && minFee === lawMinFee
+
+  function resetToLaw() {
+    setPerKm(lawPerKm)
+    setMinFee(lawMinFee)
+  }
   const [perServiceMode, setPerServiceMode] = useState(!!ME.servicePricing)
   const [pitstopEnabled, setPitstopEnabled] = useState(ME.pitstopFee !== undefined)
   const [pitstopFee, setPitstopFee] = useState(ME.pitstopFee ?? 5000)
 
   // Per-service overrides — start pre-filled with the existing rider's
-  // overrides if any, otherwise from base.
+  // overrides if any, otherwise with the platform's suggested minimum
+  // for that service in this city (legal floor for passenger; market
+  // research minimum for parcel/food).
+  const citySlug = ME.city?.toLowerCase()
   const [services, setServices] = useState<Record<ServiceType, ServiceOverride>>(() => {
     const init: Record<ServiceType, ServiceOverride> = {} as Record<ServiceType, ServiceOverride>
     for (const s of ALL_SERVICES) {
       const o = ME.servicePricing?.[s]
       init[s] = {
-        perKm:   o?.perKm  ?? ME.pricePerKm,
-        minFee:  o?.minFee ?? ME.minFee,
+        perKm:   o?.perKm  ?? suggestedPerKm(s, citySlug)   ?? ME.pricePerKm,
+        minFee:  o?.minFee ?? suggestedMinFee(s, citySlug)  ?? ME.minFee,
         enabled: !!(o && (o.perKm !== undefined || o.minFee !== undefined)),
       }
     }
     return init
   })
+
+  // Reset a single service's rates to the platform's suggested minimum.
+  // Per service the basis differs: passenger = KP 667/2022 legal floor;
+  // parcel + food = market-research-derived suggested minimums.
+  function resetServiceToSuggested(s: ServiceType) {
+    const sg = suggestedPerKm(s, citySlug)
+    const sm = suggestedMinFee(s, citySlug)
+    if (sg == null || sm == null) return
+    setServices(prev => ({ ...prev, [s]: { ...prev[s], perKm: sg, minFee: sm } }))
+  }
 
   function setSvc<K extends keyof ServiceOverride>(s: ServiceType, key: K, value: ServiceOverride[K]) {
     setServices(prev => ({ ...prev, [s]: { ...prev[s], [key]: value } }))
@@ -84,7 +114,7 @@ export default function PricingPage() {
           />
 
           {/* Preview tiles — show effective price for each service @ 5km */}
-          <div className="card p-5 relative overflow-hidden">
+          <div className="card-dark p-5 relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none opacity-60"
                  style={{ background: 'radial-gradient(ellipse at top, rgba(250,204,21,0.18), transparent 60%)' }} />
             <div className="relative">
@@ -112,6 +142,36 @@ export default function PricingPage() {
             </div>
           </div>
 
+          {/* Legal-minimum reset card — appears only when the driver has
+              moved off the KP 667/2022 floor. One tap to snap back. */}
+          {!isAtLawMinimum && (
+            <div
+              className="card-dark p-4 flex items-center gap-3"
+              style={{ borderColor: 'rgba(34,197,94,0.30)', background: 'rgba(34,197,94,0.06)' }}
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                   style={{ background: 'rgba(34,197,94,0.18)' }}>
+                <Scale className="w-5 h-5" style={{ color: '#22C55E' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] uppercase tracking-wider font-extrabold" style={{ color: '#22C55E' }}>
+                  Indonesia legal minimum rate
+                </div>
+                <div className="text-[13px] mt-0.5 leading-tight">
+                  {idr(lawPerKm)}/km · min {idr(lawMinFee)} <span className="text-muted">— KP 667/2022 for {ME.city || 'your zone'}</span>
+                </div>
+              </div>
+              <button
+                onClick={resetToLaw}
+                className="shrink-0 px-3 py-2 rounded-xl font-extrabold text-[12px] active:scale-95 transition flex items-center gap-1.5"
+                style={{ background: '#22C55E', color: '#0A0A0A', minHeight: 44 }}
+              >
+                <RotateCcw className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Reset to law
+              </button>
+            </div>
+          )}
+
           {/* Base sliders */}
           <Section title="Base rate (default for all services)">
             <div>
@@ -121,7 +181,7 @@ export default function PricingPage() {
                   <button
                     key={p.label}
                     onClick={() => { setPerKm(p.perKm); setMinFee(p.min) }}
-                    className="card p-3"
+                    className="card-dark p-3"
                   >
                     <div className="text-[13px] font-extrabold">{p.label}</div>
                     <div className="text-brand text-[12px] mt-1">{idr(p.perKm)}/km</div>
@@ -132,12 +192,16 @@ export default function PricingPage() {
             </div>
             <SliderRow label="Price per kilometre" value={perKm}  min={1500} max={6000} step={100} format={idr} onChange={setPerKm} />
             <SliderRow label="Minimum fee"         value={minFee} min={5000} max={25000} step={500} format={idr} onChange={setMinFee} />
+            <p className="text-[12px] text-dim leading-relaxed">
+              Legal minimum for {ME.city || 'your zone'}: <span className="text-ink font-bold">{idr(lawPerKm)}/km</span> · min <span className="text-ink font-bold">{idr(lawMinFee)}</span> ({SERVICE_REGULATION.person.basis}).
+              Parcel + food rates are not government-regulated — set them as you like.
+            </p>
           </Section>
 
           {/* Per-service toggle */}
           <button
             onClick={() => setPerServiceMode(v => !v)}
-            className="card p-4 w-full text-left flex items-center justify-between transition"
+            className="card-dark p-4 w-full text-left flex items-center justify-between transition"
             style={{
               borderColor: perServiceMode ? 'rgba(250,204,21,0.35)' : 'rgba(255,255,255,0.06)',
               background: perServiceMode ? 'rgba(250,204,21,0.04)' : 'rgba(255,255,255,0.03)',
@@ -170,7 +234,7 @@ export default function PricingPage() {
               {ALL_SERVICES.map(s => {
                 const sv = services[s]
                 return (
-                  <div key={s} className="card p-4"
+                  <div key={s} className="card-dark p-4"
                        style={sv.enabled ? { borderColor: 'rgba(250,204,21,0.25)' } : undefined}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2.5">
@@ -192,12 +256,43 @@ export default function PricingPage() {
                              style={{ transform: sv.enabled ? 'translateX(20px)' : 'translateX(0)' }} />
                       </button>
                     </div>
-                    {sv.enabled && (
-                      <div className="space-y-3 pt-2 border-t border-line">
-                        <SliderRow label="Price per km" value={sv.perKm}  min={1500} max={6000} step={100} format={idr} onChange={v => setSvc(s, 'perKm', v)} />
-                        <SliderRow label="Minimum fee"  value={sv.minFee} min={5000} max={25000} step={500} format={idr} onChange={v => setSvc(s, 'minFee', v)} />
-                      </div>
-                    )}
+                    {sv.enabled && (() => {
+                      const suggestedKm  = suggestedPerKm(s, citySlug)
+                      const suggestedMin = suggestedMinFee(s, citySlug)
+                      const isAtSuggested = suggestedKm != null && suggestedMin != null
+                        && sv.perKm === suggestedKm && sv.minFee === suggestedMin
+                      const label = s === 'person' ? 'Reset to legal min' : 'Reset to suggested'
+                      const basis = SERVICE_REGULATION[s].basis
+                      return (
+                        <div className="space-y-3 pt-2 border-t border-line">
+                          <SliderRow label="Price per km" value={sv.perKm}  min={1500} max={6000} step={100} format={idr} onChange={v => setSvc(s, 'perKm', v)} />
+                          <SliderRow label="Minimum fee"  value={sv.minFee} min={5000} max={25000} step={500} format={idr} onChange={v => setSvc(s, 'minFee', v)} />
+                          {suggestedKm != null && suggestedMin != null && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <span className="flex-1 text-[12px] text-muted leading-relaxed">
+                                Suggested for {ME.city || 'your zone'}: <span className="text-ink font-bold">{idr(suggestedKm)}/km</span> · min <span className="text-ink font-bold">{idr(suggestedMin)}</span>. {basis}.
+                              </span>
+                              {!isAtSuggested && (
+                                <button
+                                  type="button"
+                                  onClick={() => resetServiceToSuggested(s)}
+                                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-extrabold transition active:scale-95"
+                                  style={{
+                                    background: 'rgba(34,197,94,0.10)',
+                                    border: '1px solid rgba(34,197,94,0.30)',
+                                    color: '#22C55E',
+                                    minHeight: 36,
+                                  }}
+                                >
+                                  <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
+                                  {label}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                 )
               })}
@@ -207,7 +302,7 @@ export default function PricingPage() {
           {/* PIT-STOP FEE — separate from per-km rate */}
           <button
             onClick={() => setPitstopEnabled(v => !v)}
-            className="card p-4 w-full text-left flex items-center justify-between transition"
+            className="card-dark p-4 w-full text-left flex items-center justify-between transition"
             style={{
               borderColor: pitstopEnabled ? 'rgba(250,204,21,0.35)' : 'rgba(255,255,255,0.06)',
               background:  pitstopEnabled ? 'rgba(250,204,21,0.04)' : 'rgba(255,255,255,0.03)',
@@ -237,7 +332,7 @@ export default function PricingPage() {
           </button>
 
           {pitstopEnabled && (
-            <div className="card p-4 animate-[fadeUp_0.3s_ease-out_both]" style={{ borderColor: 'rgba(250,204,21,0.25)' }}>
+            <div className="card-dark p-4 animate-[fadeUp_0.3s_ease-out_both]" style={{ borderColor: 'rgba(250,204,21,0.25)' }}>
               <SliderRow
                 label="Pit-stop fee"
                 value={pitstopFee}
@@ -252,7 +347,7 @@ export default function PricingPage() {
           )}
 
           {/* Tip */}
-          <div className="card p-4 bg-brand/5 border-brand/20 flex gap-3">
+          <div className="card-dark p-4 border-brand/20 flex gap-3">
             <Info className="w-4 h-4 text-brand shrink-0 mt-0.5" />
             <div className="text-[13px] text-ink/85 leading-relaxed">
               Yogya riders typically charge <strong className="text-brand">Rp 2.500/km</strong> with minimum <strong className="text-brand">Rp 10.000</strong>. Raise it if your area is far or you have a big box. Passenger rates are typically 20% higher than parcel. Pit-stop fees usually Rp 3-10K.

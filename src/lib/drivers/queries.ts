@@ -15,6 +15,7 @@ import { getBrowserSupabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import type { DriverRow, AvailabilityState, SubscriptionStatus } from '@/types/database'
 import type { Rider, ServiceType } from '@/types/rider'
+import { isLocationFresh } from '@/lib/drivers/presence'
 
 // Minimal subscription shape used to derive what customers see on the
 // public driver pages. Trial / period dates are factored in here so a
@@ -57,6 +58,17 @@ function pickSub(row: DriverRowWithSub): SubInfo {
 // Map a Supabase drivers.row → legacy Rider shape used across the app.
 export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
   const services = (row.services || []) as ServiceType[]
+  // Location freshness — if the driver hasn't pinged GPS in the last
+  // 15 min we fall back to their service-zone center for distance calc.
+  // The UI checks `locationFresh` to decide whether to render exact
+  // distance/ETA or the honest "Based in {area}" fallback.
+  const locationFresh = isLocationFresh(row.current_location_updated_at)
+  const lat = locationFresh
+    ? (row.current_lat ?? row.service_zone_center_lat ?? 0)
+    : (row.service_zone_center_lat ?? row.current_lat ?? 0)
+  const lng = locationFresh
+    ? (row.current_lng ?? row.service_zone_center_lng ?? 0)
+    : (row.service_zone_center_lng ?? row.current_lng ?? 0)
   return {
     id: row.user_id,
     slug: row.slug,
@@ -83,8 +95,22 @@ export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
     isOnline: row.availability === 'online',
     availability: row.availability,
     lastSeenAt: row.last_active_at || row.updated_at,
-    lat: row.current_lat ?? row.service_zone_center_lat ?? 0,
-    lng: row.current_lng ?? row.service_zone_center_lng ?? 0,
+    sessionStartedAt: row.session_started_at,
+    currentLocationUpdatedAt: row.current_location_updated_at,
+    locationFresh,
+    onlineUntil: row.online_until,
+    referralCode: row.referral_code,
+    referrerDriverId: row.referrer_driver_id,
+    businessContractEnabled: row.business_contract_enabled,
+    businessMaxParcelsPerDay: row.business_max_parcels_per_day,
+    businessServices: row.business_services ?? [],
+    businessNotes: row.business_notes,
+    businessEnabledAt: row.business_enabled_at,
+    b2bScore: row.b2b_score,
+    b2bTier: row.b2b_tier,
+    b2bScoreUpdatedAt: row.b2b_score_updated_at,
+    lat,
+    lng,
     subscriptionStatus: effectiveSubStatus(sub),
     rating: row.rating ?? undefined,
     trips: row.trips_count,
@@ -98,11 +124,24 @@ export async function fetchActiveDriversBrowser(): Promise<Rider[]> {
   if (!isSupabaseConfigured()) return MOCK_RIDERS
   const supabase = getBrowserSupabase()
   if (!supabase) return MOCK_RIDERS
+  // Ordering: availability bucket first (online → busy → offline),
+  // then freshness (most recently pinged float up — a driver who went
+  // online 3h ago and stopped pinging will fall below one who's been
+  // pinging in the last minute), then rating as the tie-breaker.
+  // This is the directory-safe "deprioritize non-responsive drivers"
+  // signal — derived from driver-self telemetry only.
+  // Filter expired online_until shifts — a driver who toggled "Online
+  // until 17:00" is no longer in the marketplace once 17:00 passes,
+  // even if they forgot to flip offline. NULL online_until means
+  // "until I toggle off" — also accepted.
+  const nowIso = new Date().toISOString()
   const { data, error } = await supabase
     .from('drivers')
     .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('status', 'active')
+    .or(`online_until.is.null,online_until.gt.${nowIso}`)
     .order('availability', { ascending: true })
+    .order('last_active_at', { ascending: false, nullsFirst: false })
     .order('rating', { ascending: false, nullsFirst: false })
     .limit(50)
   if (error || !data || data.length === 0) {

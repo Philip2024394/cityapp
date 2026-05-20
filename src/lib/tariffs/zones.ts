@@ -192,3 +192,94 @@ export const SERVICE_REGULATION: Record<ServiceType, {
     basis: 'Tidak diatur pemerintah (Permenkominfo 1/2012 — operator menetapkan)',
   },
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// Suggested PARCEL + FOOD rates per zone (City Rider platform defaults)
+// ─────────────────────────────────────────────────────────────────────
+//
+// Parcel + food have NO statutory floor in Indonesia (Permenkominfo
+// 1/2012 delegates to operators, and the new Perpres 27/2026 only
+// caps commission — not floor rates). So these are PLATFORM-SET
+// suggested minimums derived from May 2026 market research:
+//
+// PARCEL benchmarks (motorcycle, intra-city, same-day, per-km):
+//   GoSend Instant Yogya ~Rp 2,000/km, Rp 8-10k min
+//   GoSend Instant Jakarta ~Rp 2,500/km, Rp 20k min
+//   GrabExpress Instant Bike Rp 3,000/km, Rp 20k min
+//   Lalamove Motor ~Rp 2,000-2,300/km, Rp 8k min
+// Our defaults sit at/below the lowest competitor while staying ABOVE
+// the passenger ojol floor (which is a fair-pay signal).
+//
+// FOOD benchmarks (driver-facing, same-day):
+//   GoFood Jabodetabek customer ~Rp 2,815/km + Rp 13k min
+//   GoFood Zona I customer ~Rp 2,000/km + Rp 8-10k min
+//   GrabFood ~Rp 2,500/km after 4km + Rp 10,400 min
+//   ShopeeFood flat ~Rp 10k/order
+// City Rider drivers KEEP 100% (vs incumbents' 92% post-Perpres 27/2026,
+// or 80% pre-June 2026). Customer pays roughly the same; driver earns more.
+
+export const SUGGESTED_PARCEL_RATES: Record<Zone, {
+  perKmMin: number
+  minFareMin: number
+  basis: string
+}> = {
+  I: {
+    perKmMin: 2_500,
+    minFareMin: 10_000,
+    basis: 'Riset Mei 2026 — di bawah GrabExpress, paritas GoSend Yogya',
+  },
+  II: {
+    perKmMin: 3_000,
+    minFareMin: 15_000,
+    basis: 'Riset Mei 2026 — di atas batas bawah penumpang Jabodetabek',
+  },
+  III: {
+    perKmMin: 2_700,
+    minFareMin: 11_000,
+    basis: 'Riset Mei 2026 — proxy dari ojol penumpang Zona III',
+  },
+}
+
+export const SUGGESTED_FOOD_RATES: Record<Zone, {
+  perKmMin: number
+  minFareMin: number
+  basis: string
+}> = {
+  I: {
+    perKmMin: 2_500,
+    minFareMin: 12_000,
+    basis: 'Riset Mei 2026 — driver dapat 100% (vs GoFood 92% pasca-Perpres 27/2026)',
+  },
+  II: {
+    perKmMin: 2_500,
+    minFareMin: 12_000,
+    basis: 'Riset Mei 2026 — paritas harga konsumen GoFood Jabodetabek',
+  },
+  III: {
+    perKmMin: 2_500,
+    minFareMin: 12_000,
+    basis: 'Riset Mei 2026 — sama dengan Zona I/II',
+  },
+}
+
+/** Suggested per-km rate for a service in a city. Returns the legal
+ *  minimum for passenger (regulated), platform-suggested minimum for
+ *  parcel/food (unregulated). Null when the city isn't mapped. */
+export function suggestedPerKm(service: ServiceType, city: string | null | undefined): number | null {
+  const zone = city ? CITY_TO_ZONE[city] : null
+  if (!zone) return null
+  if (service === 'person') return ZONE_TARIFFS[zone].perKmMin
+  if (service === 'parcel') return SUGGESTED_PARCEL_RATES[zone].perKmMin
+  if (service === 'food')   return SUGGESTED_FOOD_RATES[zone].perKmMin
+  return null
+}
+
+/** Suggested minimum fare. Same pattern as suggestedPerKm. */
+export function suggestedMinFee(service: ServiceType, city: string | null | undefined): number | null {
+  const zone = city ? CITY_TO_ZONE[city] : null
+  if (!zone) return null
+  if (service === 'person') return ZONE_TARIFFS[zone].minFareMin
+  if (service === 'parcel') return SUGGESTED_PARCEL_RATES[zone].minFareMin
+  if (service === 'food')   return SUGGESTED_FOOD_RATES[zone].minFareMin
+  return null
+}

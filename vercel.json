@@ -11,6 +11,16 @@
       "comment": "Daily subscription-expiry sweep — flips lapsed trials/active subs to past_due, and flips affected drivers to availability=offline so they drop off the marketplace. 18:00 UTC = 01:00 WIB next day.",
       "path": "/api/admin/subscriptions/expire?secret=$CRON_SECRET",
       "schedule": "0 18 * * *"
+    },
+    {
+      "comment": "Daily retention sweep — enforces privacy policy retention windows. Purges drivers cancelled > 30 days ago, audit_log rows > 90 days. 19:00 UTC = 02:00 WIB next day (runs after subscription expiry).",
+      "path": "/api/admin/retention/sweep?secret=$CRON_SECRET",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "comment": "Nightly B2B reliability score recompute — ranks /business directory drivers by activity, rating, trips, tenure, subscription health. Top 10 per city get 'Top driver' badge. 20:00 UTC = 03:00 WIB next day.",
+      "path": "/api/admin/b2b/recompute-scores?secret=$CRON_SECRET",
+      "schedule": "0 20 * * *"
     }
   ]
 }

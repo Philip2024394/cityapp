@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
+import { getLegalEntity } from '@/lib/legal/entity'
 
 // What City Rider is + isn't. Anchors our SaaS positioning publicly.
 // Plain HTML, no client components — readable + crawlable by search +
@@ -10,6 +11,7 @@ export const metadata = {
 }
 
 export default function AboutPage() {
+  const entity = getLegalEntity()
   return (
     <main className="min-h-screen pb-16">
       <header className="sticky top-0 z-40 glass-strong pt-safe">
@@ -89,10 +91,21 @@ export default function AboutPage() {
           </p>
         </Section>
 
+        {(entity.name || entity.npwp || entity.address || entity.pseNumber) && (
+          <Section title="Registered entity">
+            <div className="space-y-1">
+              {entity.name && <p className="font-bold text-ink">{entity.name}</p>}
+              {entity.address && <p className="whitespace-pre-line text-ink/85">{entity.address}</p>}
+              {entity.npwp && <p className="text-muted text-[13px]">NPWP: {entity.npwp}</p>}
+              {entity.pseNumber && <p className="text-muted text-[13px]">PSE Privat: {entity.pseNumber}</p>}
+            </div>
+          </Section>
+        )}
+
         <Section title="Contact">
           <p>
             City Rider · part of the StreetLocal family of apps · Yogyakarta, Indonesia<br />
-            Software product inquiries: <Link href="/contact" className="text-brand hover:underline">contact</Link>
+            All inquiries (support, data requests, business): <Link href="/contact" className="text-brand hover:underline">contact page</Link>
           </p>
         </Section>
       </article>

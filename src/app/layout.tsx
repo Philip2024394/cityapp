@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import MapBackground from '@/components/layout/MapBackground'
+import RegisterServiceWorker from '@/components/pwa/RegisterServiceWorker'
+import CapacitorBoot from '@/components/pwa/CapacitorBoot'
+import DevToolbar from '@/components/dev/DevToolbar'
 
 export const metadata: Metadata = {
   title: 'City Rider — Marketplace kurir motor Indonesia',
@@ -38,7 +41,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             so every page sits over the same panning, pulsing scene.
             Fixed to the viewport; doesn't scroll with content. */}
         <MapBackground />
+        <RegisterServiceWorker />
+        <CapacitorBoot />
         {children}
+        <DevToolbar />
       </body>
     </html>
   )

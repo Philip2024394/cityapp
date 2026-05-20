@@ -23,6 +23,8 @@ import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { nearestCity, citySlugLabel, SUPPORTED_CITIES } from '@/lib/cities'
 import { SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
+import { getBikeImageUrl } from '@/data/bikeImages'
+import DriverRentalTiles from '@/components/rider/DriverRentalTiles'
 
 // Landing-page brand images — reused on the driver-page service tiles
 // so the visual language stays consistent between marketplace and
@@ -707,6 +709,9 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                   driverPhotoUrl: rider.photoUrl,
                   driverWhatsAppE164: rider.whatsappE164,
                   driverWhatsAppLink: url,
+                  driverLastSeenAt: rider.lastSeenAt,
+                  driverSessionStartedAt: rider.sessionStartedAt ?? null,
+                  parallelAttempts: [],
                   trip: {
                     pickup: pickup
                       ? { lat: pickup.lat, lng: pickup.lng, label: pickupLabel || 'My location' }
@@ -739,6 +744,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             </button>
           </div>
         )}
+
+        {/* Rental tiles — surface the driver's bike_rentals listing if
+            they activated "Rent my bike" or "Bike + driver tour" from
+            their dashboard. Self-hides when no approved rental exists. */}
+        <DriverRentalTiles driverUserId={rider.id} />
 
         {/* What riders say — public anonymous reviews. Same legal model
             as Yelp / Google Reviews. */}
@@ -1256,8 +1266,16 @@ function RiderHero({
           </span>
           <span className="text-[11px] text-muted">· service area</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[12px] text-muted mt-1">
-          <BikeIcon className="w-3.5 h-3.5 text-brand" />
+        <div className="flex items-center gap-2 text-[12px] text-muted mt-1.5">
+          {/* Bike photo — driver-uploaded if available, else stock from the
+              rentals catalog by brand+model match, else generic silhouette. */}
+          <img
+            src={getBikeImageUrl(rider.bike.make, rider.bike.model)}
+            alt=""
+            aria-hidden
+            className="w-8 h-8 rounded-md object-contain shrink-0"
+            style={{ background: 'rgba(0,0,0,0.20)' }}
+          />
           <span className="font-bold">
             {rider.bike.make} {rider.bike.model} · {rider.bike.year}
           </span>

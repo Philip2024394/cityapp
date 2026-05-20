@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { ChevronLeft, ExternalLink, FileText, Shield, Info } from 'lucide-react'
+import { ChevronLeft, ExternalLink, FileText, Shield, Info, Building2 } from 'lucide-react'
+import { getLegalEntity } from '@/lib/legal/entity'
 
 // Hub page for the public-facing legal info. Single entry point that
 // links out to the 3 pillars: About (positioning), Terms, Privacy.
@@ -10,6 +11,8 @@ export const metadata = {
 }
 
 export default function LegalIndexPage() {
+  const entity = getLegalEntity()
+  const hasEntity = !!(entity.name || entity.npwp || entity.address || entity.pseNumber)
   return (
     <main className="min-h-screen pb-16">
       <header className="sticky top-0 z-40 glass-strong pt-safe">
@@ -63,6 +66,26 @@ export default function LegalIndexPage() {
             do not provide transportation services.
           </p>
         </section>
+
+        {hasEntity && (
+          <section className="card p-5 space-y-3 text-[14px] leading-relaxed">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-brand" />
+              <h2 className="font-extrabold text-[16px]">Registered entity</h2>
+            </div>
+            <div className="space-y-1 text-ink/85">
+              {entity.name && <p className="font-bold text-ink">{entity.name}</p>}
+              {entity.address && <p className="whitespace-pre-line">{entity.address}</p>}
+              {entity.npwp && <p className="text-muted text-[13px]">NPWP: {entity.npwp}</p>}
+              {entity.pseNumber && <p className="text-muted text-[13px]">PSE Privat registration: {entity.pseNumber}</p>}
+              {entity.contactEmail && (
+                <p className="text-muted text-[13px]">
+                  Email: <a href={`mailto:${entity.contactEmail}`} className="text-brand hover:underline break-all">{entity.contactEmail}</a>
+                </p>
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="card p-5 space-y-2 text-[14px] leading-relaxed">
           <h2 className="font-extrabold text-[16px]">External regulators</h2>

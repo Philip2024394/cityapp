@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike } from 'lucide-react'
+import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
@@ -287,6 +287,23 @@ function PlanTripPageInner() {
         >
           <Bike className="w-6 h-6" strokeWidth={2.5} />
           <span className="text-[11px] font-extrabold uppercase tracking-wider">Rent</span>
+        </button>
+        {/* B2B — small businesses (Shopee/TikTok sellers, restaurants,
+            warungs) browse drivers for regular delivery contracts.
+            Distinct visual treatment (green-tinted) so customers know
+            it's a different surface than the consumer marketplace. */}
+        <button
+          onClick={() => { haptic.tap(); router.push('/business') }}
+          aria-label="Business contracts — find a driver for regular deliveries"
+          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-white backdrop-blur-md active:scale-95 transition"
+          style={{
+            background: 'linear-gradient(135deg, #16A34A 0%, #14532D 100%)',
+            border: '2px solid rgba(34,197,94,0.55)',
+            boxShadow: '0 10px 28px rgba(22,163,74,0.45)',
+          }}
+        >
+          <Briefcase className="w-6 h-6" strokeWidth={2.5} />
+          <span className="text-[12px] font-extrabold uppercase tracking-wider">B2B</span>
         </button>
       </div>
 

@@ -229,10 +229,14 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
             Day / 3 hr is the highlight on each variant. */}
         <div className="relative z-10 grid grid-cols-3 gap-1.5">
           {withDriver ? (
+            // Prefer the rental's own tour_Nh_idr columns (set by the
+            // editor + the dashboard quick-toggle's defaults). If a
+            // legacy rental hasn't been re-saved since the tour-rate
+            // migration, fall back to the calculated tourHourPrice().
             <>
-              <PriceTile label="3 hr" value={tourHourPrice(r.dailyPriceIdr, r.driverRatePerDayIdr ?? 0, 3)} highlight />
-              <PriceTile label="6 hr" value={tourHourPrice(r.dailyPriceIdr, r.driverRatePerDayIdr ?? 0, 6)} />
-              <PriceTile label="8 hr" value={tourHourPrice(r.dailyPriceIdr, r.driverRatePerDayIdr ?? 0, 8)} />
+              <PriceTile label="3 hr" value={r.tour3hIdr ?? tourHourPrice(r.dailyPriceIdr, r.driverRatePerDayIdr ?? 0, 3)} highlight />
+              <PriceTile label="6 hr" value={r.tour6hIdr ?? tourHourPrice(r.dailyPriceIdr, r.driverRatePerDayIdr ?? 0, 6)} />
+              <PriceTile label="8 hr" value={r.tour8hIdr ?? tourHourPrice(r.dailyPriceIdr, r.driverRatePerDayIdr ?? 0, 8)} />
             </>
           ) : (
             <>
@@ -257,7 +261,7 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
             )}
             {withDriver && (
               <span className="text-[12px] font-extrabold uppercase tracking-wider text-black">
-                Driver Included
+                Driver Included{r.fuelIncluded ? ' · Petrol Inc.' : ''}
               </span>
             )}
           </div>

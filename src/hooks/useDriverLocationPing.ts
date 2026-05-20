@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import { isNative } from '@/lib/capacitor/isNative'
 
 // ============================================================================
 // useDriverLocationPing — drives the live location loop for a driver who
@@ -15,6 +16,12 @@ import { useEffect, useRef } from 'react'
 // device GPS but stop POSTing — modern browsers throttle JS in hidden
 // tabs anyway, and we don't want stale ticks landing minutes later
 // flipping the driver to 'busy' from yesterday's last fix.
+//
+// NATIVE GATE:
+// On Capacitor (Android APK), this hook short-circuits — the native
+// background-location plugin handles pings instead, from a foreground
+// service that survives WebView pause / phone lock. See
+// `src/lib/capacitor/locationBridge.ts`.
 // ============================================================================
 
 type Status = 'idle' | 'requesting' | 'active' | 'denied' | 'unavailable'
@@ -68,6 +75,13 @@ export function useDriverLocationPing(
 
   useEffect(() => {
     if (!enabled) return
+    // Native runtime owns the location loop — defer to the background
+    // plugin and report active immediately so the dashboard doesn't
+    // show "GPS permission required".
+    if (isNative()) {
+      emit({ status: 'active' })
+      return
+    }
     if (typeof window === 'undefined' || !navigator.geolocation) {
       emit({ status: 'unavailable' })
       return

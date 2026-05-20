@@ -14,7 +14,7 @@ export default function BusyHoursChart({ dayIndex, currentHour }: Props) {
   const max = Math.max(...hours, 1)
 
   return (
-    <div className="card p-4">
+    <div className="card-dark p-4">
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold">

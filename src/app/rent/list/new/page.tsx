@@ -187,6 +187,10 @@ export default function ListBikeFormPage() {
       verified: false,
       availableNow: true,
       listingTier: 'free',
+      tour3hIdr: null,
+      tour6hIdr: null,
+      tour8hIdr: null,
+      fuelIncluded: false,
     }
   }, [
     ownerName, ownerCompany, whatsapp, languages, responseTimeMin,

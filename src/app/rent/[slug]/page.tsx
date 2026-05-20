@@ -122,7 +122,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
           </section>
 
           {(r.security_deposit_idr || r.driver_rate_per_day_idr) && (
-            <section className="card p-4 mb-4 space-y-1">
+            <section className="card-dark p-4 mb-4 space-y-1">
               {r.security_deposit_idr && (
                 <p className="text-[13px] text-ink/90">
                   <Banknote className="w-3.5 h-3.5 inline -mt-0.5 mr-1 text-muted" />
@@ -139,7 +139,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
           )}
 
           {r.description && (
-            <section className="card p-4 mb-4">
+            <section className="card-dark p-4 mb-4">
               <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-dim mb-2">About this bike</h2>
               <p className="text-[14px] leading-relaxed text-ink/90 whitespace-pre-wrap">{r.description}</p>
             </section>
@@ -159,7 +159,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
           )}
 
           {/* Included */}
-          <section className="card p-4 mb-4">
+          <section className="card-dark p-4 mb-4">
             <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-dim mb-3">Included</h2>
             <ul className="space-y-1.5 text-[13px] text-ink/90">
               <li>× {r.helmet_count ?? 0} helmets</li>
@@ -175,7 +175,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
 
           {/* SIM warning — required disclosure for the directory posture */}
           <section
-            className="card p-4 mb-4"
+            className="card-dark p-4 mb-4"
             style={{ background: 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.30)' }}
           >
             <h2 className="text-[12px] font-extrabold uppercase tracking-wider mb-2" style={{ color: '#F97316' }}>
@@ -189,7 +189,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
             </p>
           </section>
 
-          <section className="card p-4 mb-4">
+          <section className="card-dark p-4 mb-4">
             <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-dim mb-2">Contact</h2>
             <p className="text-[13px] text-ink/90 mb-2">
               {r.owner_company ? <strong>{r.owner_company}</strong> : <strong>{r.owner_name}</strong>}

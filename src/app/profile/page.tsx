@@ -1,8 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Camera, Save, MapPin, Phone, Bike as BikeIcon, Box, Loader2, Check } from 'lucide-react'
+import { Camera, Save, Phone, Box, Loader2, Check } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
+import LocationPicker, { type LocationPickerValue } from '@/components/rider/LocationPicker'
+import BikePicker from '@/components/rider/BikePicker'
+import BikeColorPicker from '@/components/rider/BikeColorPicker'
+import { getBikeImageUrl, isExactBikeImage } from '@/data/bikeImages'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -14,6 +18,7 @@ export default function ProfilePage() {
   const [me, setMe] = useState<Rider>(FALLBACK_ME)
   const [loaded, setLoaded] = useState(false)
   const [form, setForm] = useState(formFromRider(FALLBACK_ME))
+  const [location, setLocation] = useState<LocationPickerValue | null>(null)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -49,14 +54,32 @@ export default function ProfilePage() {
       return
     }
     setSaving(true)
+    // If the driver picked a fresh location, persist the admin IDs +
+    // service-zone centroid alongside the human-readable area/city text.
+    // If no fresh pick (they just edited name etc.) keep existing values.
+    const locUpdate = location
+      ? {
+          area:                    location.area_label || form.area.trim(),
+          city:                    location.city_label || form.city.trim(),
+          service_zone_center_lat: location.lat,
+          service_zone_center_lng: location.lng,
+          province_id:             location.province_id,
+          regency_id:              location.regency_id,
+          district_id:             location.district_id,
+          village_id:              location.village_id,
+        }
+      : {
+          area: form.area.trim(),
+          city: form.city.trim(),
+        }
+
     const { error } = await supabase
       .from('drivers')
       .update({
         business_name: form.name.trim(),
         whatsapp_e164: form.whatsapp.trim(),
         bio: form.bio.trim(),
-        area: form.area.trim(),
-        city: form.city.trim(),
+        ...locUpdate,
         bike_make: form.bikeMake.trim(),
         bike_model: form.bikeModel.trim(),
         bike_year: form.bikeYear,
@@ -82,7 +105,7 @@ export default function ProfilePage() {
           <h1 className="text-2xl font-extrabold">Profile & Bike</h1>
 
           {/* Photo */}
-          <div className="card p-5 flex items-center gap-4">
+          <div className="card-dark p-5 flex items-center gap-4">
             <div className="relative shrink-0">
               <img src={me.photoUrl} alt="" className="w-20 h-20 rounded-2xl object-cover" />
               <button className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-brand text-bg flex items-center justify-center shadow-glow">
@@ -112,31 +135,68 @@ export default function ProfilePage() {
             </Field>
           </Section>
 
-          {/* Area */}
+          {/* Service area — auto-resolved from GPS, no free-text input.
+              Picker resolves to full Indonesia admin chain (province →
+              regency → district → village) via /api/geo/admin-lookup. */}
           <Section title="Service area">
-            <Field label="Main area">
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
-                <input className="input pl-11" value={form.area} onChange={(e) => set('area', e.target.value)} />
+            <LocationPicker
+              value={location ?? (form.area || form.city
+                ? null  // existing free-text only — show GPS prompt to upgrade
+                : null)}
+              onChange={(v) => {
+                setLocation(v)
+                // Keep the legacy free-text fields in sync for any
+                // downstream code still reading them.
+                set('area', v.area_label)
+                set('city', v.city_label)
+              }}
+            />
+            {(form.area || form.city) && !location && (
+              <div className="text-[12px] text-muted leading-relaxed pt-1">
+                Currently set: <span className="text-ink font-bold">{form.area}</span>
+                {form.city && <>, <span className="text-ink font-bold">{form.city}</span></>}.
+                Tap above to update with precise GPS.
               </div>
-            </Field>
-            <Field label="City">
-              <input className="input" value={form.city} onChange={(e) => set('city', e.target.value)} />
-            </Field>
+            )}
           </Section>
 
           {/* Bike */}
           <Section title="Bike">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Make">
-                <input className="input" placeholder="Honda" value={form.bikeMake} onChange={(e) => set('bikeMake', e.target.value)} />
-              </Field>
-              <Field label="Model">
-                <div className="relative">
-                  <BikeIcon className="w-4 h-4 text-dim absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input className="input pl-11" placeholder="BeAT" value={form.bikeModel} onChange={(e) => set('bikeModel', e.target.value)} />
+            {/* Preview — visual feedback on what customers will see for
+                the chosen bike. Falls back to a generic silhouette when
+                the catalog has no match. */}
+            {(form.bikeMake || form.bikeModel) && (
+              <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <img
+                  src={getBikeImageUrl(form.bikeMake, form.bikeModel)}
+                  alt=""
+                  className="w-16 h-16 rounded-xl object-contain shrink-0"
+                  style={{ background: 'rgba(0,0,0,0.25)' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">
+                    {isExactBikeImage(form.bikeMake, form.bikeModel) ? 'Bike photo on file' : 'Generic preview'}
+                  </div>
+                  <div className="font-extrabold text-[14px] mt-0.5 truncate">
+                    {form.bikeMake} {form.bikeModel}{form.bikeYear ? ` · ${form.bikeYear}` : ''}
+                  </div>
+                  {!isExactBikeImage(form.bikeMake, form.bikeModel) && (
+                    <div className="text-[12px] text-muted mt-0.5 leading-tight">
+                      No stock photo yet — customers see the silhouette. Upload a real photo on /dashboard/rentals if you rent this bike.
+                    </div>
+                  )}
                 </div>
-              </Field>
+              </div>
+            )}
+            <BikePicker
+              make={form.bikeMake}
+              model={form.bikeModel}
+              onChange={({ make, model }) => {
+                set('bikeMake', make)
+                set('bikeModel', model)
+              }}
+            />
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Year">
                 <input
                   className="input"
@@ -147,9 +207,13 @@ export default function ProfilePage() {
                   onChange={(e) => set('bikeYear', parseInt(e.target.value, 10) || form.bikeYear)}
                 />
               </Field>
-              <Field label="Colour">
-                <input className="input" placeholder="Black" value={form.bikeColor} onChange={(e) => set('bikeColor', e.target.value)} />
-              </Field>
+              <div>
+                <BikeColorPicker
+                  label="Colour"
+                  value={form.bikeColor}
+                  onChange={(v) => set('bikeColor', v)}
+                />
+              </div>
             </div>
             <Field label="Type">
               <div className="grid grid-cols-3 gap-2">
@@ -175,7 +239,7 @@ export default function ProfilePage() {
             <Field label="Delivery box">
               <button
                 onClick={() => set('hasBox', !form.hasBox)}
-                className="card p-4 flex items-center justify-between w-full"
+                className="card-dark p-4 flex items-center justify-between w-full"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
@@ -232,10 +296,10 @@ function formFromRider(r: Rider) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-3">
+    <section className="card-dark p-5 space-y-4">
       <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-muted">{title}</h2>
       <div className="space-y-3">{children}</div>
-    </div>
+    </section>
   )
 }
 

@@ -42,6 +42,18 @@ export interface DriverRow {
   current_lng: number | null
   current_location_updated_at: string | null
   last_active_at: string | null
+  session_started_at: string | null
+  online_until: string | null
+  referral_code: string | null
+  referrer_driver_id: string | null
+  business_contract_enabled: boolean
+  business_max_parcels_per_day: number | null
+  business_services: string[]
+  business_notes: string | null
+  business_enabled_at: string | null
+  b2b_score: number | null
+  b2b_tier: 'top' | 'standard' | 'hidden' | 'removed' | null
+  b2b_score_updated_at: string | null
   bike_make: string | null
   bike_model: string | null
   bike_year: number | null

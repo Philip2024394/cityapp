@@ -36,6 +36,7 @@ type DriverLocRow = {
   current_lng: number | null
   current_location_updated_at: string | null
   availability: 'online' | 'busy' | 'offline'
+  session_started_at: string | null
 }
 
 export async function POST(req: Request) {
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
   // Cheap single-row lookup gated by user_id.
   const { data: prior } = await admin
     .from('drivers')
-    .select('current_lat, current_lng, current_location_updated_at, availability')
+    .select('current_lat, current_lng, current_location_updated_at, availability, session_started_at')
     .eq('user_id', user.id)
     .maybeSingle()
 
@@ -105,6 +106,14 @@ export async function POST(req: Request) {
     last_active_at: nowIso,
   }
   if (nextAvailability) update.availability = nextAvailability
+
+  // Backfill session_started_at for drivers who were already online when
+  // this column shipped — their availability is 'online'/'busy' but the
+  // session timestamp is null. Don't overwrite an existing value.
+  if (prior && (prior.availability === 'online' || prior.availability === 'busy')
+      && !prior.session_started_at) {
+    update.session_started_at = nowIso
+  }
 
   const { error } = await admin
     .from('drivers')

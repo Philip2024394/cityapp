@@ -1,13 +1,11 @@
 import Link from 'next/link'
-import { ChevronLeft, AlertCircle } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 
 // Terms of Service — anchors the SaaS positioning + independent-contractor
 // status of riders + customer-rider relationship.
 //
-// DRAFT — not legal advice. Indonesian counsel must review + sign off
-// before production use. The structure follows Indonesian commercial T&C
-// conventions: definitions, scope, parties' roles, payment, liability,
-// data, termination, jurisdiction.
+// Structured along Indonesian commercial T&C conventions: definitions,
+// scope, parties' roles, payment, liability, data, termination, jurisdiction.
 export const metadata = {
   title: 'Terms of Service · City Rider',
   description: 'Terms of Service for the City Rider software platform.',
@@ -31,15 +29,6 @@ export default function TermsPage() {
           <p className="text-muted text-[14px] mt-2">
             Effective from launch. By using City Rider, you agree to these terms.
           </p>
-        </div>
-
-        <div className="card p-4 border-brand/25 bg-brand/5 flex gap-3 text-[13px]">
-          <AlertCircle className="w-4 h-4 text-brand shrink-0 mt-0.5" />
-          <div className="text-ink/85 leading-relaxed">
-            <strong className="text-brand">Draft notice:</strong> This document is a working
-            draft and is not a substitute for formal legal counsel. Final terms will be reviewed
-            by Indonesian counsel before public launch.
-          </div>
         </div>
 
         <Clause n="1" title="Definitions">

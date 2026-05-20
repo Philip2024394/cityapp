@@ -1,20 +1,11 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { ChevronLeft, Flame, Compass, TrendingUp } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import BusyHoursChart from '@/components/rider/BusyHoursChart'
 import { MOCK_ZONES, categoryFor, COLOR_FOR_CATEGORY, DAY_HOURS, dayName } from '@/data/mockHotspots'
-
-// Maplibre is lazy-loaded so the heatmap chunk only loads on this page
-const HotspotMap = dynamic(() => import('@/components/rider/HotspotMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="border border-line rounded-2xl shimmer" style={{ height: 320, width: '100%' }} />
-  ),
-})
 
 export default function HotspotsPage() {
   // Re-tick once a minute so the "current hour" highlight stays live
@@ -77,7 +68,7 @@ export default function HotspotsPage() {
 
           {/* BEST AREA NOW — the headline recommendation */}
           {best && (
-            <div className="card p-5 relative overflow-hidden">
+            <div className="card-dark p-5 relative overflow-hidden">
               <div
                 aria-hidden
                 className="absolute inset-0 pointer-events-none opacity-70"
@@ -100,21 +91,18 @@ export default function HotspotsPage() {
             </div>
           )}
 
-          {/* HOTSPOT MAP */}
-          <div className="space-y-2">
-            <HotspotMap zones={MOCK_ZONES} highlightZoneId={best?.id} height="360px" />
-            <div className="flex items-center justify-center gap-4 text-[12px] font-bold pt-1">
-              <LegendDot color={COLOR_FOR_CATEGORY.green}  label={`Go here · ${counts.green}`} />
-              <LegendDot color={COLOR_FOR_CATEGORY.yellow} label={`OK · ${counts.yellow}`} />
-              <LegendDot color={COLOR_FOR_CATEGORY.red}    label={`Crowded · ${counts.red}`} />
-            </div>
+          {/* Zone category summary — replaces the map legend */}
+          <div className="card-dark p-3 flex items-center justify-center gap-4 text-[12px] font-bold">
+            <LegendDot color={COLOR_FOR_CATEGORY.green}  label={`Go here · ${counts.green}`} />
+            <LegendDot color={COLOR_FOR_CATEGORY.yellow} label={`OK · ${counts.yellow}`} />
+            <LegendDot color={COLOR_FOR_CATEGORY.red}    label={`Crowded · ${counts.red}`} />
           </div>
 
           {/* DAY OF WEEK CHART */}
           <BusyHoursChart dayIndex={dayIndex} currentHour={currentHour} />
 
           {/* PEAK HOURS for today */}
-          <div className="card p-4 relative overflow-hidden">
+          <div className="card-dark p-4 relative overflow-hidden">
             <div
               aria-hidden
               className="absolute inset-0 pointer-events-none opacity-60"
@@ -151,7 +139,7 @@ export default function HotspotsPage() {
                 return order[a.cat] - order[b.cat] || b.z.demand - a.z.demand
               })
               .map(({ z, cat }) => (
-                <div key={z.id} className="card p-3 flex items-center gap-3">
+                <div key={z.id} className="card-dark p-3 flex items-center gap-3">
                   <span
                     className="w-3 h-3 rounded-full shrink-0"
                     style={{ background: COLOR_FOR_CATEGORY[cat], boxShadow: `0 0 8px ${COLOR_FOR_CATEGORY[cat]}55` }}
@@ -169,7 +157,7 @@ export default function HotspotsPage() {
           </div>
 
           {/* Coaching footer */}
-          <div className="card p-4 border-brand/20 bg-brand/5">
+          <div className="card-dark p-4 border-brand/20">
             <div className="text-[13px] text-ink/85 leading-relaxed">
               💡 <strong className="text-brand">How this works:</strong> green zones mean
               customers are searching there but few riders are online. Moving to a green

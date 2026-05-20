@@ -50,6 +50,11 @@ type OnboardingPayload = {
    *  matching affiliate_referrals entry. Invalid / unknown codes are
    *  silently ignored at the DB layer. */
   referrer_agent_code?: string
+  referrer_driver_code?: string
+  province_id?: string | null
+  regency_id?: string | null
+  district_id?: string | null
+  village_id?: string | null
 }
 
 export async function POST(req: Request) {
@@ -139,6 +144,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: profileUpdate.error.message }, { status: 500 })
   }
 
+  // Resolve driver-to-driver referral code → user_id. Captured from
+  // ?ref=<slug> in the URL when the new driver landed on the site. If
+  // the code doesn't match an active driver we silently ignore it (same
+  // pattern as the external-agent referrer_agent_code field).
+  let resolvedReferrerDriverId: string | null = null
+  if (typeof body.referrer_driver_code === 'string' && body.referrer_driver_code.trim()) {
+    const code = body.referrer_driver_code.trim().toLowerCase()
+    if (code !== body.slug.toLowerCase()) {
+      const { data: referrer } = await admin
+        .from('drivers')
+        .select('user_id')
+        .eq('referral_code', code)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (referrer) resolvedReferrerDriverId = referrer.user_id
+    }
+  }
+
   // 2. Upsert drivers row
   const driverUpsert = await admin.from('drivers').upsert({
     user_id: user.id,
@@ -169,6 +192,11 @@ export async function POST(req: Request) {
     qr_payment_url: body.qr_payment_url?.trim() || null,
     transfer_details: body.transfer_details?.trim() || null,
     referrer_agent_code: body.referrer_agent_code?.trim().toUpperCase() || null,
+    referrer_driver_id: resolvedReferrerDriverId,
+    province_id: body.province_id ?? null,
+    regency_id:  body.regency_id  ?? null,
+    district_id: body.district_id ?? null,
+    village_id:  body.village_id  ?? null,
     status: 'active',
     availability: 'offline',
   })

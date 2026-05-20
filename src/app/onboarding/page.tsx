@@ -7,7 +7,24 @@ import {
   Wallet, MapPin, Coins, Loader2, Banknote, QrCode, Send, Edit3,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import LocationPicker, { type LocationPickerValue } from '@/components/rider/LocationPicker'
+import BikePicker from '@/components/rider/BikePicker'
+import BikeColorPicker from '@/components/rider/BikeColorPicker'
+import { getBikeImageUrl, isExactBikeImage } from '@/data/bikeImages'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { legalMinPerKm, legalMinFare } from '@/lib/tariffs/zones'
+
+// Convert a Nominatim city_label like "Kota Yogyakarta" or "Kabupaten Sleman"
+// to the slug form used by CITY_TO_ZONE in src/lib/tariffs/zones.ts.
+function cityNameToSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/^kota\s+/, '')
+    .replace(/^kabupaten\s+/, '')
+    .replace(/^kab\.\s*/, '')
+    .trim()
+    .replace(/\s+/g, '-')
+}
 import { slugify, slugReason } from '@/lib/slug'
 import {
   getTariffForCity,
@@ -132,6 +149,7 @@ function OnboardingInner() {
 
   const [city, setCity] = useState('')
   const [area, setArea] = useState('')
+  const [location, setLocation] = useState<LocationPickerValue | null>(null)
   const [zoneLat, setZoneLat] = useState<number | null>(null)
   const [zoneLng, setZoneLng] = useState<number | null>(null)
   const [zoneRadius, setZoneRadius] = useState<number>(15)
@@ -210,6 +228,10 @@ function OnboardingInner() {
           service_zone_center_lat: zoneLat,
           service_zone_center_lng: zoneLng,
           service_zone_radius_km: zoneRadius,
+          province_id: location?.province_id ?? undefined,
+          regency_id:  location?.regency_id  ?? undefined,
+          district_id: location?.district_id ?? undefined,
+          village_id:  location?.village_id  ?? undefined,
           bike_make: bikeMake,
           bike_model: bikeModel,
           bike_year: bikeYear || undefined,
@@ -227,11 +249,17 @@ function OnboardingInner() {
           accepts_transfer: acceptsTransfer,
           qr_payment_url: qrPaymentUrl,
           transfer_details: transferDetails,
-          // Optional affiliate attribution — agent code stashed by
+          // Optional referral attribution — code captured by
           // captureReferrerFromUrl() on landing visit, expires after 30
-          // days, ignored server-side if unknown/inactive.
+          // days, ignored server-side if unknown/inactive. We send both
+          // forms: the uppercase variant for the external-agent system
+          // (existing) and the raw variant for the driver-to-driver
+          // system (added in migration 0021). API resolves each
+          // independently — at most one will match.
           referrer_agent_code:
             (await import('@/lib/affiliate/referrer')).getStoredReferrer() ?? undefined,
+          referrer_driver_code:
+            (await import('@/lib/affiliate/referrer')).getStoredReferrerRaw() ?? undefined,
         }),
       })
       if (!r.ok) {
@@ -380,13 +408,34 @@ function OnboardingInner() {
                   title="Your bike"
                   sub="Helps customers trust who shows up. You can skip and add later."
                 />
+                <BikePicker
+                  make={bikeMake}
+                  model={bikeModel}
+                  onChange={({ make, model }) => {
+                    setBikeMake(make)
+                    setBikeModel(model)
+                  }}
+                />
+                {/* Live preview — driver sees what customers will see. */}
+                {(bikeMake || bikeModel) && (
+                  <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <img
+                      src={getBikeImageUrl(bikeMake, bikeModel)}
+                      alt=""
+                      className="w-14 h-14 rounded-xl object-contain shrink-0"
+                      style={{ background: 'rgba(0,0,0,0.25)' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">
+                        {isExactBikeImage(bikeMake, bikeModel) ? 'Stock photo on file' : 'Generic preview'}
+                      </div>
+                      <div className="font-extrabold text-[14px] mt-0.5 truncate">
+                        {bikeMake} {bikeModel}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Make">
-                    <input className="input" placeholder="Honda" value={bikeMake} onChange={(e) => setBikeMake(e.target.value)} />
-                  </Field>
-                  <Field label="Model">
-                    <input className="input" placeholder="BeAT" value={bikeModel} onChange={(e) => setBikeModel(e.target.value)} />
-                  </Field>
                   <Field label="Year">
                     <input
                       className="input font-mono"
@@ -397,9 +446,13 @@ function OnboardingInner() {
                       onChange={(e) => setBikeYear(e.target.value ? parseInt(e.target.value, 10) : '')}
                     />
                   </Field>
-                  <Field label="Color">
-                    <input className="input" placeholder="Hitam" value={bikeColor} onChange={(e) => setBikeColor(e.target.value)} />
-                  </Field>
+                  <div>
+                    <BikeColorPicker
+                      label="Color"
+                      value={bikeColor}
+                      onChange={setBikeColor}
+                    />
+                  </div>
                   <Field label="Plate">
                     <input className="input font-mono uppercase" placeholder="DK 1234 XX" value={bikePlate} onChange={(e) => setBikePlate(e.target.value.toUpperCase())} />
                   </Field>
@@ -536,14 +589,30 @@ function OnboardingInner() {
                   title="Where you work"
                   sub="Customers in this area will see you on discovery."
                 />
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="City">
-                    <input className="input" placeholder="Denpasar" value={city} onChange={(e) => setCity(e.target.value)} />
-                  </Field>
-                  <Field label="Area / neighborhood">
-                    <input className="input" placeholder="Ubud" value={area} onChange={(e) => setArea(e.target.value)} />
-                  </Field>
-                </div>
+                {/* GPS-driven location picker — replaces free-text city/area
+                    inputs. Resolves to full Indonesia admin chain via
+                    /api/geo/admin-lookup and persists the IDs on submit. */}
+                <LocationPicker
+                  value={location}
+                  onChange={(v) => {
+                    setLocation(v)
+                    setCity(v.city_label)
+                    setArea(v.area_label)
+                    setZoneLat(v.lat)
+                    setZoneLng(v.lng)
+                    // Auto-default per-km + min fee to the LEGAL MINIMUM
+                    // for this city (KP 667/2022). Driver can adjust on
+                    // the next step or reset later via /pricing. Only
+                    // applies on initial pick — if they already moved
+                    // the sliders above the default 2500/10000, don't
+                    // clobber their values.
+                    const slug = cityNameToSlug(v.city_label)
+                    const lawPerKm  = legalMinPerKm(slug)
+                    const lawMinFee = legalMinFare(slug)
+                    if (lawPerKm  && pricePerKm === 2500) setPricePerKm(lawPerKm)
+                    if (lawMinFee && minFee     === 10000) setMinFee(lawMinFee)
+                  }}
+                />
                 <Field label={`Service zone radius · ${zoneRadius} km`} hint="How far from your home base you'll accept trips.">
                   <input
                     type="range" min={3} max={50} step={1}
@@ -552,14 +621,6 @@ function OnboardingInner() {
                     className="w-full accent-[#FACC15]"
                   />
                 </Field>
-                <button
-                  type="button"
-                  onClick={useMyLocation}
-                  className="btn-secondary w-full"
-                >
-                  <MapPin className="w-4 h-4" />
-                  {zoneLat ? `Set: ${zoneLat.toFixed(4)}, ${zoneLng?.toFixed(4)}` : 'Use my current location as home base'}
-                </button>
               </>
             )}
 
