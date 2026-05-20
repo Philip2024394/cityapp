@@ -36,7 +36,7 @@ export default function AboutPage() {
         <Section title="We are software">
           <p>
             City Rider is a Software-as-a-Service (SaaS) listing platform. Independent motorcycle
-            couriers subscribe for Rp 30,000/month to get a public profile, GPS-marketplace
+            couriers subscribe for Rp 38,000/month to get a public profile, GPS-marketplace
             visibility, a customer database, business tools, and WhatsApp-driven lead capture.
             That is the entire product.
           </p>
@@ -71,7 +71,7 @@ export default function AboutPage() {
 
         <Section title="Revenue model">
           <p>
-            Our only revenue is the rider subscription fee (Rp 30,000/month, billed via Midtrans).
+            Our only revenue is the rider subscription fee (Rp 38,000/month, billed via Midtrans).
             We never charge per-trip fees, commission, payment-processing fees, or take a cut of
             any transaction between a customer and a rider. Our financial relationship is with the
             rider as a software subscriber, not with the customer.

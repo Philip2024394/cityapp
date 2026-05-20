@@ -6,6 +6,7 @@ import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase } from 
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
+import TripPriceBanner from '@/components/cari/TripPriceBanner'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -22,30 +23,12 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
   food:   { pickup: 'Restaurant or warung name',           dropoff: 'Drop-off address' },
 }
 
-// 24 nearby rider pings scattered around the current map centre — pure
-// visual confirmation of the "42 nearby" claim in the top-left chip.
-// Deterministic golden-angle scatter so SSR + client agree.
-function buildNearbyRiders(centerLat: number, centerLng: number, count = 24): Rider[] {
-  const out: Rider[] = []
-  for (let i = 0; i < count; i++) {
-    const angle = i * 2.39996323
-    const radius = 0.003 + (i / count) * 0.022
-    out.push({
-      id: `nearby-${i}`,
-      slug: `nearby-${i}`,
-      name: '', photoUrl: '', whatsappE164: '', bio: '', area: '',
-      city: 'Yogyakarta',
-      services: [],
-      bike: { make: '', model: '', year: 0, color: '', type: 'matic', hasBox: false },
-      pricePerKm: 0, minFee: 0,
-      isOnline: true, lastSeenAt: '',
-      lat: centerLat + Math.sin(angle) * radius,
-      lng: centerLng + Math.cos(angle) * radius,
-      subscriptionStatus: 'active',
-    })
-  }
-  return out
-}
+// Nearby-rider scatter has been removed (audit 2026-05). The previous
+// `buildNearbyRiders` invented 24 fake pings on the map regardless of
+// real driver state and reported a fixed "42 nearby" badge. Replaced by:
+//   • Real driver count from /api/drivers/lowest-fare (with lat/lng)
+//   • Real driver markers rendered by the components that own them
+//     (the live marketplace on /cari/rider, not the trip-planner map)
 
 function parseService(raw: string | null): ServiceType {
   return raw === 'person' || raw === 'food' ? raw : 'parcel'
@@ -170,6 +153,38 @@ function PlanTripPageInner() {
   const tripKm = tripRoute?.km ?? null
   const canSearch = !!pickup && !!dropoff
 
+  // Lowest published driver fare in the city — surfaced in the View
+  // drivers CTA so customers see the entry price before tapping. We only
+  // ever display what drivers themselves listed, never a calculation
+  // (PM 12/2019 safe-harbour — see TripPriceBanner for the full reasoning).
+  const [lowestFareIdr, setLowestFareIdr] = useState<number | null>(null)
+  const [nearbyCount, setNearbyCount] = useState<number | null>(null)
+
+  // Real driver count + lowest fare in the area, keyed on pickup coords.
+  // Refetches whenever the customer moves the pickup pin so the badge
+  // and "Starting from Rp X" reflect the actual marketplace.
+  const queryCoords = pickup ?? geo.coords ?? null
+  const queryLat = queryCoords?.lat ?? null
+  const queryLng = queryCoords?.lng ?? null
+  useEffect(() => {
+    if (queryLat == null || queryLng == null) return
+    const ctrl = new AbortController()
+    const params = new URLSearchParams({
+      lat: queryLat.toFixed(4),
+      lng: queryLng.toFixed(4),
+      radiusKm: '30',
+    })
+    fetch(`/api/drivers/lowest-fare?${params}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { lowestFareIdr: number | null; driverCount: number | null } | null) => {
+        if (!d) return
+        if (typeof d.lowestFareIdr === 'number') setLowestFareIdr(d.lowestFareIdr)
+        if (typeof d.driverCount === 'number') setNearbyCount(d.driverCount)
+      })
+      .catch(() => { /* silent — button gracefully omits price */ })
+    return () => ctrl.abort()
+  }, [queryLat, queryLng])
+
   const mapCenter = pickup ?? geo.coords ?? { lat: -7.7928, lng: 110.3657, accuracyM: 0 }
 
   // Detect the user's country from their GPS so the place autocomplete
@@ -178,13 +193,10 @@ function PlanTripPageInner() {
   const userCountry = useCountryFromCoords(geo.coords ?? null)
   const countryCodes = userCountry ? [userCountry] : []
 
-  // Nearby rider pings recompute when the map centre changes (after GPS
-  // grant or pickup edit). useMemo so the array reference is stable
-  // across re-renders that don't move the centre, avoiding marker churn.
-  const nearbyRiders = useMemo(
-    () => buildNearbyRiders(mapCenter.lat, mapCenter.lng, 24),
-    [mapCenter.lat, mapCenter.lng]
-  )
+  // No more fabricated rider pings on the map (audit 2026-05). Real
+  // driver markers belong on /cari/rider, where the customer is choosing
+  // a specific rider. The trip-planner map stays clean.
+  const nearbyRiders: Rider[] = []
 
   // Awaits the geolocation promise so we always set pickup with the
   // freshest coords. The old version checked `geo.coords` synchronously
@@ -349,7 +361,11 @@ function PlanTripPageInner() {
               />
             </span>
             <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider">
-              42 nearby
+              {nearbyCount == null
+                ? 'Cek nearby…'
+                : nearbyCount === 0
+                  ? 'No driver online'
+                  : `${nearbyCount} nearby`}
             </span>
           </div>
         </div>
@@ -372,6 +388,15 @@ function PlanTripPageInner() {
           terminus against the three yellow controls. */}
       <div ref={bottomStackRef} className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
         <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
+          {/* TRIP PRICE BANNER — only renders once dropoff is set (so we
+              have a real distance). Surfaces the lowest published
+              minimum fare from drivers in the area; never our calculation.
+              Sits as its own row above the pickup tile so the visual
+              hierarchy reads price-then-form. */}
+          {canSearch && tripKm != null && (
+            <TripPriceBanner distanceKm={tripKm} lowestFareIdr={lowestFareIdr} />
+          )}
+
           {/* PICKUP TILE — dark-red round GPS button sits INSIDE the input
               on the right, auto-sets the location to the customer's GPS
               coords on tap. Replaces the previous "My location" text link. */}
@@ -383,7 +408,7 @@ function PlanTripPageInner() {
               <button
                 type="button"
                 onClick={() => { haptic.tap(); router.push('/places') }}
-                aria-label="Browse places in Yogyakarta"
+                aria-label="Browse nearby places"
                 className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
                 style={{
                   background: '#0A0A0A',
@@ -578,8 +603,10 @@ function PlanTripPageInner() {
           >
             <Search className="w-4 h-4" />
             <span>View drivers</span>
-            {canSearch && tripKm != null && (
-              <span className="text-[12px] font-bold text-dim ml-1">· ~{tripKm.toFixed(1)} km</span>
+            {canSearch && lowestFareIdr != null && (
+              <span className="text-[12px] font-bold text-dim ml-1">
+                · from Rp {lowestFareIdr.toLocaleString('en-US')}
+              </span>
             )}
             <ChevronLeft className="w-4 h-4 rotate-180" />
           </button>

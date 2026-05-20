@@ -21,7 +21,7 @@ create table if not exists public.payment_intents (
   id               uuid primary key default gen_random_uuid(),
   driver_user_id   uuid not null references public.drivers(user_id) on delete cascade,
 
-  -- 'subscription' = base Rp 30K/month, 'verified' = Tour Verified Rp 100K/month
+  -- 'subscription' = base Rp 38K/month, 'verified' = Tour Verified Rp 100K/month
   product          text not null check (product in ('subscription','verified')),
   amount_idr       int  not null check (amount_idr > 0),
 

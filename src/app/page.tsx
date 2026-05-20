@@ -47,24 +47,24 @@ const STRINGS: Record<Locale, {
   id: {
     loginNav: 'Login',
     signupNav: 'Daftar',
-    pill: '42 rider online di Yogyakarta',
+    pill: 'Rider independen di kota kamu',
     h1Line1: 'Komunitas motor,',
     h1Line2: 'Indonesia.',
     lede: 'Set jemput & antar. Lihat harga total tiap rider. Pilih rider sendiri, pesan langsung lewat WhatsApp. Tanpa komisi.',
     enter: 'Masuk',
     freeNote: 'Gratis · langsung kontak rider',
-    trust: { commission: '0% komisi', whatsapp: 'WhatsApp', verified: 'Rider terverifikasi' },
+    trust: { commission: '0% komisi', whatsapp: 'WhatsApp', verified: 'Nomor WhatsApp ter-verifikasi' },
   },
   en: {
     loginNav: 'Login',
     signupNav: 'Sign up',
-    pill: '42 riders online in Yogyakarta',
+    pill: 'Independent riders in your city',
     h1Line1: 'Motorbike community,',
     h1Line2: 'Indonesia.',
     lede: 'Set pickup & dropoff. See each rider’s total price. Pick your rider, book directly on WhatsApp. No commission.',
     enter: 'Enter',
     freeNote: 'Free · direct rider contact',
-    trust: { commission: '0% commission', whatsapp: 'WhatsApp', verified: 'Verified riders' },
+    trust: { commission: '0% commission', whatsapp: 'WhatsApp', verified: 'Phone-verified riders' },
   },
 }
 

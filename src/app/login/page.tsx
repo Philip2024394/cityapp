@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Phone, KeyRound, LogIn, ArrowLeft } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
@@ -24,6 +24,22 @@ function LoginInner() {
   const [otp, setOtp] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resendSecondsLeft, setResendSecondsLeft] = useState(0)
+  const [resending, setResending] = useState(false)
+
+  useEffect(() => {
+    if (resendSecondsLeft <= 0) return
+    const t = setTimeout(() => setResendSecondsLeft((s) => Math.max(0, s - 1)), 1000)
+    return () => clearTimeout(t)
+  }, [resendSecondsLeft])
+
+  // Auto-advance once 6 digits typed (activation cut D — saves a tap)
+  useEffect(() => {
+    if (step !== 'otp') return
+    if (otp.length !== 6 || pending) return
+    void verifyOtp()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otp, step])
 
   async function sendOtp(e: React.FormEvent) {
     e.preventDefault()
@@ -47,10 +63,23 @@ function LoginInner() {
     }
     setPhone(cleaned)
     setStep('otp')
+    setResendSecondsLeft(30)
   }
 
-  async function verifyOtp(e: React.FormEvent) {
-    e.preventDefault()
+  async function resendOtp() {
+    if (resendSecondsLeft > 0 || resending) return
+    setError(null)
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setError('Auth not configured.'); return }
+    setResending(true)
+    const { error } = await supabase.auth.signInWithOtp({ phone })
+    setResending(false)
+    if (error) { setError(error.message); return }
+    setResendSecondsLeft(30)
+  }
+
+  async function verifyOtp(e?: React.FormEvent) {
+    e?.preventDefault()
     setError(null)
     const supabase = getBrowserSupabase()
     if (!supabase) {
@@ -143,6 +172,18 @@ function LoginInner() {
               <button type="submit" className="btn-primary w-full" disabled={pending || otp.length !== 6}>
                 <LogIn className="w-4 h-4" />
                 {pending ? 'Verifying…' : 'Verify & sign in'}
+              </button>
+              <button
+                type="button"
+                onClick={resendOtp}
+                disabled={resendSecondsLeft > 0 || resending}
+                className="w-full text-[13px] text-brand font-bold inline-flex items-center justify-center gap-1.5 disabled:text-muted disabled:font-normal"
+              >
+                {resending
+                  ? 'Mengirim ulang…'
+                  : resendSecondsLeft > 0
+                    ? `Kirim ulang kode dalam ${resendSecondsLeft}s`
+                    : 'Kirim ulang kode'}
               </button>
               <button
                 type="button"

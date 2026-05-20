@@ -1,0 +1,9 @@
+update public.drivers set business_contract_enabled = true, business_max_parcels_per_day = 30, business_services = array['parcels','documents']::text[], business_notes = 'Available for regular delivery contracts. Same-day pickup, COD acceptable.', business_enabled_at = now() - interval '30 days', b2b_score = 78, b2b_tier = 'standard', b2b_score_updated_at = now() where business_name in ('Agus Parcel & Food','Rini Quick Delivery','Sari City Courier','Putra Multi Service','Joko All-Service');
+
+update public.drivers set business_max_parcels_per_day = 50, business_services = array['parcels','documents','groceries','batched']::text[], business_notes = 'Established B2B courier — Shopee/Tokopedia ready. Fleet of 2 bikes available.', b2b_score = 92, b2b_tier = 'top' where business_name in ('Agus Parcel & Food','Putra Multi Service');
+
+update public.drivers set tour_guide_enabled = true, tour_guide_day_rate_idr = 350000, tour_guide_languages = array['id','en']::text[], tour_guide_notes = 'Borobudur + Prambanan day tour. Vespa = scenic ride, lots of photo stops.', tour_guide_enabled_at = now() - interval '20 days' where business_name = 'Dewi Vespa Tours';
+
+update public.drivers set tour_guide_enabled = true, tour_guide_day_rate_idr = 400000, tour_guide_languages = array['id','en','zh']::text[], tour_guide_notes = 'Yogyakarta city + Kraton + Malioboro guided tour. English + Mandarin.', tour_guide_enabled_at = now() - interval '15 days' where business_name = 'Made City Tours';
+
+update public.drivers set tour_guide_enabled = true, tour_guide_day_rate_idr = 500000, tour_guide_languages = array['id','en','ja']::text[], tour_guide_notes = 'Premium full-day tour. Parangtritis + Imogiri + Kotagede route. Japanese available.', tour_guide_enabled_at = now() - interval '10 days' where business_name = 'Wayan Premium Rides';

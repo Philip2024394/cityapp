@@ -1,18 +1,40 @@
 // Fare quote = max(distance × price/km, min_fee). Rider keeps 100%.
+//
+// Round-trip rule:
+//   When the trip crosses a driver's service-zone radius the chargeable
+//   distance becomes outbound + return (driver has to come home empty).
+//   Min fee is still applied once — it's a floor, not a per-leg charge.
 import type { Rider, ServiceType } from '@/types/rider'
 
 export type Pricing = { pricePerKm: number; minFee: number }
 
-export function quoteFare(distanceKm: number, pricing: Pricing): number {
-  const raw = distanceKm * pricing.pricePerKm
+// Compute chargeable km. When `outOfZone` is true the driver has to
+// ride back to base after drop-off, so the customer pays for both legs.
+export function chargeableKm(distanceKm: number, outOfZone: boolean): number {
+  return outOfZone ? distanceKm * 2 : distanceKm
+}
+
+// True when the trip's outbound km exceeds the driver's service-zone radius.
+// `radiusKm` falls back to 10 km (the schema default — City driver tier)
+// when undefined. Drivers on the "All Indonesia" tier carry a sentinel
+// radius of 9999 km so this function effectively returns false.
+export function isOutOfZone(distanceKm: number, radiusKm?: number | null): boolean {
+  const r = typeof radiusKm === 'number' && radiusKm > 0 ? radiusKm : 10
+  return distanceKm > r
+}
+
+export function quoteFare(distanceKm: number, pricing: Pricing, outOfZone = false): number {
+  const km = chargeableKm(distanceKm, outOfZone)
+  const raw = km * pricing.pricePerKm
   return Math.max(raw, pricing.minFee)
 }
 
-export function quoteBreakdown(distanceKm: number, pricing: Pricing) {
-  const raw = Math.round(distanceKm * pricing.pricePerKm)
+export function quoteBreakdown(distanceKm: number, pricing: Pricing, outOfZone = false) {
+  const km = chargeableKm(distanceKm, outOfZone)
+  const raw = Math.round(km * pricing.pricePerKm)
   const final = Math.max(raw, pricing.minFee)
   const minApplied = final > raw
-  return { raw, final, minApplied }
+  return { raw, final, minApplied, chargeableKm: km, outOfZone }
 }
 
 // Resolve effective rate for a specific service.

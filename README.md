@@ -8,7 +8,7 @@ City Rider is a SaaS platform for individual rider entrepreneurs in Indonesia. E
 - One driver = one independent rider business. No fleet hierarchy.
 - The customer **always** picks the rider manually. Platform never auto-assigns.
 - Payments flow directly customer ↔ rider (cash / QR / transfer). Platform records `payment_method` + `payment_status` only.
-- Subscription: Rp 30.000/month per rider, paid directly to the platform.
+- Subscription: Rp 38.000/month per rider, paid directly to the platform.
 
 ## Stack
 

@@ -5,20 +5,23 @@ import { idr } from '@/lib/format/idr'
 type Props = {
   monthlyQuotes: number
   monthlyLeadsValue: number     // sum of all quote fares this month
-  subscriptionMonthly: number   // typically Rp 30,000
+  subscriptionMonthly: number   // typically Rp 38,000
 }
 
 // Indonesian motorcycle ride-hail commission benchmark.
 //
 // Pre-June 2026: Gojek/Grab took ~20% of gross fare (driver kept 80%).
-// From June 2026: Perpres No. 27/2026 signed 1 May 2026 caps platform
-// commission at 8% MAXIMUM, guaranteeing drivers ≥92%. City Rider
-// still takes 0% commission (subscription model) — so the honest pitch
-// is "save the 8% Gojek now takes", not 20%.
+// From June 2026: Perpres No. 27/2026 (signed 1 May 2026) is reported
+// to cap platform commission at 8% MAXIMUM, guaranteeing drivers ≥92%.
+// City Rider still takes 0% commission (subscription model) — so the
+// honest pitch is "save the 8% Gojek now takes", not 20%.
 //
-// If you're rolling out before 1 June 2026 the 0.20 number is briefly
-// still accurate. Default to the post-Perpres 8% rate since the app
-// goes live in/after June.
+// VERIFY BEFORE LAUNCH (audit 2026-05): confirm Perpres 27/2026 actually
+// exists and the 8% figure is published. Citing an unverified regulation
+// in a public comparative-savings claim exposes us under UU 8/1999 art 9
+// (deceptive advertising). If the regulation isn't published / hasn't
+// landed, fall back to a sourced industry-research range (Gojek/Grab
+// actual take-rate from a public report).
 const COMPETITOR_COMMISSION_RATE = 0.08
 const COMPETITOR_COMMISSION_BASIS = 'Perpres 27/2026 — komisi maksimal 8% per pesanan, berlaku Juni 2026'
 

@@ -1,6 +1,7 @@
 {
   "buildCommand": "next build",
   "framework": "nextjs",
+  "regions": ["sin1"],
   "crons": [
     {
       "comment": "Weekly affiliate-payout aggregation — Mondays 1am UTC = 8am WIB. Requires CRON_SECRET env var; route returns 403 without it.",
@@ -21,6 +22,11 @@
       "comment": "Nightly B2B reliability score recompute — ranks /business directory drivers by activity, rating, trips, tenure, subscription health. Top 10 per city get 'Top driver' badge. 20:00 UTC = 03:00 WIB next day.",
       "path": "/api/admin/b2b/recompute-scores?secret=$CRON_SECRET",
       "schedule": "0 20 * * *"
+    },
+    {
+      "comment": "Daily payment-intents expiry sweep — flips payment_intents.status from 'pending' to 'expired' for rows older than 24h. Snap popup dismissed before payment leaves orphan pending rows that otherwise accumulate forever. 21:00 UTC = 04:00 WIB next day.",
+      "path": "/api/admin/payment-intents/expire?secret=$CRON_SECRET",
+      "schedule": "0 21 * * *"
     }
   ]
 }

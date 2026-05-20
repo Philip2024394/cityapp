@@ -18,7 +18,7 @@ export default function BikeSubmittedPage() {
         <p className="text-[14px] text-muted leading-snug mb-6">
           Terima kasih! Admin City Riders akan meninjau motormu dalam <strong className="text-ink">24–48 jam</strong>.
           Setelah disetujui kamu mendapat <strong className="text-ink">GRATIS 7 hari</strong> —
-          lalu hanya <strong className="text-ink">Rp 30.000/bulan</strong> untuk tetap tayang di /rent.
+          lalu hanya <strong className="text-ink">Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong> untuk tetap tayang di /rent.
           Kami akan hubungi via WhatsApp + email yang kamu daftarkan.
         </p>
         <Link href="/rent" className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[13px] uppercase tracking-wider border border-black/85 shadow-[0_8px_22px_rgba(250,204,21,0.30)] active:scale-[0.99]">

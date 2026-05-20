@@ -57,7 +57,13 @@ export default function PlaceAutocomplete({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
+          onFocus={(e) => {
+            setFocused(true)
+            // Highlight any existing value so the next keystroke replaces
+            // it — saves the user a manual clear when editing a pickup
+            // they previously set. Standard maps-app input pattern.
+            if (e.currentTarget.value) e.currentTarget.select()
+          }}
           aria-label={ariaLabel}
           autoComplete="off"
         />

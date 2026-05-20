@@ -9,17 +9,19 @@ import { assertAdminFromCookies, writeAudit } from '@/lib/admin/guard'
 // assert admin → load before → mutate via service role → audit.
 //
 // Actions:
-//   approve         → status='approved', verified=true, paid_until=today+60d (2-month trial)
-//   reject          → status='rejected', rejection_note=<required>
-//   mark_paid       → paid_until += 30 days, listing_tier='paid'
-//   suspend         → status='suspended'
-//   reactivate      → status='approved' (from suspended)
+//   approve              → status='approved', verified=true, paid_until=today+60d (2-month trial)
+//   reject               → status='rejected', rejection_note=<required>
+//   mark_paid            → paid_until += 30 days, listing_tier='paid' (Rp 38K/month)
+//   mark_paid_yearly     → paid_until += 365 days, listing_tier='paid' (Rp 350K/year)
+//   suspend              → status='suspended'
+//   reactivate           → status='approved' (from suspended)
 // ============================================================================
 
 type PatchPayload =
   | { action: 'approve' }
-  | { action: 'reject';     rejection_note: string }
-  | { action: 'mark_paid';  payment_reference?: string }
+  | { action: 'reject';            rejection_note: string }
+  | { action: 'mark_paid';         payment_reference?: string }
+  | { action: 'mark_paid_yearly';  payment_reference?: string }
   | { action: 'suspend' }
   | { action: 'reactivate' }
 
@@ -71,10 +73,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       break
     case 'mark_paid': {
       // Extends paid_until by 30 days; if existing paid_until is in the
-      // past, starts from today. Monthly billing model.
+      // past, starts from today. Monthly billing model (Rp 38K/month).
       const basis = before.paid_until ? new Date(before.paid_until) : new Date()
       if (basis.getTime() < Date.now()) basis.setTime(Date.now())
       basis.setDate(basis.getDate() + 30)
+      update = { paid_until: basis.toISOString().slice(0, 10), listing_tier: 'paid' }
+      break
+    }
+    case 'mark_paid_yearly': {
+      // Yearly billing model (Rp 350K/year). Same extension rule as monthly
+      // but +365 days.
+      const basis = before.paid_until ? new Date(before.paid_until) : new Date()
+      if (basis.getTime() < Date.now()) basis.setTime(Date.now())
+      basis.setDate(basis.getDate() + 365)
       update = { paid_until: basis.toISOString().slice(0, 10), listing_tier: 'paid' }
       break
     }

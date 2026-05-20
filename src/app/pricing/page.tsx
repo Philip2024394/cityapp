@@ -8,7 +8,16 @@ import { MOCK_RIDERS } from '@/data/mockRiders'
 import { idr } from '@/lib/format/idr'
 import { quoteFare } from '@/lib/pricing/quote'
 import type { ServiceType } from '@/types/rider'
-import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT } from '@/types/rider'
+import { SERVICE_LABELS, SERVICE_SHORT } from '@/types/rider'
+
+// Service tile imagery — same artwork used as the service buttons on
+// the public landing page (CityRiderSellingPage). Keeps the dashboard
+// + selling-page visual language consistent.
+const SERVICE_IMAGES: Record<ServiceType, string> = {
+  person: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
+  parcel: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
+  food:   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
+}
 import { legalMinPerKm, legalMinFare, SERVICE_REGULATION, suggestedPerKm, suggestedMinFee } from '@/lib/tariffs/zones'
 
 const ME = MOCK_RIDERS[0]!
@@ -128,7 +137,12 @@ export default function PricingPage() {
                   const overridden = perServiceMode && services[s].enabled
                   return (
                     <div key={s} className="bg-white/5 rounded-2xl p-3 text-center relative">
-                      <div className="text-[20px] leading-none">{SERVICE_ICONS[s]}</div>
+                      <img
+                        src={SERVICE_IMAGES[s]}
+                        alt={SERVICE_LABELS[s]}
+                        className="w-12 h-12 mx-auto object-contain"
+                        loading="lazy"
+                      />
                       <div className="text-[13px] font-bold mt-1.5">{SERVICE_SHORT[s]}</div>
                       <div className="text-[15px] font-extrabold gradient-text mt-1">{idr(fare)}</div>
                       <div className="text-[12px] text-dim mt-1">{idr(r.perKm)}/km</div>
@@ -155,10 +169,10 @@ export default function PricingPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] uppercase tracking-wider font-extrabold" style={{ color: '#22C55E' }}>
-                  Indonesia legal minimum rate
+                  Tarif disarankan pemerintah
                 </div>
                 <div className="text-[13px] mt-0.5 leading-tight">
-                  {idr(lawPerKm)}/km · min {idr(lawMinFee)} <span className="text-muted">— KP 667/2022 for {ME.city || 'your zone'}</span>
+                  {idr(lawPerKm)}/km · min {idr(lawMinFee)} <span className="text-muted">— KP 667/2022 untuk {ME.city || 'zona kamu'}</span>
                 </div>
               </div>
               <button
@@ -167,7 +181,7 @@ export default function PricingPage() {
                 style={{ background: '#22C55E', color: '#0A0A0A', minHeight: 44 }}
               >
                 <RotateCcw className="w-3.5 h-3.5" strokeWidth={2.5} />
-                Reset to law
+                Pakai tarif disarankan
               </button>
             </div>
           )}
@@ -238,7 +252,12 @@ export default function PricingPage() {
                        style={sv.enabled ? { borderColor: 'rgba(250,204,21,0.25)' } : undefined}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-[20px]">{SERVICE_ICONS[s]}</span>
+                        <img
+                          src={SERVICE_IMAGES[s]}
+                          alt=""
+                          className="w-8 h-8 object-contain shrink-0"
+                          loading="lazy"
+                        />
                         <div>
                           <div className="font-extrabold text-[15px]">{SERVICE_LABELS[s]}</div>
                           <div className="text-[12px] text-muted">

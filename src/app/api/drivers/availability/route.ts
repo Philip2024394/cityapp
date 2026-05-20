@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const { data: { user } } = await userClient.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
 
-  let body: { availability?: AvailabilityState; online_until_hours?: number | null }
+  let body: { availability?: AvailabilityState }
   try {
     body = await req.json()
   } catch {
@@ -26,18 +26,6 @@ export async function POST(req: Request) {
   }
   if (!body.availability || !ALLOWED.includes(body.availability)) {
     return NextResponse.json({ error: 'availability must be online | busy | offline' }, { status: 400 })
-  }
-  // Whitelist allowed shift durations to keep customer-facing copy
-  // honest ("Online until 19:00" instead of arbitrary timestamps).
-  // null = "until I toggle off".
-  const ALLOWED_HOURS: ReadonlyArray<number> = [1, 2, 4]
-  const onlineUntilHours = body.online_until_hours
-  if (
-    onlineUntilHours !== undefined &&
-    onlineUntilHours !== null &&
-    !ALLOWED_HOURS.includes(onlineUntilHours)
-  ) {
-    return NextResponse.json({ error: 'online_until_hours must be 1, 2, 4, or null' }, { status: 400 })
   }
 
   const admin = getAdminSupabase()
@@ -48,7 +36,7 @@ export async function POST(req: Request) {
   // (end the session). Cheap single-row lookup.
   const { data: prior } = await admin
     .from('drivers')
-    .select('availability, session_started_at, online_until')
+    .select('availability, session_started_at')
     .eq('user_id', user.id)
     .maybeSingle()
 
@@ -56,6 +44,8 @@ export async function POST(req: Request) {
   const update: Record<string, unknown> = {
     availability: body.availability,
     last_active_at: now,
+    // No shift expiry — driver toggles offline when finished.
+    online_until: null,
   }
 
   const wasOnlineish = prior?.availability === 'online' || prior?.availability === 'busy'
@@ -66,19 +56,6 @@ export async function POST(req: Request) {
   } else if (wasOnlineish && !willBeOnlineish) {
     update.session_started_at = null
   }
-
-  // online_until — driver-set shift expiry. Only meaningful when going
-  // online. On offline we clear it. When undefined in the body (legacy
-  // callers, no shift picker yet) we leave the existing value alone.
-  let nextOnlineUntil: string | null | undefined
-  if (!willBeOnlineish) {
-    nextOnlineUntil = null
-  } else if (onlineUntilHours === null) {
-    nextOnlineUntil = null
-  } else if (typeof onlineUntilHours === 'number') {
-    nextOnlineUntil = new Date(Date.now() + onlineUntilHours * 3600 * 1000).toISOString()
-  }
-  if (nextOnlineUntil !== undefined) update.online_until = nextOnlineUntil
 
   const { error } = await admin
     .from('drivers')
@@ -91,6 +68,5 @@ export async function POST(req: Request) {
     availability: body.availability,
     last_active_at: now,
     session_started_at: update.session_started_at ?? prior?.session_started_at ?? null,
-    online_until: update.online_until ?? prior?.online_until ?? null,
   })
 }

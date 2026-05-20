@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Check, MessageCircle, ArrowRight, X as XIcon, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, Users } from 'lucide-react'
@@ -276,8 +276,15 @@ export default function PendingBookingPage() {
     setBooking(next)
   }
 
+  // Idempotency window — block double-tap from firing two window.open()
+  // calls (which would either stack WhatsApp tabs or get caught by the
+  // popup blocker). 800ms covers low-end Android touch lag.
+  const lastReopenAt = useRef<number>(0)
   function onReopenWhatsApp() {
     if (!booking) return
+    const now = Date.now()
+    if (now - lastReopenAt.current < 800) return
+    lastReopenAt.current = now
     openWhatsAppLink(booking.driverWhatsAppLink)
   }
 

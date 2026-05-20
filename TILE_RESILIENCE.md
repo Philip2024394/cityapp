@@ -23,22 +23,60 @@ Every tile the user has ever loaded is cached in a dedicated SW cache
 with zero signal. New users on a fresh install still need internet for
 first paint.
 
-## Layer 2 — Multi-origin failover
+## Layer 2 — Self-hosted PMTiles on Cloudflare R2 (shipped)
 
 **File:** `src/lib/map/resilientStyle.ts`
+**Env var:** `NEXT_PUBLIC_PMTILES_URL`
 
-The MapLibre style is patched at load time so every vector tile source
-has **two** tile URLs:
+When `NEXT_PUBLIC_PMTILES_URL` is set, every vector tile source in the
+loaded style has its origin swapped to a single self-hosted PMTiles
+archive on Cloudflare R2. Layer rules reference sources by name, so as
+long as the underlying schema matches OpenMapTiles (both Protomaps
+Basemap and OpenFreeMap do), every painted layer keeps rendering with
+zero style changes.
 
-1. **OpenFreeMap** (primary, free, no API key) — `tiles.openfreemap.org`
-2. **Stadia Maps** (backup, 200k req/month free) — `tiles.stadiamaps.com`
+**What this gives us:**
 
-Both serve the OpenMapTiles schema so the layer definitions render
-correctly against either. When OpenFreeMap times out or 5xx's, MapLibre
-transparently retries against Stadia. The SW then caches whichever
-succeeded so the failure path is paid once per tile.
+1. **Zero third-party tile providers in the hot path.** All tile bytes
+   come from R2 (your storage, your CDN). OpenFreeMap is still the
+   source of the style JSON + glyphs + sprite, but those are small
+   static assets loaded once per session and cached forever.
+2. **Range-fetched single file.** PMTiles is a single indexed archive;
+   MapLibre + the `pmtiles` npm package issue HTTP Range requests
+   against it, fetching only the bytes for visible tiles.
+3. **Cloudflare edge cache.** R2 sits behind Cloudflare's global edge
+   network — Indonesian users typically hit the Singapore POP.
+4. **$0 ongoing cost at our scale.** R2 free tier covers 10 GB storage
+   + unlimited egress + 10M Class B reads/mo. The 2.2 GB Indonesia
+   archive fits comfortably; even thousands of daily users stay free.
 
-**Coverage:** transparent tile-server outage immunity.
+**Falling back if env var is unset:** the resolver inlines OpenFreeMap's
+TileJSON into `source.tiles[]` and uses tiles.openfreemap.org as the
+provider. Dev environments without `NEXT_PUBLIC_PMTILES_URL` still work.
+
+**How to (re)generate the PMTiles archive:**
+
+```
+# 1. Verify a recent build exists (Protomaps publishes daily)
+curl -sI https://build.protomaps.com/YYYYMMDD.pmtiles | head -1
+
+# 2. Extract Indonesia bbox via range-fetch (no full planet download)
+pmtiles extract https://build.protomaps.com/YYYYMMDD.pmtiles \
+  indonesia.pmtiles --bbox=95,-11,142,6
+
+# 3. Upload to R2 via rclone (wrangler caps at 300 MB, dashboard too)
+rclone copyto indonesia.pmtiles r2:<bucket>/indonesia.pmtiles \
+  --s3-no-check-bucket --s3-chunk-size=64M --s3-upload-concurrency=4
+
+# 4. Enable r2.dev subdomain or attach a custom domain to the bucket
+# 5. Set NEXT_PUBLIC_PMTILES_URL=https://pub-xxx.r2.dev/indonesia.pmtiles
+```
+
+Refresh cadence: OSM data is community-edited daily; re-running the
+extract every 1–3 months keeps the map current. Same command, swap the
+date in step 2.
+
+**Coverage:** end-to-end ownership of vector tile delivery for Indonesia.
 
 ## Layer 3 — Pre-warming the cache for major cities
 
@@ -70,39 +108,33 @@ preloaded tiles.
 
 ## Layer 4 (future, not yet shipped) — Bundled PMTiles in Android APK
 
-For maximum reliability on the Capacitor Android wrapper, a single
-PMTiles file containing city-level coverage could ship inside the APK
-at `android/app/src/main/assets/tiles/cities.pmtiles`.
+For true offline support on the Capacitor Android wrapper, a CITY-LEVEL
+PMTiles subset (z0–12 only, ~30–50 MB) could ship inside the APK itself
+at `android/app/src/main/assets/tiles/cities-overview.pmtiles`.
+
+Difference from Layer 2: that one is the full-detail (z0–15) Indonesia
+archive on R2; this one would be a small city-overview subset bundled
+in the binary so the map works with literally no internet on first
+launch — useful for tourists who land at the airport with no SIM.
 
 ### How to add it later
 
-1. **Download Indonesia regional vector tiles as PMTiles:**
-   ```
-   curl -O https://download.openfreemap.org/pmtiles/area/indonesia.pmtiles
-   ```
-   (Or generate a custom subset with `planetiler`.)
+1. Pull the same Indonesia extract used by Layer 2 (already produced by
+   the `pmtiles extract` step documented above).
 
-2. **Slice to a city subset with `pmtiles extract`:**
+2. Slice further to city-overview only:
    ```
-   pmtiles extract indonesia.pmtiles cities-overview.pmtiles \
-     --bbox=94.0,-12.0,142.0,7.0 \
-     --maxzoom=12
+   pmtiles extract indonesia.pmtiles cities-overview.pmtiles --maxzoom=12
    ```
-   This caps the file at city-overview detail to keep the APK lean.
 
-3. **Drop the file into Capacitor assets:**
+3. Drop into Capacitor assets:
    `android/app/src/main/assets/tiles/cities-overview.pmtiles`
 
-4. **Register the PMTiles protocol with MapLibre** (requires installing
-   the `pmtiles` npm package and adding `protomaps.addProtocol(maplibregl)`
-   in `src/lib/map/resilientStyle.ts`).
+4. In `resilientStyle.ts`, point at the bundled file (Capacitor exposes
+   it as `capacitor://localhost/_capacitor_file_/.../cities-overview.pmtiles`).
 
-5. **Add a `pmtiles://...` source to the style** with higher priority
-   than the network sources.
-
-The infrastructure for this (the resilient-style patcher) is already
-in place; only the protocol registration + asset bundling need adding.
-APK size impact: ~30–50 MB for city-overview coverage.
+The `pmtiles` npm package and protocol registration (in `RiderMap.tsx`)
+are already in place from Layer 2 — only the bundling step needs adding.
 
 ## What can still fail (the honest 1%)
 

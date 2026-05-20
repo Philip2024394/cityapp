@@ -29,6 +29,8 @@
     "lucide-react": "^0.469.0",
     "maplibre-gl": "^4.7.1",
     "next": "^15.1.0",
+    "pmtiles": "^4.4.1",
+    "protomaps-themes-base": "^4.5.0",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

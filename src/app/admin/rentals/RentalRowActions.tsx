@@ -45,8 +45,13 @@ export default function RentalRowActions({
   }
   async function markPaid() {
     const ref = window.prompt('Payment reference (optional — bank transfer ID):') ?? ''
-    if (!confirm('Mark as paid? Extends paid_until by 30 days (Rp 30.000/month) and sets listing_tier = "paid".')) return
+    if (!confirm('Mark as paid (monthly)? Extends paid_until by 30 days (Rp 38.000/month) and sets listing_tier = "paid".')) return
     await call({ action: 'mark_paid', payment_reference: ref.trim() || undefined })
+  }
+  async function markPaidYearly() {
+    const ref = window.prompt('Payment reference (optional — bank transfer ID):') ?? ''
+    if (!confirm('Mark as paid (yearly)? Extends paid_until by 365 days (Rp 350.000/year) and sets listing_tier = "paid".')) return
+    await call({ action: 'mark_paid_yearly', payment_reference: ref.trim() || undefined })
   }
   async function suspend() {
     if (!confirm('Suspend this rental? It will be hidden from /rent until reactivated.')) return
@@ -72,10 +77,16 @@ export default function RentalRowActions({
       )}
 
       {status !== 'rejected' && !hasPaid && (
-        <button onClick={markPaid} disabled={pending} className="action-btn action-btn-primary disabled:opacity-60">
-          <BadgeCheck className="w-3.5 h-3.5" />
-          Mark paid · +30 days
-        </button>
+        <>
+          <button onClick={markPaid} disabled={pending} className="action-btn action-btn-primary disabled:opacity-60">
+            <BadgeCheck className="w-3.5 h-3.5" />
+            Mark paid · +30 days (Rp 38K)
+          </button>
+          <button onClick={markPaidYearly} disabled={pending} className="action-btn action-btn-primary disabled:opacity-60">
+            <BadgeCheck className="w-3.5 h-3.5" />
+            Mark paid · +365 days (Rp 350K)
+          </button>
+        </>
       )}
 
       {status === 'approved' && (

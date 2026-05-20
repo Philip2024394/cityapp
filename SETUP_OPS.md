@@ -68,7 +68,7 @@ This is what flips you from "admin manually marks paid" to "drivers self-renew a
 
 1. Set the SB-prefixed keys, `MIDTRANS_PRODUCTION=false`.
 2. Sign up a test driver, complete onboarding.
-3. On dashboard, the Subscription card now has a **Renew · Rp 30.000 / 30 days** button.
+3. On dashboard, the Subscription card now has a **Renew · Rp 38.000 / 30 days** button.
 4. Tap it → Snap popup opens → pick QRIS → use a test phone number → settles.
 5. Within 5 seconds, the dashboard auto-refreshes showing `Active`.
 6. Check `payment_intents` table: row should show `status='paid'`, `paid_at` set, `provider_txn_id` populated.
@@ -76,7 +76,7 @@ This is what flips you from "admin manually marks paid" to "drivers self-renew a
 
 ### Cost
 
-Midtrans takes ~2.9% + Rp 2,000 per QRIS transaction. On a Rp 30,000 renewal that's ~Rp 2,870 → driver receives ~Rp 27,130 net. Build that into your pricing if needed (you could move to Rp 35K to fully cover).
+Midtrans takes ~2.9% + Rp 2,000 per QRIS transaction. On a Rp 38,000 renewal that's ~Rp 3,102 → platform nets ~Rp 34,898. Margin baked into the Rp 38K price.
 
 ---
 

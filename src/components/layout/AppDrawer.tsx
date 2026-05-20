@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   Menu, X as XIcon,
   LayoutDashboard, Bike, User, DollarSign, Package, Flame, Gift, Users,
-  IdCard, MessageSquare, ClipboardList, Scale, Star, MapPin, LogOut, Briefcase,
+  IdCard, MessageSquare, ClipboardList, Scale, Star, LogOut, Briefcase,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -32,7 +32,6 @@ const DRIVER_NAV_ITEMS: ReadonlyArray<{
   { href: '/dashboard/operations',   label: 'Operations log',     icon: ClipboardList },
   { href: '/dashboard/rentals',      label: 'My rentals',         icon: Bike },
   { href: '/business',               label: 'Business contracts', icon: Briefcase },
-  { href: '/dashboard/places',       label: 'My places',          icon: MapPin },
   { href: '/dashboard/favourites',   label: 'Favourite places',   icon: Star },
   { href: '/dashboard/legal',        label: 'Legal requirements', icon: Scale },
 ]

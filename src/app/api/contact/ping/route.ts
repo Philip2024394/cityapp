@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { sendDriverPush } from '@/lib/notify/fcm'
+import { rateLimit } from '@/lib/security/rateLimit'
 
 // ============================================================================
 // POST /api/contact/ping
@@ -46,6 +47,10 @@ type DriverRow = {
 
 type RecentPing = { pinged_at: string }
 
+// UUID v4-ish guard so random strings can't insert into a uuid column
+// and so we can short-circuit fake driverIds without a DB roundtrip.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function POST(req: Request) {
   let body: Body
   try { body = (await req.json()) as Body } catch {
@@ -54,6 +59,9 @@ export async function POST(req: Request) {
 
   const driverId = typeof body.driverId === 'string' ? body.driverId.trim() : ''
   if (!driverId) return NextResponse.json({ error: 'driverId required' }, { status: 400 })
+  if (!UUID_RE.test(driverId)) {
+    return NextResponse.json({ error: 'driverId must be a UUID' }, { status: 400 })
+  }
 
   const source = body.source && ['cari_rider', 'business', 'profile_card'].includes(body.source)
     ? body.source
@@ -62,8 +70,35 @@ export async function POST(req: Request) {
     ? body.customerAnonId.slice(0, 64)
     : null
 
+  // Per-IP throttle (audit 2026-05). Previous rate limit was keyed on
+  // (driverId, customerAnonId) — bypassable by rotating customerAnonId.
+  // 20 calls / 60s per IP is enough for a legitimate browsing session
+  // but stops a script from blasting push toward arbitrary drivers.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')
+    || 'unknown'
+  const ipLimit = rateLimit(`contactPing:ip:${ip}`, 20, 60_000)
+  if (!ipLimit.ok) {
+    return NextResponse.json(
+      { ok: true, skipped: 'rate_limited_ip' },
+      { headers: { 'Retry-After': String(Math.ceil(ipLimit.resetMs / 1000)) } },
+    )
+  }
+
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ ok: true, skipped: 'admin_not_configured' })
+
+  // Verify driver actually exists + is active before firing push, so a
+  // random UUID can't blast a notification toward (or pollute the pings
+  // table for) someone who isn't a current rider.
+  const { data: gateRow } = await admin
+    .from('drivers')
+    .select('user_id, status')
+    .eq('user_id', driverId)
+    .maybeSingle()
+  if (!gateRow || (gateRow as { status?: string }).status !== 'active') {
+    return NextResponse.json({ ok: true, skipped: 'driver_not_active' })
+  }
 
   // Rate-limit: same anon+driver within 10 min → no-op (return ok so the
   // wa.me handoff on the client is never blocked).

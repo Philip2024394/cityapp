@@ -65,7 +65,7 @@ export default function TermsPage() {
 
         <Clause n="5" title="Payments">
           The only payment City Rider receives is the Subscriber's monthly subscription fee
-          (Rp 30,000), processed by Midtrans. City Rider never charges Customers, never holds
+          (Rp 38,000), processed by Midtrans. City Rider never charges Customers, never holds
           deposits, never processes trip fares, and never takes commission on transactions
           between Customers and Subscribers.
         </Clause>

@@ -1,10 +1,22 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Bell, Loader2, AlertCircle, CheckCircle2, Smartphone } from 'lucide-react'
+import { Bell, Loader2, AlertCircle, CheckCircle2, Smartphone, X as XIcon } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { isNative } from '@/lib/capacitor/isNative'
 import { ensureNativePushRegistered } from '@/lib/notify/registerNativePush'
 import { useHaptic } from '@/hooks/useHaptic'
+
+// Pre-prompt rationale persistence (Play Store best practice 2024+:
+// always explain WHY before triggering the OS permission dialog).
+const PUSH_RATIONALE_KEY = 'cr.push-rationale.consent.v1'
+function readPushRationaleConsent(): boolean {
+  if (typeof window === 'undefined') return false
+  try { return window.localStorage.getItem(PUSH_RATIONALE_KEY) === '1' } catch { return false }
+}
+function persistPushRationaleConsent() {
+  if (typeof window === 'undefined') return
+  try { window.localStorage.setItem(PUSH_RATIONALE_KEY, '1') } catch { /* ignore */ }
+}
 
 // ============================================================================
 // BookingAlertsToggle — driver dashboard toggle:
@@ -31,6 +43,7 @@ export default function BookingAlertsToggle() {
   const [pending, setPending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showRationale, setShowRationale] = useState(false)
   const native = isNative()
 
   useEffect(() => {
@@ -53,11 +66,9 @@ export default function BookingAlertsToggle() {
     return () => { cancelled = true }
   }, [])
 
-  async function toggle() {
+  async function performToggle(next: boolean) {
     setError(null)
-    haptic.tap()
     setPending(true)
-    const next = !enabled
     try {
       // ENABLE path — register native push token FIRST so a failure
       // doesn't leave consent=true with no delivery channel.
@@ -65,9 +76,9 @@ export default function BookingAlertsToggle() {
         const r = await ensureNativePushRegistered()
         if (!r.ok) {
           if (r.reason === 'permission_denied') {
-            setError('Notification permission denied — enable in phone Settings → Apps → City Rider → Notifications, then try again')
+            setError('Izin notifikasi ditolak — aktifkan di Settings → Apps → City Rider → Notifications, lalu coba lagi')
           } else {
-            setError('Could not register this device — try again')
+            setError('Tidak bisa daftarkan device — coba lagi')
           }
           setPending(false)
           return
@@ -80,7 +91,7 @@ export default function BookingAlertsToggle() {
         body: JSON.stringify({ enabled: next }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(json.error || `Failed (${res.status})`); return }
+      if (!res.ok) { setError(json.error || `Gagal (${res.status})`); return }
       setEnabled(next)
       haptic.impact()
     } catch (e) {
@@ -88,6 +99,24 @@ export default function BookingAlertsToggle() {
     } finally {
       setPending(false)
     }
+  }
+
+  async function toggle() {
+    haptic.tap()
+    const next = !enabled
+    // First-time native enable → show in-app rationale BEFORE the OS prompt
+    // fires (Play Store best practice — disclosure → prompt → action).
+    if (next && native && !readPushRationaleConsent()) {
+      setShowRationale(true)
+      return
+    }
+    await performToggle(next)
+  }
+
+  function onAcceptRationale() {
+    persistPushRationaleConsent()
+    setShowRationale(false)
+    void performToggle(true)
   }
 
   if (loading) {
@@ -173,6 +202,113 @@ export default function BookingAlertsToggle() {
           <span className="text-ink/90">{error}</span>
         </div>
       )}
+
+      {showRationale && (
+        <PushNotificationRationale
+          onAccept={onAcceptRationale}
+          onDismiss={() => setShowRationale(false)}
+        />
+      )}
     </div>
+  )
+}
+
+function PushNotificationRationale({
+  onAccept, onDismiss,
+}: {
+  onAccept: () => void
+  onDismiss: () => void
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onDismiss() }
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [onDismiss])
+
+  return (
+    <>
+      <div
+        onClick={onDismiss}
+        aria-hidden
+        className="fixed inset-0 z-[80]"
+        style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(2px)' }}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Izin notifikasi"
+        className="fixed left-0 right-0 bottom-0 z-[90] pb-safe animate-[fadeUp_0.22s_ease-out]"
+      >
+        <div
+          className="mx-auto max-w-md w-full"
+          style={{
+            background: '#0A0A0A',
+            borderTop: '1px solid rgba(250,204,21,0.40)',
+            borderTopLeftRadius: 22,
+            borderTopRightRadius: 22,
+            boxShadow: '0 -20px 60px rgba(0,0,0,0.55)',
+          }}
+        >
+          <div className="px-5 pt-5 pb-3 flex items-start gap-3">
+            <div
+              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)' }}
+            >
+              <Bell className="w-5 h-5 text-bg" strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[18px] font-extrabold leading-tight">
+                Bunyi keras saat ada customer
+              </h2>
+              <p className="text-[14px] text-muted leading-snug mt-1">
+                Aktifkan supaya kamu tidak ketinggalan booking.
+              </p>
+            </div>
+            <button
+              onClick={onDismiss}
+              aria-label="Tutup"
+              className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-ink transition"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
+            >
+              <XIcon className="w-4 h-4" strokeWidth={2.5} />
+            </button>
+          </div>
+
+          <div className="px-5 pb-4 space-y-3 text-[14px] text-ink/90 leading-relaxed">
+            <p>
+              City Rider butuh izin notifikasi sekali saja supaya HP-mu bisa
+              <strong> bunyi keras 10 detik</strong> setiap kali customer tap
+              tombol Contact — walaupun HP-mu lagi terkunci.
+            </p>
+            <ul className="space-y-1.5 text-[13px] text-muted">
+              <li>✓ Cuma saat ada customer baru — bukan iklan</li>
+              <li>✓ Bisa di-mute kapan saja dari Settings HP</li>
+              <li>✓ Tidak ada notifikasi marketing dari kami</li>
+            </ul>
+          </div>
+
+          <div className="px-5 pb-5 grid grid-cols-1 gap-2">
+            <button
+              onClick={onAccept}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
+              style={{ minHeight: 52 }}
+            >
+              Lanjut & izinkan notifikasi
+            </button>
+            <button
+              onClick={onDismiss}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-transparent text-muted font-extrabold text-[14px] uppercase tracking-wider border border-white/10 active:scale-[0.99]"
+              style={{ minHeight: 52 }}
+            >
+              Tidak sekarang
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }

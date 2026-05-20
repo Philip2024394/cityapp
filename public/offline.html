@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="id" translate="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A0A0A" />
+  <title>City Rider — Tidak ada koneksi</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      background: #0A0A0A;
+      color: #FFFFFF;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100dvh;
+    }
+    .wrap {
+      min-height: 100dvh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%; max-width: 380px;
+      background: #0A0A0A;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 22px;
+      padding: 28px 24px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px;
+      border-radius: 18px;
+      background: rgba(250,204,21,0.12);
+      border: 1px solid rgba(250,204,21,0.30);
+      margin-bottom: 16px;
+    }
+    .badge svg { color: #FACC15; }
+    h1 {
+      font-size: 20px; font-weight: 900;
+      margin: 0 0 10px;
+      letter-spacing: -0.01em;
+    }
+    p {
+      font-size: 14px; line-height: 1.55;
+      color: rgba(255,255,255,0.65);
+      margin: 0 0 20px;
+    }
+    button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,0.85);
+      background: linear-gradient(135deg, #FACC15, #EAB308);
+      color: #0A0A0A;
+      font-weight: 800; font-size: 14px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      box-shadow: 0 8px 24px rgba(250,204,21,0.18);
+      cursor: pointer;
+      min-height: 48px;
+    }
+    button:active { transform: scale(0.99); }
+    .brand {
+      font-size: 13px; font-weight: 900;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .brand span { color: #FACC15; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="brand">City <span>Rider</span></div>
+    <div class="card">
+      <div class="badge" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 1l22 22"></path>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+          <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+          <line x1="12" y1="20" x2="12.01" y2="20"></line>
+        </svg>
+      </div>
+      <h1>Tidak ada koneksi</h1>
+      <p>
+        Periksa sinyal HP atau WiFi kamu lalu coba lagi. Profil rider, customer book,
+        dan map tetap aman — semuanya akan muncul kembali begitu koneksi pulih.
+      </p>
+      <button type="button" onclick="window.location.reload()">
+        Coba lagi
+      </button>
+    </div>
+  </main>
+</body>
+</html>

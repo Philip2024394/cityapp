@@ -16,15 +16,18 @@ import { createSnapTransaction } from '@/lib/midtrans/snap'
 // the DB trigger then bumps subscriptions.current_period_end.
 //
 // Pricing rule:
-//   product='subscription' → Rp 30,000, extends_days=30
-//   product='verified'     → Rp 100,000, extends_days=30
+//   product='subscription'         → Rp 38,000,  extends_days=30
+//   product='subscription_yearly'  → Rp 350,000, extends_days=365
+//   product='verified'             → Rp 100,000, extends_days=30
 // ============================================================================
 
-type Payload = { product?: 'subscription' | 'verified' }
+type Product = 'subscription' | 'subscription_yearly' | 'verified'
+type Payload = { product?: Product }
 
-const PRICE_BY_PRODUCT: Record<'subscription' | 'verified', { amount: number; days: number; label: string }> = {
-  subscription: { amount:  30_000, days: 30, label: 'City Rider · 30 days'  },
-  verified:     { amount: 100_000, days: 30, label: 'Tour Verified · 30 d'  },
+const PRICE_BY_PRODUCT: Record<Product, { amount: number; days: number; label: string }> = {
+  subscription:        { amount:  38_000, days:  30, label: 'City Rider · 30 days'  },
+  subscription_yearly: { amount: 350_000, days: 365, label: 'City Rider · 365 days' },
+  verified:            { amount: 100_000, days:  30, label: 'Tour Verified · 30 d'  },
 }
 
 export async function POST(req: Request) {
@@ -36,7 +39,10 @@ export async function POST(req: Request) {
 
   let body: Payload = {}
   try { body = (await req.json().catch(() => ({}))) as Payload } catch { /* allow empty body */ }
-  const product = body.product === 'verified' ? 'verified' : 'subscription'
+  const product: Product =
+    body.product === 'verified' ? 'verified'
+    : body.product === 'subscription_yearly' ? 'subscription_yearly'
+    : 'subscription'
   const tier = PRICE_BY_PRODUCT[product]
 
   // Need a few driver fields for the Midtrans customer_details block

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home } from 'lucide-react'
@@ -24,6 +24,16 @@ export default function AppNav() {
   const path = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const showDrawer = isDriverRoute(path)
+
+  // Mark the body so driver-only CSS (solid black containers, 14px text
+  // floor, 18px headers) can scope without affecting customer pages.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (showDrawer) document.body.dataset.surface = 'driver'
+    else delete document.body.dataset.surface
+    return () => { delete document.body.dataset.surface }
+  }, [showDrawer])
+
   return (
     <>
       <header className="sticky top-0 z-40 glass-strong pt-safe">

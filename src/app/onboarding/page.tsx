@@ -3,13 +3,14 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  ArrowLeft, ArrowRight, Check, Briefcase, Link2, Bike,
-  Wallet, MapPin, Coins, Loader2, Banknote, QrCode, Send, Edit3,
+  ArrowLeft, ArrowRight, Check, Briefcase, Bike,
+  MapPin, Coins, Loader2, Edit3, Sparkles, Package,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import LocationPicker, { type LocationPickerValue } from '@/components/rider/LocationPicker'
 import BikePicker from '@/components/rider/BikePicker'
 import BikeColorPicker from '@/components/rider/BikeColorPicker'
+import HelpTip from '@/components/common/HelpTip'
 import { getBikeImageUrl, isExactBikeImage } from '@/data/bikeImages'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { legalMinPerKm, legalMinFare } from '@/lib/tariffs/zones'
@@ -34,7 +35,7 @@ import {
 } from '@/lib/tariffs/zones'
 import type { ServiceType, BikeType } from '@/types/database'
 
-const STEPS = ['Business', 'Link', 'Bike', 'Services & price', 'Payment', 'Location'] as const
+const STEPS = ['Bisnis', 'Motor', 'Lokasi & Layanan', 'Harga'] as const
 
 export default function OnboardingPage() {
   return (
@@ -142,7 +143,14 @@ function OnboardingInner() {
         if (typeof d.area === 'string') setArea(d.area)
         if (typeof d.service_zone_center_lat === 'number') setZoneLat(d.service_zone_center_lat)
         if (typeof d.service_zone_center_lng === 'number') setZoneLng(d.service_zone_center_lng)
-        if (typeof d.service_zone_radius_km === 'number') setZoneRadius(d.service_zone_radius_km)
+        if (typeof d.service_zone_radius_km === 'number') {
+          // Snap legacy free-float radius values to the nearest tier bucket
+          // (10 / 35 / 9999) so the picker shows one as active.
+          const r = d.service_zone_radius_km
+          if (r >= 100) setZoneRadius(9999)
+          else if (r > 20) setZoneRadius(35)
+          else setZoneRadius(10)
+        }
         setPrefillLoading(false)
       })
   }, [isEditMode, me?.id])
@@ -152,8 +160,79 @@ function OnboardingInner() {
   const [location, setLocation] = useState<LocationPickerValue | null>(null)
   const [zoneLat, setZoneLat] = useState<number | null>(null)
   const [zoneLng, setZoneLng] = useState<number | null>(null)
-  const [zoneRadius, setZoneRadius] = useState<number>(15)
+  // Service area tier — default "City" (10 km radius). When customer's
+  // trip exceeds this radius the fare auto-switches to round-trip.
+  // "All Indonesia" stores a sentinel 9999 km so the round-trip rule
+  // never triggers (driver doesn't mind staying out, charges one-way).
+  const [zoneRadius, setZoneRadius] = useState<number>(10)
 
+  // ── Draft persistence (audit 2026-05) ────────────────────────────────
+  // Onboarding state used to live entirely in React. Indonesian Chrome
+  // on a 2GB phone aggressively kills backgrounded tabs — switching to
+  // WhatsApp to copy a slug would wipe steps 1-3. Now we serialise to
+  // localStorage on every state change and hydrate on mount if the draft
+  // is < 24h old. Cleared on successful submit. Skipped in edit-mode
+  // (server prefill wins there).
+  const DRAFT_KEY = 'cr.onboard.draft.v1'
+  const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000
+  const [draftHydrated, setDraftHydrated] = useState(false)
+
+  useEffect(() => {
+    if (draftHydrated) return
+    if (isEditMode) { setDraftHydrated(true); return }
+    if (typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem(DRAFT_KEY)
+      if (raw) {
+        const d = JSON.parse(raw) as { savedAt?: number } & Record<string, unknown>
+        if (d.savedAt && Date.now() - d.savedAt < DRAFT_MAX_AGE_MS) {
+          if (typeof d.businessName === 'string') setBusinessName(d.businessName)
+          if (typeof d.bio === 'string') setBio(d.bio)
+          if (typeof d.slug === 'string') { setSlug(d.slug); setSlugTouched(true) }
+          if (typeof d.bikeMake === 'string') setBikeMake(d.bikeMake)
+          if (typeof d.bikeModel === 'string') setBikeModel(d.bikeModel)
+          if (typeof d.bikeYear === 'number' || d.bikeYear === '') setBikeYear(d.bikeYear as number | '')
+          if (typeof d.bikeColor === 'string') setBikeColor(d.bikeColor)
+          if (typeof d.bikePlate === 'string') setBikePlate(d.bikePlate)
+          if (typeof d.bikeType === 'string') setBikeType(d.bikeType as BikeType)
+          if (typeof d.bikeCc === 'number' || d.bikeCc === '') setBikeCc(d.bikeCc as number | '')
+          if (typeof d.hasBox === 'boolean') setHasBox(d.hasBox)
+          if (Array.isArray(d.services)) setServices(d.services as ServiceType[])
+          if (typeof d.pricePerKm === 'number') setPricePerKm(d.pricePerKm)
+          if (typeof d.minFee === 'number') setMinFee(d.minFee)
+          if (typeof d.pitstopFee === 'number') setPitstopFee(d.pitstopFee)
+          if (typeof d.city === 'string') setCity(d.city)
+          if (typeof d.area === 'string') setArea(d.area)
+          if (typeof d.zoneLat === 'number') setZoneLat(d.zoneLat)
+          if (typeof d.zoneLng === 'number') setZoneLng(d.zoneLng)
+          if (typeof d.zoneRadius === 'number') setZoneRadius(d.zoneRadius)
+          if (typeof d.stepIdx === 'number' && d.stepIdx >= 0 && d.stepIdx < 5) setStepIdx(d.stepIdx)
+        } else {
+          // Expired draft — clean it up
+          window.localStorage.removeItem(DRAFT_KEY)
+        }
+      }
+    } catch { /* corrupt JSON or quota — ignore */ }
+    setDraftHydrated(true)
+  }, [isEditMode, draftHydrated])
+
+  // Persist on every change (debounced via React batching — fine to write
+  // on each setter since onboarding interactions are slow human inputs).
+  useEffect(() => {
+    if (!draftHydrated || isEditMode) return
+    if (typeof window === 'undefined') return
+    try {
+      const payload = {
+        savedAt: Date.now(),
+        businessName, bio, slug,
+        bikeMake, bikeModel, bikeYear, bikeColor, bikePlate, bikeType, bikeCc, hasBox,
+        services, pricePerKm, minFee, pitstopFee,
+        city, area, zoneLat, zoneLng,
+        stepIdx,
+      }
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(payload))
+    } catch { /* quota exceeded — silently skip */ }
+  })
   // Auto-derive slug from business name unless user manually edited it
   useEffect(() => {
     if (!slugTouched && businessName) setSlug(slugify(businessName))
@@ -191,24 +270,32 @@ function OnboardingInner() {
     setServices((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
   }
 
+  // 4-step flow: Bisnis (0) → Motor (1) → Lokasi+Layanan (2) → Harga (3).
+  // Each screen has a single outcome. Lokasi happens before Harga so the
+  // tariff auto-snap fires before the rider hits the pricing screen.
+  // Payment methods default to "cash" and can be expanded later from the
+  // dashboard — keeps activation fast.
   const stepValid = useMemo(() => {
     switch (stepIdx) {
       case 0:
-        return businessName.trim().length >= 2
+        // Business name AND slug both must be valid. Slug auto-generates from
+        // business name; rider can override via the inline edit toggle.
+        return (
+          businessName.trim().length >= 2 &&
+          slug.length > 0 &&
+          slugCheck.available === true &&
+          !slugCheck.checking
+        )
       case 1:
-        return slug.length > 0 && slugCheck.available === true && !slugCheck.checking
+        return true // Motor optional — riders can fill from dashboard later
       case 2:
-        return true // bike is optional — riders can fill later
+        return city.trim().length > 0 && services.length > 0
       case 3:
-        return services.length > 0 && pricePerKm >= 1000 && minFee >= 0
-      case 4:
-        return acceptsCash || acceptsQR || acceptsTransfer
-      case 5:
-        return city.trim().length > 0
+        return pricePerKm >= 1000 && minFee >= 0
       default:
         return false
     }
-  }, [stepIdx, businessName, slug, slugCheck, services, pricePerKm, minFee, acceptsCash, acceptsQR, acceptsTransfer, city])
+  }, [stepIdx, businessName, slug, slugCheck, services, pricePerKm, minFee, city])
 
   async function submit() {
     if (!me) return
@@ -270,24 +357,14 @@ function OnboardingInner() {
       }
       // Clear the referrer cookie — attribution is locked at the trigger.
       ;(await import('@/lib/affiliate/referrer')).clearStoredReferrer()
+      // Draft persistence cleanup — onboarding is done, don't restore.
+      try { window.localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
       router.push('/dashboard')
       router.refresh()
     } catch (e: unknown) {
       setError((e as Error).message || 'Network error')
       setSubmitting(false)
     }
-  }
-
-  function useMyLocation() {
-    if (!('geolocation' in navigator)) return
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setZoneLat(pos.coords.latitude)
-        setZoneLng(pos.coords.longitude)
-      },
-      () => {},
-      { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 },
-    )
   }
 
   if (!me) {
@@ -313,13 +390,13 @@ function OnboardingInner() {
             >
               <Edit3 className="w-4 h-4 text-brand shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-extrabold text-ink">Editing your listing</div>
+                <div className="text-[13px] font-extrabold text-ink">Edit profilmu</div>
                 <div className="text-[12px] text-muted">
-                  {prefillLoading ? 'Loading your current values…' : 'Changes save when you finish all steps.'}
+                  {prefillLoading ? 'Memuat data sekarang…' : 'Perubahan disimpan setelah semua langkah selesai.'}
                 </div>
               </div>
               <Link href="/dashboard" className="text-[12px] text-muted hover:text-ink font-bold shrink-0">
-                Cancel
+                Batal
               </Link>
             </div>
           )}
@@ -335,7 +412,7 @@ function OnboardingInner() {
             ))}
           </div>
           <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold px-1">
-            Step {stepIdx + 1} of {STEPS.length} · {STEPS[stepIdx]}
+            Langkah {stepIdx + 1} dari {STEPS.length} · {STEPS[stepIdx]}
           </div>
 
           <div className="card p-5 space-y-4">
@@ -343,10 +420,17 @@ function OnboardingInner() {
               <>
                 <Header
                   icon={<Briefcase className="w-6 h-6" />}
-                  title="Name your booking business"
-                  sub="This is what customers see on your booking page and in search results."
+                  title="Nama bisnis kamu"
+                  sub="Nama ini yang customer lihat di halaman booking dan hasil pencarian."
+                  helpTitle="Tips nama bisnis"
+                  helpBody={
+                    <>
+                      <p>Pakai nama yang <strong>singkat dan mudah diingat</strong> — biasanya nama panggilanmu + kota atau jenis layanan.</p>
+                      <p>Contoh bagus: "Wayan Bike", "Andi Express Yogya", "Sari Parcel". <strong>Hindari nomor</strong> di nama bisnis — sulit di-share.</p>
+                    </>
+                  }
                 />
-                <Field label="Business name">
+                <Field label="Nama bisnis">
                   <input
                     className="input"
                     placeholder="Wayan Bike"
@@ -355,25 +439,24 @@ function OnboardingInner() {
                     autoFocus
                   />
                 </Field>
-                <Field label="Short intro (optional)" hint="Max 200 characters. Tell customers what you do.">
+                {/* Bio is collapsed behind a disclosure (activation cut A).
+                    Most riders skip this anyway; surfacing the textarea
+                    inline invited 12-15s of typing without value. */}
+                <CollapsibleField
+                  label="Tambah intro singkat (opsional)"
+                  open={bio.length > 0}
+                >
                   <textarea
                     className="input min-h-[80px] py-3"
-                    placeholder="Reliable Ubud rider. Daily airport runs. Box for parcels."
+                    placeholder="Driver ojek Yogya kota. Antar parcel + booking event. Punya box besar."
                     value={bio}
                     onChange={(e) => setBio(e.target.value.slice(0, 200))}
                   />
-                </Field>
-              </>
-            )}
+                  <p className="text-[12px] text-dim mt-1.5">Max 200 huruf.</p>
+                </CollapsibleField>
 
-            {stepIdx === 1 && (
-              <>
-                <Header
-                  icon={<Link2 className="w-6 h-6" />}
-                  title="Pick your short link"
-                  sub="Customers can book you directly with one tap. Share on WhatsApp, business card, sticker."
-                />
-                <Field label="Your booking link">
+                {/* Inline slug — auto-generated from business name with edit toggle */}
+                <Field label="Link booking-mu">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[14px] text-muted shrink-0">cityrider.app/r/</span>
                     <input
@@ -390,23 +473,41 @@ function OnboardingInner() {
                     {slugCheck.checking && <Loader2 className="w-3.5 h-3.5 animate-spin text-dim" />}
                     {!slugCheck.checking && slugCheck.available === true && (
                       <span className="text-online inline-flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5" /> Available
+                        <Check className="w-3.5 h-3.5" /> Tersedia — siap di-share
                       </span>
                     )}
                     {!slugCheck.checking && slugCheck.available === false && (
                       <span className="text-red-400">{slugCheck.reason}</span>
                     )}
                   </div>
+
+                  {/* Slug-collision auto-suggest — when the picked slug is
+                      taken, surface 3 deterministic alternatives so the
+                      rider doesn't have to invent variations themselves. */}
+                  {!slugCheck.checking && slugCheck.available === false && (
+                    <SlugSuggestions
+                      base={slug || slugify(businessName)}
+                      city={city}
+                      onPick={(s) => { setSlugTouched(true); setSlug(s) }}
+                    />
+                  )}
                 </Field>
               </>
             )}
 
-            {stepIdx === 2 && (
+            {stepIdx === 1 && (
               <>
                 <Header
                   icon={<Bike className="w-6 h-6" />}
-                  title="Your bike"
-                  sub="Helps customers trust who shows up. You can skip and add later."
+                  title="Motor kamu"
+                  sub="Bisa di-skip dan diisi nanti — tapi motor dengan foto dapat 3× lebih banyak booking."
+                  helpTitle="Kenapa info motor penting?"
+                  helpBody={
+                    <>
+                      <p>Customer di Indonesia <strong>sangat percaya</strong> driver yang transparan soal motornya. Tahun, warna, dan plat membuat customer merasa aman sebelum booking.</p>
+                      <p>Tidak punya semua info sekarang? Boleh skip — tapi lengkapi <strong>secepatnya</strong> dari dashboard agar booking-mu maksimal.</p>
+                    </>
+                  }
                 />
                 <BikePicker
                   make={bikeMake}
@@ -435,163 +536,79 @@ function OnboardingInner() {
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Year">
-                    <input
-                      className="input font-mono"
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="2022"
-                      value={bikeYear}
-                      onChange={(e) => setBikeYear(e.target.value ? parseInt(e.target.value, 10) : '')}
-                    />
-                  </Field>
-                  <div>
-                    <BikeColorPicker
-                      label="Color"
-                      value={bikeColor}
-                      onChange={setBikeColor}
-                    />
+                {/* Motor sub-fields collapsed behind a single disclosure
+                    (activation cut B). Riders can lock in make+model fast
+                    and fill the rest from /dashboard/profile later. Cuts
+                    18-22s off realistic activation time. */}
+                <CollapsibleField
+                  label="Tambah detail motor (tahun, plat, warna, dll)"
+                  open={!!(bikeYear || bikePlate || bikeCc || bikeColor || hasBox)}
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Tahun">
+                      <input
+                        className="input font-mono"
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="2022"
+                        value={bikeYear}
+                        onChange={(e) => setBikeYear(e.target.value ? parseInt(e.target.value, 10) : '')}
+                      />
+                    </Field>
+                    <div>
+                      <BikeColorPicker
+                        label="Warna"
+                        value={bikeColor}
+                        onChange={setBikeColor}
+                      />
+                    </div>
+                    <Field label="Plat">
+                      <input className="input font-mono uppercase" placeholder="AB 1234 XX" value={bikePlate} onChange={(e) => setBikePlate(e.target.value.toUpperCase())} />
+                    </Field>
+                    <Field label="CC">
+                      <input
+                        className="input font-mono"
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="110"
+                        value={bikeCc}
+                        onChange={(e) => setBikeCc(e.target.value ? parseInt(e.target.value, 10) : '')}
+                      />
+                    </Field>
                   </div>
-                  <Field label="Plate">
-                    <input className="input font-mono uppercase" placeholder="DK 1234 XX" value={bikePlate} onChange={(e) => setBikePlate(e.target.value.toUpperCase())} />
+                  <Field label="Tipe">
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['matic', 'sport', 'manual'] as BikeType[]).map((t) => (
+                        <ToggleChip key={t} active={bikeType === t} onClick={() => setBikeType(t)} label={cap(t)} />
+                      ))}
+                    </div>
                   </Field>
-                  <Field label="CC">
-                    <input
-                      className="input font-mono"
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="110"
-                      value={bikeCc}
-                      onChange={(e) => setBikeCc(e.target.value ? parseInt(e.target.value, 10) : '')}
-                    />
-                  </Field>
-                </div>
-                <Field label="Type">
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['matic', 'sport', 'manual'] as BikeType[]).map((t) => (
-                      <ToggleChip key={t} active={bikeType === t} onClick={() => setBikeType(t)} label={cap(t)} />
-                    ))}
-                  </div>
-                </Field>
-                <ToggleRow
-                  label="Has parcel box"
-                  hint="Tick if you can carry parcels/food in a rear box."
-                  checked={hasBox}
-                  onChange={setHasBox}
-                />
+                  <ToggleRow
+                    label="Punya box parcel"
+                    hint="Centang kalau kamu bisa bawa parcel/makanan di box belakang."
+                    checked={hasBox}
+                    onChange={setHasBox}
+                  />
+                </CollapsibleField>
               </>
             )}
 
-            {stepIdx === 3 && (
-              <>
-                <Header
-                  icon={<Coins className="w-6 h-6" />}
-                  title="Services & pricing"
-                  sub="You set your own rates. Customers see them before booking."
-                />
-                <Field label="What you offer">
-                  <div className="grid grid-cols-3 gap-2">
-                    <ToggleChip active={services.includes('person')} onClick={() => toggleService('person')} label="🧍 Ride" />
-                    <ToggleChip active={services.includes('parcel')} onClick={() => toggleService('parcel')} label="📦 Parcel" />
-                    <ToggleChip active={services.includes('food')} onClick={() => toggleService('food')} label="🍔 Food" />
-                  </div>
-                </Field>
-                <Field label={`Price per km · Rp ${pricePerKm.toLocaleString('id-ID')}`}>
-                  <input
-                    type="range" min={1500} max={10000} step={250}
-                    value={pricePerKm}
-                    onChange={(e) => setPricePerKm(parseInt(e.target.value, 10))}
-                    className="w-full accent-[#FACC15]"
-                  />
-                  <TariffHint
-                    city={city}
-                    kind="perKm"
-                    currentValue={pricePerKm}
-                    onResetToLaw={(v) => setPricePerKm(v)}
-                  />
-                </Field>
-                <Field label={`Minimum fee · Rp ${minFee.toLocaleString('id-ID')}`} hint="Charged for very short trips.">
-                  <input
-                    type="range" min={0} max={50000} step={1000}
-                    value={minFee}
-                    onChange={(e) => setMinFee(parseInt(e.target.value, 10))}
-                    className="w-full accent-[#FACC15]"
-                  />
-                  <TariffHint
-                    city={city}
-                    kind="minFare"
-                    currentValue={minFee}
-                    onResetToLaw={(v) => setMinFee(v)}
-                  />
-                </Field>
-                <Field label={`Pit-stop fee · Rp ${pitstopFee.toLocaleString('id-ID')}`} hint="0 = free pit stops. Charged when customer requests a stop along the way.">
-                  <input
-                    type="range" min={0} max={20000} step={500}
-                    value={pitstopFee}
-                    onChange={(e) => setPitstopFee(parseInt(e.target.value, 10))}
-                    className="w-full accent-[#FACC15]"
-                  />
-                </Field>
-              </>
-            )}
-
-            {stepIdx === 4 && (
-              <>
-                <Header
-                  icon={<Wallet className="w-6 h-6" />}
-                  title="How customers pay you"
-                  sub="Payments go directly to you — City Rider never touches the money."
-                />
-                <PaymentToggle
-                  icon={<Banknote className="w-5 h-5" />}
-                  label="Cash"
-                  sub="Most common. Customer pays you in cash on completion."
-                  checked={acceptsCash}
-                  onChange={setAcceptsCash}
-                />
-                <PaymentToggle
-                  icon={<QrCode className="w-5 h-5" />}
-                  label="QR (QRIS, GoPay, OVO, Dana)"
-                  sub="Show your QR after the trip. Customer scans + pays."
-                  checked={acceptsQR}
-                  onChange={setAcceptsQR}
-                />
-                {acceptsQR && (
-                  <Field label="QR image URL (optional, can add later)" hint="Paste a public image link. Or leave blank and add from your dashboard.">
-                    <input className="input" placeholder="https://..." value={qrPaymentUrl} onChange={(e) => setQrPaymentUrl(e.target.value)} />
-                  </Field>
-                )}
-                <PaymentToggle
-                  icon={<Send className="w-5 h-5" />}
-                  label="Bank transfer"
-                  sub="Show your account number. Customer transfers + sends proof."
-                  checked={acceptsTransfer}
-                  onChange={setAcceptsTransfer}
-                />
-                {acceptsTransfer && (
-                  <Field label="Transfer details" hint="Bank + account number + name on account.">
-                    <textarea
-                      className="input min-h-[60px] py-3"
-                      placeholder="BCA 1234567890&#10;Wayan Kurniawan"
-                      value={transferDetails}
-                      onChange={(e) => setTransferDetails(e.target.value)}
-                    />
-                  </Field>
-                )}
-              </>
-            )}
-
-            {stepIdx === 5 && (
+            {stepIdx === 2 && (
               <>
                 <Header
                   icon={<MapPin className="w-6 h-6" />}
-                  title="Where you work"
-                  sub="Customers in this area will see you on discovery."
+                  title="Lokasi & layanan"
+                  sub="Di mana kamu kerja dan apa yang kamu tawarkan."
+                  helpTitle="Tentang lokasi & layanan"
+                  helpBody={
+                    <>
+                      <p>Tap "Pakai lokasi sekarang" untuk auto-detect kota. Sistem otomatis pakai <strong>tarif resmi pemerintah</strong> kotamu di langkah berikutnya.</p>
+                      <p>Default layanan = Penumpang. Aktifkan Parcel + Makanan untuk visibilitas maksimal — kebanyakan driver pilih semuanya.</p>
+                    </>
+                  }
                 />
-                {/* GPS-driven location picker — replaces free-text city/area
-                    inputs. Resolves to full Indonesia admin chain via
-                    /api/geo/admin-lookup and persists the IDs on submit. */}
+                {/* Lokasi first — sets city so the tariff auto-snap fires
+                    before the rider hits Harga step. */}
                 <LocationPicker
                   value={location}
                   onChange={(v) => {
@@ -600,29 +617,127 @@ function OnboardingInner() {
                     setArea(v.area_label)
                     setZoneLat(v.lat)
                     setZoneLng(v.lng)
-                    // Auto-default per-km + min fee to the LEGAL MINIMUM
-                    // for this city (KP 667/2022). Driver can adjust on
-                    // the next step or reset later via /pricing. Only
-                    // applies on initial pick — if they already moved
-                    // the sliders above the default 2500/10000, don't
-                    // clobber their values.
-                    const slug = cityNameToSlug(v.city_label)
-                    const lawPerKm  = legalMinPerKm(slug)
-                    const lawMinFee = legalMinFare(slug)
+                    const citySlug = cityNameToSlug(v.city_label)
+                    const lawPerKm  = legalMinPerKm(citySlug)
+                    const lawMinFee = legalMinFare(citySlug)
                     if (lawPerKm  && pricePerKm === 2500) setPricePerKm(lawPerKm)
                     if (lawMinFee && minFee     === 10000) setMinFee(lawMinFee)
                   }}
                 />
-                <Field label={`Service zone radius · ${zoneRadius} km`} hint="How far from your home base you'll accept trips.">
-                  <input
-                    type="range" min={3} max={50} step={1}
-                    value={zoneRadius}
-                    onChange={(e) => setZoneRadius(parseInt(e.target.value, 10))}
-                    className="w-full accent-[#FACC15]"
-                  />
+                <Field label="Jangkauan layanan">
+                  <ServiceTierPicker value={zoneRadius} onChange={setZoneRadius} />
+                </Field>
+                <Field label="Layanan yang kamu tawarkan">
+                  <div className="grid grid-cols-3 gap-2">
+                    <ToggleChip active={services.includes('person')} onClick={() => toggleService('person')} label="🧍 Penumpang" />
+                    <ToggleChip active={services.includes('parcel')} onClick={() => toggleService('parcel')} label="📦 Parcel" />
+                    <ToggleChip active={services.includes('food')} onClick={() => toggleService('food')} label="🍔 Makanan" />
+                  </div>
                 </Field>
               </>
             )}
+
+            {stepIdx === 3 && (
+              <>
+                <Header
+                  icon={<Coins className="w-6 h-6" />}
+                  title="Atur hargamu"
+                  sub="Kamu yang setting harga sendiri. Customer lihat sebelum booking."
+                  helpTitle="Strategi harga untuk driver baru"
+                  helpBody={
+                    <>
+                      <p><strong>Mulai dari tarif paling rendah</strong> dulu. Kenapa? Customer baru tidak kenal kamu — mereka pilih berdasarkan harga.</p>
+                      <p>Setelah dapat <strong>10+ review positif</strong> dan customer loyal, baru naikkan tarif sedikit demi sedikit. Driver yang punya rating bagus + service ramah <strong>boleh charge lebih</strong>, customer mau bayar.</p>
+                      <p>Pakai tombol <strong>"Reset → batas bawah"</strong> di bawah slider untuk langsung pakai tarif minimum legal.</p>
+                    </>
+                  }
+                />
+
+                {/* Auto-applied tariff banner — replaces the 3 sliders + 4
+                    paragraphs of strategy copy that consumed ~15-20s of
+                    activation time (cut C). The actual sliders live behind
+                    "Atur sendiri" for power users + are fully editable later
+                    from /pricing. Default = legal minimum auto-snapped
+                    when the rider picks Lokasi (next step). */}
+                <div
+                  className="rounded-2xl p-3.5 flex items-start gap-3"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.04))',
+                    border: '1px solid rgba(34,197,94,0.30)',
+                  }}
+                >
+                  <div
+                    className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: 'rgba(34,197,94,0.20)' }}
+                  >
+                    <Sparkles className="w-4 h-4" style={{ color: '#22C55E' }} strokeWidth={2.5} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-extrabold leading-snug" style={{ color: '#22C55E' }}>
+                      Tarif standar pemerintah akan dipakai otomatis
+                    </div>
+                    <p className="text-[12px] text-muted leading-snug mt-1">
+                      Setelah kamu pilih lokasi, kami pakai tarif minimum legal kota kamu
+                      sebagai default. <strong>Strategi: mulai dari sini, naikkan setelah dapat
+                      10+ review bagus.</strong> Bisa diubah kapan saja di Dashboard → Harga.
+                    </p>
+                  </div>
+                </div>
+
+                <CollapsibleField
+                  label="Atur sendiri tarif (opsional)"
+                  open={pricePerKm !== 2500 || minFee !== 10000 || pitstopFee !== 0}
+                >
+                  <Field label={`Tarif per km · Rp ${pricePerKm.toLocaleString('id-ID')}`}>
+                    <input
+                      type="range" min={1500} max={10000} step={250}
+                      value={pricePerKm}
+                      onChange={(e) => setPricePerKm(parseInt(e.target.value, 10))}
+                      className="w-full accent-[#FACC15]"
+                    />
+                    <TariffHint
+                      city={city}
+                      kind="perKm"
+                      currentValue={pricePerKm}
+                      onResetToLaw={(v) => setPricePerKm(v)}
+                    />
+                  </Field>
+                  <Field label={`Tarif minimum · Rp ${minFee.toLocaleString('id-ID')}`} hint="Dipakai untuk trip yang sangat pendek.">
+                    <input
+                      type="range" min={0} max={50000} step={1000}
+                      value={minFee}
+                      onChange={(e) => setMinFee(parseInt(e.target.value, 10))}
+                      className="w-full accent-[#FACC15]"
+                    />
+                    <TariffHint
+                      city={city}
+                      kind="minFare"
+                      currentValue={minFee}
+                      onResetToLaw={(v) => setMinFee(v)}
+                    />
+                  </Field>
+                  <Field label={`Biaya pit-stop · Rp ${pitstopFee.toLocaleString('id-ID')}`} hint="0 = pit stop gratis. Charge kalau customer minta mampir di tengah trip.">
+                    <input
+                      type="range" min={0} max={20000} step={500}
+                      value={pitstopFee}
+                      onChange={(e) => setPitstopFee(parseInt(e.target.value, 10))}
+                      className="w-full accent-[#FACC15]"
+                    />
+                  </Field>
+                </CollapsibleField>
+
+                {/* Cash-default note (was on the old Lokasi step) */}
+                <div
+                  className="rounded-2xl p-3 text-[12px] text-muted leading-snug"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  Default pembayaran: <strong className="text-ink">Cash</strong>. Tambah QRIS / transfer bank kapan saja dari dashboard.
+                </div>
+              </>
+            )}
+
+{/* Old standalone Lokasi step removed (activation cut F) — folded into
+    step 2 above so the tariff auto-snap fires before Harga renders. */}
 
             {error && <p className="text-[13px] text-red-400">{error}</p>}
 
@@ -635,7 +750,19 @@ function OnboardingInner() {
                   disabled={submitting}
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Back
+                  Kembali
+                </button>
+              )}
+              {stepIdx === 1 && !bikeMake && !bikeModel && (
+                // Skip-Motor escape hatch — keep activation fast for riders
+                // who don't have bike details handy yet.
+                <button
+                  type="button"
+                  onClick={() => { setError(null); setStepIdx(stepIdx + 1) }}
+                  className="btn-secondary"
+                  disabled={submitting}
+                >
+                  Skip
                 </button>
               )}
               {stepIdx < STEPS.length - 1 ? (
@@ -645,7 +772,7 @@ function OnboardingInner() {
                   className="btn-primary flex-1"
                   disabled={!stepValid || submitting}
                 >
-                  Continue
+                  Lanjut
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
@@ -655,7 +782,7 @@ function OnboardingInner() {
                   className="btn-primary flex-1"
                   disabled={!stepValid || submitting}
                 >
-                  {submitting ? 'Setting up…' : 'Finish & start 7-day trial'}
+                  {submitting ? 'Menyiapkan…' : 'Selesai & mulai 7 hari gratis'}
                   <Check className="w-4 h-4" />
                 </button>
               )}
@@ -667,13 +794,28 @@ function OnboardingInner() {
   )
 }
 
-function Header({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
+function Header({
+  icon, title, sub, helpTitle, helpBody,
+}: {
+  icon: React.ReactNode
+  title: string
+  sub: string
+  helpTitle?: string
+  helpBody?: React.ReactNode
+}) {
   return (
     <div>
       <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand to-brand2 flex items-center justify-center text-bg mb-3">
         {icon}
       </div>
-      <h1 className="text-xl font-extrabold">{title}</h1>
+      <div className="flex items-start justify-between gap-2">
+        <h1 className="text-xl font-extrabold leading-tight">{title}</h1>
+        {helpTitle && helpBody && (
+          <div className="shrink-0 mt-1">
+            <HelpTip title={helpTitle} body={helpBody} variant="lightbulb" />
+          </div>
+        )}
+      </div>
       <p className="text-muted text-[13px] mt-1">{sub}</p>
     </div>
   )
@@ -725,43 +867,149 @@ function ToggleRow({
   )
 }
 
-function PaymentToggle({
-  icon, label, sub, checked, onChange,
-}: { icon: React.ReactNode; label: string; sub: string; checked: boolean; onChange: (v: boolean) => void }) {
+function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
+
+// CollapsibleField — wraps optional onboarding fields so they don't
+// invite filling unless the rider explicitly opens them. Activation
+// audit (2026-05) showed visible "(optional)" fields still cost
+// 12-22s per field because riders fill them anyway.
+function CollapsibleField({
+  label, open: defaultOpen = false, children,
+}: {
+  label: string
+  open?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  if (open) {
+    return <div>{children}</div>
+  }
   return (
     <button
       type="button"
-      onClick={() => onChange(!checked)}
-      className="w-full text-left p-3 rounded-2xl border transition flex items-start gap-3"
+      onClick={() => setOpen(true)}
+      className="w-full text-left px-3.5 py-3 rounded-xl text-[13px] font-extrabold text-muted hover:text-ink transition flex items-center justify-between"
       style={{
-        background: checked ? 'rgba(250,204,21,0.10)' : 'rgba(255,255,255,0.03)',
-        borderColor: checked ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.08)',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px dashed rgba(255,255,255,0.12)',
       }}
     >
-      <div
-        className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center"
-        style={{
-          background: checked ? '#FACC15' : 'rgba(255,255,255,0.06)',
-          color: checked ? '#000' : 'rgba(255,255,255,0.6)',
-        }}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-extrabold text-[14px]">{label}</div>
-        <div className="text-[12px] text-muted mt-0.5">{sub}</div>
-      </div>
-      <div
-        className="w-5 h-5 rounded shrink-0 flex items-center justify-center"
-        style={{ background: checked ? '#FACC15' : 'rgba(255,255,255,0.06)' }}
-      >
-        {checked && <Check className="w-3.5 h-3.5 text-black" strokeWidth={3} />}
-      </div>
+      <span>+ {label}</span>
+      <span className="text-dim text-[11px]">tap untuk buka</span>
     </button>
   )
 }
 
-function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
+// Slug-collision auto-suggest — generates 3 deterministic alternatives
+// from the base slug + (optionally) the rider's city. Tap-to-fill.
+function SlugSuggestions({
+  base, city, onPick,
+}: {
+  base: string
+  city: string
+  onPick: (slug: string) => void
+}) {
+  const candidates = useMemo(() => {
+    const clean = slugify(base).slice(0, 24).replace(/-+$/, '')
+    if (!clean) return [] as string[]
+    const citySlug = city ? slugify(city).split('-')[0] : ''
+    const list = [
+      `${clean}-2`,
+      citySlug ? `${clean}-${citySlug}` : `${clean}-id`,
+      `${clean}-bike`,
+    ]
+    // Dedupe + trim length
+    return Array.from(new Set(list)).map((s) => s.slice(0, 32))
+  }, [base, city])
+
+  if (candidates.length === 0) return null
+
+  return (
+    <div className="mt-2.5">
+      <div className="text-[12px] text-dim font-bold mb-1.5">Coba alternatif:</div>
+      <div className="flex flex-wrap gap-1.5">
+        {candidates.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onPick(c)}
+            className="px-2.5 py-1 rounded-full text-[12px] font-bold border transition active:scale-95"
+            style={{
+              background: 'rgba(250,204,21,0.08)',
+              borderColor: 'rgba(250,204,21,0.35)',
+              color: '#FACC15',
+            }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Service-area tier picker — 3 fixed buckets. Stores into the existing
+// service_zone_radius_km column so the round-trip pricing rule (km × 2
+// when trip > radius) keeps working unchanged.
+//
+// City      → 10 km. Default for ~80% of drivers (daily ojek + in-town
+//             parcels). Anything > 10 km auto-becomes round-trip.
+// Tourist   → 35 km. Yogya → Borobudur / Prambanan / Parangtritis runs.
+// Indonesia → 9999 km sentinel. Out-of-town parcel specialists who don't
+//             mind being away; customer pays one-way km only.
+const TIER_OPTIONS: ReadonlyArray<{
+  value: number
+  emoji: string
+  label: string
+  sub: string
+}> = [
+  { value:   10, emoji: '🏙️', label: 'Driver kota',     sub: 'Standar · 10 km · trip lebih jauh otomatis pulang-pergi' },
+  { value:   35, emoji: '🏖️', label: 'Tujuan wisata',   sub: '35 km · Borobudur, Prambanan, Parangtritis · pulang-pergi setelah 35 km' },
+  { value: 9999, emoji: '🗺️', label: 'Seluruh Indonesia', sub: 'Tanpa batas · customer bayar 1 arah · cocok untuk parcel luar kota' },
+]
+
+function ServiceTierPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="space-y-2">
+      {TIER_OPTIONS.map((opt) => {
+        const active = value === opt.value
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className="w-full text-left p-3.5 rounded-2xl border transition flex items-start gap-3"
+            style={{
+              background: active ? 'rgba(250,204,21,0.10)' : 'rgba(255,255,255,0.03)',
+              borderColor: active ? 'rgba(250,204,21,0.55)' : 'rgba(255,255,255,0.08)',
+            }}
+          >
+            <span
+              className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-[18px]"
+              style={{ background: active ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.04)' }}
+              aria-hidden
+            >
+              {opt.emoji}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="font-extrabold text-[14px]">{opt.label}</div>
+              <div className="text-[12px] text-muted mt-0.5 leading-snug">{opt.sub}</div>
+            </div>
+            <div
+              className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+              style={{
+                background: active ? '#FACC15' : 'rgba(255,255,255,0.06)',
+                border: active ? 'none' : '1px solid rgba(255,255,255,0.15)',
+              }}
+            >
+              {active && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 // TariffHint — advisory note under the per-km and min-fare sliders.
 // Shows the government tariff floor (batas bawah) for the driver's

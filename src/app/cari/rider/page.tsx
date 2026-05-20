@@ -7,7 +7,7 @@ import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
-import { quoteBreakdown, rateFor } from '@/lib/pricing/quote'
+import { quoteBreakdown, rateFor, isOutOfZone } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
 import { writePendingBooking, readTriedDriverIds } from '@/lib/booking/pending-booking'
 import { idr } from '@/lib/format/idr'
@@ -132,15 +132,22 @@ function DriverResults() {
       r.services.includes(filter),
     )
     const e = list.map(r => {
-      // Price the trip for the actively-selected service.
+      // Price the trip for the actively-selected service. When the trip
+      // distance exceeds this driver's service-zone radius, the fare
+      // switches to round-trip (km × 2) — customer covers the return leg.
       const pricing = rateFor(r, filter)
-      const { final, minApplied } = quoteBreakdown(tripKm, pricing)
+      const outOfZone = isOutOfZone(tripKm, r.serviceZoneRadiusKm)
+      const { final, minApplied, chargeableKm } = quoteBreakdown(tripKm, pricing, outOfZone)
       const distanceToPickup = haversineKm(pickup, { lat: r.lat, lng: r.lng })
       const hasOverrides = false
       const hasPitstop = !!pitstopNote
       const pitstopFee = hasPitstop ? (r.pitstopFee ?? 0) : 0
       const totalFare = final + pitstopFee
-      return { rider: r, fare: final, pitstopFee, hasPitstop, totalFare, minApplied, distanceToPickup, perKm: pricing.pricePerKm, hasOverrides }
+      return {
+        rider: r, fare: final, pitstopFee, hasPitstop, totalFare, minApplied,
+        distanceToPickup, perKm: pricing.pricePerKm, hasOverrides,
+        outOfZone, chargeableKm,
+      }
     })
     e.sort((a, b) =>
       sort === 'cheapest' ? a.totalFare - b.totalFare : a.distanceToPickup - b.distanceToPickup,
@@ -183,12 +190,21 @@ function DriverResults() {
       toastTimerRef.current = setTimeout(() => setToast(null), 3000)
       return
     }
-    // Ping the driver's app FIRST (non-blocking sendBeacon — fires our
-    // loud booking-alert sound on the driver's phone). Then open WhatsApp,
-    // preserving the user-gesture for popup-blocker exemption, then write
-    // pending state, then navigate to the post-WhatsApp waiting screen.
+    // iOS Safari 16+ popup-blocker rule: window.open MUST be the first
+    // call inside the synchronous click handler — any prior microtask
+    // breaks the user-gesture chain and the popup is silently blocked.
+    // pingDriverContact uses sendBeacon (sync), so it's safe to run
+    // either side, but we open first to defend against future changes.
+    const opened = window.open(link, '_blank', 'noopener,noreferrer')
+    if (!opened) {
+      // Popup blocked — surface the WhatsApp link so the customer can
+      // copy/long-press it instead of staring at a frozen UI.
+      setToast({ driverName: rider.name + ' — buka manual: ' + link })
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => setToast(null), 6000)
+      return
+    }
     pingDriverContact(rider.id, 'cari_rider')
-    window.open(link, '_blank', 'noopener,noreferrer')
     writePendingBooking({
       driverId: rider.id,
       driverSlug: rider.slug,
@@ -244,7 +260,7 @@ function DriverResults() {
                 style={{ background: '#000000' }}
               >
                 <div>
-                  <div className="text-[12px] text-muted font-extrabold tracking-[0.2em]">FROM</div>
+                  <div className="text-[12px] text-muted font-extrabold tracking-[0.2em]">DARI</div>
                   <div className="text-[15px] font-extrabold text-white mt-1 truncate">{pickupName}</div>
                 </div>
                 {pitstopNote && (
@@ -256,7 +272,7 @@ function DriverResults() {
                   </div>
                 )}
                 <div>
-                  <div className="text-[12px] text-muted font-extrabold tracking-[0.2em]">TO</div>
+                  <div className="text-[12px] text-muted font-extrabold tracking-[0.2em]">TUJUAN</div>
                   <div className="text-[15px] font-extrabold text-white mt-1 truncate">{dropoffName}</div>
                 </div>
                 <button
@@ -273,14 +289,14 @@ function DriverResults() {
                 style={{ background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)' }}
               >
                 <div>
-                  <div className="text-[12px] font-extrabold tracking-wider text-black/60">DISTANCE</div>
+                  <div className="text-[12px] font-extrabold tracking-wider text-black/60">JARAK</div>
                   <div className="text-[20px] font-extrabold text-black leading-none mt-1 whitespace-nowrap">
                     {tripKm.toFixed(1)}
                     <span className="text-[12px] ml-0.5 align-baseline">KM</span>
                   </div>
                 </div>
                 <div>
-                  <div className="text-[12px] font-extrabold tracking-wider text-black/60">ETA</div>
+                  <div className="text-[12px] font-extrabold tracking-wider text-black/60">WAKTU</div>
                   <div className="text-[16px] font-extrabold text-black leading-none mt-1 whitespace-nowrap">
                     ~{etaMinutes(tripKm)}
                     <span className="text-[12px] ml-0.5 align-baseline">MIN</span>
@@ -288,7 +304,7 @@ function DriverResults() {
                 </div>
                 {cheapest != null && (
                   <div>
-                    <div className="text-[12px] font-extrabold tracking-wider text-black/60">FROM</div>
+                    <div className="text-[12px] font-extrabold tracking-wider text-black/60">MULAI</div>
                     <div className="text-[14px] font-extrabold text-black leading-tight mt-1 whitespace-nowrap">
                       {idr(cheapest)}
                     </div>
@@ -351,15 +367,67 @@ function DriverResults() {
 
           {!ridersLoaded && enriched.length === 0 && (
             <div className="card p-8 text-center">
-              <p className="text-muted text-[14px]">Finding nearby independent riders…</p>
+              <p className="text-muted text-[14px]">Mencari driver di sekitarmu…</p>
             </div>
           )}
-          {ridersLoaded && enriched.length === 0 && (
-            <div className="card p-8 text-center">
-              <p className="text-muted text-[14px]">No independent riders match this filter right now.</p>
-              <button onClick={() => setFilter('person')} className="btn-secondary mt-4">Reset filter</button>
-            </div>
-          )}
+          {ridersLoaded && enriched.length === 0 && (() => {
+            const totalOnline = riders.filter(r => r.isOnline && r.subscriptionStatus !== 'past_due').length
+            const otherServiceCounts = (['person', 'parcel', 'food'] as const)
+              .filter(s => s !== filter)
+              .map(s => ({
+                id: s,
+                count: riders.filter(r =>
+                  r.isOnline &&
+                  r.subscriptionStatus !== 'past_due' &&
+                  r.services.includes(s),
+                ).length,
+              }))
+              .filter(x => x.count > 0)
+
+            if (totalOnline === 0) {
+              return (
+                <div className="card p-8 text-center space-y-2">
+                  <p className="font-extrabold text-[15px]">Belum ada driver online</p>
+                  <p className="text-muted text-[13px] leading-relaxed">
+                    Coba beberapa menit lagi — driver biasanya aktif pagi (06-10) dan sore (16-21).
+                  </p>
+                </div>
+              )
+            }
+
+            return (
+              <div className="card p-6 text-center space-y-3">
+                <p className="font-extrabold text-[15px]">
+                  {totalOnline} driver online, tapi belum ada yang menawarkan {SERVICE_LABELS[filter]}
+                </p>
+                {otherServiceCounts.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-muted text-[13px]">Coba layanan lain:</p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {otherServiceCounts.map(({ id, count }) => (
+                        <button
+                          key={id}
+                          onClick={() => { setFilter(id); haptic.tap() }}
+                          className="px-3 py-2 rounded-full text-[13px] font-extrabold transition border active:scale-95"
+                          style={{
+                            background: 'rgba(250,204,21,0.10)',
+                            borderColor: 'rgba(250,204,21,0.40)',
+                            color: '#FACC15',
+                          }}
+                        >
+                          {SERVICE_LABELS[id]} · {count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted text-[13px] leading-relaxed">
+                    Coba edit pickup / dropoff untuk memperluas area pencarian.
+                  </p>
+                )}
+              </div>
+            )
+          })()}
 
           <PlatformDisclaimer variant="compact" />
         </div>
@@ -404,6 +472,8 @@ function FeaturedDriverCard({
     distanceToPickup: number
     perKm: number
     hasOverrides: boolean
+    outOfZone: boolean
+    chargeableKm: number
   }
   isCheapest: boolean
   /** True if the user already contacted this driver in this session.
@@ -521,22 +591,6 @@ function FeaturedDriverCard({
                 </span>
               )
             })()}
-            {rider.onlineUntil && (() => {
-              const t = Date.parse(rider.onlineUntil)
-              if (!Number.isFinite(t)) return null
-              const d = new Date(t)
-              const hh = d.getHours().toString().padStart(2, '0')
-              const mm = d.getMinutes().toString().padStart(2, '0')
-              return (
-                <span
-                  className="pill-soft text-[12px] font-bold"
-                  style={{ background: 'rgba(255,255,255,0.55)', color: '#0A0A0A' }}
-                  title={`Online until ${hh}:${mm}`}
-                >
-                  Until {hh}:{mm}
-                </span>
-              )
-            })()}
             {rider.services.filter(s => s !== 'parcel' && s !== 'food').map(s => (
               <span key={s} className="pill-soft" aria-label={SERVICE_LABELS[s]}>
                 <span aria-hidden>{SERVICE_ICONS[s]}</span>
@@ -560,6 +614,16 @@ function FeaturedDriverCard({
                   : <>Based in {rider.area || rider.city || 'service zone'}</>}
                 {minApplied && <span className="text-brand ml-1.5">· min fare</span>}
               </span>
+              {item.outOfZone && (
+                <span
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-extrabold whitespace-nowrap"
+                  style={{ color: '#0A0A0A' }}
+                  title="Trip melewati zona kerja driver — pulang-pergi"
+                >
+                  <span aria-hidden>↔️</span>
+                  Pulang-pergi · {item.chargeableKm.toFixed(1)} km
+                </span>
+              )}
               {/* Pit-stop fee line — only shown when the customer asked
                   for a pit stop (item.pitstopFee comes from the per-driver
                   pitstop_fee column). Free pit stop reads as "Free pitstop",

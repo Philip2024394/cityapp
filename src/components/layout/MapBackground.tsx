@@ -1,6 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Rider } from '@/types/rider'
 
 // Maplibre is lazy-loaded — the ~85KB chunk only enters the bundle
@@ -55,6 +55,21 @@ function buildHeroRiders(count: number): Rider[] {
 //      network never delivers the style/tiles.
 export default function MapBackground() {
   const heroRiders = useMemo(() => buildHeroRiders(42), [])
+
+  // Pause the live map layer while the tab is hidden. MapBackground
+  // mounts at the root layout and never unmounts during SPA navigation,
+  // so on a 2GB Android the MapLibre canvas + 42 markers + tile cache
+  // sit in memory indefinitely (audit 2026-05 — low-memory tab discard
+  // risk). Hidden → unmount the map; visible → remount. The CSS+SVG
+  // fallback continues to render so the background never goes blank.
+  const [visible, setVisible] = useState(true)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const onVis = () => setVisible(!document.hidden)
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+
   return (
     <>
       {/* Layer 1 — offline-safe CSS+SVG fallback. Always renders. */}
@@ -62,24 +77,27 @@ export default function MapBackground() {
 
       {/* Layer 2 — Maplibre live map. Paints over the fallback when
           tiles arrive. If the network never delivers, the canvas
-          stays transparent and the fallback below stays visible. */}
-      <div
-        className="fixed inset-0 -z-10 pointer-events-none"
-        aria-hidden
-      >
-        <LandingMap
-          center={YOGYA_CENTER}
-          zoom={13}
-          height="100dvh"
-          interactive={false}
-          variant="dark"
-          hideLabels
-          roadsOnly
-          autoPan
-          riders={heroRiders}
-          markerStyle="ping"
-        />
-      </div>
+          stays transparent and the fallback below stays visible.
+          Unmounts when tab hidden to release GPU/tile cache memory. */}
+      {visible && (
+        <div
+          className="fixed inset-0 -z-10 pointer-events-none"
+          aria-hidden
+        >
+          <LandingMap
+            center={YOGYA_CENTER}
+            zoom={13}
+            height="100dvh"
+            interactive={false}
+            variant="dark"
+            hideLabels
+            roadsOnly
+            autoPan
+            riders={heroRiders}
+            markerStyle="ping"
+          />
+        </div>
+      )}
 
       {/* No global readability overlay — the background map shows through
           fully on every page. Per-element glass (.glass-strong on AppNav,

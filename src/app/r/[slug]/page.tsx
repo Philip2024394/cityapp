@@ -300,6 +300,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   // GPS hasn't been granted yet and the customer hasn't explicitly
   // dismissed the prompt. Soft nudge, never blocks browsing.
   const [locChipDismissed, setLocChipDismissed] = useState(false)
+
+  // Idempotent Confirm-Driver submit (audit 2026-05). Low-end Android
+  // touch lag = double-tap → two window.open(wa.me) calls + two
+  // writePendingBooking() entries. Driver gets double WhatsApp pings.
+  const [confirmingBooking, setConfirmingBooking] = useState(false)
   const showLocChip =
     !locChipDismissed && !geo.coords && geo.status !== 'requesting'
 
@@ -319,12 +324,49 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     if (geo.coords) { setPickup(geo.coords); setPickupLabel('My location') }
   }
 
-  // OFFLINE / BUSY / PAST_DUE fallback view. A driver who is BUSY (on
-  // a service) is shown with distinct copy and a blue "on service"
-  // badge — offline drivers are greyscaled and labelled offline.
-  if (!rider.isOnline || rider.subscriptionStatus === 'past_due') {
+  // PAST_DUE: subscription lapsed. We don't expose the billing detail
+  // publicly — visitor sees a neutral "profile sedang tidak aktif"
+  // banner + nearby alternatives. The driver themselves sees the red
+  // renewal banner on /dashboard, so the recovery path is unambiguous.
+  const isPastDue = rider.subscriptionStatus === 'past_due'
+                 || rider.subscriptionStatus === 'canceled'
+  if (isPastDue) {
     const nearby = getOnlineRiders(rider.id)
-    const isBusy = rider.availability === 'busy' && rider.subscriptionStatus !== 'past_due'
+    return (
+      <main className="min-h-screen pb-16">
+        <PageBackground />
+        <BackNav />
+        <div className="max-w-2xl mx-auto px-4 pt-2">
+          <RiderHero rider={rider} dimmed busy={false} />
+          <div className="mt-5 space-y-3">
+            <div
+              className="card p-4"
+              style={{ background: 'rgba(148,163,184,0.05)', borderColor: 'rgba(148,163,184,0.20)' }}
+            >
+              <div className="text-[13px] font-extrabold uppercase tracking-wider text-muted">
+                Profile sedang tidak aktif
+              </div>
+              <p className="text-[14px] text-ink/85 leading-relaxed mt-1.5">
+                {rider.name} sedang tidak menerima booking. Coba driver lain di sekitarmu.
+              </p>
+            </div>
+            <OfflineFallback
+              offlineRider={rider}
+              nearbyRiders={nearby}
+              customerLocation={pickup ?? geo.coords}
+            />
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  // OFFLINE / BUSY fallback view. A driver who is BUSY (on a service)
+  // is shown with distinct copy and a blue "on service" badge — offline
+  // drivers are greyscaled and labelled offline.
+  if (!rider.isOnline) {
+    const nearby = getOnlineRiders(rider.id)
+    const isBusy = rider.availability === 'busy'
     return (
       <main className="min-h-screen pb-16">
         <PageBackground />
@@ -639,6 +681,8 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 live fare on the right when both pickup + drop-off set. */}
             <button
               onClick={() => {
+                if (confirmingBooking) return
+                setConfirmingBooking(true)
                 // Build the WhatsApp message with tappable Google Maps
                 // pins for each endpoint + a directions link the driver
                 // can open straight into navigation. WhatsApp auto-
@@ -693,6 +737,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 )
                 const wa = normaliseE164ForWaMe(rider.whatsappE164)
                 if (!wa) {
+                  setConfirmingBooking(false)
                   alert("Nomor WhatsApp driver tidak valid. Coba driver lain.")
                   return
                 }
@@ -732,11 +777,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 })
                 router.push('/cari/pending')
               }}
-              disabled={!pickup || !dropoff}
+              disabled={!pickup || !dropoff || confirmingBooking}
               className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />
-              <span>Confirm Driver</span>
+              <span>{confirmingBooking ? 'Membuka WhatsApp…' : 'Confirm Driver'}</span>
               {quote ? (
                 <span className="text-[13px] font-bold text-brand/85 ml-1">· {idr(quote.fare)}</span>
               ) : (

@@ -82,23 +82,29 @@
     background: #64748B;
   }
 
-  /* Buttons */
+  /* Buttons — canonical primary CTA. Carries the "Indonesian commercial
+     app" treatment used across dashboard, onboarding, and booking
+     surfaces. Anywhere you'd reach for "px-4 py-3 rounded-2xl bg-
+     gradient-to-r from-brand to-brand2 text-bg font-extrabold uppercase
+     tracking-wider border border-black/85", use .btn-primary instead. */
   .btn-primary {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     background: linear-gradient(135deg, #FACC15, #EAB308);
     color: #0A0A0A;
     font-weight: 800;
-    padding: 14px 22px;
-    border-radius: 14px;
+    padding: 12px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.85);
     min-height: 48px;
-    font-size: 15px;
-    letter-spacing: 0.01em;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     transition: transform 0.15s ease, box-shadow 0.2s ease;
     box-shadow: 0 8px 24px rgba(250,204,21,0.18);
   }
   .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(250,204,21,0.32); }
-  .btn-primary:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(250,204,21,0.22); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-primary:active { transform: translateY(0) scale(0.99); box-shadow: 0 4px 12px rgba(250,204,21,0.22); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
   .btn-secondary {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -144,12 +150,81 @@
   .input::placeholder { color: rgba(255,255,255,0.35); }
   .label { display: block; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 8px; letter-spacing: 0.02em; text-transform: uppercase; }
 
-  /* Cards */
+  /* Cards — tinted black, dark glass. Design language for driver
+     dashboard + activation surfaces per the onboarding brief. Heavier
+     blur reserved for .card-dark (premium surfaces). */
   .card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 20px;
     transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  /* ── Semantic typography ladder ──────────────────────────────────────
+     Use these instead of arbitrary text-[Xpx] classes for any role that
+     repeats across the app. Replaces 30+ ad-hoc sizes flagged in the
+     2026-05 design audit. Sized to read at 14px floor on driver pages
+     (the body[data-surface="driver"] override forces this anyway). */
+  .t-label   { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+  .t-meta    { font-size: 12px; color: rgba(255,255,255,0.45); }
+  .t-body    { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.5; }
+  .t-value   { font-size: 16px; font-weight: 800; color: #FFFFFF; }
+  .t-section { font-size: 18px; font-weight: 900; color: #FFFFFF; line-height: 1.2; }
+  .t-page    { font-size: 24px; font-weight: 900; color: #FFFFFF; line-height: 1.15; }
+
+  /* ── Driver-surface scope ────────────────────────────────────────────
+     Applied via AppNav setting body[data-surface="driver"] on
+     /dashboard, /profile, /pricing, /services, /onboarding. Customer
+     marketplace pages are NOT affected.
+
+     Rules:
+       • Containers go from tinted black to SOLID black
+       • Body text floor: 14px (rises 11/12/13px utilities)
+       • Headers floor: 18px (h1-h6 + section labels) */
+  body[data-surface="driver"] .card,
+  body[data-surface="driver"] .card-dark {
+    background: #0A0A0A;
+    border-color: rgba(255,255,255,0.10);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Body text baseline 14px on driver pages.
+     Overrides Tailwind arbitrary classes for sub-14 sizes — specificity
+     of [attr] + class beats utility's single class. */
+  body[data-surface="driver"] {
+    font-size: 14px;
+  }
+  body[data-surface="driver"] .text-\[10px\],
+  body[data-surface="driver"] .text-\[11px\],
+  body[data-surface="driver"] .text-\[12px\],
+  body[data-surface="driver"] .text-\[13px\] {
+    font-size: 14px;
+  }
+  body[data-surface="driver"] .text-xs {  /* 12px */ font-size: 14px; }
+  body[data-surface="driver"] .text-sm {  /* 14px */ font-size: 14px; }
+
+  /* Headers — 18px floor. h1-h2 lifted to 18 if they're below; larger
+     page-title headings (text-2xl/3xl) keep their existing size since
+     they're explicit overrides. */
+  body[data-surface="driver"] h1,
+  body[data-surface="driver"] h2,
+  body[data-surface="driver"] h3,
+  body[data-surface="driver"] h4,
+  body[data-surface="driver"] h5,
+  body[data-surface="driver"] h6 {
+    font-size: 18px;
+  }
+  /* Keep explicit larger page-titles intact */
+  body[data-surface="driver"] h1.text-2xl,
+  body[data-surface="driver"] h1.text-3xl,
+  body[data-surface="driver"] h1.text-\[20px\],
+  body[data-surface="driver"] h1.text-\[22px\],
+  body[data-surface="driver"] h1.text-\[24px\],
+  body[data-surface="driver"] h1.text-\[26px\],
+  body[data-surface="driver"] h1.text-\[28px\],
+  body[data-surface="driver"] h1.text-\[32px\] {
+    font-size: revert;
   }
   .card-dark {
     background: rgba(0,0,0,0.72);

@@ -69,11 +69,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" translate="no" className="notranslate" suppressHydrationWarning>
       <head>
-        {/* Preconnect to the four first-paint-critical third-party origins
-            so the TLS + DNS handshakes happen in parallel with HTML parse.
-            On 3G in Indonesia this can shave 200-500ms off LCP. */}
-        <link rel="preconnect" href="https://fjvafjkzvygkhiwjuvla.supabase.co" crossOrigin="" />
-        <link rel="preconnect" href="https://tiles.openfreemap.org" crossOrigin="" />
+        {/* Preconnect to first-paint-critical third-party origins so the
+            TLS + DNS handshakes happen in parallel with HTML parse. On 3G
+            in Indonesia this can shave 200-500ms off LCP. Hosts must match
+            what we actually fetch — stale preconnects waste DNS lookups. */}
+        <link rel="preconnect" href="https://krbewsrfxjswkoosohyc.supabase.co" crossOrigin="" />
+        <link rel="preconnect" href="https://pub-fa7f8b7f5d5f4ab08a8a14d5a6c3bfb8.r2.dev" crossOrigin="" />
         <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="" />
         <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
       </head>

@@ -5,7 +5,7 @@ import AppNav from '@/components/layout/AppNav'
 export const metadata = {
   title: 'List Your Bike · City Rider',
   description:
-    'Daftarkan motormu untuk disewakan di City Riders. GRATIS 7 hari pertama, lalu Rp 30.000/bulan — ' +
+    'Daftarkan motormu untuk disewakan di City Riders. GRATIS 7 hari pertama, lalu Rp 38.000/bulan atau Rp 350.000/tahun — ' +
     'tayang setelah ditinjau admin.',
 }
 
@@ -52,7 +52,7 @@ export default function ListBikePage() {
           <p className="mt-2 text-[14px] text-muted leading-snug">
             Punya motor yang nganggur saat kamu nggak kerja? Sewakan di City Riders dan dapatkan
             passive income. <strong className="text-ink">GRATIS 7 hari pertama</strong> — lalu hanya
-            <strong className="text-ink"> Rp 30.000/bulan per listing</strong>, tayang setelah ditinjau admin.
+            <strong className="text-ink"> Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong> per listing, tayang setelah ditinjau admin.
           </p>
         </header>
 

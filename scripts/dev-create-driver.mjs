@@ -145,7 +145,7 @@ await admin.from('subscriptions').upsert({
   driver_id: userId,
   status: 'trial',
   trial_ends_at: trialEnd.toISOString(),
-  amount_idr: 30000,
+  amount_idr: 38000,
 }, { onConflict: 'driver_id' })
 
 // ─── Step 4: generate magic link via email (no SMS needed) ─────────────

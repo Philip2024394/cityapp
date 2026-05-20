@@ -26,7 +26,9 @@
 //     cache whose name doesn't match the current version
 // ============================================================================
 
-const TILE_CACHE = 'cr-tiles-v1'
+const TILE_CACHE = 'cr-tiles-v2-r2'
+const APP_SHELL_CACHE = 'cr-app-shell-v1'
+const OFFLINE_FALLBACK_URL = '/offline.html'
 
 // 1500 vector tiles ≈ 30-50 MB depending on density. Tunable; if we see
 // quota errors in production we can shrink. Browser typically allows
@@ -38,10 +40,16 @@ const TILE_LIMIT = 1500
 // land. The host MUST match exactly — no wildcards, no protocol.
 const TILE_HOSTS = new Set([
   'tiles.openfreemap.org',
-  'tiles.stadiamaps.com',
-  'api.stadiamaps.com',
   'tile.openstreetmap.org',
 ])
+
+// Suffix match used in addition to TILE_HOSTS — covers the self-hosted
+// PMTiles on Cloudflare R2 (any *.r2.dev subdomain) without needing to
+// hard-code the bucket-specific subdomain. PMTiles fetches go to ONE
+// URL with different Range headers; the underlying fetch handler caches
+// each unique request URL+range pair as a separate Cache API entry, so
+// this still benefits from offline behavior even with a single archive.
+const TILE_HOST_SUFFIXES = ['.r2.dev']
 
 // 1x1 transparent PNG. Used as the last-resort response when network and
 // cache both fail — MapLibre treats this as a successfully-loaded blank
@@ -70,22 +78,41 @@ function transparentPngResponse() {
 }
 
 function isTileRequest(url) {
-  return TILE_HOSTS.has(url.hostname)
+  if (TILE_HOSTS.has(url.hostname)) return true
+  for (const suffix of TILE_HOST_SUFFIXES) {
+    if (url.hostname.endsWith(suffix)) return true
+  }
+  return false
 }
 
 self.addEventListener('install', (event) => {
-  // Activate the new SW immediately — don't wait for tabs to close.
-  event.waitUntil(self.skipWaiting())
+  event.waitUntil(
+    (async () => {
+      // Pre-cache the offline-fallback shell so navigations during a
+      // network outage (Vercel down, no signal, Play review without
+      // network) get a branded page instead of the browser's default
+      // dinosaur. Best-effort — never block install on this fetch.
+      try {
+        const cache = await caches.open(APP_SHELL_CACHE)
+        await cache.add(new Request(OFFLINE_FALLBACK_URL, { cache: 'reload' }))
+      } catch { /* ignore — runtime fetch will retry */ }
+      await self.skipWaiting()
+    })(),
+  )
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Drop stale cache versions (cr-tiles-vX where X !== current).
+      // Drop stale cache versions (cr-tiles-vX where X !== current, and
+      // older app-shell versions).
       const names = await caches.keys()
       await Promise.all(
         names
-          .filter((n) => n.startsWith('cr-tiles-') && n !== TILE_CACHE)
+          .filter((n) =>
+            (n.startsWith('cr-tiles-') && n !== TILE_CACHE) ||
+            (n.startsWith('cr-app-shell-') && n !== APP_SHELL_CACHE),
+          )
           .map((n) => caches.delete(n)),
       )
       await self.clients.claim()
@@ -97,6 +124,14 @@ self.addEventListener('fetch', (event) => {
   // Only GETs are cacheable; let everything else fall through to the
   // network unmodified.
   if (event.request.method !== 'GET') return
+
+  // Navigation fallback — when the user navigates to any page and the
+  // network is unreachable, serve the offline shell instead of the
+  // browser's default error. Same-origin only, no API routes.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(handleNavigation(event.request))
+    return
+  }
 
   // Parse the URL lazily — most requests aren't tile requests so we
   // don't want to pay the URL-parse cost for every fetch.
@@ -110,6 +145,29 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(handleTileRequest(event.request))
 })
+
+async function handleNavigation(request) {
+  try {
+    // Always try the network first — we want fresh app shells on every
+    // visit; offline shell is purely a last-resort.
+    return await fetch(request)
+  } catch {
+    const cache = await caches.open(APP_SHELL_CACHE)
+    const cached = await cache.match(OFFLINE_FALLBACK_URL)
+    if (cached) return cached
+    // Cache miss too (first visit, SW not pre-cached yet) — return a
+    // minimal inline page so the user still sees something branded.
+    return new Response(
+      '<!doctype html><meta charset=utf-8><title>City Rider — Offline</title>' +
+      '<body style="background:#0A0A0A;color:#fff;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center"><div>' +
+      '<h1 style="font-size:20px;font-weight:900;margin:0 0 8px">Tidak ada koneksi</h1>' +
+      '<p style="color:rgba(255,255,255,0.65);font-size:14px;margin:0 0 16px">Periksa sinyal lalu coba lagi.</p>' +
+      '<button onclick="location.reload()" style="background:linear-gradient(135deg,#FACC15,#EAB308);color:#0A0A0A;border:1px solid #000;border-radius:16px;padding:12px 18px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;cursor:pointer">Coba lagi</button>' +
+      '</div></body>',
+      { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+    )
+  }
+}
 
 async function handleTileRequest(request) {
   const cache = await caches.open(TILE_CACHE)

@@ -70,19 +70,24 @@ export function loadSnapScript(): Promise<void> {
  * the dashboard, show toast).
  */
 export async function startSnapCheckout(opts: {
-  product?: 'subscription' | 'verified'
+  product?: 'subscription' | 'subscription_yearly' | 'verified'
   onSuccess?: () => void
   onPending?: () => void
   onError?:   (msg: string) => void
   onClose?:   () => void
 }): Promise<void> {
   try {
+    // 12s ceiling on the create call — on 3G the round-trip to Snap can
+    // hang the "Opening…" button forever without it (audit 2026-05).
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 12_000)
     const [createRes] = await Promise.all([
       fetch('/api/payments/snap/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product: opts.product ?? 'subscription' }),
-      }),
+        signal: ctrl.signal,
+      }).finally(() => clearTimeout(timer)),
       loadSnapScript(),
     ])
     if (!createRes.ok) {
@@ -90,16 +95,21 @@ export async function startSnapCheckout(opts: {
       throw new Error(json?.error || `Create failed (${createRes.status})`)
     }
     const { token } = (await createRes.json()) as { token: string }
-    if (!token) throw new Error('No Snap token returned')
-    if (!window.snap) throw new Error('Snap not loaded')
+    if (!token) throw new Error('Tidak ada Snap token — coba lagi')
+    if (!window.snap) throw new Error('Snap belum siap — refresh dan coba lagi')
 
     window.snap.pay(token, {
       onSuccess: () => opts.onSuccess?.(),
       onPending: () => opts.onPending?.(),
-      onError:   (r) => opts.onError?.(typeof r === 'string' ? r : 'Payment error'),
+      onError:   (r) => opts.onError?.(typeof r === 'string' ? r : 'Pembayaran gagal'),
       onClose:   () => opts.onClose?.(),
     })
   } catch (e) {
-    opts.onError?.(e instanceof Error ? e.message : 'Payment error')
+    const isAbort = e instanceof DOMException && e.name === 'AbortError'
+    opts.onError?.(
+      isAbort
+        ? 'Koneksi lambat — Snap tidak merespons. Coba lagi.'
+        : e instanceof Error ? e.message : 'Pembayaran gagal',
+    )
   }
 }

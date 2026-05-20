@@ -125,6 +125,10 @@ export type Rider = {
   tourGuideEnabledAt?: string | null
   lat: number
   lng: number
+  /** Driver's chosen service radius from base, in km. When a trip exceeds
+   *  this distance the fare switches to round-trip (km × 2) so the
+   *  customer covers the return leg back to pickup. */
+  serviceZoneRadiusKm?: number | null
   subscriptionStatus: 'trial' | 'active' | 'past_due' | 'canceled'
   /** Average customer rating (1–5, one decimal place). Undefined for new
    *  riders with no completed trips yet — UI hides the rating row in that

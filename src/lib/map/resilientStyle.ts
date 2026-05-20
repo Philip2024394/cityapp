@@ -1,38 +1,41 @@
 // ============================================================================
-// Multi-origin tile failover for MapLibre.
+// Tile resilience for MapLibre — two-mode style builder.
 // ----------------------------------------------------------------------------
-// Fetches the OpenFreeMap base style and patches every vector tile source's
-// `tiles` array to include backup URLs. MapLibre tries each URL in order
-// when fetching a tile — if the primary 5xx's or times out, the next URL
-// is hit transparently. Combined with the Service Worker tile cache, this
-// covers four failure modes:
+// PRIMARY MODE (when NEXT_PUBLIC_PMTILES_URL is set):
+//   • Tile bytes: self-hosted PMTiles on Cloudflare R2 (zero third-party
+//     dependency for the bulk data flow)
+//   • Layer definitions: protomaps-themes-base v4 — generates a complete
+//     layer set whose `source-layer` names exactly match the Protomaps
+//     Basemap schema in our PMTiles file (`roads`, `places`, `buildings`,
+//     `water`, etc.) — critical, because the OpenFreeMap style we used
+//     before referenced different layer names (`transportation`, `place`,
+//     `building`) so nothing painted.
+//   • Glyphs + sprite: Protomaps' free CDN (tiny static assets cached
+//     by the browser forever; not worth re-hosting at our scale)
 //
+// FALLBACK MODE (env var unset — dev / kill switch):
+//   • Tile bytes + style: OpenFreeMap (third-party but reliable)
+//
+// Combined with the Service Worker tile cache, this covers:
 //   1. Network blip → SW returns cached tile
-//   2. Tile not yet in cache + primary slow/down → MapLibre tries backup
-//   3. All providers down + tile is cached → SW returns cached even if stale
-//   4. All providers down + no cache → SW returns a transparent 1x1 PNG
-//      so the map shows blank instead of red-bordered error tiles
-//
-// PROVIDER NOTES:
-//   • OpenFreeMap — free, no API key, OpenMapTiles schema (planet vector)
-//   • Stadia Maps — 200k req/month free tier without API key, same schema
-//
-// Both providers serve OpenMapTiles-schema vector tiles, so the style's
-// layer definitions render correctly against either. Sprite + glyphs URLs
-// stay pointed at OpenFreeMap — those load once per session and the SW
-// caches them, so a Stadia hit doesn't need its own sprite endpoint.
+//   2. Cold tile + primary slow → MapLibre's own retry
+//   3. All providers down + tile cached → SW serves stale
+//   4. All providers down + no cache → SW returns transparent 1x1 PNG
 // ============================================================================
+
+import { layers as protomapsLayers, namedTheme } from 'protomaps-themes-base'
 
 const OPENFREEMAP_STYLE_URLS = {
   positron: 'https://tiles.openfreemap.org/styles/positron',
   dark: 'https://tiles.openfreemap.org/styles/dark',
 } as const
 
-// Stadia OpenMapTiles vector pyramid — same schema as OpenFreeMap so the
-// layer definitions in the OpenFreeMap style render correctly against
-// these tiles too. {z}/{x}/{y} placeholders are filled by MapLibre.
-const STADIA_TILE_URL =
-  'https://tiles.stadiamaps.com/data/openmaptiles/{z}/{x}/{y}.pbf'
+// Protomaps publishes free font + sprite assets at github.io. Tiny
+// payload, cached forever after first hit — not worth re-hosting in R2
+// just to claim full self-hosting.
+const PROTOMAPS_GLYPHS = 'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf'
+const PROTOMAPS_SPRITE = (theme: 'light' | 'dark') =>
+  `https://protomaps.github.io/basemaps-assets/sprites/v4/${theme}`
 
 // Bare-minimum fallback style returned when everything (fetch + cache)
 // fails on first load. Dark background, no layers — the user at least
@@ -55,8 +58,7 @@ function emptyFallbackStyle(variant: 'positron' | 'dark'): MapStyleSpec {
 }
 
 // Minimal style shape we touch — we deliberately type only the fields we
-// modify so we don't have to import MapLibre's enormous Style type just
-// to read source.tiles.
+// modify so we don't have to import MapLibre's enormous Style type.
 type MapStyleSpec = {
   version: 8
   name?: string
@@ -70,27 +72,26 @@ type MapStyleSpec = {
 const styleCache = new Map<'positron' | 'dark', Promise<MapStyleSpec>>()
 
 /**
- * Fetches the OpenFreeMap style for the given variant, patches each
- * vector source's `tiles` array to include Stadia URLs as backup, and
- * resolves the source's `url` reference (if any) so MapLibre doesn't
- * need a second network round-trip for the source descriptor.
- *
- * Result is memoised per variant for the lifetime of the page — the style
- * doesn't change between renders, so we never re-fetch within a session.
+ * Builds the MapLibre style for the given variant. Memoised per variant
+ * for the page lifetime so we never re-fetch within a session.
  */
 export function getResilientStyle(variant: 'positron' | 'dark'): Promise<MapStyleSpec> {
   const existing = styleCache.get(variant)
   if (existing) return existing
 
   const promise = (async (): Promise<MapStyleSpec> => {
+    const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL
+    if (pmtilesUrl) {
+      // PRIMARY: pmtiles + protomaps theme
+      return buildProtomapsStyle(pmtilesUrl, variant)
+    }
+    // FALLBACK: original OpenFreeMap path
     try {
       const res = await fetch(OPENFREEMAP_STYLE_URLS[variant], { cache: 'force-cache' })
       if (!res.ok) throw new Error(`style ${res.status}`)
       const raw = (await res.json()) as MapStyleSpec
-      return await patchStyleWithFallbacks(raw)
+      return await inlineTileJson(raw)
     } catch {
-      // If the style fetch itself fails (rare — OpenFreeMap CDN down),
-      // return a bare dark/light canvas so the map widget doesn't crash.
       return emptyFallbackStyle(variant)
     }
   })()
@@ -99,13 +100,48 @@ export function getResilientStyle(variant: 'positron' | 'dark'): Promise<MapStyl
   return promise
 }
 
-async function patchStyleWithFallbacks(style: MapStyleSpec): Promise<MapStyleSpec> {
+/** PRIMARY mode — Protomaps theme + our self-hosted PMTiles on R2. */
+function buildProtomapsStyle(pmtilesUrl: string, variant: 'positron' | 'dark'): MapStyleSpec {
+  // Map our two existing variant names to Protomaps' palette names.
+  // 'light' is the cleanest equivalent of OpenFreeMap's "positron";
+  // 'dark' is a direct match.
+  const themeName: 'light' | 'dark' = variant === 'dark' ? 'dark' : 'light'
+
+  // v4 takes a full Theme object (palette + named colours) as 2nd arg,
+  // not a string. namedTheme(name) returns the matching built-in palette.
+  // The third argument carries the label language code — 'en' covers
+  // Latin script; Protomaps falls back to local names where the data
+  // only has the non-Latin original (most Indonesian place names ARE
+  // Latin so this is a non-issue here).
+  const layers = protomapsLayers(
+    'protomaps',
+    namedTheme(themeName),
+    { lang: 'en' },
+  ) as unknown as MapStyleSpec['layers']
+
+  return {
+    version: 8,
+    name: 'CityRiders self-hosted (Protomaps Basemap)',
+    glyphs: PROTOMAPS_GLYPHS,
+    sprite: PROTOMAPS_SPRITE(themeName),
+    sources: {
+      protomaps: {
+        type: 'vector',
+        url: `pmtiles://${pmtilesUrl}`,
+        attribution:
+          '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>',
+      },
+    },
+    layers,
+  }
+}
+
+/** FALLBACK mode — OpenFreeMap style with its TileJSON inlined so MapLibre
+ *  skips an extra round-trip on first paint. */
+async function inlineTileJson(style: MapStyleSpec): Promise<MapStyleSpec> {
   const sources = { ...style.sources }
   for (const [name, sourceRaw] of Object.entries(sources)) {
     const source = { ...sourceRaw }
-    // OpenFreeMap defines vector sources as { url: 'https://tiles.openfreemap.org/planet' }
-    // We resolve that to its TileJSON, extract the tiles array, and add
-    // Stadia as a fallback URL.
     if (typeof source.url === 'string' && !source.tiles) {
       try {
         const tj = await fetch(source.url, { cache: 'force-cache' }).then((r) => r.json()) as {
@@ -113,24 +149,14 @@ async function patchStyleWithFallbacks(style: MapStyleSpec): Promise<MapStyleSpe
           [k: string]: unknown
         }
         if (Array.isArray(tj.tiles) && tj.tiles.length > 0) {
-          source.tiles = [...tj.tiles, STADIA_TILE_URL]
-          // Copy through the rest of the TileJSON fields MapLibre cares
-          // about (minzoom, maxzoom, bounds) so we don't lose them by
-          // removing the url indirection.
+          source.tiles = [...tj.tiles]
           if (tj.minzoom !== undefined) source.minzoom = tj.minzoom
           if (tj.maxzoom !== undefined) source.maxzoom = tj.maxzoom
           if (tj.bounds !== undefined) source.bounds = tj.bounds
           delete source.url
         }
       } catch {
-        // Resolution failed — leave the source as-is and let MapLibre
-        // attempt its own resolution; SW cache will catch most cases.
-      }
-    } else if (Array.isArray(source.tiles) && source.tiles.length > 0) {
-      // Source already has explicit tile URLs — append Stadia as a backup
-      // if it isn't already in the list.
-      if (!source.tiles.includes(STADIA_TILE_URL)) {
-        source.tiles = [...source.tiles, STADIA_TILE_URL]
+        // Resolution failed — leave source as-is; MapLibre will try.
       }
     }
     sources[name] = source

@@ -6,16 +6,22 @@ import { isNative } from '@/lib/capacitor/isNative'
 // useDriverLocationPing — drives the live location loop for a driver who
 // has flipped GO ONLINE. Watches the device GPS continuously (so we
 // catch quick movement) but throttles the network POST to ~once every
-// `pingIntervalMs` (default 30s) — same trade-off Gojek / Grab use.
+// `pingIntervalMs` (default 30s).
 //
-// On the server: the receiving route compares the new ping against
-// the previous one and auto-flips availability between 'online'
-// (stationary) and 'busy' (moving ≥10m in the last ~30s).
+// AVAILABILITY MODEL (PM 12/2019 directory posture — 2026-05 audit):
+// The driver alone controls their `availability` state — there is no
+// platform-side inference. We only forward GPS coordinates plus a
+// `last_active_at` timestamp. The receiving route does NOT translate
+// movement into busy/online — that would imply dispatch orchestration.
+//
+// If we later want a UX hint ("this rider is moving — likely on a job"),
+// we render it client-side based on the public last-fix delta, and we
+// label it "moving"/"stationary" — never "busy". Bookability is gated
+// solely on `availability === 'online'`, which the driver sets manually.
 //
 // Tab visibility: when the page is backgrounded we keep watching the
 // device GPS but stop POSTing — modern browsers throttle JS in hidden
-// tabs anyway, and we don't want stale ticks landing minutes later
-// flipping the driver to 'busy' from yesterday's last fix.
+// tabs anyway, and we don't want stale ticks landing minutes later.
 //
 // NATIVE GATE:
 // On Capacitor (Android APK), this hook short-circuits — the native

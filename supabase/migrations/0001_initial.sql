@@ -43,7 +43,7 @@ create table public.drivers (
   area                          text,
   service_zone_center_lat       double precision,
   service_zone_center_lng       double precision,
-  service_zone_radius_km        numeric(5,2) default 15,
+  service_zone_radius_km        numeric(5,2) default 10,
 
   -- Account status (admin moderation tool)
   status                        text not null default 'active'
@@ -102,7 +102,7 @@ create table public.subscriptions (
                        check (status in ('trial','active','past_due','canceled')),
   trial_ends_at        timestamptz,
   current_period_end   timestamptz,
-  amount_idr           int not null default 30000,
+  amount_idr           int not null default 38000,
   payment_reference    text,
   notes                text,
   updated_at           timestamptz not null default now()

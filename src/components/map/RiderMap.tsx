@@ -1,10 +1,24 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import maplibregl, { Map as MLMap, Marker } from 'maplibre-gl'
+import { Protocol as PMTilesProtocol } from 'pmtiles'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Info, X as XIcon } from 'lucide-react'
 import type { Rider } from '@/types/rider'
 import { getResilientStyle } from '@/lib/map/resilientStyle'
+
+// Register the PMTiles protocol on MapLibre once per app lifecycle so any
+// `pmtiles://...` URL in a style source resolves through the pmtiles
+// reader (range-fetches an indexed single-file archive on R2 or any HTTP
+// host). Idempotent: addProtocol with the same key replaces the prior
+// handler, so module re-evaluation in dev HMR is safe. Pointing a tile
+// source at a real pmtiles URL is opt-in — registering the protocol
+// alone has no runtime cost when no source uses it.
+if (typeof window !== 'undefined' && !(window as unknown as { __cr_pmtiles?: boolean }).__cr_pmtiles) {
+  const protocol = new PMTilesProtocol()
+  maplibregl.addProtocol('pmtiles', protocol.tile)
+  ;(window as unknown as { __cr_pmtiles?: boolean }).__cr_pmtiles = true
+}
 
 // Marching-ants dash cycle for the route line. Each frame shifts the dash
 // pattern so the line appears to flow from pickup → dropoff. Twelve steps
@@ -52,10 +66,10 @@ type Props = {
   pitStop?: boolean
 }
 
-// OpenFreeMap primary + Stadia Maps backup wired via getResilientStyle().
-// On a failed OpenFreeMap tile fetch, MapLibre transparently retries
-// against Stadia using the same z/x/y. The Service Worker cache (Phase 1)
-// then captures whichever succeeded so subsequent loads are instant.
+// OpenFreeMap primary wired via getResilientStyle(). The Service Worker
+// cache (Phase 1) captures successful tile fetches so subsequent loads
+// are instant even offline. Last-resort: SW returns a transparent 1x1
+// PNG so a broken tile renders blank instead of as a red error overlay.
 
 // Indonesia bounding box — constrains pan so users can't accidentally
 // scroll into the Pacific. Generous margin around the real coastline
@@ -433,7 +447,8 @@ export default function RiderMap({
     })
   }, [riders, markerStyle])
 
-  // Render pickup marker
+  // Render pickup marker — green square so the customer sees their
+  // pickup take effect on the map the moment they set it.
   useEffect(() => {
     if (!mapRef.current) return
     if (pickupMarkerRef.current) { pickupMarkerRef.current.remove(); pickupMarkerRef.current = null }
@@ -441,9 +456,9 @@ export default function RiderMap({
     const el = document.createElement('div')
     el.innerHTML = `
       <div style="
-        width: 18px; height: 18px; border-radius: 50%;
-        background: #FACC15; border: 3px solid #0A0A0A;
-        box-shadow: 0 0 14px rgba(250,204,21,0.85);
+        width: 18px; height: 18px; border-radius: 4px;
+        background: #22C55E; border: 3px solid #0A0A0A;
+        box-shadow: 0 0 14px rgba(34,197,94,0.85);
       "></div>
     `
     pickupMarkerRef.current = new maplibregl.Marker({ element: el })
@@ -451,7 +466,8 @@ export default function RiderMap({
       .addTo(mapRef.current)
   }, [pickup])
 
-  // Render dropoff marker
+  // Render dropoff marker — red circle. Distinct shape AND colour from
+  // the green pickup square so the trip ends read unambiguously.
   useEffect(() => {
     if (!mapRef.current) return
     if (dropoffMarkerRef.current) { dropoffMarkerRef.current.remove(); dropoffMarkerRef.current = null }
@@ -459,9 +475,9 @@ export default function RiderMap({
     const el = document.createElement('div')
     el.innerHTML = `
       <div style="
-        width: 18px; height: 18px; border-radius: 4px;
-        background: #22C55E; border: 3px solid #0A0A0A;
-        box-shadow: 0 0 14px rgba(34,197,94,0.85);
+        width: 18px; height: 18px; border-radius: 50%;
+        background: #DC2626; border: 3px solid #0A0A0A;
+        box-shadow: 0 0 14px rgba(220,38,38,0.85);
       "></div>
     `
     dropoffMarkerRef.current = new maplibregl.Marker({ element: el })

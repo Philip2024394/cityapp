@@ -1,22 +1,35 @@
 'use client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Printer, Download, Share2 } from 'lucide-react'
+import { ChevronLeft, Printer, Share2, Loader2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import QRBusinessCard from '@/components/rider/QRBusinessCard'
-import { MOCK_RIDERS } from '@/data/mockRiders'
+import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
 import { useHaptic } from '@/hooks/useHaptic'
-
-const ME = MOCK_RIDERS[0]!
+import type { Rider } from '@/types/rider'
 
 export default function BusinessCardPage() {
   const haptic = useHaptic()
+  const [ME, setME] = useState<Rider | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchMyDriverBrowser().then((me) => {
+      if (cancelled) return
+      setME(me)
+      setLoaded(true)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   // Production: use NEXT_PUBLIC_APP_URL + slug. Dev fallback uses window.location.
-  const profileUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/r/${ME.slug}`
-      : `https://cityrider.id/r/${ME.slug}`
+  const profileUrl = ME
+    ? (typeof window !== 'undefined'
+        ? `${window.location.origin}/r/${ME.slug}`
+        : `https://cityrider.id/r/${ME.slug}`)
+    : ''
 
   function onPrint() {
     haptic.impact()
@@ -24,6 +37,7 @@ export default function BusinessCardPage() {
   }
 
   async function onShare() {
+    if (!ME) return
     haptic.tap()
     const shareData = {
       title: `${ME.name} · City Rider`,
@@ -57,22 +71,37 @@ export default function BusinessCardPage() {
             </p>
           </header>
 
-          {/* The card itself */}
-          <div className="print-area py-2">
-            <QRBusinessCard rider={ME} profileUrl={profileUrl} />
-          </div>
+          {/* The card itself — only renders once the rider is loaded so
+              every driver prints their OWN QR, never a mock placeholder. */}
+          {!loaded && (
+            <div className="card p-8 flex items-center justify-center text-muted">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+          )}
+          {loaded && !ME && (
+            <div className="card p-8 text-center text-muted">
+              Sign in as a driver to print your business card.
+            </div>
+          )}
+          {ME && (
+            <>
+              <div className="print-area py-2">
+                <QRBusinessCard rider={ME} profileUrl={profileUrl} />
+              </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-2 gap-2 no-print">
-            <button onClick={onPrint} className="btn-primary w-full">
-              <Printer className="w-4 h-4" />
-              Print card
-            </button>
-            <button onClick={onShare} className="btn-secondary w-full">
-              <Share2 className="w-4 h-4" />
-              Share link
-            </button>
-          </div>
+              {/* Action buttons */}
+              <div className="grid grid-cols-2 gap-2 no-print">
+                <button onClick={onPrint} className="btn-primary w-full">
+                  <Printer className="w-4 h-4" />
+                  Print card
+                </button>
+                <button onClick={onShare} className="btn-secondary w-full">
+                  <Share2 className="w-4 h-4" />
+                  Share link
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Tips */}
           <div className="card p-4 border-brand/20 bg-brand/5 no-print">

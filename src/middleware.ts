@@ -76,8 +76,15 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Match everything except static assets and Next internals.
+  // Match page navigations only. Excludes:
+  //   - /api/*           (each route does its own auth; middleware would
+  //                       add an extra Supabase round-trip per call)
+  //   - _next/static     (immutable build assets)
+  //   - _next/image      (image optimizer)
+  //   - sw.js / manifest (PWA bootstrap, never auth-gated)
+  //   - common static    (favicon, robots, sitemap, og/*, icons/*)
+  //   - image extensions (avoids touching /og-default.png etc.)
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!api/|_next/static|_next/image|favicon\\.ico|sw\\.js|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|og-default\\.png|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
   ],
 }

@@ -10,92 +10,100 @@ import DashboardNav from '@/components/layout/DashboardNav'
 
 // What a City Rider subscriber needs to operate LEGALLY as an
 // independent motorcycle courier in Indonesia. A self-check list —
-// City Rider does NOT enforce these (we'd become an employer if we
-// did), but we want every rider to know what they're responsible for.
+// City Rider does NOT enforce these (verifying compliance would shift
+// us toward employer-like control, contrary to our software-directory
+// posture under Permenhub PM 12/2019).
 //
-// Sources: UU 22/2009 (LLAJ), Permenhub PM 12/2019 (online ojek),
-// UU 7/2021 (HPP — tax simplifications), and standard Indonesian
-// motorbike commercial-use practice.
+// Sources cited inline: UU 22/2009 (Lalu Lintas dan Angkutan Jalan),
+// UU 24/2011 (SJSN), UU 7/2021 (Harmonisasi Peraturan Perpajakan),
+// UU 27/2022 (Pelindungan Data Pribadi), PP 44/2015 (BPJS BPU),
+// Perda Bali 5/2020 + Permenparekraf 8/2021 (Pramuwisata).
+// Last reviewed: 2026-05-21.
 
 type RequirementId =
   | 'ktp' | 'sim-c' | 'stnk' | 'pkb' | 'helmet' | 'headlights'
   | 'bpjs-kes' | 'bpjs-tk' | 'insurance' | 'jaket' | 'whatsapp-business'
-  | 'npwp' | 'nib' | 'pramuwisata'
+  | 'npwp' | 'nib' | 'pramuwisata' | 'pdp'
 
 const REQUIREMENTS: Array<{
   id: RequirementId
-  category: 'Required by law' | 'Strongly recommended' | 'Optional but professional'
+  category: 'Wajib menurut hukum' | 'Sangat disarankan' | 'Profesional (opsional)'
   title: string
   desc: string
   fine?: string
   link?: { label: string; href: string }
 }> = [
-  // ─── Required by law ───────────────────────────────────────────
-  { id: 'ktp', category: 'Required by law',
-    title: 'KTP — National ID',
-    desc: 'Kartu Tanda Penduduk must be valid + carried. Baseline ID; you cannot obtain SIM C, NPWP, or BPJS without it.',
-    link: { label: 'Disdukcapil', href: 'https://www.dukcapil.kemendagri.go.id' } },
-  { id: 'sim-c', category: 'Required by law',
-    title: 'SIM C — Motorcycle licence',
-    desc: 'Valid Indonesian motorcycle licence (SIM C). Driving without one is illegal under UU 22/2009 and renders any insurance claim void.',
-    fine: 'Pasal 281: max Rp 1.000.000 fine or 4 months jail',
-    link: { label: 'Apply at SATPAS', href: 'https://www.korlantas.polri.go.id' } },
-  { id: 'stnk', category: 'Required by law',
-    title: 'STNK — Vehicle registration',
-    desc: 'Surat Tanda Nomor Kendaraan must be valid + carried while riding. Mandatory under UU 22/2009 Pasal 70.',
-    fine: 'Pasal 288(1): max Rp 500.000 fine or 2 months jail' },
-  { id: 'pkb', category: 'Required by law',
-    title: 'Pajak Kendaraan Bermotor (PKB) — Active vehicle tax',
-    desc: 'Annual motor-vehicle tax must be paid on time. Visible on your STNK as the next-due date. Lapsed PKB = unregistered vehicle in the eyes of police.',
-    fine: 'Pasal 288: same as STNK violation' },
-  { id: 'helmet', category: 'Required by law',
-    title: 'Helm SNI — Standard helmet',
-    desc: 'Both rider AND passenger must wear SNI-certified helmets. Mandatory under UU 22/2009 Pasal 106(8).',
-    fine: 'Pasal 291: max Rp 250.000 fine or 1 month jail (per person)' },
-  { id: 'headlights', category: 'Required by law',
-    title: 'Daytime headlights on',
-    desc: 'Motorcycle headlights must be lit at all times when riding — day and night. UU 22/2009 Pasal 107(2). Common ticket.',
-    fine: 'Pasal 293(2): max Rp 100.000 fine or 15 days jail' },
-  { id: 'bpjs-kes', category: 'Required by law',
-    title: 'BPJS Kesehatan — Health insurance',
-    desc: 'Mandatory for every Indonesian citizen under UU 24/2011 (SJSN). Independent-worker class: PBPU. Currently underenforced but technically required.',
+  // ─── Wajib menurut hukum ───────────────────────────────────────
+  { id: 'ktp', category: 'Wajib menurut hukum',
+    title: 'KTP — Kartu Tanda Penduduk',
+    desc: 'KTP berlaku dan selalu dibawa. Identitas dasar — kamu tidak bisa mengurus SIM C, NPWP, atau BPJS tanpa ini.',
+    link: { label: 'dukcapil.kemendagri.go.id', href: 'https://www.dukcapil.kemendagri.go.id' } },
+  { id: 'sim-c', category: 'Wajib menurut hukum',
+    title: 'SIM C — Surat Izin Mengemudi sepeda motor',
+    desc: 'Berkendara tanpa SIM C melanggar UU 22/2009 dan menggugurkan setiap klaim asuransi pihak ketiga.',
+    fine: 'Pasal 281 — maks. Rp 1.000.000 atau 4 bulan kurungan',
+    link: { label: 'korlantas.polri.go.id', href: 'https://www.korlantas.polri.go.id' } },
+  { id: 'stnk', category: 'Wajib menurut hukum',
+    title: 'STNK — Surat Tanda Nomor Kendaraan',
+    desc: 'STNK harus aktif dan dibawa saat berkendara (UU 22/2009 Pasal 70).',
+    fine: 'Pasal 288 ayat (1) — maks. Rp 500.000 atau 2 bulan kurungan' },
+  { id: 'pkb', category: 'Wajib menurut hukum',
+    title: 'PKB — Pajak Kendaraan Bermotor aktif',
+    desc: 'Pajak tahunan harus dibayar tepat waktu. Jatuh tempo tertera di STNK. PKB lewat = kendaraan dianggap tidak terdaftar.',
+    fine: 'Pasal 288 — sama dengan pelanggaran STNK' },
+  { id: 'helmet', category: 'Wajib menurut hukum',
+    title: 'Helm Standar Nasional Indonesia (SNI)',
+    desc: 'Pengemudi dan penumpang wajib mengenakan helm ber-SNI (UU 22/2009 Pasal 106 ayat 8).',
+    fine: 'Pasal 291 — maks. Rp 250.000 atau 1 bulan kurungan (per orang)' },
+  { id: 'headlights', category: 'Wajib menurut hukum',
+    title: 'Lampu utama menyala (siang dan malam)',
+    desc: 'Lampu utama wajib menyala sepanjang berkendara (UU 22/2009 Pasal 107 ayat 2). Termasuk pelanggaran paling sering ditilang.',
+    fine: 'Pasal 293 ayat (2) — maks. Rp 100.000 atau 15 hari kurungan' },
+  { id: 'bpjs-kes', category: 'Wajib menurut hukum',
+    title: 'BPJS Kesehatan',
+    desc: 'Kepesertaan wajib bagi setiap warga negara (UU 24/2011 SJSN). Untuk pekerja mandiri: kelas PBPU (Peserta Bukan Penerima Upah).',
     link: { label: 'bpjs-kesehatan.go.id', href: 'https://www.bpjs-kesehatan.go.id' } },
 
-  // ─── Strongly recommended ───────────────────────────────────────
-  { id: 'bpjs-tk', category: 'Strongly recommended',
-    title: 'BPJS Ketenagakerjaan (BPU) — Work-accident protection',
-    desc: 'PP 44/2015 lets self-employed riders enrol under the BPU (Bukan Penerima Upah) scheme. From ~Rp 16.800/month for Jaminan Kecelakaan Kerja + Jaminan Kematian. Single biggest financial risk-reducer.',
+  // ─── Sangat disarankan ───────────────────────────────────────
+  { id: 'bpjs-tk', category: 'Sangat disarankan',
+    title: 'BPJS Ketenagakerjaan — skema BPU',
+    desc: 'PP 44/2015 memungkinkan driver mandiri terdaftar di skema Bukan Penerima Upah. Mulai dari ~Rp 16.800/bulan untuk Jaminan Kecelakaan Kerja + Jaminan Kematian. Satu-satunya proteksi pendapatan jika cedera.',
     link: { label: 'bpjsketenagakerjaan.go.id', href: 'https://www.bpjsketenagakerjaan.go.id' } },
-  { id: 'insurance', category: 'Strongly recommended',
-    title: 'Personal accident insurance',
-    desc: 'Jasa Raharja (built into your STNK via SWDKLLJ) covers other-party injury but NOT loss of income. Add commercial cover (Allianz, Axa Mandiri, Sompo) ~Rp 50–100K/year for your own income protection.' },
-  { id: 'jaket', category: 'Strongly recommended',
-    title: 'Safety gear',
-    desc: 'Riding jacket, gloves, closed shoes. Required mindset if you transport passengers. Visibility vest helpful for night work — saves your life, not just legal exposure.' },
-  { id: 'whatsapp-business', category: 'Strongly recommended',
-    title: 'WhatsApp Business account',
-    desc: 'Free app gives you a business profile, quick replies, and labels for organising customer chats. Looks more professional + lets you set away-hours.',
-    link: { label: 'WhatsApp Business', href: 'https://business.whatsapp.com' } },
+  { id: 'insurance', category: 'Sangat disarankan',
+    title: 'Asuransi kecelakaan pribadi',
+    desc: 'Jasa Raharja (otomatis lewat SWDKLLJ di STNK) hanya menanggung pihak ketiga, bukan kehilangan pendapatan kamu sendiri. Tambah polis komersial (Allianz, Axa Mandiri, Sompo) ~Rp 50–100.000/tahun untuk proteksi income.' },
+  { id: 'jaket', category: 'Sangat disarankan',
+    title: 'Perlengkapan keselamatan',
+    desc: 'Jaket riding, sarung tangan, sepatu tertutup. Untuk kerja malam: rompi reflektif. Lebih melindungi nyawa kamu daripada paparan hukum.' },
+  { id: 'pdp', category: 'Sangat disarankan',
+    title: 'Privasi data customer — UU 27/2022 PDP',
+    desc: 'Saat menyimpan kontak customer di Customer Book atau menjalankan kampanye broadcast, kamu menjadi pengendali data. Aturan minimum: minta izin sebelum simpan, hapus saat diminta, jangan jual ke pihak ketiga.',
+    link: { label: 'jdih.kominfo.go.id', href: 'https://jdih.kominfo.go.id' } },
+  { id: 'whatsapp-business', category: 'Sangat disarankan',
+    title: 'WhatsApp Business',
+    desc: 'Aplikasi gratis dengan profil bisnis, balasan cepat, dan label percakapan. Memberikan kesan profesional dan jam operasional yang jelas.',
+    link: { label: 'business.whatsapp.com', href: 'https://business.whatsapp.com' } },
 
-  // ─── Optional but professional ──────────────────────────────────
-  { id: 'npwp', category: 'Optional but professional',
-    title: 'NPWP — Tax number',
-    desc: 'Required if your annual income exceeds PTKP (Rp 54.000.000/year for single status TK0, Rp 58.500.000 for married K0). Under UU 7/2021 you can use PPh Final 0.5% as an MSME — straightforward and cheap.',
-    link: { label: 'Register at pajak.go.id', href: 'https://www.pajak.go.id' } },
-  { id: 'nib', category: 'Optional but professional',
-    title: 'NIB — Business ID number',
-    desc: 'Nomor Induk Berusaha via OSS (Online Single Submission). Free, ~30 min online. Marks you as a legal usaha mikro and unlocks bank business accounts, supplier credit, etc.',
+  // ─── Profesional (opsional) ──────────────────────────────────
+  { id: 'npwp', category: 'Profesional (opsional)',
+    title: 'NPWP — Nomor Pokok Wajib Pajak',
+    desc: 'Wajib jika penghasilan tahunan melebihi PTKP (Rp 54.000.000/tahun untuk TK0, Rp 58.500.000 untuk K0). Berdasar UU 7/2021 (HPP), UMKM dapat memakai PPh Final 0,5% — tarif sederhana dan rendah.',
+    link: { label: 'pajak.go.id', href: 'https://www.pajak.go.id' } },
+  { id: 'nib', category: 'Profesional (opsional)',
+    title: 'NIB — Nomor Induk Berusaha',
+    desc: 'Diterbitkan via OSS (Online Single Submission). Gratis, ~30 menit online. Mengakui kamu sebagai usaha mikro resmi — diperlukan untuk membuka rekening bisnis dan kredit supplier.',
     link: { label: 'oss.go.id', href: 'https://oss.go.id' } },
-  { id: 'pramuwisata', category: 'Optional but professional',
-    title: 'Pramuwisata licence — Bali tour drivers only',
-    desc: 'If you guide tourists (not just drive them), Perda Bali 5/2020 + Permenparekraf 8/2021 require a Pramuwisata Madya/Muda card from Dinas Pariwisata. Skip if you only do transport, not guiding.',
-    link: { label: 'Disparda Bali', href: 'https://disparda.baliprov.go.id' } },
+  { id: 'pramuwisata', category: 'Profesional (opsional)',
+    title: 'Pramuwisata — khusus driver tour di Bali',
+    desc: 'Jika kamu memandu wisatawan (bukan sekadar mengantar), Perda Bali 5/2020 dan Permenparekraf 8/2021 mewajibkan kartu Pramuwisata Madya/Muda dari Dinas Pariwisata. Lewati jika hanya menjalankan transport.',
+    link: { label: 'disparda.baliprov.go.id', href: 'https://disparda.baliprov.go.id' } },
 ]
 
 export default function DashboardLegalPage() {
-  // Rider's self-check state — purely client-side localStorage; City Rider
+  // Rider's self-check state — purely client-side localStorage. City Rider
   // does NOT verify these. Acting as a checker (and gating subscription
-  // on them) would shift us toward employer-like control of subscribers.
+  // on them) would shift us toward employer-like control of subscribers
+  // contrary to the platform's directory-only posture (PM 12/2019).
   const [checked, setChecked] = useState<Set<RequirementId>>(new Set())
 
   function toggle(id: RequirementId) {
@@ -104,8 +112,8 @@ export default function DashboardLegalPage() {
     setChecked(next)
   }
 
-  const lawDone   = REQUIREMENTS.filter(r => r.category === 'Required by law').filter(r => checked.has(r.id)).length
-  const lawTotal  = REQUIREMENTS.filter(r => r.category === 'Required by law').length
+  const lawDone   = REQUIREMENTS.filter(r => r.category === 'Wajib menurut hukum').filter(r => checked.has(r.id)).length
+  const lawTotal  = REQUIREMENTS.filter(r => r.category === 'Wajib menurut hukum').length
 
   // Renewal calendar — driver-entered dates for SIM C, STNK, PKB, BPJS,
   // Pramuwisata. Each field is independent; driver fills in whichever
@@ -190,12 +198,12 @@ export default function DashboardLegalPage() {
   }
 
   const RENEWAL_FIELDS: Array<{ key: keyof Renewals; label: string; hint: string }> = [
-    { key: 'sim_c_expires_on',       label: 'SIM C expires',         hint: 'Motorcycle licence — renew every 5 years' },
-    { key: 'stnk_expires_on',        label: 'STNK expires',          hint: 'Full STNK renewal — every 5 years' },
-    { key: 'pkb_due_on',             label: 'PKB next due',          hint: 'Annual vehicle tax (visible on STNK)' },
-    { key: 'bpjs_kes_paid_until',    label: 'BPJS Kesehatan paid until', hint: 'Monthly health-insurance premium' },
-    { key: 'bpjs_tk_paid_until',     label: 'BPJS TK paid until',    hint: 'Optional — work-accident protection' },
-    { key: 'pramuwisata_expires_on', label: 'Pramuwisata expires',   hint: 'Bali tour-driver only — Dispar permit' },
+    { key: 'sim_c_expires_on',       label: 'SIM C habis',               hint: 'Perpanjang setiap 5 tahun' },
+    { key: 'stnk_expires_on',        label: 'STNK habis',                hint: 'Perpanjangan STNK — setiap 5 tahun' },
+    { key: 'pkb_due_on',             label: 'PKB jatuh tempo',           hint: 'Pajak tahunan kendaraan (tertera di STNK)' },
+    { key: 'bpjs_kes_paid_until',    label: 'BPJS Kesehatan dibayar s/d', hint: 'Premi bulanan jaminan kesehatan' },
+    { key: 'bpjs_tk_paid_until',     label: 'BPJS TK dibayar s/d',       hint: 'Opsional — proteksi kecelakaan kerja' },
+    { key: 'pramuwisata_expires_on', label: 'Pramuwisata habis',         hint: 'Khusus driver tour Bali — izin Dispar' },
   ]
 
   return (
@@ -208,16 +216,17 @@ export default function DashboardLegalPage() {
             Dashboard
           </Link>
 
-          <header className="space-y-1">
-            <div className="flex items-center gap-2">
+          <header className="space-y-2">
+            <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-brand/12 border border-brand/25 flex items-center justify-center">
                 <Scale className="w-4 h-4 text-brand" />
               </div>
-              <h1 className="text-2xl font-extrabold">Legal requirements</h1>
+              <h1 className="text-2xl font-extrabold">Kepatuhan hukum</h1>
             </div>
-            <p className="text-muted text-[14px]">
-              What you need to legally operate as an independent motorcycle courier in Indonesia.
-              City Rider does not verify these — that&apos;s on you as an independent business.
+            <p className="text-muted text-[14px] leading-relaxed">
+              Daftar persyaratan untuk beroperasi sebagai driver kurir motor independen di Indonesia.
+              City Rider tidak memverifikasi item-item ini — sebagai bisnis independen, kepatuhan
+              adalah tanggung jawab kamu sendiri.
             </p>
           </header>
 
@@ -232,59 +241,75 @@ export default function DashboardLegalPage() {
             />
             <div className="relative">
               <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">
-                Required by law
+                Wajib menurut hukum
               </div>
               <div className="text-2xl font-extrabold mt-1">
                 {lawDone === lawTotal
-                  ? <><span className="text-online">All set ✓</span></>
-                  : <><span className="gradient-text">{lawDone}/{lawTotal}</span> <span className="text-muted text-[14px]">items confirmed</span></>}
+                  ? <span className="text-online">Lengkap ✓</span>
+                  : <><span className="gradient-text">{lawDone}/{lawTotal}</span> <span className="text-muted text-[14px]">terkonfirmasi</span></>}
               </div>
-              <div className="text-[12px] text-muted mt-2">
-                Check boxes below as you confirm each item. City Rider stores nothing — these
-                are your reminders.
+              <div className="text-[12px] text-muted mt-2 leading-relaxed">
+                Centang setiap item saat kamu sudah memenuhinya. Status hanya tersimpan di
+                perangkatmu — City Rider tidak menyimpan apapun.
               </div>
             </div>
           </div>
 
-          {/* Disclaimer */}
-          <div className="card p-4 bg-brand/5 border-brand/25 flex gap-3 text-[13px]">
-            <AlertCircle className="w-4 h-4 text-brand shrink-0 mt-0.5" />
+          {/* Disclaimer — tinted black with a thin yellow accent strip */}
+          <div className="card p-4 flex gap-3 text-[13px] relative overflow-hidden">
+            <span
+              aria-hidden
+              className="absolute left-0 top-0 bottom-0 w-1"
+              style={{ background: 'linear-gradient(180deg, #FACC15, #EAB308)' }}
+            />
+            <AlertCircle className="w-4 h-4 text-brand shrink-0 mt-0.5 ml-1" />
             <div className="text-ink/85 leading-relaxed">
-              <strong className="text-brand">Why we&apos;re showing you this:</strong> as an
-              independent rider you&apos;re your own business. City Rider provides the directory
-              software — you provide the service. If something goes wrong on a trip, you (not
-              the platform) deal with it. These requirements protect you.
+              <strong className="text-brand">Mengapa halaman ini ada:</strong>{' '}
+              kamu adalah pemilik bisnis kurir kamu sendiri. City Rider menyediakan
+              perangkat lunak direktori — kamu menyediakan layanan. Jika terjadi masalah
+              di lapangan, kamu (bukan platform) yang menangani. Persyaratan ini melindungi
+              kamu — bukan kami.
             </div>
           </div>
 
           {/* Pocket reference cards — police stop + accident protocol.
-              Both are static guidance pages, no DB. Drivers bookmark
-              these for the worst moment of a working day. */}
+              Tinted black with subtle colored borders + icons for category
+              recognition. No more colored backgrounds. */}
           <div className="grid grid-cols-2 gap-2">
             <Link
               href="/dashboard/legal/police-stop"
               className="card card-interactive p-3"
-              style={{ borderColor: 'rgba(96,165,250,0.30)', background: 'rgba(59,130,246,0.06)' }}
+              style={{ borderColor: 'rgba(96,165,250,0.35)' }}
             >
               <div className="flex items-center justify-between">
-                <Shield className="w-5 h-5" style={{ color: '#60A5FA' }} />
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(59,130,246,0.10)', border: '1px solid rgba(96,165,250,0.30)' }}
+                >
+                  <Shield className="w-4 h-4" style={{ color: '#60A5FA' }} />
+                </div>
                 <ChevronRight className="w-4 h-4 text-muted" />
               </div>
-              <div className="text-[13px] font-extrabold mt-2">If police stop you</div>
+              <div className="text-[13px] font-extrabold mt-2">Jika dihentikan polisi</div>
               <div className="text-[11px] text-muted mt-0.5 leading-snug">
-                Documents + what to say
+                Dokumen + tata cara
               </div>
             </Link>
             <Link
               href="/dashboard/legal/accident"
               className="card card-interactive p-3"
-              style={{ borderColor: 'rgba(239,68,68,0.30)', background: 'rgba(239,68,68,0.06)' }}
+              style={{ borderColor: 'rgba(239,68,68,0.35)' }}
             >
               <div className="flex items-center justify-between">
-                <Siren className="w-5 h-5" style={{ color: '#EF4444' }} />
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)' }}
+                >
+                  <Siren className="w-4 h-4" style={{ color: '#EF4444' }} />
+                </div>
                 <ChevronRight className="w-4 h-4 text-muted" />
               </div>
-              <div className="text-[13px] font-extrabold mt-2">In case of accident</div>
+              <div className="text-[13px] font-extrabold mt-2">Jika terjadi kecelakaan</div>
               <div className="text-[11px] text-muted mt-0.5 leading-snug">
                 Jasa Raharja · BPJS · 110
               </div>
@@ -295,11 +320,11 @@ export default function DashboardLegalPage() {
           <section className="card p-4 space-y-3">
             <div className="flex items-center gap-2">
               <CalendarClock className="w-4 h-4 text-brand" />
-              <h2 className="text-[14px] font-extrabold">Renewal calendar</h2>
+              <h2 className="text-[14px] font-extrabold">Kalender perpanjangan</h2>
             </div>
             <p className="text-[12px] text-muted leading-snug">
-              Enter the expiry/due date of each document. The dashboard shows a countdown.
-              All dates stay in your private record — only you can see them.
+              Masukkan tanggal kadaluarsa setiap dokumen. Dashboard menampilkan hitung mundur.
+              Tanggal ini bersifat privat — hanya kamu yang bisa melihat.
             </p>
 
             {renewalsLoading ? (
@@ -327,7 +352,7 @@ export default function DashboardLegalPage() {
                           type="date"
                           value={value}
                           onChange={(e) => setRenewalDate(f.key, e.target.value)}
-                          className="mt-1 w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-[13px] text-ink focus:outline-none focus:border-brand/40"
+                          className="mt-1 w-full px-3 py-2 rounded-xl bg-black/60 border border-white/10 text-[13px] text-ink focus:outline-none focus:border-brand/40"
                         />
                         <p className="text-[10px] text-dim mt-1">{f.hint}</p>
                       </div>
@@ -340,10 +365,10 @@ export default function DashboardLegalPage() {
                         }}
                       >
                         {status === null && '—'}
-                        {status?.tone === 'expired' && `Expired ${Math.abs(status.days)}d`}
-                        {status?.tone === 'red'     && `${status.days}d left`}
-                        {status?.tone === 'amber'   && `${status.days}d left`}
-                        {status?.tone === 'green'   && `${status.days}d`}
+                        {status?.tone === 'expired' && `Lewat ${Math.abs(status.days)} hr`}
+                        {status?.tone === 'red'     && `${status.days} hr lagi`}
+                        {status?.tone === 'amber'   && `${status.days} hr lagi`}
+                        {status?.tone === 'green'   && `${status.days} hr`}
                       </div>
                     </div>
                   )
@@ -358,21 +383,21 @@ export default function DashboardLegalPage() {
                   className="w-full mt-2 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[12px] uppercase tracking-wider border border-black/85 active:scale-[0.99] disabled:opacity-60"
                 >
                   {renewalsSaving
-                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyimpan…</>
                     : renewalsSaved
-                      ? <><CheckCircle2 className="w-3.5 h-3.5" /> Saved</>
-                      : <><CheckCircle2 className="w-3.5 h-3.5" /> Save dates</>}
+                      ? <><CheckCircle2 className="w-3.5 h-3.5" /> Tersimpan</>
+                      : <><CheckCircle2 className="w-3.5 h-3.5" /> Simpan tanggal</>}
                 </button>
               </div>
             )}
           </section>
 
           {/* Requirements groups */}
-          {(['Required by law', 'Strongly recommended', 'Optional but professional'] as const).map(cat => {
+          {(['Wajib menurut hukum', 'Sangat disarankan', 'Profesional (opsional)'] as const).map(cat => {
             const items = REQUIREMENTS.filter(r => r.category === cat)
             const catColor =
-              cat === 'Required by law' ? '#EF4444'
-              : cat === 'Strongly recommended' ? '#FACC15'
+              cat === 'Wajib menurut hukum'    ? '#EF4444'
+              : cat === 'Sangat disarankan'    ? '#FACC15'
               : '#94A3B8'
             return (
               <section key={cat} className="space-y-2">
@@ -394,14 +419,19 @@ export default function DashboardLegalPage() {
                           : <Circle className="w-5 h-5 text-dim" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-extrabold text-[14px]">{r.title}</div>
-                        <p className="text-[13px] text-muted leading-relaxed mt-1">{r.desc}</p>
+                        <div className="font-extrabold text-[14px] leading-snug">{r.title}</div>
+                        <p className="text-[13px] text-muted leading-relaxed mt-1.5">{r.desc}</p>
                         {r.fine && (
                           <div
-                            className="text-[11px] font-bold mt-1.5 px-2 py-1 rounded-md inline-block"
-                            style={{ background: 'rgba(239,68,68,0.10)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.30)' }}
+                            className="text-[11px] font-bold mt-2 px-2 py-1 rounded-md inline-flex items-center gap-1.5"
+                            style={{
+                              background: 'rgba(239,68,68,0.08)',
+                              color: '#FCA5A5',
+                              border: '1px solid rgba(239,68,68,0.30)',
+                            }}
                           >
-                            ⚠ {r.fine}
+                            <span aria-hidden className="w-1.5 h-1.5 rounded-full" style={{ background: '#EF4444' }} />
+                            Sanksi · {r.fine}
                           </div>
                         )}
                         {r.link && (
@@ -423,12 +453,29 @@ export default function DashboardLegalPage() {
             )
           })}
 
-          {/* Closing note */}
-          <div className="card p-4 text-[13px] text-ink/85 leading-relaxed">
-            <strong>You are not an employee of City Rider.</strong> We sell you software (Rp
-            30,000/month). You decide who to serve, what to charge, when to work, and how to
-            operate. With independence comes responsibility — these requirements are part of it.
+          {/* Closing posture note — explains the platform's stance plainly */}
+          <div className="card p-4 text-[13px] text-ink/85 leading-relaxed space-y-2">
+            <div>
+              <strong>Kamu bukan karyawan City Rider.</strong>{' '}
+              Kami menjual perangkat lunak (Rp 38.000/bulan). Kamu yang memutuskan
+              siapa pelangganmu, berapa harga yang kamu pasang, kapan kamu kerja, dan
+              bagaimana kamu beroperasi.
+            </div>
+            <div className="text-muted text-[12px]">
+              Posisi ini sesuai dengan Permenhub PM 12/2019 — City Rider bertindak
+              sebagai direktori, bukan operator transportasi aplikasi.
+            </div>
           </div>
+
+          {/* Source footer — establishes credibility, looks professional */}
+          <footer className="text-[11px] text-dim leading-relaxed px-1 pb-4 space-y-1">
+            <div className="font-bold text-muted">Sumber referensi:</div>
+            <div>UU 22/2009 (LLAJ) · UU 24/2011 (SJSN) · UU 7/2021 (HPP) · UU 27/2022 (PDP) · PP 44/2015 (BPJS BPU) · Permenhub PM 12/2019 · Perda Bali 5/2020 · Permenparekraf 8/2021.</div>
+            <div className="pt-1">
+              Halaman ini bukan nasihat hukum. Konsultasikan dengan konsultan hukum atau
+              kantor pajak untuk situasi spesifik kamu. Terakhir ditinjau: 21 Mei 2026.
+            </div>
+          </footer>
         </div>
       </main>
       <DashboardNav />

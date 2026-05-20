@@ -28,7 +28,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com https://tiles.openfreemap.org https://demotiles.maplibre.org https://nominatim.openstreetmap.org https://ik.imagekit.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://fcm.googleapis.com https://oauth2.googleapis.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com https://tiles.openfreemap.org https://*.r2.dev https://protomaps.github.io https://demotiles.maplibre.org https://nominatim.openstreetmap.org https://ik.imagekit.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://fcm.googleapis.com https://oauth2.googleapis.com",
   "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -61,7 +61,7 @@ const nextConfig = {
   outputFileTracingRoot: __dirname,
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'fjvafjkzvygkhiwjuvla.supabase.co' },
+      { protocol: 'https', hostname: 'krbewsrfxjswkoosohyc.supabase.co' },
       { protocol: 'https', hostname: 'ik.imagekit.io' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'i.pravatar.cc' },

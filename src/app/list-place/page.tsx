@@ -11,7 +11,7 @@ import AppNav from '@/components/layout/AppNav'
 export const metadata = {
   title: 'List Your Place · City Rider',
   description:
-    'Daftarkan tempat usahamu di City Rider. GRATIS 7 hari pertama, lalu Rp 30.000/bulan — listing langsung tampil di area kotamu.',
+    'Daftarkan tempat usahamu di City Rider. GRATIS 7 hari pertama, lalu Rp 38.000/bulan atau Rp 350.000/tahun — listing langsung tampil di area kotamu.',
 }
 
 const STEPS = [
@@ -33,7 +33,7 @@ const STEPS = [
   {
     Icon: CreditCard,
     title: 'Bayar via Midtrans',
-    body: 'GRATIS 7 hari pertama, lalu Rp 30.000/bulan via transfer bank, e-wallet, atau QRIS — listing tayang setelah disetujui admin.',
+    body: 'GRATIS 7 hari pertama, lalu Rp 38.000/bulan atau Rp 350.000/tahun (hemat ~23%) via transfer bank, e-wallet, atau QRIS — listing tayang setelah disetujui admin.',
   },
 ] as const
 
@@ -57,7 +57,7 @@ export default function ListPlacePage() {
           <p className="mt-2 text-[14px] text-muted leading-snug">
             Tampilkan tempat usahamu di City Rider dan biarkan pelanggan kami yang sedang booking
             rider langsung menemukan tempatmu. <strong className="text-ink">GRATIS 7 hari</strong> — lalu hanya
-            <strong className="text-ink"> Rp 30.000/bulan</strong>, satu listing per tempat.
+            <strong className="text-ink"> Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong>, satu listing per tempat.
           </p>
         </header>
 
@@ -97,7 +97,7 @@ export default function ListPlacePage() {
           </div>
           <p className="text-[13px] font-bold leading-snug">
             Isi detail tempatmu, upload foto, dan kirim — admin City Rider akan meninjau dalam
-            24–48 jam. Setelah disetujui kamu mendapat GRATIS 7 hari, lalu Rp 30.000/bulan untuk tetap tayang.
+            24–48 jam. Setelah disetujui kamu mendapat GRATIS 7 hari, lalu Rp 38.000/bulan atau Rp 350.000/tahun untuk tetap tayang.
           </p>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <Link

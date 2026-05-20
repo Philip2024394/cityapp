@@ -116,6 +116,7 @@ export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
     tourGuideEnabledAt: row.tour_guide_enabled_at,
     lat,
     lng,
+    serviceZoneRadiusKm: row.service_zone_radius_km,
     subscriptionStatus: effectiveSubStatus(sub),
     rating: row.rating ?? undefined,
     trips: row.trips_count,

@@ -5,16 +5,24 @@ import { assertAdminFromCookies, writeAudit } from '@/lib/admin/guard'
 // ============================================================================
 // PATCH /api/admin/subscriptions/[driverId]
 // ----------------------------------------------------------------------------
-// Admin marks a rider's monthly fee as received. Pushes the subscription
-// status to 'active' and bumps current_period_end by 30 days. If the rider
+// Admin marks a rider's fee as received. Pushes the subscription
+// status to 'active' and bumps current_period_end. If the rider
 // already has a future period_end, we extend from THAT date so paying
 // early doesn't burn the unused tail.
+//
+// Actions:
+//   mark_paid          → +30 days   (Rp 38.000/month)
+//   mark_paid_yearly   → +365 days  (Rp 350.000/year)
+//   cancel             → status='canceled'
 // ============================================================================
 
-const PERIOD_DAYS = 30
+const MONTHLY_DAYS = 30
+const YEARLY_DAYS = 365
+const MONTHLY_AMOUNT_IDR = 38000
+const YEARLY_AMOUNT_IDR = 350000
 
 type PatchPayload = {
-  action: 'mark_paid' | 'cancel'
+  action: 'mark_paid' | 'mark_paid_yearly' | 'cancel'
   payment_reference?: string
   notes?: string
 }
@@ -37,25 +45,30 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ driverId: str
   // for a rider who hasn't onboarded.
   if (!before) return NextResponse.json({ error: 'Subscription row not found' }, { status: 404 })
 
-  if (body.action === 'mark_paid') {
+  if (body.action === 'mark_paid' || body.action === 'mark_paid_yearly') {
+    const isYearly = body.action === 'mark_paid_yearly'
+    const days = isYearly ? YEARLY_DAYS : MONTHLY_DAYS
+    const amount = isYearly ? YEARLY_AMOUNT_IDR : MONTHLY_AMOUNT_IDR
+
     const now = new Date()
     const baseline = before.current_period_end && new Date(before.current_period_end) > now
       ? new Date(before.current_period_end)
       : now
     const nextEnd = new Date(baseline)
-    nextEnd.setUTCDate(nextEnd.getUTCDate() + PERIOD_DAYS)
+    nextEnd.setUTCDate(nextEnd.getUTCDate() + days)
     const update = {
       status: 'active' as const,
       current_period_end: nextEnd.toISOString(),
+      amount_idr: amount,
       payment_reference: body.payment_reference?.trim() || before.payment_reference,
       notes: body.notes?.trim() || before.notes,
     }
     const { error } = await admin.from('subscriptions').update(update).eq('driver_id', driverId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     await writeAudit({
-      actorId: me.id, action: 'subscription.mark_paid',
+      actorId: me.id, action: `subscription.${body.action}`,
       entityType: 'subscription', entityId: driverId,
-      before: { status: before.status, current_period_end: before.current_period_end },
+      before: { status: before.status, current_period_end: before.current_period_end, amount_idr: before.amount_idr },
       after: update,
     })
     return NextResponse.json({ ok: true, current_period_end: update.current_period_end })

@@ -1,10 +1,11 @@
 'use client'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Phone, User, KeyRound, Sparkles, ArrowRight, ArrowLeft, Briefcase, MapPin } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { MONTHLY_PRICE_LABEL, YEARLY_PRICE_LABEL, TRIAL_LABEL_EN } from '@/lib/pricing/constants'
 
 type Role = 'customer' | 'driver'
 
@@ -19,6 +20,27 @@ export default function SignupPage() {
   const [age18, setAge18] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // OTP resend cooldown — Indonesian SMS routes drop OTPs constantly,
+  // so we surface a clear countdown + Resend button (audit 2026-05).
+  // Starts at 30s when the OTP is first sent and restarts after resend.
+  const [resendSecondsLeft, setResendSecondsLeft] = useState(0)
+  const [resending, setResending] = useState(false)
+  useEffect(() => {
+    if (resendSecondsLeft <= 0) return
+    const t = setTimeout(() => setResendSecondsLeft((s) => Math.max(0, s - 1)), 1000)
+    return () => clearTimeout(t)
+  }, [resendSecondsLeft])
+
+  // Auto-advance once 6 digits typed — saves the "Verify & continue"
+  // tap (activation audit cut D, ~3-5s + 1 tap saved). Guarded by
+  // !pending so we don't fire twice.
+  useEffect(() => {
+    if (step !== 'otp') return
+    if (otp.length !== 6 || pending) return
+    void verifyOtp()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otp, step])
 
   function continueFromRole(e: React.FormEvent) {
     e.preventDefault()
@@ -69,10 +91,29 @@ export default function SignupPage() {
     }
     setPhone(cleaned)
     setStep('otp')
+    setResendSecondsLeft(30)
   }
 
-  async function verifyOtp(e: React.FormEvent) {
-    e.preventDefault()
+  async function resendOtp() {
+    if (resendSecondsLeft > 0 || resending) return
+    setError(null)
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setError('Auth not configured.'); return }
+    setResending(true)
+    const { error } = await supabase.auth.signInWithOtp({
+      phone,
+      options: {
+        data: { full_name: fullName.trim(), role },
+        shouldCreateUser: true,
+      },
+    })
+    setResending(false)
+    if (error) { setError(error.message); return }
+    setResendSecondsLeft(30)
+  }
+
+  async function verifyOtp(e?: React.FormEvent) {
+    e?.preventDefault()
     setError(null)
     const supabase = getBrowserSupabase()
     if (!supabase) {
@@ -104,7 +145,7 @@ export default function SignupPage() {
             {step === 'role' && (
               <>
                 <div>
-                  <div className="chip mb-3"><Sparkles className="w-3.5 h-3.5" /> 14-day free trial · No card needed</div>
+                  <div className="chip mb-3"><Sparkles className="w-3.5 h-3.5" /> {TRIAL_LABEL_EN} · No card needed</div>
                   <h1 className="text-2xl font-extrabold">Welcome to City Rider</h1>
                   <p className="text-muted text-[14px] mt-1">Pick what you want to do.</p>
                 </div>
@@ -115,7 +156,7 @@ export default function SignupPage() {
                     onClick={() => setRole('driver')}
                     icon={<Briefcase className="w-5 h-5" />}
                     title="Become an independent rider"
-                    sub="Run your own booking business. Rp 30k/month."
+                    sub={`Run your own booking business. ${MONTHLY_PRICE_LABEL}/month or ${YEARLY_PRICE_LABEL}/year.`}
                   />
                   <RoleOption
                     selected={role === 'customer'}
@@ -249,6 +290,22 @@ export default function SignupPage() {
                     {pending ? 'Verifying…' : 'Verify & continue'}
                     <ArrowRight className="w-4 h-4" />
                   </button>
+
+                  {/* Resend button — Indonesian SMS drops happen often.
+                      30s cooldown so we don't accidentally DoS the SMS gateway. */}
+                  <button
+                    type="button"
+                    onClick={resendOtp}
+                    disabled={resendSecondsLeft > 0 || resending}
+                    className="w-full text-[13px] text-brand font-bold inline-flex items-center justify-center gap-1.5 disabled:text-muted disabled:font-normal"
+                  >
+                    {resending
+                      ? 'Mengirim ulang…'
+                      : resendSecondsLeft > 0
+                        ? `Kirim ulang kode dalam ${resendSecondsLeft}s`
+                        : 'Kirim ulang kode'}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => { setStep('phone'); setOtp(''); setError(null) }}
@@ -270,7 +327,7 @@ export default function SignupPage() {
             <div className="card p-4">
               <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">After trial</div>
               <div className="text-[14px]">
-                <span className="font-extrabold text-brand">Rp 30.000/month</span> · paid directly to City Rider. Cancel anytime.
+                <span className="font-extrabold text-brand">Rp 38.000/month</span> or <span className="font-extrabold text-brand">Rp 350.000/year</span> · paid directly to City Rider. Cancel anytime.
               </div>
             </div>
           )}

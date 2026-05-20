@@ -511,7 +511,7 @@ export default function ListBikeFormPage() {
           <p className="text-[12px] text-muted leading-snug text-center">
             Submission akan ditinjau admin dalam 24–48 jam.
             Setelah disetujui kamu mendapat <strong className="text-ink">GRATIS 7 hari</strong>, lalu
-            <strong className="text-ink"> Rp 30.000/bulan</strong> untuk tetap tayang.
+            <strong className="text-ink"> Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong> untuk tetap tayang.
           </p>
         </form>
       </main>

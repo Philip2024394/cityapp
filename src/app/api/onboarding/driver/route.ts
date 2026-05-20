@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isValidSlug } from '@/lib/slug'
+import { SUBSCRIPTION_MONTHLY_IDR, TRIAL_DAYS } from '@/lib/pricing/constants'
 import type { ServiceType, BikeType } from '@/types/database'
 
 // ============================================================================
 // POST /api/onboarding/driver
 // ----------------------------------------------------------------------------
-// Creates the drivers row + 14-day trial subscriptions row for the
+// Creates the drivers row + trial subscriptions row for the
 // authenticated user. Sets profile.role = 'driver' (in case the user signed
 // up as customer and converted later).
 //
@@ -204,14 +205,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: driverUpsert.error.message }, { status: 500 })
   }
 
-  // 3. Seed 14-day trial subscription if not already present
+  // 3. Seed trial subscription if not already present.
+  // Trial length + price are canonical constants — any change must come
+  // from src/lib/pricing/constants.ts so signup, dashboard, landing,
+  // and SETUP_OPS stay in sync (audit 2026-05).
   const trialEnd = new Date()
-  trialEnd.setDate(trialEnd.getDate() + 14)
+  trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS)
   const subUpsert = await admin.from('subscriptions').upsert({
     driver_id: user.id,
     status: 'trial',
     trial_ends_at: trialEnd.toISOString(),
-    amount_idr: 30000,
+    amount_idr: SUBSCRIPTION_MONTHLY_IDR,
   })
   if (subUpsert.error) {
     return NextResponse.json({ error: subUpsert.error.message }, { status: 500 })
