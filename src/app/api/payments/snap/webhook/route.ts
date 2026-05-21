@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { midtransStatusToInternal, verifyNotificationSignature } from '@/lib/midtrans/snap'
+import { fireAlertServer } from '@/lib/ops/alert'
 
 // ============================================================================
 // POST /api/payments/snap/webhook
@@ -48,7 +49,17 @@ export async function POST(req: Request) {
 
   // Verify signature — drop the request silently (200) if it doesn't
   // match so we don't leak which order IDs exist via error responses.
+  // Bad signatures are a CRITICAL ops alert: either Midtrans is misconfigured,
+  // someone is probing us, or our MIDTRANS_SERVER_KEY env is wrong.
   if (!verifyNotificationSignature(body)) {
+    void fireAlertServer({
+      severity: 'critical',
+      source: 'midtrans-webhook',
+      title: 'Midtrans webhook signature mismatch',
+      detail: `order_id=${body.order_id ?? 'unknown'}, status=${body.transaction_status ?? 'unknown'}`,
+      suggested_fix: 'Verify MIDTRANS_SERVER_KEY on Vercel matches the value in Midtrans dashboard → Settings → Access Keys. Also confirm prod/sandbox keys aren\'t swapped.',
+      meta: { order_id: body.order_id, transaction_status: body.transaction_status },
+    })
     return NextResponse.json({ ok: true, ignored: 'bad signature' })
   }
 
