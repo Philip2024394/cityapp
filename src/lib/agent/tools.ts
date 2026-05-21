@@ -128,6 +128,41 @@ export const TOOL_DESCRIPTORS: Tool[] = [
       required: ['platform', 'caption'],
     },
   },
+  {
+    name: 'query_email_audience',
+    description: 'Preview the recipient count + first 10 emails for a given audience filter. ALWAYS call this BEFORE propose_email_campaign so you can tell Phil the audience size up front. Read-only.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        audience_type: {
+          type: 'string',
+          enum: ['all', 'driver', 'rental_company', 'tour_guide', 'customer'],
+          description: 'Which account type to target. "all" = every auth user.',
+        },
+        subscription_status: { type: 'string', enum: ['active', 'expired', 'any'] },
+        expiring_within_days: { type: 'integer', description: 'For active subs only — narrow to those expiring in N days.' },
+        signed_up_within_days: { type: 'integer', description: 'Only users created in the last N days.' },
+      },
+      required: ['audience_type'],
+    },
+  },
+  {
+    name: 'propose_email_campaign',
+    description: 'Draft a BULK email campaign to many recipients. Does NOT send. Opens agent_actions for Phil to approve; on approval, system iterates Resend sends + logs each. ALWAYS call query_email_audience FIRST so you can confirm the recipient count. The system auto-appends a Bahasa unsubscribe footer pointing to streetlocallive@gmail.com.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        audience_type:        { type: 'string', enum: ['all', 'driver', 'rental_company', 'tour_guide', 'customer'] },
+        subscription_status:  { type: 'string', enum: ['active', 'expired', 'any'] },
+        expiring_within_days: { type: 'integer' },
+        signed_up_within_days:{ type: 'integer' },
+        subject:              { type: 'string', description: 'Email subject line — Bahasa by default.' },
+        body_html:            { type: 'string', description: 'Email body. HTML or plain text. Use {name} as a personalisation token; system replaces per-recipient.' },
+        reasoning:            { type: 'string', description: 'Why this campaign — shown to Phil in the approval card.' },
+      },
+      required: ['audience_type', 'subject', 'body_html'],
+    },
+  },
 ]
 
 // ── Runners ────────────────────────────────────────────────────────
@@ -139,12 +174,14 @@ export async function runTool(name: string, input: Record<string, unknown>): Pro
       case 'query_receipts':         return { result: await runQueryReceipts(input) }
       case 'query_revenue':          return { result: await runQueryRevenue(input) }
       case 'query_alerts':           return { result: await runQueryAlerts(input) }
+      case 'query_email_audience':   return { result: await runQueryEmailAudience(input) }
       case 'query_affiliates':       return { result: await runQueryAffiliates(input) }
       case 'query_wa_clicks':        return { result: await runQueryWaClicks(input) }
       case 'count_overdue_pdp':      return { result: await runCountOverduePdp() }
       case 'propose_email_draft':
       case 'propose_receipt_decision':
       case 'propose_social_post':
+      case 'propose_email_campaign':
         return {
           result: `Action proposed. Awaiting Phil's approval — visible in the agent panel.`,
           action_pending: {
@@ -275,4 +312,119 @@ async function runCountOverduePdp(): Promise<string> {
   const now = new Date().toISOString()
   const { count } = await sl.from('data_deletion_requests').select('id', { count: 'exact', head: true }).in('status', ['received', 'in_progress']).lt('sla_due_at', now)
   return JSON.stringify({ overdue_count: count ?? 0, as_of: now })
+}
+
+// ============================================================================
+// resolveEmailAudience — shared filter→email-list resolver used by both
+// the preview tool (query_email_audience) AND the campaign executor
+// (in /api/admin/gateway/agent/actions/[id]).
+//
+// Filter shape:
+//   audience_type: 'all' | 'driver' | 'rental_company' | 'tour_guide' | 'customer'
+//   subscription_status?: 'active' | 'expired' | 'any'
+//   expiring_within_days?: number   (driver/rental_co/tour_guide only)
+//   signed_up_within_days?: number  (any type)
+// ============================================================================
+export type AudienceFilter = {
+  audience_type?: string
+  subscription_status?: string
+  expiring_within_days?: number
+  signed_up_within_days?: number
+}
+export type Recipient = { email: string; user_id: string; name: string | null }
+
+export async function resolveEmailAudience(filter: AudienceFilter): Promise<Recipient[]> {
+  const admin = getAdminSupabase()
+  if (!admin) return []
+
+  // 1. Pull all auth.users (capped at 1000 — for v1 this covers our scale)
+  const { data: usersData } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const users = (usersData?.users ?? []) as Array<{ id: string; email: string | null; created_at: string; user_metadata?: Record<string, unknown> }>
+
+  // 2. Join with account / driver / subscription state
+  const [{ data: accounts }, { data: subs }, { data: drivers }] = await Promise.all([
+    admin.from('user_accounts').select('user_id, account_type, subscription_status, subscription_expires_at, tour_guide_status, tour_guide_expires_at'),
+    admin.from('subscriptions').select('driver_id, status, current_period_end'),
+    admin.from('drivers').select('user_id, business_name'),
+  ])
+  const acctMap = new Map<string, { account_type: string; subscription_status: string; subscription_expires_at: string | null; tour_guide_status: string; tour_guide_expires_at: string | null }>()
+  for (const a of (accounts ?? []) as Array<{ user_id: string; account_type: string; subscription_status: string; subscription_expires_at: string | null; tour_guide_status: string; tour_guide_expires_at: string | null }>) {
+    acctMap.set(a.user_id, a)
+  }
+  const subMap = new Map<string, { status: string; current_period_end: string | null }>()
+  for (const s of (subs ?? []) as Array<{ driver_id: string; status: string; current_period_end: string | null }>) {
+    subMap.set(s.driver_id, s)
+  }
+  const driverMap = new Map<string, { business_name: string | null }>()
+  for (const d of (drivers ?? []) as Array<{ user_id: string; business_name: string | null }>) {
+    driverMap.set(d.user_id, d)
+  }
+
+  const audience = (filter.audience_type || 'all').toLowerCase()
+  const subStatus = (filter.subscription_status || 'any').toLowerCase()
+  const expiringDays = typeof filter.expiring_within_days === 'number' ? filter.expiring_within_days : null
+  const signupDays = typeof filter.signed_up_within_days === 'number' ? filter.signed_up_within_days : null
+  const now = Date.now()
+  const signupSince = signupDays != null ? now - signupDays * 86400000 : null
+
+  const recipients: Recipient[] = []
+  for (const u of users) {
+    if (!u.email) continue
+    if (signupSince != null && new Date(u.created_at).getTime() < signupSince) continue
+
+    const acct = acctMap.get(u.id)
+    const sub  = subMap.get(u.id)
+    const drv  = driverMap.get(u.id)
+
+    // Derive type
+    let userType: string = 'customer'
+    if (drv) userType = 'driver'
+    else if (acct?.account_type === 'rental_company') userType = 'rental_company'
+    else if (acct?.tour_guide_status && acct.tour_guide_status !== 'inactive') userType = 'tour_guide'
+
+    if (audience !== 'all' && audience !== userType) continue
+
+    // Subscription status / expiry filter
+    if (subStatus !== 'any') {
+      let status: string | null = null
+      let expiresAt: string | null = null
+      if (userType === 'driver') {
+        status = sub?.status ?? null
+        expiresAt = sub?.current_period_end ?? null
+      } else if (userType === 'rental_company') {
+        status = acct?.subscription_status ?? null
+        expiresAt = acct?.subscription_expires_at ?? null
+      } else if (userType === 'tour_guide') {
+        status = acct?.tour_guide_status ?? null
+        expiresAt = acct?.tour_guide_expires_at ?? null
+      }
+      if (subStatus === 'active' && status !== 'active') continue
+      if (subStatus === 'expired' && (status === 'active' || status === 'trial')) continue
+      if (expiringDays != null && expiresAt) {
+        const ms = new Date(expiresAt).getTime() - now
+        if (ms < 0 || ms > expiringDays * 86400000) continue
+      }
+    }
+
+    const meta = (u.user_metadata ?? {}) as Record<string, unknown>
+    const name = drv?.business_name
+      || (typeof meta.full_name === 'string' ? meta.full_name : null)
+      || (typeof meta.name === 'string' ? meta.name : null)
+    recipients.push({ email: u.email, user_id: u.id, name })
+  }
+
+  return recipients
+}
+
+async function runQueryEmailAudience(input: Record<string, unknown>): Promise<string> {
+  const recipients = await resolveEmailAudience(input as AudienceFilter)
+  const sample = recipients.slice(0, 10).map((r) => ({ email: r.email, name: r.name }))
+  return JSON.stringify({
+    audience_count: recipients.length,
+    sample_first_10: sample,
+    filter_applied: input,
+    note: recipients.length > 0
+      ? `Found ${recipients.length} recipients. Tell Phil this count BEFORE proposing the campaign.`
+      : 'Zero recipients match this filter. Adjust criteria.',
+  })
 }

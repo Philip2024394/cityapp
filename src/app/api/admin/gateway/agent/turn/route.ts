@@ -48,7 +48,7 @@ type DbMessage = { id: string; role: string; content: ContentBlock[] | string; t
 export const POST = withGateway(async (req) => {
   const sl = getStreetlocalAdminSupabase()
   if (!sl) return fail('Streetlocal Supabase not configured on this Vercel project', 503)
-  if (!process.env.ANTHROPIC_API_KEY) return fail('ANTHROPIC_API_KEY not set on this Vercel project', 503)
+  if (!process.env.AGENT_ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY) return fail('AGENT_ANTHROPIC_API_KEY not set on this Vercel project', 503)
 
   let body: { session_id?: string; user_message?: string; model?: string }
   try { body = (await req.json()) as typeof body }

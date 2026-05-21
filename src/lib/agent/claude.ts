@@ -60,9 +60,12 @@ export async function claudeTurn(opts: {
   tools?: Tool[]
   max_tokens?: number
 }): Promise<ClaudeResponse> {
-  const key = process.env.ANTHROPIC_API_KEY
+  // AGENT_ANTHROPIC_API_KEY (preferred — avoids clashing with the
+  // Claude Code CLI's own ANTHROPIC_API_KEY shell var during local dev).
+  // ANTHROPIC_API_KEY kept as fallback for Vercel prod environments.
+  const key = process.env.AGENT_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY
   if (!key) {
-    throw new Error('ANTHROPIC_API_KEY not configured on this Vercel project')
+    throw new Error('AGENT_ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY) not configured on this Vercel project')
   }
   const model = opts.model || process.env.ANTHROPIC_MODEL_DEFAULT || 'claude-sonnet-4-6'
 

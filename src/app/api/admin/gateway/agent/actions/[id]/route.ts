@@ -30,7 +30,7 @@ export const PATCH = withGateway(async (req) => {
 
   const { data: action } = await sl
     .from('agent_actions')
-    .select('id, action_type, args, status')
+    .select('id, action_type, args, status, session_id')
     .eq('id', id)
     .maybeSingle()
   if (!action) return fail('Action not found', 404)
@@ -77,6 +77,8 @@ export const PATCH = withGateway(async (req) => {
     } else if (action.action_type === 'social_post') {
       // For v1 we record only — actual Meta Graph posting comes later.
       result = { recorded: true, note: 'Live social posting not wired yet — paste manually to IG/FB.' }
+    } else if (action.action_type === 'email_campaign') {
+      result = await executeEmailCampaign(sl, action.id, action.session_id, action.args)
     } else {
       executeErr = `Unknown action_type: ${action.action_type}`
     }
@@ -104,3 +106,90 @@ export const PATCH = withGateway(async (req) => {
 })
 
 export const OPTIONS = withGateway(async () => ok({}))
+
+// ============================================================================
+// executeEmailCampaign — iterate audience, send each via Resend, log every
+// outcome. Returns aggregate result for the agent_actions row + opens an
+// email_campaigns row for permanent audit.
+//
+// Personalisation: {name} in body_html gets replaced per recipient. Body
+// is auto-wrapped with the renderEmail HTML chrome + a Bahasa unsubscribe
+// footer pointing at streetlocallive@gmail.com.
+// ============================================================================
+import { resolveEmailAudience, type AudienceFilter } from '@/lib/agent/tools'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function executeEmailCampaign(sl: any, actionId: string, sessionId: string | null, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const filter: AudienceFilter = {
+    audience_type: args.audience_type as string,
+    subscription_status: args.subscription_status as string | undefined,
+    expiring_within_days: args.expiring_within_days as number | undefined,
+    signed_up_within_days: args.signed_up_within_days as number | undefined,
+  }
+  const subject = String(args.subject || '')
+  const bodyRaw = String(args.body_html || '')
+  if (!subject || !bodyRaw) throw new Error('subject + body_html required')
+
+  // Resolve the audience FRESH at send time (not at propose time).
+  const recipients = await resolveEmailAudience(filter)
+  if (recipients.length === 0) throw new Error('Zero recipients match the filter')
+
+  // Open the campaign row
+  const { data: campaign } = await sl.from('email_campaigns').insert({
+    agent_action_id: actionId,
+    subject,
+    body_html: bodyRaw,
+    audience_filter: filter,
+    audience_count: recipients.length,
+    status: 'sending',
+    started_at: new Date().toISOString(),
+  }).select('id').single()
+  const campaignId = campaign?.id
+
+  let sent = 0
+  let failed = 0
+
+  for (const r of recipients) {
+    const personalised = bodyRaw.replace(/\{name\}/g, r.name || 'Halo')
+    const html = renderEmail({
+      heading: subject,
+      bodyHtml: `${personalised}
+<hr style="margin:24px 0 12px;border:0;border-top:1px solid #e5e7eb">
+<p style="font-size:11px;color:#9ca3af;line-height:1.5">
+  Tidak ingin terima email seperti ini? Balas STOP atau email
+  <a href="mailto:streetlocallive@gmail.com" style="color:#FACC15">streetlocallive@gmail.com</a>
+  dan kami hapus kamu dari daftar dalam 24 jam.
+</p>`,
+    })
+    const result = await sendEmail({ to: r.email, subject, html })
+    await sl.from('email_send_log').insert({
+      campaign_id: campaignId,
+      recipient_email: r.email,
+      recipient_user_id: r.user_id,
+      recipient_name: r.name,
+      provider: 'resend',
+      provider_message_id: result.ok ? result.id : null,
+      status: result.ok ? 'sent' : 'failed',
+      error: result.ok ? null : result.error,
+    })
+    if (result.ok) sent++
+    else failed++
+  }
+
+  const finalStatus = failed === 0 ? 'completed' : (sent === 0 ? 'failed' : 'partial')
+  await sl.from('email_campaigns').update({
+    status: finalStatus,
+    sent_count: sent,
+    failed_count: failed,
+    completed_at: new Date().toISOString(),
+  }).eq('id', campaignId)
+
+  return {
+    campaign_id: campaignId,
+    audience_count: recipients.length,
+    sent_count: sent,
+    failed_count: failed,
+    status: finalStatus,
+    session_id: sessionId,
+  }
+}

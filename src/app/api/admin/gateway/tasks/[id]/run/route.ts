@@ -40,7 +40,7 @@ const MAX_TURN_LOOPS = 8
 export const POST = withGateway(async (req) => {
   const sl = getStreetlocalAdminSupabase()
   if (!sl) return fail('Streetlocal Supabase not configured', 503)
-  if (!process.env.ANTHROPIC_API_KEY) return fail('ANTHROPIC_API_KEY not set on this Vercel project', 503)
+  if (!process.env.AGENT_ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY) return fail('AGENT_ANTHROPIC_API_KEY not set on this Vercel project', 503)
 
   const url = new URL(req.url)
   const segs = url.pathname.split('/').filter(Boolean)
