@@ -1,10 +1,11 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Shield, Users, History, MapPin, Bike } from 'lucide-react'
+import { Shield, Users, History, MapPin, Bike, UserPlus } from 'lucide-react'
 
 const TABS = [
   { href: '/admin',          label: 'Overview', icon: Shield  },
+  { href: '/admin/members',  label: 'Members',  icon: UserPlus },
   { href: '/admin/drivers',  label: 'Riders',   icon: Users   },
   { href: '/admin/places',   label: 'Places',   icon: MapPin  },
   { href: '/admin/rentals',  label: 'Rentals',  icon: Bike    },
