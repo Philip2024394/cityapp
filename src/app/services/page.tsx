@@ -27,17 +27,7 @@ export default function ServicesPage() {
   return (
     <>
       <AppNav />
-      <main
-        className="min-h-screen pb-32 relative"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(0,0,0,0.72), rgba(0,0,0,0.82)), url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center top',
-          backgroundAttachment: 'fixed',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
+      <main className="min-h-screen pb-32">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
           <div>
             <h1 className="text-2xl font-extrabold">Services you offer</h1>

@@ -159,19 +159,22 @@ export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, o
 
   return (
     <>
-      {/* Inline chip — matches the small black "Places" pill on /cari */}
+      {/* Inline chip — dark-red pill with yellow rim. Matches the
+          Reviews button on /r/[slug] for visual consistency across
+          the two header pills. */}
       <button
         type="button"
         onClick={openModal}
         aria-label="Saved drop-off places"
-        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
+        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
         style={{
-          background: '#0A0A0A',
-          border: '1px solid rgba(255,255,255,0.10)',
-          minHeight: 24,
+          background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
+          border: '2px solid #FACC15',
+          boxShadow: '0 4px 12px rgba(127,29,29,0.45)',
+          minHeight: 26,
         }}
       >
-        <Star className="w-3 h-3" strokeWidth={2.5} fill="currentColor" />
+        <Star className="w-3 h-3" strokeWidth={2.5} fill="currentColor" style={{ color: '#FACC15' }} />
         Saved
       </button>
 

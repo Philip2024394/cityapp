@@ -20,11 +20,12 @@ import { etaMinutes } from '@/lib/geo/eta'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
 import { writePendingBooking } from '@/lib/booking/pending-booking'
+import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
+import { pingDriverContact } from '@/lib/notify/clientPing'
 import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { nearestCity, citySlugLabel, SUPPORTED_CITIES } from '@/lib/cities'
 import { SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
-import { getBikeImageUrl } from '@/data/bikeImages'
 import DriverRentalTiles from '@/components/rider/DriverRentalTiles'
 
 // Landing-page brand images — reused on the driver-page service tiles
@@ -191,11 +192,10 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     return SUPPORTED_CITIES.find((c) => c.slug === maybeRider.city) ?? null
   }, [maybeRider?.city])
 
-  // Selected service — defaults to the first one the rider offers.
-  // Declared up here so the quote useMemo below can reference it.
-  const [service, setService] = useState<ServiceType | null>(
-    maybeRider?.services[0] ?? null,
-  )
+  // Selected service — defaults to 'person' (Ride / Bike) so the green
+  // active-dot lands on the Bike tile when the customer arrives. They
+  // can re-tap any of the other tiles to move the dot.
+  const [service, setService] = useState<ServiceType | null>('person')
 
   // City-mismatch detection — once GPS lands, find the customer's
   // nearest supported city and compare to the driver's service city.
@@ -394,69 +394,69 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         <RiderHero rider={rider} />
 
         {/* Service picker — 4 black tile-buttons with brand images.
-            Selected tile fires a soft yellow drop-shadow BELOW the button
-            (negative-spread box-shadow, no sibling halo). The shadow
-            sits strictly under the button so the button face itself stays
-            pure black with no glow on it. */}
-        <div className="grid grid-cols-4 gap-1.5">
-          {(['person','parcel','food'] as const).map(s => {
-            const r = rateFor(rider, s)
-            const active = service === s
-            return (
+            Padding-top creates breathing room from the driver hero
+            above (no scroll added, just visual separation). Pulse hint
+            runs on all 4 until the customer makes a first choice. */}
+        {(() => {
+          const showPulseHint = !service && !dropoffLabel
+          return (
+            <div className="grid grid-cols-4 gap-1.5 pt-3">
+              {(['person','parcel','food'] as const).map(s => {
+                const active = service === s
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => { setService(s); haptic.tap() }}
+                    className={`relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-1 ${showPulseHint ? 'cr-service-tile-pulse' : ''}`}
+                    style={{
+                      background: '#0A0A0A',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      boxShadow: active
+                        ? '0 14px 24px -8px rgba(250,204,21,0.55)'
+                        : 'none',
+                    }}
+                  >
+                    {active && <ServiceTileActiveDot />}
+                    <img
+                      src={SERVICE_TILE_IMAGES[s]}
+                      alt=""
+                      className="h-9 w-auto object-contain"
+                      loading="eager"
+                      style={{ opacity: 1, filter: 'none' }}
+                    />
+                    <div className="text-[11px] font-extrabold" style={{ color: active ? '#FACC15' : '#fff' }}>
+                      {SERVICE_SHORT[s]}
+                    </div>
+                  </button>
+                )
+              })}
               <button
-                key={s}
                 type="button"
-                onClick={() => { setService(s); haptic.tap() }}
-                className="w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
+                onClick={() => { setPlacesOpen(true); haptic.tap() }}
+                className={`relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-1 ${showPulseHint ? 'cr-service-tile-pulse' : ''}`}
                 style={{
-                  background:   '#0A0A0A',
-                  border:       '1px solid rgba(255,255,255,0.08)',
-                  boxShadow:    active
-                    ? '0 14px 24px -8px rgba(250,204,21,0.55)'
-                    : 'none',
+                  background: '#0A0A0A',
+                  border: '1px solid rgba(255,255,255,0.08)',
                 }}
               >
+                {/* Places never reads as "active" — it's a picker, not a
+                    selection. The active state belongs to the service
+                    chosen above (Bike/Parcel/Food), which carries the
+                    one green dot + yellow glow. */}
                 <img
-                  src={SERVICE_TILE_IMAGES[s]}
+                  src={PLACES_TILE_IMAGE}
                   alt=""
                   className="h-9 w-auto object-contain"
                   loading="eager"
-                  style={{ opacity: 1, filter: 'none' }}
                 />
-                <div className="text-[11px] font-extrabold mt-0.5" style={{ color: active ? '#FACC15' : '#fff' }}>
-                  {SERVICE_SHORT[s]}
+                <div className="text-[11px] font-extrabold text-white">
+                  Places
                 </div>
-                <div className="text-[10px] text-muted leading-none">{idr(r.pricePerKm)}/km</div>
               </button>
-            )
-          })}
-          {/* Places tile — opens picker drawer */}
-          <button
-            type="button"
-            onClick={() => { setPlacesOpen(true); haptic.tap() }}
-            className="w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-0.5"
-            style={{
-              background:   '#0A0A0A',
-              border:       '1px solid rgba(255,255,255,0.08)',
-              boxShadow:    dropoffLabel
-                ? '0 14px 24px -8px rgba(250,204,21,0.55)'
-                : 'none',
-            }}
-          >
-              <img
-                src={PLACES_TILE_IMAGE}
-                alt=""
-                className="h-9 w-auto object-contain"
-                loading="eager"
-              />
-              <div className="text-[11px] font-extrabold mt-0.5" style={{ color: dropoffLabel ? '#FACC15' : '#fff' }}>
-                Places
-              </div>
-              <div className="text-[10px] text-muted leading-none truncate max-w-full">
-                {citySlugLabel(rider.city) || rider.city}
-              </div>
-            </button>
-        </div>
+            </div>
+          )
+        })()}
 
         {showLocChip && (
           <div
@@ -523,7 +523,8 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
              yellow controls. */
           <div className="space-y-2">
             {/* PICKUP TILE — yellow gradient, label + autocomplete with
-                a dark-red GPS rightSlot button. */}
+                a dark-red GPS leftSlot button (mirrors /cari placement
+                so muscle memory carries between booking surfaces). */}
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
             >
@@ -532,10 +533,15 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 <button
                   type="button"
                   onClick={() => { setReviewsOpen(true); haptic.tap() }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-bg/85 text-brand text-[10px] font-extrabold uppercase tracking-wider border border-bg/30 active:scale-95 transition"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
+                  style={{
+                    background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
+                    border: '2px solid #FACC15',
+                    boxShadow: '0 4px 12px rgba(127,29,29,0.45)',
+                  }}
                   aria-label="Show recent reviews"
                 >
-                  <Star className="w-3 h-3 fill-current" strokeWidth={0} />
+                  <Star className="w-3 h-3 fill-current" strokeWidth={0} style={{ color: '#FACC15' }} />
                   Reviews
                   {reviewStats && (
                     <span className="opacity-80">· {reviewStats.count}</span>
@@ -555,7 +561,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 near={geo.coords ?? driverCityCentroid}
                 countryCodes={['id']}
                 ariaLabel="Pick up location"
-                rightSlot={
+                leftSlot={
                   <button
                     onClick={onUseMyLocation}
                     aria-label="Auto-set my GPS location"
@@ -652,13 +658,23 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               )
             })()}
 
-            {/* DROP OFF TILE — same autocomplete pattern as pickup,
-                without a GPS button (drop-off is wherever you're going). */}
+            {/* DROP OFF TILE — same autocomplete pattern as pickup.
+                Right side has the Saved-places chip (mirrors /cari) for
+                one-tap drop-off from the customer's saved list. */}
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
             >
-              <div className="mb-1">
+              <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
+                <SavedPlacesChip
+                  currentDropoff={dropoff}
+                  currentDropoffLabel={dropoffLabel}
+                  onSelect={(s) => {
+                    setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                    setDropoffLabel(s.label)
+                    haptic.tap()
+                  }}
+                />
               </div>
               <PlaceAutocomplete
                 value={dropoffLabel}
@@ -743,7 +759,16 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 }
                 const url = `https://wa.me/${wa}?text=${encodeURIComponent(lines.join('\n'))}`
                 haptic.buzz()
+                // iOS Safari 16+ popup-block rule: window.open MUST be the
+                // first call inside the synchronous click handler — any
+                // prior microtask breaks the user-gesture chain.
                 window.open(url, '_blank', 'noopener,noreferrer')
+                // Fire the driver's loud booking-alert push (sendBeacon,
+                // non-blocking, survives the wa.me handoff). Same plumbing
+                // as /cari/rider — was previously missing on this page so
+                // drivers booked via /r/[slug] got the WhatsApp message
+                // with no notification sound. Fixed 2026-05.
+                pingDriverContact(rider.id, 'profile_card')
                 // Hand off to the post-WhatsApp waiting screen — same UX
                 // surface used by /cari/rider. The conversation continues
                 // on WhatsApp; this screen is only for the customer's
@@ -778,12 +803,28 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 router.push('/cari/pending')
               }}
               disabled={!pickup || !dropoff || confirmingBooking}
-              className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl font-extrabold text-[15px] active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{
+                background: '#0A0A0A',
+                border: '2px solid #FACC15',
+                color: '#FACC15',
+                boxShadow: '0 10px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(250,204,21,0.18)',
+              }}
             >
-              <Check className="w-4 h-4" />
+              <Check className="w-4 h-4" style={{ color: '#FACC15' }} />
               <span>{confirmingBooking ? 'Membuka WhatsApp…' : 'Confirm Driver'}</span>
               {quote ? (
-                <span className="text-[13px] font-bold text-brand/85 ml-1">· {idr(quote.fare)}</span>
+                <span
+                  className="ml-2 font-extrabold tabular-nums cr-fare-heartbeat"
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 22,
+                    lineHeight: 1,
+                    textShadow: '0 2px 8px rgba(0,0,0,0.65)',
+                  }}
+                >
+                  {idr(quote.fare)}
+                </span>
               ) : (
                 <span className="text-[12px] font-bold text-dim ml-1">· set pickup + drop off</span>
               )}
@@ -1086,10 +1127,16 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               <button
                 type="button"
                 onClick={() => setPlacesOpen(false)}
-                aria-label="Close"
-                className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-white/5"
+                aria-label="Close places picker"
+                className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[12px] font-extrabold uppercase tracking-wider text-bg active:scale-95 transition"
+                style={{
+                  background: 'linear-gradient(135deg, #FACC15, #EAB308)',
+                  border: '1px solid rgba(0,0,0,0.85)',
+                  minHeight: 36,
+                  minWidth: 72,
+                }}
               >
-                <XIcon className="w-4 h-4" />
+                Tutup
               </button>
             </div>
             <div className="px-4 pb-2">
@@ -1126,27 +1173,27 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                         <button
                           type="button"
                           onClick={() => selectPlace(p)}
-                          className="w-full p-2 flex items-stretch gap-3 text-left rounded-2xl bg-black/55 transition hover:bg-black/70"
+                          className="w-full p-2 flex items-stretch gap-3 text-left rounded-2xl text-bg active:scale-[0.99] transition"
                           style={{
-                            border: '1px solid rgba(250,204,21,0.55)',
-                            boxShadow: '0 1px 0 rgba(250,204,21,0.10) inset',
+                            background: 'linear-gradient(135deg, #FACC15, #EAB308)',
+                            border: '1px solid rgba(0,0,0,0.85)',
+                            boxShadow: '0 8px 22px rgba(250,204,21,0.30)',
                           }}
                         >
-                          <div className="w-14 h-14 shrink-0 relative rounded-lg overflow-hidden bg-black/60 border border-white/10">
+                          <div className="w-14 h-14 shrink-0 relative rounded-lg overflow-hidden bg-black/60 border border-black/30">
                             {photo ? (
                               <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <MapPin className="w-4 h-4 text-dim" />
+                                <MapPin className="w-4 h-4 text-white/60" />
                               </div>
                             )}
                             {p.rating != null && (
                               <span
                                 className="absolute bottom-0.5 left-0.5 inline-flex items-center gap-0.5 px-1 py-[1px] rounded-md text-[9px] font-extrabold leading-none"
                                 style={{
-                                  background: 'rgba(0,0,0,0.78)',
+                                  background: 'rgba(0,0,0,0.85)',
                                   color: '#FACC15',
-                                  border: '1px solid rgba(250,204,21,0.50)',
                                 }}
                               >
                                 <Star className="w-2 h-2 fill-current" strokeWidth={0} />
@@ -1156,22 +1203,25 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                           </div>
                           <div className="flex-1 min-w-0 self-center">
                             <div className="flex items-center gap-1.5">
-                              {p.isFavourite && <Star className="w-3 h-3 text-brand fill-brand shrink-0" />}
-                              <span className="text-[13px] font-extrabold text-ink truncate">{p.name}</span>
+                              {p.isFavourite && <Star className="w-3 h-3 fill-current shrink-0" style={{ color: '#0A0A0A' }} />}
+                              <span className="text-[13px] font-extrabold truncate" style={{ color: '#0A0A0A' }}>{p.name}</span>
                             </div>
-                            <div className="text-[11px] text-muted truncate flex items-center gap-1">
-                              <MapPin className="w-3 h-3 shrink-0" style={{ color: '#EF4444' }} />
+                            <div className="text-[11px] truncate flex items-center gap-1" style={{ color: 'rgba(10,10,10,0.65)' }}>
+                              <MapPin className="w-3 h-3 shrink-0" style={{ color: '#B91C1C' }} />
                               {citySlugLabel(p.city) || p.city}
                               <span className="opacity-60">·</span>
                               {p.category.replace(/_/g, ' ')}
                             </div>
                           </div>
                           {perPlaceFare != null && (
-                            <div className="self-center text-right shrink-0">
+                            <div
+                              className="self-center text-right shrink-0 px-2 py-1 rounded-lg"
+                              style={{ background: 'rgba(0,0,0,0.85)' }}
+                            >
                               <div className="text-[12px] font-extrabold text-brand">
                                 {idr(perPlaceFare)}
                               </div>
-                              <div className="text-[10px] text-dim">fare est.</div>
+                              <div className="text-[10px] text-white/55">fare est.</div>
                             </div>
                           )}
                         </button>
@@ -1190,6 +1240,24 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
 // PageBackground — fixed-viewport background image for the driver
 // shareable page. The dark gradient overlay keeps every card readable
+// ServiceTileActiveDot — pulsing green indicator overlaid on the active
+// service tile (Ride / Parcel / Food) or on Places once a drop-off is
+// set. Moves between tiles as the customer changes service. Visual cue
+// that "this is the one you've chosen" without changing the tile face.
+function ServiceTileActiveDot() {
+  return (
+    <span
+      aria-hidden
+      className="absolute top-1 right-1 w-2 h-2 rounded-full"
+      style={{
+        background: '#22C55E',
+        boxShadow: '0 0 6px rgba(34,197,94,0.85), 0 0 0 1.5px #0A0A0A',
+        animation: 'pulseOnline 1.6s ease-in-out infinite',
+      }}
+    />
+  )
+}
+
 // over the image without disabling its mood. background-attachment:fixed
 // is avoided because iOS Safari renders it incorrectly; instead we use
 // position: fixed on the bg div so it sits in the viewport while content
@@ -1232,14 +1300,17 @@ function BackNav() {
         </Link>
         <Link
           href="/"
-          aria-label="Close"
-          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-bg active:scale-95 transition"
+          aria-label="Close driver profile"
+          className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-bg text-[12px] font-extrabold uppercase tracking-wider active:scale-95 transition"
           style={{
             background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
-            boxShadow: '0 4px 12px rgba(250,204,21,0.35), 0 0 0 1px rgba(0,0,0,0.18) inset',
+            border: '1px solid rgba(0,0,0,0.85)',
+            boxShadow: '0 4px 12px rgba(250,204,21,0.35)',
+            minHeight: 32,
+            minWidth: 68,
           }}
         >
-          <XIcon className="w-4 h-4" strokeWidth={3} />
+          Close
         </Link>
       </div>
     </header>
@@ -1266,8 +1337,12 @@ function RiderHero({
         <img
           src={rider.photoUrl}
           alt={rider.name}
-          className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white/15"
-          style={{ filter: dimmed ? 'grayscale(1) brightness(0.6)' : undefined }}
+          className="w-20 h-20 rounded-2xl object-cover"
+          style={{
+            filter: dimmed ? 'grayscale(1) brightness(0.6)' : undefined,
+            border: '2px solid #FACC15',
+            boxShadow: '0 0 0 1px rgba(0,0,0,0.85), 0 6px 18px rgba(250,204,21,0.30)',
+          }}
         />
         {busy && (
           <span
@@ -1279,9 +1354,10 @@ function RiderHero({
             }}
           />
         )}
-        {!dimmed && !busy && rider.isOnline && (
-          <span className="dot-online absolute -bottom-1 -right-1 ring-2 ring-bg2 !w-3.5 !h-3.5" />
-        )}
+        {/* Online green dot removed from the profile image — the green
+            indicator now lives on the active service tile below the
+            hero (ServiceTileActiveDot) so there's only ONE green dot
+            on the page guiding the customer's next action. */}
         {!dimmed && rider.rating != null && (
           <span
             className="absolute -top-1.5 -left-1.5 inline-flex items-center gap-0.5 px-1.5 py-[2px] rounded-full text-[11px] font-extrabold leading-none"
@@ -1300,32 +1376,31 @@ function RiderHero({
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <h1 className="text-2xl font-extrabold leading-tight">{rider.name}</h1>
-          {rider.trips != null && rider.rating != null && (
-            <span className="text-[11px] text-muted font-bold">
-              {rider.trips.toLocaleString('en-US')} trips
+          {(rider.bike.make || rider.bike.model) && (
+            <span className="text-[12px] text-muted font-bold whitespace-nowrap">
+              {[rider.bike.make, rider.bike.model].filter(Boolean).join(' ')}
             </span>
+          )}
+          {rider.trips != null && rider.rating != null && (
+            <>
+              <span aria-hidden className="text-dim text-[11px]">·</span>
+              <span className="text-[11px] text-muted font-bold">
+                {rider.trips.toLocaleString('en-US')} trips
+              </span>
+            </>
           )}
         </div>
         <div className="flex items-center gap-1.5 text-[13px] mt-1.5">
-          <MapPin className="w-4 h-4 shrink-0" style={{ color: '#EF4444' }} />
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitledwrr-removebg-preview.png?updatedAt=1778253100200"
+            alt=""
+            aria-hidden
+            className="w-5 h-5 shrink-0 object-contain"
+          />
           <span className="text-ink/90 font-extrabold">
             {citySlugLabel(rider.city) || rider.city}
           </span>
           <span className="text-[11px] text-muted">· service area</span>
-        </div>
-        <div className="flex items-center gap-2 text-[12px] text-muted mt-1.5">
-          {/* Bike photo — driver-uploaded if available, else stock from the
-              rentals catalog by brand+model match, else generic silhouette. */}
-          <img
-            src={getBikeImageUrl(rider.bike.make, rider.bike.model)}
-            alt=""
-            aria-hidden
-            className="w-8 h-8 rounded-md object-contain shrink-0"
-            style={{ background: 'rgba(0,0,0,0.20)' }}
-          />
-          <span className="font-bold">
-            {rider.bike.make} {rider.bike.model} · {rider.bike.year}
-          </span>
         </div>
       </div>
     </div>

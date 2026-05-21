@@ -399,6 +399,48 @@
   100% { background-position: 0 150%; }
 }
 
+/* Heartbeat pulse — drives attention to the fare number on the Confirm
+   Driver CTA. Two beats per cycle (1.2s total), 8% peak scale. The
+   user's eye locks onto the price even when their thumb is on the
+   button. */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14%      { transform: scale(1.08); }
+  28%      { transform: scale(1); }
+  42%      { transform: scale(1.05); }
+  56%      { transform: scale(1); }
+}
+.cr-fare-heartbeat {
+  display: inline-block;
+  animation: heartbeat 1.4s ease-in-out infinite;
+  transform-origin: center center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-fare-heartbeat { animation: none; }
+}
+
+/* Service-tile pulse — subtle yellow outline that fades in/out around
+   the 4 service buttons (Ride / Parcel / Food / Places) on /r/[slug]
+   until the customer has made a choice. Stops as soon as ANY tile is
+   selected, so it's a one-time hint, not permanent visual noise. */
+@keyframes serviceTilePulse {
+  0%, 100% {
+    outline-color: rgba(250,204,21,0.0);
+    outline-offset: 0px;
+  }
+  50% {
+    outline-color: rgba(250,204,21,0.55);
+    outline-offset: 2px;
+  }
+}
+.cr-service-tile-pulse {
+  outline: 2px solid transparent;
+  animation: serviceTilePulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-service-tile-pulse { animation: none; outline-color: transparent; }
+}
+
 /* Safe-area helpers */
 .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }

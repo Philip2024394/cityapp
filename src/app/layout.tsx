@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import MapBackground from '@/components/layout/MapBackground'
+import PageBackground from '@/components/layout/PageBackground'
 import RegisterServiceWorker from '@/components/pwa/RegisterServiceWorker'
 import PreloadTiles from '@/components/pwa/PreloadTiles'
 import CapacitorBoot from '@/components/pwa/CapacitorBoot'
@@ -79,10 +79,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
       </head>
       <body suppressHydrationWarning>
-        {/* Global dark Yogyakarta map background — mounted once at the root
-            so every page sits over the same panning, pulsing scene.
-            Fixed to the viewport; doesn't scroll with content. */}
-        <MapBackground />
+        {/* Global background image — mounted once at the root so every
+            page sits over the same scene. Fixed to the viewport; doesn't
+            scroll with content. Dark scrim keeps text legible. */}
+        <PageBackground />
         <RegisterServiceWorker />
         <PreloadTiles />
         <CapacitorBoot />

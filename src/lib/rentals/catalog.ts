@@ -226,10 +226,10 @@ export const BIKE_CATALOG: CatalogBike[] = [
   },
   {
     id: 'honda-beat',
-    brand: 'Honda', model: 'BeAT',
+    brand: 'Honda', model: 'Beat',
     cc: 110, transmission: 'automatic', bikeType: 'matic',
     imageUrl: 'https://ik.imagekit.io/nepgaxllc/Untitledasdss23asda-removebg-preview.png?updatedAt=1776330337603',
-    aliases: ['beat', 'beat sporty', 'honda beat'],
+    aliases: ['beat', 'beat sporty', 'honda beat', 'beat street'],
   },
   {
     id: 'yamaha-mio',

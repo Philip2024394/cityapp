@@ -31,20 +31,22 @@ import type { Rider, ServiceType } from '@/types/rider'
 // still making the customer experience feel professional.
 //
 // Stage thresholds (seconds-based, redesigned 2026-05):
-//   sent     0–30s   confirmation + green pulse
-//   awaiting 30–60s  typing dots + reassurance + countdown to 60s
-//   nudge    60–90s  amber pulse, alternatives revealed (collapsed)
-//   switch   90s+    red urgency, alternatives expanded
+//   sent     0–30s    confirmation + green pulse
+//   awaiting 30–60s   typing dots + reassurance + countdown to 60s
+//   nudge    60–90s   amber pulse, alternatives revealed (collapsed)
+//   switch   90s–600s red urgency, alternatives expanded
+//   stale    600s+    booking is probably dead — explicit "start over" path
 // ============================================================================
 
-type Stage = 'sent' | 'awaiting' | 'nudge' | 'switch'
+type Stage = 'sent' | 'awaiting' | 'nudge' | 'switch' | 'stale'
 
 function stageFromElapsed(ms: number): Stage {
   const s = ms / 1000
   if (s < 30) return 'sent'
   if (s < 60) return 'awaiting'
   if (s < 90) return 'nudge'
-  return 'switch'
+  if (s < 600) return 'switch'
+  return 'stale'
 }
 
 function formatElapsed(ms: number): string {
@@ -78,6 +80,10 @@ const COPY_BANK: Record<Stage, string[]> = {
     'Tap an alternative below — they are online right now',
     'You can keep this conversation open and message someone else too',
   ],
+  stale: [
+    'Sudah 10 menit — driver kemungkinan tidak akan respon',
+    'Mulai ulang dengan driver lain untuk hasil tercepat',
+  ],
 }
 
 function stageColor(stage: Stage): { ring: string; text: string; glow: string } {
@@ -86,6 +92,7 @@ function stageColor(stage: Stage): { ring: string; text: string; glow: string } 
     case 'awaiting': return { ring: '#60A5FA', text: '#60A5FA', glow: 'rgba(96,165,250,0.85)' }
     case 'nudge':    return { ring: '#F59E0B', text: '#F59E0B', glow: 'rgba(245,158,11,0.85)' }
     case 'switch':   return { ring: '#EF4444', text: '#EF4444', glow: 'rgba(239,68,68,0.85)' }
+    case 'stale':    return { ring: '#64748B', text: '#94A3B8', glow: 'rgba(148,163,184,0.50)' }
   }
 }
 
@@ -95,6 +102,7 @@ function stageHeadline(stage: Stage, name: string): string {
     case 'awaiting': return `Menunggu balasan ${name}…`
     case 'nudge':    return `${name} belum balas — coba ingatkan?`
     case 'switch':   return `Coba driver lain?`
+    case 'stale':    return `Sudah lama tidak ada balasan`
   }
 }
 
@@ -145,6 +153,40 @@ export default function PendingBookingPage() {
     })
     return () => { cancelled = true }
   }, [])
+
+  // ── Driver-ack polling (audit 2026-05) ────────────────────────────────
+  // Driver dashboard has a "Got it" button that records acknowledged_at on
+  // driver_contact_pings. We poll every 5s so the customer sees a green
+  // "Driver melihat pesanmu · HH:MM ✓" badge as soon as the driver acks —
+  // a meaningful trust signal even before the WA reply lands.
+  const [ackedAt, setAckedAt] = useState<string | null>(null)
+  useEffect(() => {
+    if (!booking || ackedAt) return
+    if (typeof window === 'undefined') return
+    let cancelled = false
+    let anonId = ''
+    try { anonId = window.localStorage.getItem('cr_anon_id') ?? '' } catch { /* ignore */ }
+    if (!anonId) return
+
+    async function poll() {
+      if (cancelled || !booking) return
+      const params = new URLSearchParams({
+        driverId: booking.driverId,
+        customerAnonId: anonId,
+        sinceMs: String(booking.sentAtMs),
+      })
+      try {
+        const res = await fetch(`/api/contact/ack-status?${params}`)
+        if (!cancelled && res.ok) {
+          const j = (await res.json()) as { ackedAt: string | null }
+          if (j.ackedAt) setAckedAt(j.ackedAt)
+        }
+      } catch { /* network blip — try again on next tick */ }
+    }
+    void poll()
+    const interval = window.setInterval(poll, 5000)
+    return () => { cancelled = true; window.clearInterval(interval) }
+  }, [booking, ackedAt])
 
   const elapsedMs = useElapsedSince(booking?.sentAtMs ?? null)
   const stage: Stage = stageFromElapsed(elapsedMs)
@@ -430,6 +472,19 @@ export default function PendingBookingPage() {
               <h1 className="text-xl font-extrabold leading-tight mt-0.5 truncate">
                 {booking.driverName}
               </h1>
+              {ackedAt && (
+                <div
+                  className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[12px] font-extrabold"
+                  style={{
+                    background: 'rgba(34,197,94,0.12)',
+                    border: '1px solid rgba(34,197,94,0.40)',
+                    color: '#22C55E',
+                  }}
+                >
+                  <Check className="w-3 h-3" strokeWidth={3} />
+                  Driver melihat pesanmu · {new Date(ackedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
               <div className="text-[12px] text-muted mt-1 flex items-center gap-2 flex-wrap">
                 <span className="font-mono tabular-nums">
                   Sent {formatElapsed(elapsedMs)} ago
@@ -541,6 +596,40 @@ export default function PendingBookingPage() {
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Stale-state escape banner (audit fix 2026-05) — after 10 min
+            with no driver response, the welcome-back card was re-showing
+            yesterday's dead attempt. Hard banner + Start-over CTA breaks
+            the loop. */}
+        {stage === 'stale' && (
+          <div
+            className="rounded-2xl p-4 mb-1"
+            style={{
+              background: 'rgba(148,163,184,0.08)',
+              border: '1px solid rgba(148,163,184,0.35)',
+            }}
+          >
+            <div className="text-[14px] font-extrabold text-ink leading-snug">
+              Booking ini sudah {Math.floor(elapsedMs / 60000)} menit tanpa respon
+            </div>
+            <p className="text-[13px] text-muted leading-snug mt-1 mb-3">
+              Driver kemungkinan offline atau lagi sibuk. Mulai ulang dengan
+              driver lain untuk hasil tercepat.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                haptic.tap()
+                clearPendingBooking()
+                router.push('/cari')
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
+              style={{ minHeight: 48 }}
+            >
+              Mulai ulang booking
+            </button>
           </div>
         )}
 

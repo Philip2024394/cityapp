@@ -63,7 +63,7 @@ export const BIKE_MAKES: ReadonlyArray<BikeMake> = [
 // for premium imports; rare bikes fall through to free-text entry.
 export const BIKE_MODELS: Record<BikeMake, ReadonlyArray<string>> = {
   Honda: [
-    'BeAT', 'BeAT Street', 'Genio',
+    'Beat', 'Beat Street', 'Genio',
     'Vario 125', 'Vario 160',
     'Scoopy', 'Stylo 160',
     'PCX 160', 'ADV 160', 'ADV 350',
