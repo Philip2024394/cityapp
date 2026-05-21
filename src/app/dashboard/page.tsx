@@ -14,6 +14,7 @@ import ViralityPanel from '@/components/rider/ViralityPanel'
 import RentalToggles from '@/components/rider/RentalToggles'
 import BusinessContractToggle from '@/components/rider/BusinessContractToggle'
 import BookingAlertsToggle from '@/components/rider/BookingAlertsToggle'
+import DriverInboxWidget from '@/components/rider/DriverInboxWidget'
 import TourGuideToggle from '@/components/rider/TourGuideToggle'
 import B2BScoreCard from '@/components/rider/B2BScoreCard'
 import DeleteAccountSection from '@/components/settings/DeleteAccountSection'
@@ -191,6 +192,10 @@ function FirstTimeDashboard({
         <GoOnlineToggle defaultOnline={online} onChange={setOnline} />
       </PrimaryActionCard>
 
+      {/* Inbox — only renders when customers have tapped Contact and
+          the driver hasn't acknowledged yet. Self-hides otherwise. */}
+      <DriverInboxWidget />
+
       {/* PRIMARY 2 — Upload bike photo (only if missing) */}
       {!hasBikePhoto && (
         <PrimaryActionCard
@@ -309,6 +314,7 @@ function ActivatedDashboard({
   return (
     <div className="space-y-4">
       <GoOnlineToggle defaultOnline={online} onChange={setOnline} />
+      <DriverInboxWidget />
       <BookingAlertsToggle />
 
       {/* PENGHASILAN */}

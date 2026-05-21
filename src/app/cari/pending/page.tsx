@@ -558,6 +558,40 @@ export default function PendingBookingPage() {
             {reassuranceLine}
           </p>
 
+          {/* Post-WhatsApp disclosure card (PM 12/2019 safe) — surfaces
+              the directory positioning that's also in T&Cs so the
+              customer knows:
+                a) the message reached the driver,
+                b) any trip arrangement happens between them on WhatsApp,
+                c) safety / payment is direct (not via the platform).
+              No booking, no fare control, no dispatch claim — just an
+              honest restatement of what already happened. */}
+          {(stage === 'sent' || stage === 'awaiting') && (
+            <div
+              className="mt-3 rounded-xl p-3 text-[12px] leading-relaxed"
+              style={{
+                background: 'rgba(34,197,94,0.06)',
+                border: '1px solid rgba(34,197,94,0.25)',
+                color: 'rgba(255,255,255,0.80)',
+              }}
+            >
+              <div className="font-extrabold flex items-center gap-1.5 mb-1" style={{ color: '#22C55E' }}>
+                <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                Pesan sudah ada di WhatsApp driver
+              </div>
+              <p>
+                Chat selanjutnya dilanjutkan langsung di WhatsApp — tarif,
+                jam berangkat, dan pembayaran kamu sepakati dengan driver.
+                City Rider adalah direktori, bukan operator perjalanan.
+              </p>
+              <ul className="mt-1.5 space-y-0.5 text-muted">
+                <li>· Cek helm tersedia sebelum berangkat</li>
+                <li>· Konfirmasi tarif total dengan driver</li>
+                <li>· Bayar langsung (cash / QRIS / transfer)</li>
+              </ul>
+            </div>
+          )}
+
           {/* Trip summary chip */}
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
             <div className="rounded-xl border border-line p-2">
