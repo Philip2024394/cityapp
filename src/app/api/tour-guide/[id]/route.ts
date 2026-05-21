@@ -1,51 +1,32 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
+import { MAX_TOUR_SERVICES, TOUR_SERVICE_IDS } from '@/data/tourServices'
 
 // ============================================================================
-// PATCH /api/rentals/[id]
+// /api/tour-guide/[id]
 // ----------------------------------------------------------------------------
-// Owner-scoped edit endpoint for bike_rentals rows. Mirrors /api/places/[id]:
-// authed user, RLS enforces owner_user_id = auth.uid(), whitelist of safe
-// fields, moderation columns frozen.
+// Owner-scoped PATCH (edit) + DELETE (remove) for a tour_guide_listings row.
+// RLS (migration 0037 + 0040) restricts mutations to rows where
+// owner_user_id = auth.uid(). Wrong ids return 404 without leaking.
+//
+// Status / verified / rating columns are deliberately NOT in the editable
+// list — only admin moves rows through the moderation pipeline.
 // ============================================================================
 
 const EDITABLE_FIELDS = [
-  'brand',
-  'model',
-  'year',
-  'cc',
-  'transmission',
-  'color',
-  'description',
-  'image_urls',
-  'daily_price_idr',
-  'weekly_price_idr',
-  'monthly_price_idr',
-  'security_deposit_idr',
-  'driver_rate_per_day_idr',
-  'helmet_count',
-  'raincoat_count',
-  'has_phone_holder',
-  'has_phone_charger',
-  'has_delivery_box',
-  'ready_to_work',
-  'delivers_to_hotel',
-  'delivers_to_villa',
-  'pickup_dropoff',
-  'rental_mode',
+  'name',
+  'whatsapp_e164',
+  'email',
+  'city',
   'address',
   'lat',
   'lng',
-  'owner_name',
-  'owner_company',
-  'owner_whatsapp_e164',
-  'owner_languages',
-  'owner_response_time_min',
+  'services',
+  'languages',
+  'day_rate_idr',
+  'notes',
+  'image_urls',
   'available_now',
-  'tags',
-  'submitted_name',
-  'submitted_email',
-  'submitted_whatsapp',
 ] as const
 
 type EditableField = (typeof EDITABLE_FIELDS)[number]
@@ -71,12 +52,21 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ error: 'No editable fields supplied' }, { status: 400 })
   }
 
+  // Validate services: cap to MAX, intersect with the canonical taxonomy.
+  if (Array.isArray(patch.services)) {
+    const allowed = new Set(TOUR_SERVICE_IDS)
+    const clean = (patch.services as unknown[])
+      .filter((s): s is string => typeof s === 'string' && allowed.has(s as never))
+      .slice(0, MAX_TOUR_SERVICES)
+    patch.services = clean
+  }
+
   if (typeof patch.lat === 'number' && typeof patch.lng === 'number') {
     ;(patch as Record<string, unknown>).location = `SRID=4326;POINT(${patch.lng} ${patch.lat})`
   }
 
   const { data, error } = await supabase
-    .from('bike_rentals')
+    .from('tour_guide_listings')
     .update(patch)
     .eq('id', id)
     .select('id, status, updated_at')
@@ -88,13 +78,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   return NextResponse.json({ ok: true, ...data })
 }
 
-// ============================================================================
-// DELETE /api/rentals/[id]
-// ----------------------------------------------------------------------------
-// Owner removes their own listing. RLS (migration 0040) restricts to rows
-// where owner_user_id = auth.uid() — passing the wrong id returns "not
-// found or not yours" with no row leak.
-// ============================================================================
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const supabase = await getServerSupabase()
   if (!supabase) return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
@@ -105,7 +88,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const { id } = await ctx.params
 
   const { data, error } = await supabase
-    .from('bike_rentals')
+    .from('tour_guide_listings')
     .delete()
     .eq('id', id)
     .select('id')

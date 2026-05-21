@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Plus, Bike, Clock, CheckCircle2, AlertTriangle, Ban, Edit3, ChevronRight } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getServerSupabase } from '@/lib/supabase/server'
+import DeleteRentalButton from '@/components/rent/DeleteRentalButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -129,14 +130,17 @@ export default async function DashboardRentalsPage() {
                           : <span className="text-amber-400">Listing kadaluwarsa — hubungi admin</span>}
                       </p>
                     )}
-                    <Link
-                      href={`/dashboard/rentals/${r.id}/edit`}
-                      className="mt-1 inline-flex items-center gap-1 text-[12px] font-extrabold uppercase tracking-wider text-brand"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      Edit
-                      <ChevronRight className="w-3 h-3" />
-                    </Link>
+                    <div className="mt-1 flex items-center gap-3 flex-wrap">
+                      <Link
+                        href={`/dashboard/rentals/${r.id}/edit`}
+                        className="inline-flex items-center gap-1 text-[12px] font-extrabold uppercase tracking-wider text-brand"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        Edit
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
+                      <DeleteRentalButton rentalId={r.id} label={`${r.brand} ${r.model}`} />
+                    </div>
                   </div>
                 </li>
               )
