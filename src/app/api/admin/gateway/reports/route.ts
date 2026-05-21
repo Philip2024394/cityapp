@@ -100,14 +100,19 @@ export const GET = withGateway(async () => {
   // ── WA click events (last 30 d) — by app, by context ───────────────
   const { data: waClicks } = await admin
     .from('wa_click_events')
-    .select('app_id, context, occurred_at')
+    .select('app_id, context, city, country, occurred_at')
     .gte('occurred_at', day30)
     .limit(10_000)
   const wa_by_app: Record<string, number> = {}
   const wa_by_context: Record<string, number> = {}
-  for (const w of (waClicks ?? []) as Array<{ app_id: string; context: string }>) {
+  const wa_by_city: Record<string, number> = {}
+  for (const w of (waClicks ?? []) as Array<{ app_id: string; context: string; city: string | null; country: string | null }>) {
     wa_by_app[w.app_id] = (wa_by_app[w.app_id] || 0) + 1
     wa_by_context[w.context] = (wa_by_context[w.context] || 0) + 1
+    if (w.city) {
+      const key = w.country ? `${w.city}, ${w.country}` : w.city
+      wa_by_city[key] = (wa_by_city[key] || 0) + 1
+    }
   }
   const wa_clicks_30d_total = (waClicks ?? []).length
 
@@ -131,6 +136,7 @@ export const GET = withGateway(async () => {
       total: wa_clicks_30d_total,
       by_app: wa_by_app,
       by_context: wa_by_context,
+      by_city: wa_by_city,
     },
   })
 })

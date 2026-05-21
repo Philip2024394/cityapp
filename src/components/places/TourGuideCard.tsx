@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { MessageCircle, Star, MapPinned } from 'lucide-react'
+import { trackWaClick } from '@/lib/tracking/waClick'
 import { TOUR_LANGUAGES, type TourLanguage } from '@/data/tourLanguages'
 import type { Rider } from '@/types/rider'
 
@@ -136,6 +137,7 @@ export default function TourGuideCard({ driver }: { driver: Rider }) {
                   href={waLink}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackWaClick({ context: 'tour_guide_card', targetPhone: driver.whatsappE164, meta: { driver_id: driver.id } })}
                   aria-label={`Contact ${driver.name} for a day tour`}
                   className="h-[39px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60"
                   style={{

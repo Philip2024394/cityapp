@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, MessageCircle, Star } from 'lucide-react'
+import { ArrowLeft, MapPin, Star } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { findTourService } from '@/data/tourServices'
 import { getLanguageByCode } from '@/data/tourLanguages'
+import TourContactButton from '@/components/tour/TourContactButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,22 +101,12 @@ export default async function TourGuideDetailPage({
                 className="w-[120px] h-[120px] object-contain"
                 loading="eager"
               />
-              <a
+              <TourContactButton
                 href={waLink(r.whatsapp_e164, r.name)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-bg font-extrabold text-[12px] uppercase tracking-wider active:scale-95 transition"
-                style={{
-                  background: 'linear-gradient(135deg, #FACC15, #EAB308)',
-                  border: '1px solid rgba(0,0,0,0.85)',
-                  boxShadow: '0 4px 12px rgba(250,204,21,0.30)',
-                  minHeight: 40,
-                }}
-                aria-label={`WhatsApp ${r.name}`}
-              >
-                <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
-                Contact
-              </a>
+                phone={r.whatsapp_e164}
+                listingId={r.id}
+                name={r.name}
+              />
             </div>
 
             {/* RIGHT — Services header + list */}
