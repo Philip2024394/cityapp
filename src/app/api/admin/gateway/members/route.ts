@@ -16,6 +16,7 @@ type AuthUserLite = {
   email: string | null
   phone: string | null
   created_at: string
+  last_sign_in_at?: string | null
   user_metadata: Record<string, unknown>
 }
 
@@ -104,6 +105,7 @@ export const GET = withGateway(async (req) => {
         tour_guide_status: acct?.tour_guide_status ?? 'inactive',
         status,
         created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at ?? null,
       }
     })
     .filter((r) => typeFilter === 'all' || r.account_type === typeFilter)

@@ -9,6 +9,7 @@ const BRAND_LOGO    = 'https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg
 import type { BikeRental } from '@/lib/rentals/types'
 import { idr } from '@/lib/format/idr'
 import { BIKE_CATALOG } from '@/lib/rentals/catalog'
+import { trackWaClick } from '@/lib/tracking/waClick'
 
 // Looks up the catalog stock image for a brand + model pair, with a tiny
 // partial-match fallback so "PCX 150" still matches "PCX 160" etc.
@@ -269,6 +270,7 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
             href={whatsappLink(r.ownerWhatsapp, r.ownerName, r.brand, r.model)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackWaClick({ context: 'rental_card', targetPhone: r.ownerWhatsapp, meta: { rental_id: r.id, brand: r.brand, model: r.model } })}
             className="
               shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap
               rounded-lg
