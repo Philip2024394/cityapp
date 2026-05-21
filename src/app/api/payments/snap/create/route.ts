@@ -21,14 +21,27 @@ import { createSnapTransaction } from '@/lib/midtrans/snap'
 //   product='verified'             → Rp 100,000, extends_days=30
 // ============================================================================
 
-type Product = 'subscription' | 'subscription_yearly' | 'verified'
+type Product =
+  | 'subscription'
+  | 'subscription_yearly'
+  | 'verified'
+  | 'rental_company_monthly'
+  | 'rental_company_yearly'
+
 type Payload = { product?: Product }
 
 const PRICE_BY_PRODUCT: Record<Product, { amount: number; days: number; label: string }> = {
-  subscription:        { amount:  38_000, days:  30, label: 'City Rider · 30 days'  },
-  subscription_yearly: { amount: 350_000, days: 365, label: 'City Rider · 365 days' },
-  verified:            { amount: 100_000, days:  30, label: 'Tour Verified · 30 d'  },
+  subscription:           { amount:  38_000, days:  30, label: 'City Rider · 30 days'       },
+  subscription_yearly:    { amount: 350_000, days: 365, label: 'City Rider · 365 days'      },
+  verified:               { amount: 100_000, days:  30, label: 'Tour Verified · 30 d'       },
+  rental_company_monthly: { amount:  38_000, days:  30, label: 'Rental Company · 30 days'   },
+  rental_company_yearly:  { amount: 350_000, days: 365, label: 'Rental Company · 365 days'  },
 }
+
+const RENTAL_COMPANY_PRODUCTS = new Set<Product>([
+  'rental_company_monthly',
+  'rental_company_yearly',
+])
 
 export async function POST(req: Request) {
   const supabase = await getServerSupabase()
@@ -42,17 +55,32 @@ export async function POST(req: Request) {
   const product: Product =
     body.product === 'verified' ? 'verified'
     : body.product === 'subscription_yearly' ? 'subscription_yearly'
+    : body.product === 'rental_company_monthly' ? 'rental_company_monthly'
+    : body.product === 'rental_company_yearly' ? 'rental_company_yearly'
     : 'subscription'
   const tier = PRICE_BY_PRODUCT[product]
 
-  // Need a few driver fields for the Midtrans customer_details block
-  const { data: driver } = await supabase
-    .from('drivers')
-    .select('user_id, business_name, whatsapp_e164')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  if (!driver) {
-    return NextResponse.json({ error: 'Complete onboarding before paying' }, { status: 403 })
+  // Rental-company products don't require a `drivers` row (vendor owners
+  // are NOT cityrider drivers). Driver-side products still gate on the
+  // drivers row so we have business_name + whatsapp for the Midtrans
+  // customer_details block.
+  let customerName = 'City Rider user'
+  let customerPhone: string | undefined
+  if (RENTAL_COMPANY_PRODUCTS.has(product)) {
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>
+    customerName = String(meta.full_name || meta.name || 'Rental Company owner')
+    if (user.phone) customerPhone = '+' + user.phone
+  } else {
+    const { data: driver } = await supabase
+      .from('drivers')
+      .select('user_id, business_name, whatsapp_e164')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!driver) {
+      return NextResponse.json({ error: 'Complete onboarding before paying' }, { status: 403 })
+    }
+    customerName = driver.business_name || 'City Rider driver'
+    customerPhone = driver.whatsapp_e164 || undefined
   }
 
   // We need service-role to insert into payment_intents (its RLS only
@@ -95,8 +123,8 @@ export async function POST(req: Request) {
       orderId,
       amountIdr: tier.amount,
       customer: {
-        name: driver.business_name || 'City Rider driver',
-        phone: driver.whatsapp_e164 || undefined,
+        name: customerName,
+        phone: customerPhone,
       },
       itemName: tier.label,
     })

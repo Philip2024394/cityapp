@@ -22,6 +22,8 @@ type Props = {
   countryCodes?: string[]
   /** Aria-label for the input. */
   ariaLabel?: string
+  /** Maximum number of suggestions to render in the dropdown. */
+  maxResults?: number
 }
 
 // Free-text input with debounced Nominatim place-search suggestions.
@@ -29,10 +31,11 @@ type Props = {
 // AND any other market. Suggestions render in a dropdown ABOVE the
 // input (the input lives in the bottom sheet so down would clip).
 export default function PlaceAutocomplete({
-  value, onChange, onSelect, placeholder, className, leftSlot, rightSlot, near, countryCodes, ariaLabel,
+  value, onChange, onSelect, placeholder, className, leftSlot, rightSlot, near, countryCodes, ariaLabel, maxResults,
 }: Props) {
   const [focused, setFocused] = useState(false)
-  const { suggestions, loading } = usePlaceSearch(value, { near, countryCodes })
+  const { suggestions: rawSuggestions, loading } = usePlaceSearch(value, { near, countryCodes })
+  const suggestions = maxResults ? rawSuggestions.slice(0, maxResults) : rawSuggestions
   const wrapRef = useRef<HTMLDivElement>(null)
 
   // Close the dropdown when clicking outside the wrapper. Pointerdown

@@ -90,7 +90,7 @@ export default function ListBikePage() {
           </p>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <Link
-              href="/rent/list/new"
+              href="/rent/list/auth"
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-bg text-brand font-extrabold text-[13px] uppercase tracking-wider hover:bg-black transition"
             >
               Start listing

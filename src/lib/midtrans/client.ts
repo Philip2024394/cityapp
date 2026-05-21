@@ -70,7 +70,7 @@ export function loadSnapScript(): Promise<void> {
  * the dashboard, show toast).
  */
 export async function startSnapCheckout(opts: {
-  product?: 'subscription' | 'subscription_yearly' | 'verified'
+  product?: 'subscription' | 'subscription_yearly' | 'verified' | 'rental_company_monthly' | 'rental_company_yearly'
   onSuccess?: () => void
   onPending?: () => void
   onError?:   (msg: string) => void

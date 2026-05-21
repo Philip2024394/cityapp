@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ArrowRight, Users, IdCard, MessageSquare, Share2, Edit3, MapPin, Bike, Star,
   Copy, Check, MessageCircle, Facebook, Instagram, ChevronDown, Camera, Rocket,
@@ -35,10 +36,24 @@ const FALLBACK_ME = MOCK_RIDERS[0]!
 const SUBSCRIPTION_MONTHLY = SUBSCRIPTION_MONTHLY_IDR
 
 export default function DashboardPage() {
+  const router = useRouter()
   const haptic = useHaptic()
   const [online, setOnline] = useState(false)
   const [ME, setME] = useState<Rider>(FALLBACK_ME)
   const [meLoaded, setMeLoaded] = useState(false)
+
+  // Rental Company accounts don't see the driver dashboard at all — bounce
+  // them straight to their listings page on every /dashboard hit.
+  useEffect(() => {
+    fetch('/api/me/account', { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((j: { account?: { account_type?: string; subscription_status?: string } | null } | null) => {
+        if (j?.account?.account_type === 'rental_company' && j.account.subscription_status === 'active') {
+          router.replace('/dashboard/rentals')
+        }
+      })
+      .catch(() => { /* offline / blocked — let the page render */ })
+  }, [router])
 
   useEffect(() => {
     let cancelled = false
