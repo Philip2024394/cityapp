@@ -89,7 +89,7 @@ const COPY_BANK: Record<Stage, string[]> = {
 function stageColor(stage: Stage): { ring: string; text: string; glow: string } {
   switch (stage) {
     case 'sent':     return { ring: '#22C55E', text: '#22C55E', glow: 'rgba(34,197,94,0.85)' }
-    case 'awaiting': return { ring: '#60A5FA', text: '#60A5FA', glow: 'rgba(96,165,250,0.85)' }
+    case 'awaiting': return { ring: '#FB923C', text: '#FB923C', glow: 'rgba(251,146,60,0.85)' }
     case 'nudge':    return { ring: '#F59E0B', text: '#F59E0B', glow: 'rgba(245,158,11,0.85)' }
     case 'switch':   return { ring: '#EF4444', text: '#EF4444', glow: 'rgba(239,68,68,0.85)' }
     case 'stale':    return { ring: '#64748B', text: '#94A3B8', glow: 'rgba(148,163,184,0.50)' }

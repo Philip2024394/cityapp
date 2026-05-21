@@ -9,7 +9,7 @@ import { etaMinutes } from '@/lib/geo/eta'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { quoteBreakdown, rateFor, isOutOfZone } from '@/lib/pricing/quote'
 import { buildWhatsAppLink } from '@/lib/whatsapp/buildLink'
-import { writePendingBooking, readTriedDriverIds } from '@/lib/booking/pending-booking'
+import { writePendingBooking, readTriedDriverIds, readPendingBooking } from '@/lib/booking/pending-booking'
 import { idr } from '@/lib/format/idr'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useBeep } from '@/hooks/useBeep'
@@ -40,22 +40,34 @@ function DriverResults() {
   const haptic = useHaptic()
   const beep = useBeep()
 
-  const pickup = readCoord(sp, 'pLat', 'pLng')
-  const dropoff = readCoord(sp, 'dLat', 'dLng')
-  const pickupName = sp.get('pName') ?? 'My location'
-  const dropoffName = sp.get('dName') ?? 'Destination'
-  const pitstopNote = sp.get('stop') ?? null   // null = no pit stop requested
+  // Hydrate from the in-flight pending booking when URL params are absent.
+  // Lets `/cari/pending` send the user here via "Pick another driver"
+  // without re-encoding the whole trip into the URL — pickup, dropoff,
+  // pitstop, and service all survive the navigation.
+  const pending = useMemo(() => readPendingBooking(), [])
+  const pickup =
+    readCoord(sp, 'pLat', 'pLng')
+    ?? (pending?.trip.pickup ? { lat: pending.trip.pickup.lat, lng: pending.trip.pickup.lng } : null)
+  const dropoff =
+    readCoord(sp, 'dLat', 'dLng')
+    ?? (pending?.trip.dropoff ? { lat: pending.trip.dropoff.lat, lng: pending.trip.dropoff.lng } : null)
+  const pickupName  = sp.get('pName') ?? pending?.trip.pickup.label  ?? 'My location'
+  const dropoffName = sp.get('dName') ?? pending?.trip.dropoff.label ?? 'Destination'
+  const pitstopNote = sp.get('stop')  ?? pending?.trip.pitstop?.note ?? null
 
   // Sort is fixed to 'cheapest' since the badge row was replaced with a
   // service-type toggle (Passenger / Parcel / Food). State is preserved
   // so the FeaturedDriverCard's `isCheapest` flag keeps working.
   const [sort] = useState<'cheapest' | 'nearest'>('cheapest')
   // Read service choice from URL — set by /cari when customer picks one
-  // of the 3 service cards. Defaults to 'person' (Passenger) since the
-  // new toggle has no "all" option.
+  // of the 3 service cards. Falls back to the pending booking's service
+  // (so /cari/pending → Pick another driver keeps the same service type)
+  // then to 'person' (Passenger) since the new toggle has no "all" option.
   const initialFilter: ServiceType = (() => {
     const f = sp.get('filter')
     if (f === 'person' || f === 'parcel' || f === 'food') return f
+    const fromPending = pending?.trip.service
+    if (fromPending === 'person' || fromPending === 'parcel' || fromPending === 'food') return fromPending
     return 'person'
   })()
   const [filter, setFilter] = useState<ServiceType>(initialFilter)
