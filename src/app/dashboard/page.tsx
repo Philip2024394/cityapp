@@ -657,44 +657,17 @@ function ShareKitCard({
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// SubscriptionCard — Midtrans Snap renewal. `compact` strips internals for
-// the first-time dashboard where it's a status indicator only.
+// SubscriptionCard — QR + receipt-upload renewal (replaces the old Midtrans
+// Snap path). `compact` strips internals for the first-time dashboard
+// where it's a status indicator only. The Bulanan / Tahunan buttons just
+// link to /dashboard/renew where the QrPaymentFlow component drives the
+// actual checkout — same shape as /rent/upgrade and /tour/upgrade.
 // ────────────────────────────────────────────────────────────────────────────
 function SubscriptionCard({ status, compact = false }: { status?: string; compact?: boolean }) {
-  // Per-product busy state — was a single `busy` flag that disabled
-  // BOTH renew buttons during one Snap open. Riders couldn't change
-  // their mind mid-flow (audit P3 hygiene).
-  const [busyProduct, setBusyProduct] = useState<'subscription' | 'subscription_yearly' | null>(null)
-  const [notice, setNotice]   = useState<string | null>(null)
-  const hasClientKey = !!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
-
-  async function onRenew(product: 'subscription' | 'subscription_yearly') {
-    setNotice(null)
-    setBusyProduct(product)
-    const { startSnapCheckout } = await import('@/lib/midtrans/client')
-    startSnapCheckout({
-      product,
-      onSuccess: () => {
-        setNotice('✓ Pembayaran diterima — langganan kamu sekarang aktif.')
-        setBusyProduct(null)
-        setTimeout(() => window.location.reload(), 1500)
-      },
-      onPending: () => {
-        setNotice('Pending — Midtrans sedang memproses. Status langganan akan ter-update otomatis.')
-        setBusyProduct(null)
-      },
-      onError: (msg) => {
-        setNotice(msg || 'Pembayaran gagal. Coba lagi.')
-        setBusyProduct(null)
-      },
-      onClose: () => {
-        setBusyProduct(null)
-        setNotice('Pembayaran dibatalkan. Tidak ada yang ditagih — coba lagi kapan saja.')
-      },
-    })
-  }
-  const isBusy = (p: 'subscription' | 'subscription_yearly') => busyProduct === p
-  const anyBusy = busyProduct !== null
+  // Notice kept for compatibility with the past_due banner copy below —
+  // QR flow uses page-level state, so we never set this here anymore.
+  const notice: string | null = null
+  const hasClientKey = true  // QR is always available — no Midtrans env required
 
   if (compact) {
     return (
@@ -779,22 +752,18 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
 
       {hasClientKey ? (
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => onRenew('subscription')}
-            disabled={anyBusy}
-            className="btn-primary w-full !text-[13px]"
+          <Link
+            href="/dashboard/renew"
+            className="btn-primary w-full !text-[13px] inline-flex items-center justify-center"
           >
-            {isBusy('subscription') ? 'Opening…' : 'Bulanan · Rp 38K / 30 hari'}
-          </button>
-          <button
-            type="button"
-            onClick={() => onRenew('subscription_yearly')}
-            disabled={anyBusy}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-bg text-brand font-extrabold text-[13px] uppercase tracking-wider border-2 border-brand active:scale-[0.99] disabled:opacity-60"
+            Bulanan · Rp 38K / 30 hari
+          </Link>
+          <Link
+            href="/dashboard/renew"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-bg text-brand font-extrabold text-[13px] uppercase tracking-wider border-2 border-brand active:scale-[0.99]"
           >
-            {isBusy('subscription_yearly') ? 'Opening…' : 'Tahunan · Rp 350K / 365 hari'}
-          </button>
+            Tahunan · Rp 350K / 365 hari
+          </Link>
         </div>
       ) : (
         <div className="mt-4 rounded-xl p-3 text-[13px] leading-snug" style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.35)' }}>
