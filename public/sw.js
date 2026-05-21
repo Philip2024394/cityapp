@@ -27,8 +27,17 @@
 // ============================================================================
 
 const TILE_CACHE = 'cr-tiles-v2-r2'
-const APP_SHELL_CACHE = 'cr-app-shell-v1'
+const APP_SHELL_CACHE = 'cr-app-shell-v3'
 const OFFLINE_FALLBACK_URL = '/offline.html'
+
+// Cross-origin assets that offline.html depends on. Precached as opaque
+// (no-cors) so the offline shell renders branded even when the network is
+// gone. The fetch handler matches these URLs against APP_SHELL_CACHE on
+// failure so img tags inside offline.html can read them.
+const OFFLINE_DEPENDENCIES = [
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2008_23_29%20PM.png?updatedAt=1779197024231&tr=f-auto,q-75,w-1200',
+  'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714',
+]
 
 // 1500 vector tiles ≈ 30-50 MB depending on density. Tunable; if we see
 // quota errors in production we can shrink. Browser typically allows
@@ -94,7 +103,14 @@ self.addEventListener('install', (event) => {
       // dinosaur. Best-effort — never block install on this fetch.
       try {
         const cache = await caches.open(APP_SHELL_CACHE)
-        await cache.add(new Request(OFFLINE_FALLBACK_URL, { cache: 'reload' }))
+        // allSettled — cross-origin precache is best-effort; one CDN miss
+        // must not strand the offline shell.
+        await Promise.allSettled([
+          cache.add(new Request(OFFLINE_FALLBACK_URL, { cache: 'reload' })),
+          ...OFFLINE_DEPENDENCIES.map((u) =>
+            cache.add(new Request(u, { mode: 'no-cors', cache: 'reload' })),
+          ),
+        ])
       } catch { /* ignore — runtime fetch will retry */ }
       await self.skipWaiting()
     })(),
@@ -141,10 +157,31 @@ self.addEventListener('fetch', (event) => {
   } catch {
     return
   }
+
+  // Offline-page dependencies — cache-first so img tags inside offline.html
+  // render branded even when the network is gone.
+  if (OFFLINE_DEPENDENCIES.includes(url.href)) {
+    event.respondWith(handleOfflineDependency(event.request))
+    return
+  }
+
   if (!isTileRequest(url)) return
 
   event.respondWith(handleTileRequest(event.request))
 })
+
+async function handleOfflineDependency(request) {
+  const cache = await caches.open(APP_SHELL_CACHE)
+  const cached = await cache.match(request, { ignoreSearch: false, ignoreVary: true })
+  if (cached) return cached
+  try {
+    const fresh = await fetch(request, { mode: 'no-cors' })
+    if (fresh) cache.put(request, fresh.clone()).catch(() => {})
+    return fresh
+  } catch {
+    return Response.error()
+  }
+}
 
 async function handleNavigation(request) {
   try {

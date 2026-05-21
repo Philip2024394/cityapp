@@ -10,6 +10,7 @@ import type { BikeRental } from '@/lib/rentals/types'
 import { idr } from '@/lib/format/idr'
 import { BIKE_CATALOG } from '@/lib/rentals/catalog'
 import { trackWaClick } from '@/lib/tracking/waClick'
+import { ikUrl } from '@/lib/images/imagekit'
 
 // Looks up the catalog stock image for a brand + model pair, with a tiny
 // partial-match fallback so "PCX 150" still matches "PCX 160" etc.
@@ -135,8 +136,10 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
           <div className="shrink-0 w-[121px] sm:w-[154px] h-[97px] sm:h-[121px] relative">
             {photo
               ? <img
-                  src={photo}
+                  src={ikUrl(photo, { width: 154 })}
                   alt={`${r.brand} ${r.model}`}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-contain"
                   style={{ transform: 'translate(10px, 10px)' }}
                 />

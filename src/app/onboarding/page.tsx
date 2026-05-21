@@ -12,6 +12,7 @@ import BikePicker from '@/components/rider/BikePicker'
 import BikeColorPicker from '@/components/rider/BikeColorPicker'
 import HelpTip from '@/components/common/HelpTip'
 import { getBikeImageUrl, isExactBikeImage } from '@/data/bikeImages'
+import { ikUrl } from '@/lib/images/imagekit'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { legalMinPerKm, legalMinFare } from '@/lib/tariffs/zones'
 
@@ -521,8 +522,12 @@ function OnboardingInner() {
                 {(bikeMake || bikeModel) && (
                   <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <img
-                      src={getBikeImageUrl(bikeMake, bikeModel)}
+                      src={ikUrl(getBikeImageUrl(bikeMake, bikeModel), { width: 56, height: 56 })}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
+                      width={56}
+                      height={56}
                       className="w-14 h-14 rounded-xl object-contain shrink-0"
                       style={{ background: 'rgba(0,0,0,0.25)' }}
                     />

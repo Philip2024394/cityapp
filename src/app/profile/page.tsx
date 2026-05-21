@@ -7,6 +7,7 @@ import LocationPicker, { type LocationPickerValue } from '@/components/rider/Loc
 import BikePicker from '@/components/rider/BikePicker'
 import BikeColorPicker from '@/components/rider/BikeColorPicker'
 import { getBikeImageUrl, isExactBikeImage } from '@/data/bikeImages'
+import { ikUrl } from '@/lib/images/imagekit'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -168,8 +169,12 @@ export default function ProfilePage() {
             {(form.bikeMake || form.bikeModel) && (
               <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <img
-                  src={getBikeImageUrl(form.bikeMake, form.bikeModel)}
+                  src={ikUrl(getBikeImageUrl(form.bikeMake, form.bikeModel), { width: 64, height: 64 })}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
+                  width={64}
+                  height={64}
                   className="w-16 h-16 rounded-xl object-contain shrink-0"
                   style={{ background: 'rgba(0,0,0,0.25)' }}
                 />
