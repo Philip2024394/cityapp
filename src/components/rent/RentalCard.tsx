@@ -111,11 +111,6 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
         className="pointer-events-none absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* CC corner badge — top-left, compact uppercase. */}
-      <span className="absolute top-[14px] left-2 z-20 text-[12px] font-extrabold uppercase tracking-wider text-black leading-none">
-        {r.cc > 0 ? `${r.cc} CC` : 'Electric'}
-      </span>
-
       <div className="relative flex flex-col gap-2.5 p-3">
         {/* Driver figure overlay — with-driver listings only. */}
         {withDriver && (
@@ -138,16 +133,19 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
                   src={photo}
                   alt={`${r.brand} ${r.model}`}
                   className="w-full h-full object-contain"
-                  style={{ transform: 'translateX(10px)' }}
+                  style={{ transform: 'translate(10px, 10px)' }}
                 />
               : <div
                   className="w-full h-full flex items-center justify-center text-[12px] font-extrabold uppercase tracking-wider text-black/70"
-                  style={{ transform: 'translateX(10px)' }}
+                  style={{ transform: 'translate(10px, 10px)' }}
                 >
                   {r.brand}
                 </div>}
             {r.rating != null && (
-              <span className="absolute bottom-0 left-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black text-[11px] font-extrabold text-brand">
+              <span
+                className="absolute bottom-0 left-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black text-[11px] font-extrabold text-brand"
+                style={{ transform: 'translateY(30px)' }}
+              >
                 <Star className="w-2.5 h-2.5 fill-brand stroke-brand" aria-hidden />
                 {r.rating.toFixed(1)}
               </span>
@@ -172,12 +170,10 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
               {r.year} · {transmissionLabel(r.transmission)}
             </div>
 
-            {/* Rental-includes block — small eyebrow header above a
-                vertical stack of gear lines. Each icon sits in a fixed
-                32px column so the count + word labels line up under
-                each other regardless of icon size. Raincoat icon is
-                nudged 2px left via translateX. translateY(10px) shifts
-                the whole block visually without pushing siblings down. */}
+            {/* Rental-includes block — vertical stack: helmets, raincoats,
+                delivery. Each icon sits in a fixed 32px column so the count
+                labels line up under each other. Delivery row is icon-only
+                (no service text) and shown only on self-ride listings. */}
             <div className="mt-1.5" style={{ transform: 'translateY(10px)' }}>
               <div className="flex flex-col gap-1">
                 {r.helmetCount > 0 && (
@@ -202,6 +198,19 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
                     <span className="leading-none">×{r.raincoatCount} Raincoats</span>
                   </div>
                 )}
+                {r.pickupDropoff && !withDriver && (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap text-[12px] font-extrabold text-black">
+                    <span className="shrink-0 w-8 flex justify-center">
+                      <img
+                        src={PICKUP_ICON}
+                        alt=""
+                        aria-hidden
+                        className="w-8 h-8 object-contain"
+                      />
+                    </span>
+                    <span className="leading-none">+ Vill/Hotel</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -209,9 +218,7 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
 
         {/* Company / owner attribution + short pickup address. Both
             lines truncate so they never spill past the right edge of
-            the price-tile row directly below. Negative top margin pulls
-            this block + everything beneath it up 4 px while keeping the
-            bike photo above untouched. */}
+            the price-tile row directly below. */}
         <div className="space-y-0.5 -mt-1">
           <div className="text-[12px] font-extrabold text-black truncate">
             {r.ownerCompany ?? r.ownerName}
@@ -247,24 +254,13 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
           )}
         </div>
 
-        {/* Pickup/drop-off + driver rate (left) and Book Rental CTA
-            (right). Pickup is now grouped next to the CTA so it reads
-            as a service-modifier badge for the booking action. */}
+        {/* Bottom row — Engine spec (left) + Book Rental CTA (right).
+            Service text removed; delivery now lives in the gear stack
+            above. */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            {/* Delivery chip only shown on self-ride listings; bike +
-                driver bundles don't carry a separate delivery service.
-                Driver rate is already baked into the 3/6/8 hr tour totals
-                above, so no "+ driver / day" line needed here. */}
-            {r.pickupDropoff && !withDriver && (
-              <Inclusion imageSrc={PICKUP_ICON} imageSize="lg" label="Delivery Available" />
-            )}
-            {withDriver && (
-              <span className="text-[12px] font-extrabold uppercase tracking-wider text-black">
-                Driver Included{r.fuelIncluded ? ' · Petrol Inc.' : ''}
-              </span>
-            )}
-          </div>
+          <span className="text-[12px] font-extrabold uppercase tracking-wider text-black truncate">
+            Engine - {r.cc > 0 ? `${r.cc}cc` : 'Electric'}
+          </span>
           <a
             href={whatsappLink(r.ownerWhatsapp, r.ownerName, r.brand, r.model)}
             target="_blank"
