@@ -9,6 +9,12 @@
 // Env:
 //   RESEND_API_KEY   — required for real sends; missing = console fallback
 //   RESEND_FROM      — default sender, e.g. "City Rider <reminders@streetlocal.live>"
+//   RESEND_REPLY_TO  — default reply-to inbox (defaults to streetlocallive@gmail.com)
+//
+// Note: Resend cannot send FROM a @gmail.com address (DKIM/SPF must align
+// with a domain you own — streetlocal.live in our case). So all outbound
+// mail uses streetlocal.live as the sender and the gmail inbox is the
+// reply-to address so customer replies land in the team inbox.
 //
 // When the key is missing (local dev), sendEmail logs the payload and
 // returns ok=true so callers don't crash. In production the cron will
@@ -27,7 +33,8 @@ export type SendEmailResult =
   | { ok: true; id: string | null }
   | { ok: false; error: string }
 
-const DEFAULT_FROM = process.env.RESEND_FROM || 'City Rider <reminders@streetlocal.live>'
+const DEFAULT_FROM     = process.env.RESEND_FROM     || 'City Rider <reminders@streetlocal.live>'
+const DEFAULT_REPLY_TO = process.env.RESEND_REPLY_TO || 'streetlocallive@gmail.com'
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const key = process.env.RESEND_API_KEY
@@ -52,7 +59,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
         to:       Array.isArray(input.to) ? input.to : [input.to],
         subject:  input.subject,
         html:     input.html,
-        reply_to: input.replyTo,
+        reply_to: input.replyTo || DEFAULT_REPLY_TO,
       }),
     })
     const json = await res.json().catch(() => ({})) as { id?: string; message?: string }
