@@ -163,6 +163,31 @@ export async function POST(req: Request) {
     }
   }
 
+  // Block agent self-referral: if referrer_agent_code matches an agent
+  // whose WhatsApp is the same digits-only number as the new driver's,
+  // reject — otherwise an affiliate could pocket their own commission.
+  // Both stores keep WhatsApp as digits only (affiliate signup uses
+  // /[^0-9]/, this route uses /\D/ a few lines above), so a direct
+  // string compare after the same strip is correct. Trigger lookup is
+  // case-sensitive on agent_code, so we match the value we'd persist.
+  const normalisedReferrerCode = body.referrer_agent_code?.trim().toUpperCase() || null
+  if (normalisedReferrerCode) {
+    const { data: refAgent } = await admin
+      .from('affiliate_agents')
+      .select('id, whatsapp')
+      .eq('agent_code', normalisedReferrerCode)
+      .maybeSingle()
+    if (refAgent) {
+      const agentWa = (refAgent.whatsapp || '').replace(/\D/g, '')
+      if (agentWa && agentWa === body.whatsapp_e164) {
+        return NextResponse.json(
+          { error: 'Agents cannot refer themselves. Removing referral code.', code: 'SELF_REFERRAL' },
+          { status: 400 },
+        )
+      }
+    }
+  }
+
   // 2. Upsert drivers row
   const driverUpsert = await admin.from('drivers').upsert({
     user_id: user.id,
