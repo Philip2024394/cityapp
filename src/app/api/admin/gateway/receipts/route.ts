@@ -65,9 +65,28 @@ export const GET = withGateway(async (req) => {
     })
   }
 
+  // ── Fraud flags ────────────────────────────────────────────────────
+  // Two cheap signals that catch most amateur duplicates without an ML
+  // pipeline:
+  //   1. Same receipt_url uploaded twice (admin can verify with a glance).
+  //   2. Same user_id submitting > 1 receipt in 24h (pattern of "try
+  //      again" rather than a legit second product purchase).
+  const urlCounts: Record<string, number> = {}
+  for (const r of signed) urlCounts[r.receipt_url] = (urlCounts[r.receipt_url] || 0) + 1
+  const userRecent: Record<string, number> = {}
+  const day = 24 * 60 * 60 * 1000
+  for (const r of signed) {
+    if (Date.now() - new Date(r.created_at).getTime() > day) continue
+    userRecent[r.user_id] = (userRecent[r.user_id] || 0) + 1
+  }
+
   const enriched = signed.map((r) => ({
     ...r,
     user: userMap.get(r.user_id) ?? { email: null, name: null, phone: null },
+    fraud_flags: [
+      ...(urlCounts[r.receipt_url] > 1 ? ['duplicate_screenshot'] : []),
+      ...(userRecent[r.user_id] > 1   ? ['multiple_receipts_24h'] : []),
+    ],
   }))
 
   return ok({ receipts: enriched })
