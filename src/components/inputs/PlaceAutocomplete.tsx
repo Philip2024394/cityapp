@@ -24,6 +24,11 @@ type Props = {
   ariaLabel?: string
   /** Maximum number of suggestions to render in the dropdown. */
   maxResults?: number
+  /** When true, focusing the input wipes the current value so the user
+   *  can type their address from scratch (placeholder reappears, caret
+   *  blinks). Default false preserves the select-all-on-focus behaviour
+   *  that lets form-edit surfaces tweak an existing value. */
+  clearOnFocus?: boolean
 }
 
 // Free-text input with debounced Nominatim place-search suggestions.
@@ -31,7 +36,7 @@ type Props = {
 // AND any other market. Suggestions render in a dropdown ABOVE the
 // input (the input lives in the bottom sheet so down would clip).
 export default function PlaceAutocomplete({
-  value, onChange, onSelect, placeholder, className, leftSlot, rightSlot, near, countryCodes, ariaLabel, maxResults,
+  value, onChange, onSelect, placeholder, className, leftSlot, rightSlot, near, countryCodes, ariaLabel, maxResults, clearOnFocus,
 }: Props) {
   const [focused, setFocused] = useState(false)
   const { suggestions: rawSuggestions, loading } = usePlaceSearch(value, { near, countryCodes })
@@ -62,10 +67,17 @@ export default function PlaceAutocomplete({
           onChange={(e) => onChange(e.target.value)}
           onFocus={(e) => {
             setFocused(true)
-            // Highlight any existing value so the next keystroke replaces
-            // it — saves the user a manual clear when editing a pickup
-            // they previously set. Standard maps-app input pattern.
-            if (e.currentTarget.value) e.currentTarget.select()
+            if (clearOnFocus) {
+              // Wipe the value so the placeholder reappears and the caret
+              // blinks in an empty field — the user types their address
+              // from scratch. Modern maps-app pattern (Google/Uber/Grab).
+              if (e.currentTarget.value) onChange('')
+            } else if (e.currentTarget.value) {
+              // Highlight any existing value so the next keystroke replaces
+              // it — saves the user a manual clear when editing a pickup
+              // they previously set on a form surface.
+              e.currentTarget.select()
+            }
           }}
           aria-label={ariaLabel}
           autoComplete="off"

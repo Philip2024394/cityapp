@@ -438,6 +438,7 @@ function PlanTripPageInner() {
               near={geo.coords ?? null}
               countryCodes={countryCodes}
               ariaLabel="Pick up location"
+              clearOnFocus
               leftSlot={
                 <button
                   onClick={handleUseLocation}
@@ -592,6 +593,7 @@ function PlanTripPageInner() {
               near={pickup ?? geo.coords ?? null}
               countryCodes={countryCodes}
               ariaLabel="Drop off location"
+              clearOnFocus
             />
           </div>
 

@@ -561,6 +561,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 near={geo.coords ?? driverCityCentroid}
                 countryCodes={['id']}
                 ariaLabel="Pick up location"
+                clearOnFocus
                 leftSlot={
                   <button
                     onClick={onUseMyLocation}
@@ -689,6 +690,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 near={pickup ?? geo.coords ?? driverCityCentroid}
                 countryCodes={['id']}
                 ariaLabel="Drop off location"
+                clearOnFocus
               />
             </div>
 
