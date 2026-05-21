@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, Bike, Camera, Banknote, MapPin } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import ContractTemplates from '@/components/rent/ContractTemplates'
 
 export const metadata = {
   title: 'List Your Bike · City Rider',
@@ -102,6 +103,10 @@ export default function ListBikePage() {
               See live demo →
             </Link>
           </div>
+        </div>
+
+        <div className="mt-10">
+          <ContractTemplates />
         </div>
       </main>
     </>

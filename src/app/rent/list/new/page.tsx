@@ -125,7 +125,6 @@ export default function ListBikeFormPage() {
   const [ownerName, setOwnerName] = useState('')
   const [ownerCompany, setOwnerCompany] = useState('')
   const [whatsapp, setWhatsApp] = useState('')
-  const [responseTimeMin, setResponseTimeMin] = useState('')
 
   // Bike
   const [brand, setBrand] = useState('Honda')
@@ -233,7 +232,7 @@ export default function ListBikeFormPage() {
       ownerCompany: ownerCompany.trim() || null,
       ownerWhatsapp: whatsapp ? normaliseWhatsApp(whatsapp) : '+62',
       ownerLanguages: [],
-      ownerResponseTimeMin: responseTimeMin ? num(responseTimeMin) : null,
+      ownerResponseTimeMin: null,
       brand: brand || 'Honda',
       model: model || 'Model',
       year: num(year, new Date().getFullYear()),
@@ -276,7 +275,7 @@ export default function ListBikeFormPage() {
       fuelIncluded: false,
     }
   }, [
-    ownerName, ownerCompany, whatsapp, responseTimeMin,
+    ownerName, ownerCompany, whatsapp,
     brand, model, year, cc, transmission, color,
     dailyPrice, weeklyPrice, monthlyPrice, driverRate,
     helmetCount, raincoatCount, deliveryHotelVilla,
@@ -396,7 +395,7 @@ export default function ListBikeFormPage() {
         owner_company: ownerCompany.trim() || null,
         owner_whatsapp_e164: normaliseWhatsApp(whatsapp),
         owner_languages: [],
-        owner_response_time_min: responseTimeMin ? num(responseTimeMin) : null,
+        owner_response_time_min: null,
         brand: brand.trim(),
         model: model.trim(),
         year: num(year),
@@ -533,7 +532,6 @@ export default function ListBikeFormPage() {
             <Field label="Nama pemilik *"><input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputClass} required /></Field>
             <Field label="Nama company (opsional, kosongkan jika individual)"><input type="text" value={ownerCompany} onChange={(e) => setOwnerCompany(e.target.value)} className={inputClass} /></Field>
             <Field label="WhatsApp * (08… atau +62…)"><input type="tel" value={whatsapp} onChange={(e) => setWhatsApp(e.target.value)} placeholder="081234567890" className={inputClass} required /></Field>
-            <Field label="Avg response time (menit, opsional)"><input type="number" min="1" value={responseTimeMin} onChange={(e) => setResponseTimeMin(e.target.value)} className={inputClass} placeholder="10" /></Field>
           </SectionCard>
 
           {/* BIKE */}
