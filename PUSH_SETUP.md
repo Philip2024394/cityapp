@@ -33,8 +33,10 @@ attachPushTapHandler → /alert?pingId=… → ack recorded → Open WhatsApp
 1. Go to https://console.firebase.google.com and create a project named
    `cityriders` (or similar).
 2. In the Firebase console, **Project Settings → General → Your apps**:
-   add an **Android** app with package name `id.cityriders.app` (must
-   match `android/app/build.gradle` `applicationId`).
+   add an **Android** app with package name `live.streetlocal.cityrider`
+   (must match `android/app/build.gradle` `applicationId` and
+   `capacitor.config.ts` `appId`). Using any other package name will
+   cause FCM to silently reject every token — push will not deliver.
 3. Download `google-services.json` and drop it at
    `android/app/google-services.json`.
 4. Firebase auto-enables Cloud Messaging on app creation; no extra step.
