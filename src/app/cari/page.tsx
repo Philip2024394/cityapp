@@ -48,7 +48,10 @@ export default function PlanTripPage() {
 function PlanTripPageInner() {
   const router = useRouter()
   const params = useSearchParams()
-  const geo = useGeolocation(true)
+  // autoRequest=false — defer the browser GPS prompt until the user
+  // taps the "Use my location" pin button. Previously fired on mount,
+  // blocking first paint for 2-5s while the permission dialog was open.
+  const geo = useGeolocation(false)
   const haptic = useHaptic()
 
   // Optional ?dLat=&dLng=&dName= handoff from /places — pre-fills the
@@ -285,25 +288,27 @@ function PlanTripPageInner() {
           transition: 'top 220ms ease, bottom 220ms ease',
         }}
       >
-        <button
-          onClick={() => { haptic.tap(); router.push('/rent') }}
+        <Link
+          href="/rent"
+          onClick={() => haptic.tap()}
           aria-label="Rent a motorbike"
           className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
         >
           <Bike className="w-6 h-6" strokeWidth={2.5} />
           <span className="text-[11px] font-extrabold uppercase tracking-wider">Rent</span>
-        </button>
+        </Link>
         {/* B2B — small businesses (Shopee/TikTok sellers, restaurants,
             warungs) browse drivers for regular delivery contracts.
             Matches the Rent button styling for visual consistency. */}
-        <button
-          onClick={() => { haptic.tap(); router.push('/business') }}
+        <Link
+          href="/business"
+          onClick={() => haptic.tap()}
           aria-label="Business contracts — find a driver for regular deliveries"
           className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
         >
           <Briefcase className="w-6 h-6" strokeWidth={2.5} />
           <span className="text-[12px] font-extrabold uppercase tracking-wider">B2B</span>
-        </button>
+        </Link>
       </div>
 
       {/* HEADER — transparent, sits over the map. Logo + brand on the

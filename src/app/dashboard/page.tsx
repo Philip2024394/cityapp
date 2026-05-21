@@ -31,6 +31,7 @@ import {
   YEARLY_PRICE_PER_YEAR,
   MONTHLY_OR_YEARLY_LABEL,
 } from '@/lib/pricing/constants'
+import { fetchMyAccountCached } from '@/lib/auth/client'
 
 const FALLBACK_ME = MOCK_RIDERS[0]!
 const SUBSCRIPTION_MONTHLY = SUBSCRIPTION_MONTHLY_IDR
@@ -43,16 +44,15 @@ export default function DashboardPage() {
   const [meLoaded, setMeLoaded] = useState(false)
 
   // Rental Company accounts don't see the driver dashboard at all — bounce
-  // them straight to their listings page on every /dashboard hit.
+  // them straight to their listings page on every /dashboard hit. The
+  // fetchMyAccountCached helper shares one in-flight request with the
+  // DashboardNav consumer below so this is free after the first call.
   useEffect(() => {
-    fetch('/api/me/account', { cache: 'no-store' })
-      .then((r) => r.ok ? r.json() : null)
-      .then((j: { account?: { account_type?: string; subscription_status?: string } | null } | null) => {
-        if (j?.account?.account_type === 'rental_company' && j.account.subscription_status === 'active') {
-          router.replace('/dashboard/rentals')
-        }
-      })
-      .catch(() => { /* offline / blocked — let the page render */ })
+    fetchMyAccountCached().then((j) => {
+      if (j?.account?.account_type === 'rental_company' && j.account.subscription_status === 'active') {
+        router.replace('/dashboard/rentals')
+      }
+    })
   }, [router])
 
   useEffect(() => {

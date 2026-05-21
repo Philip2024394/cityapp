@@ -434,16 +434,16 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               <button
                 type="button"
                 onClick={() => { setPlacesOpen(true); haptic.tap() }}
-                className={`relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-1 ${showPulseHint ? 'cr-service-tile-pulse' : ''}`}
+                className={`relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-1 active:scale-95 transition ${showPulseHint ? 'cr-service-tile-pulse' : ''}`}
                 style={{
-                  background: '#0A0A0A',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
+                  border: '2px solid #FACC15',
+                  boxShadow: '0 4px 12px rgba(127,29,29,0.45)',
                 }}
               >
-                {/* Places never reads as "active" — it's a picker, not a
-                    selection. The active state belongs to the service
-                    chosen above (Bike/Parcel/Food), which carries the
-                    one green dot + yellow glow. */}
+                {/* Same dark-red + yellow-rim look as the Reviews button
+                    above. Places stays a picker (no active state) — the
+                    bike/parcel/food tiles keep ownership of the green dot. */}
                 <img
                   src={PLACES_TILE_IMAGE}
                   alt=""

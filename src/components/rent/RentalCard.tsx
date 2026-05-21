@@ -1,6 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Star, ArrowRight, Eye, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Star, ArrowRight } from 'lucide-react'
 
 const HELMET_ICON   = 'https://ik.imagekit.io/nepgaxllc/Untitledasdaaaaaaa-removebg-preview.png?updatedAt=1779053735062'
 const RAINCOAT_ICON = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2012_29_10%20AM.png'
@@ -30,29 +29,11 @@ function findCatalogImage(brand: string, model: string): string | null {
   return null
 }
 
-// Resolves the hero card photo. Priority:
-//   1. Owner-uploaded photo from image_urls[0]
-//   2. Stock catalog image when brand + model match a known bike
-//   3. null → render the brand-name fallback block
+// Resolves the hero card photo. The catalog stock image always wins so
+// every card on /rent reads the same brand-consistent way. Owner upload
+// is the fallback only when we can't find a catalog match.
 function resolveCardPhoto(r: BikeRental): string | null {
-  if (r.imageUrls[0]) return r.imageUrls[0]
-  return findCatalogImage(r.brand, r.model)
-}
-
-// Builds the gallery shown inside the lightbox (eye-icon).
-// First slide is ALWAYS the stock catalog image when one matches, then
-// any owner-uploaded photos. We dedup so the same URL never appears twice.
-function buildGallery(r: BikeRental): string[] {
-  const catalog = findCatalogImage(r.brand, r.model)
-  const seen = new Set<string>()
-  const out: string[] = []
-  if (catalog) { out.push(catalog); seen.add(catalog) }
-  for (const u of r.imageUrls) {
-    if (!u || seen.has(u)) continue
-    out.push(u)
-    seen.add(u)
-  }
-  return out
+  return findCatalogImage(r.brand, r.model) ?? r.imageUrls[0] ?? null
 }
 
 // RentalCard — landscape feed card for the /rent surface.
@@ -122,15 +103,6 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
   const photo = resolveCardPhoto(r)
   const withDriver = r.rentalMode === 'with_driver' || r.rentalMode === 'both'
 
-  // Lightbox state. Gallery always opens at slide 0 (the catalog stock
-  // image), then owner photos. When the owner has uploaded ≥ 1 extra
-  // photo (gallery.length ≥ 2) the eye-icon button moves to the LEFT
-  // corner so it doesn't fight the right-side driver overlay for room.
-  const gallery = buildGallery(r)
-  const hasExtras = gallery.length >= 2
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [galleryIndex, setGalleryIndex] = useState(0)
-
   return (
     <article className="relative w-full overflow-hidden rounded-2xl">
       {/* Full-bleed brand art background — same visual as the places cards
@@ -142,36 +114,6 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
         loading="lazy"
         className="pointer-events-none absolute inset-0 w-full h-full object-cover"
       />
-
-      {/* Eye-icon "view photos" button. Top-right by default, top-left
-          when the owner has uploaded ≥ 1 extra photo. Tapping opens the
-          fullscreen lightbox starting at the catalog stock image. */}
-      {gallery.length > 0 && (
-        <button
-          type="button"
-          onClick={(e) => { e.preventDefault(); setGalleryIndex(0); setLightboxOpen(true) }}
-          aria-label="View photos"
-          className={`absolute top-2 z-30 w-8 h-8 rounded-full flex items-center justify-center text-bg active:scale-95 transition ${
-            hasExtras ? 'left-2' : 'right-2'
-          }`}
-          style={{
-            background: 'linear-gradient(135deg, #FACC15, #EAB308)',
-            border: '1px solid rgba(0,0,0,0.85)',
-            boxShadow: '0 3px 10px rgba(0,0,0,0.30)',
-          }}
-        >
-          <Eye className="w-4 h-4" strokeWidth={2.5} />
-        </button>
-      )}
-
-      {lightboxOpen && (
-        <Lightbox
-          images={gallery}
-          startIndex={galleryIndex}
-          onClose={() => setLightboxOpen(false)}
-          title={`${r.brand} ${r.model}`}
-        />
-      )}
 
       <div className="relative flex flex-col gap-2.5 p-3">
         {/* Driver figure overlay — with-driver listings only. */}
@@ -349,105 +291,6 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────
-
-function Lightbox({
-  images, startIndex, onClose, title,
-}: {
-  images: string[]
-  startIndex: number
-  onClose: () => void
-  title: string
-}) {
-  const [idx, setIdx] = useState(startIndex)
-  const count = images.length
-  const safeIdx = Math.max(0, Math.min(idx, count - 1))
-
-  const prev = () => setIdx((i) => (i - 1 + count) % count)
-  const next = () => setIdx((i) => (i + 1) % count)
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-      else if (e.key === 'ArrowLeft') prev()
-      else if (e.key === 'ArrowRight') next()
-    }
-    document.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count])
-
-  if (count === 0) return null
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${title} photos`}
-      className="fixed inset-0 z-[100] flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.92)' }}
-      onClick={onClose}
-    >
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onClose() }}
-        aria-label="Close"
-        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center text-bg"
-        style={{
-          background: 'linear-gradient(135deg, #FACC15, #EAB308)',
-          border: '1px solid rgba(0,0,0,0.85)',
-        }}
-      >
-        <X className="w-5 h-5" strokeWidth={2.75} />
-      </button>
-
-      <div className="absolute top-4 left-4 px-2.5 py-1 rounded-md text-[12px] font-extrabold text-bg" style={{ background: 'rgba(250,204,21,0.92)' }}>
-        {safeIdx + 1} / {count}
-      </div>
-
-      {count > 1 && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); prev() }}
-          aria-label="Previous photo"
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-bg active:scale-95 transition"
-          style={{
-            background: 'linear-gradient(135deg, #FACC15, #EAB308)',
-            border: '1px solid rgba(0,0,0,0.85)',
-          }}
-        >
-          <ChevronLeft className="w-6 h-6" strokeWidth={3} />
-        </button>
-      )}
-
-      <img
-        key={images[safeIdx]}
-        src={images[safeIdx]}
-        alt={`${title} photo ${safeIdx + 1}`}
-        className="max-w-[92vw] max-h-[82vh] object-contain"
-        onClick={(e) => e.stopPropagation()}
-      />
-
-      {count > 1 && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); next() }}
-          aria-label="Next photo"
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-bg active:scale-95 transition"
-          style={{
-            background: 'linear-gradient(135deg, #FACC15, #EAB308)',
-            border: '1px solid rgba(0,0,0,0.85)',
-          }}
-        >
-          <ChevronRight className="w-6 h-6" strokeWidth={3} />
-        </button>
-      )}
-    </div>
-  )
-}
 
 function Inclusion({
   Icon, imageSrc, imageSize = 'md', label,

@@ -31,13 +31,17 @@ type ReminderKind =
   | 'driver_t_plus_1'  | 'driver_t_plus_7'
   | 'rental_company_t_minus_7' | 'rental_company_t_minus_3' | 'rental_company_t_minus_1'
   | 'rental_company_t_plus_1'
+  | 'tour_guide_t_minus_7' | 'tour_guide_t_minus_3' | 'tour_guide_t_minus_1'
+  | 'tour_guide_t_plus_1'
   | 'pending_intent_stuck'
 
-type Plan = 'driver' | 'rental_company'
+type Plan = 'driver' | 'rental_company' | 'tour_guide'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const RENEW_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://cityrider.id') + '/dashboard'
-const UPGRADE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://cityrider.id') + '/rent/upgrade'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cityrider.id'
+const RENEW_URL          = APP_URL + '/dashboard'
+const UPGRADE_URL        = APP_URL + '/rent/upgrade'
+const TOUR_UPGRADE_URL   = APP_URL + '/tour/upgrade'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -59,6 +63,7 @@ async function runSweep() {
     started_at: new Date(now).toISOString(),
     drivers_reminded: 0,
     rental_company_reminded: 0,
+    tour_guide_reminded: 0,
     stuck_intent_reminded: 0,
     skipped_already_sent: 0,
     skipped_no_email: 0,
@@ -112,6 +117,28 @@ async function runSweep() {
     if (result === 'sent') summary.rental_company_reminded++
   }
 
+  // ── Tour Guide subscriptions ─────────────────────────────────────────
+  const { data: tg } = await admin
+    .from('user_accounts')
+    .select('user_id, tour_guide_status, tour_guide_expires_at')
+    .in('tour_guide_status', ['active', 'expired'])
+    .gte('tour_guide_expires_at', new Date(now - 7 * DAY_MS).toISOString())
+    .lte('tour_guide_expires_at', new Date(now + 7 * DAY_MS).toISOString())
+
+  for (const row of tg ?? []) {
+    const userId = row.user_id as string
+    const periodEnd = new Date(row.tour_guide_expires_at as string)
+    const kind = pickKindForOffset(periodEnd, now, 'tour_guide')
+    if (!kind) continue
+
+    const result = await maybeSend(admin, {
+      userId, kind, periodEnd, plan: 'tour_guide',
+      renewUrl: TOUR_UPGRADE_URL,
+    })
+    bumpSummary(summary, result)
+    if (result === 'sent') summary.tour_guide_reminded++
+  }
+
   // ── Stuck pending Snap intents (24h–72h old) ────────────────────────
   // Earlier than 24h: user might still be paying. Older than 72h:
   // they've clearly abandoned, no point pinging.
@@ -147,11 +174,16 @@ function pickKindForOffset(periodEnd: Date, now: number, plan: Plan): ReminderKi
     if (dayOffset === 1)  return 'driver_t_minus_1'
     if (dayOffset === -1) return 'driver_t_plus_1'
     if (dayOffset === -7) return 'driver_t_plus_7'
-  } else {
+  } else if (plan === 'rental_company') {
     if (dayOffset === 7)  return 'rental_company_t_minus_7'
     if (dayOffset === 3)  return 'rental_company_t_minus_3'
     if (dayOffset === 1)  return 'rental_company_t_minus_1'
     if (dayOffset === -1) return 'rental_company_t_plus_1'
+  } else if (plan === 'tour_guide') {
+    if (dayOffset === 7)  return 'tour_guide_t_minus_7'
+    if (dayOffset === 3)  return 'tour_guide_t_minus_3'
+    if (dayOffset === 1)  return 'tour_guide_t_minus_1'
+    if (dayOffset === -1) return 'tour_guide_t_plus_1'
   }
   return null
 }
@@ -221,11 +253,14 @@ function composeMessage(args: {
   const dueLabel = args.periodEnd.toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
-  const planLabel = args.plan === 'rental_company' ? 'Rental Company' : 'City Rider Driver'
+  const planLabel = args.plan === 'rental_company' ? 'Rental Company'
+    : args.plan === 'tour_guide' ? 'Tour Guide'
+    : 'City Rider Driver'
 
   switch (args.kind) {
     case 'driver_t_minus_7':
     case 'rental_company_t_minus_7':
+    case 'tour_guide_t_minus_7':
       return {
         subject: `Subscription ${planLabel} kamu jatuh tempo dalam 7 hari`,
         html: renderEmail({
@@ -238,6 +273,7 @@ function composeMessage(args: {
       }
     case 'driver_t_minus_3':
     case 'rental_company_t_minus_3':
+    case 'tour_guide_t_minus_3':
       return {
         subject: `3 hari lagi — subscription ${planLabel} jatuh tempo`,
         html: renderEmail({
@@ -250,6 +286,7 @@ function composeMessage(args: {
       }
     case 'driver_t_minus_1':
     case 'rental_company_t_minus_1':
+    case 'tour_guide_t_minus_1':
       return {
         subject: `Besok subscription ${planLabel} kamu habis`,
         html: renderEmail({
@@ -262,14 +299,19 @@ function composeMessage(args: {
       }
     case 'driver_t_plus_1':
     case 'rental_company_t_plus_1':
+    case 'tour_guide_t_plus_1':
       return {
         subject: `Subscription ${planLabel} kamu sudah lewat`,
         html: renderEmail({
           heading: 'Subscription kamu lewat tempo',
           preheader: `Akun kamu di-pause. Renew untuk aktifkan lagi.`,
-          bodyHtml: `<p>Subscription ${planLabel} kamu sudah lewat (${dueLabel}). ${args.plan === 'rental_company' ? 'Semua listing motormu sudah di-pause sementara dan tidak tayang di /rent.' : 'Statusmu sudah past_due — kamu tidak muncul lagi di marketplace.'} Renew sekarang untuk aktifkan lagi langsung.</p>`,
+          bodyHtml: `<p>Subscription ${planLabel} kamu sudah lewat (${dueLabel}). ${
+            args.plan === 'rental_company' ? 'Semua listing motormu sudah di-pause sementara dan tidak tayang di /rent.'
+            : args.plan === 'tour_guide'   ? 'Listing tour guide kamu sudah di-pause sementara dan tidak tayang di /tour.'
+            : 'Statusmu sudah past_due — kamu tidak muncul lagi di marketplace.'
+          } Renew sekarang untuk aktifkan lagi langsung.</p>`,
           ctaUrl: args.renewUrl,
-          ctaLabel: args.plan === 'rental_company' ? 'Aktifkan kembali' : 'Renew sekarang',
+          ctaLabel: args.plan === 'driver' ? 'Renew sekarang' : 'Aktifkan kembali',
         }),
       }
     case 'driver_t_plus_7':

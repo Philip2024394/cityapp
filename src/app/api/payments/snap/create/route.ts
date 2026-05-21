@@ -27,6 +27,8 @@ type Product =
   | 'verified'
   | 'rental_company_monthly'
   | 'rental_company_yearly'
+  | 'tour_guide_monthly'
+  | 'tour_guide_yearly'
 
 type Payload = { product?: Product }
 
@@ -36,11 +38,17 @@ const PRICE_BY_PRODUCT: Record<Product, { amount: number; days: number; label: s
   verified:               { amount: 100_000, days:  30, label: 'Tour Verified · 30 d'       },
   rental_company_monthly: { amount:  38_000, days:  30, label: 'Rental Company · 30 days'   },
   rental_company_yearly:  { amount: 350_000, days: 365, label: 'Rental Company · 365 days'  },
+  tour_guide_monthly:     { amount:  38_000, days:  30, label: 'Tour Guide · 30 days'       },
+  tour_guide_yearly:      { amount: 350_000, days: 365, label: 'Tour Guide · 365 days'      },
 }
 
-const RENTAL_COMPANY_PRODUCTS = new Set<Product>([
+// Both rental_company AND tour_guide products are "non-driver" — they
+// don't require a row in the drivers table to settle a payment intent.
+const NON_DRIVER_PRODUCTS = new Set<Product>([
   'rental_company_monthly',
   'rental_company_yearly',
+  'tour_guide_monthly',
+  'tour_guide_yearly',
 ])
 
 export async function POST(req: Request) {
@@ -57,16 +65,17 @@ export async function POST(req: Request) {
     : body.product === 'subscription_yearly' ? 'subscription_yearly'
     : body.product === 'rental_company_monthly' ? 'rental_company_monthly'
     : body.product === 'rental_company_yearly' ? 'rental_company_yearly'
+    : body.product === 'tour_guide_monthly' ? 'tour_guide_monthly'
+    : body.product === 'tour_guide_yearly' ? 'tour_guide_yearly'
     : 'subscription'
   const tier = PRICE_BY_PRODUCT[product]
 
-  // Rental-company products don't require a `drivers` row (vendor owners
-  // are NOT cityrider drivers). Driver-side products still gate on the
-  // drivers row so we have business_name + whatsapp for the Midtrans
-  // customer_details block.
+  // Non-driver products (rental_company, tour_guide) don't require a
+  // `drivers` row. Driver-side products still gate on the drivers row
+  // so we have business_name + whatsapp for the Midtrans customer block.
   let customerName = 'City Rider user'
   let customerPhone: string | undefined
-  if (RENTAL_COMPANY_PRODUCTS.has(product)) {
+  if (NON_DRIVER_PRODUCTS.has(product)) {
     const meta = (user.user_metadata ?? {}) as Record<string, unknown>
     customerName = String(meta.full_name || meta.name || 'Rental Company owner')
     if (user.phone) customerPhone = '+' + user.phone

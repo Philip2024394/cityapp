@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, User, Flame, DollarSign, Package, Bike, CreditCard } from 'lucide-react'
+import { fetchMyAccountCached } from '@/lib/auth/client'
 
 const DRIVER_ITEMS = [
   { href: '/dashboard',           label: 'Home',     icon: LayoutDashboard },
@@ -24,17 +25,15 @@ export default function DashboardNav() {
   const path = usePathname()
   const [items, setItems] = useState(DRIVER_ITEMS)
 
-  // Fetch account_type once on mount. The default (driver nav) shows
-  // immediately so the nav doesn't flicker for the common case.
+  // Default (driver) nav shows immediately so it doesn't flicker for the
+  // common case. fetchMyAccountCached dedupes with the /dashboard root's
+  // own redirect check — one network call shared by both consumers.
   useEffect(() => {
-    fetch('/api/me/account', { cache: 'no-store' })
-      .then((r) => r.ok ? r.json() : null)
-      .then((j: { account?: { account_type?: string; subscription_status?: string } | null } | null) => {
-        if (j?.account?.account_type === 'rental_company' && j.account.subscription_status === 'active') {
-          setItems(RENTAL_COMPANY_ITEMS)
-        }
-      })
-      .catch(() => { /* default nav stays */ })
+    fetchMyAccountCached().then((j) => {
+      if (j?.account?.account_type === 'rental_company' && j.account.subscription_status === 'active') {
+        setItems(RENTAL_COMPANY_ITEMS)
+      }
+    })
   }, [])
 
   return (

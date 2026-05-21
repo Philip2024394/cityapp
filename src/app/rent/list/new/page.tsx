@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Upload, X as XIcon, MapPin, CheckCircle2, Loader2,
-  User, Bike, Banknote, Camera, Backpack, Settings2,
+  ArrowLeft, MapPin, CheckCircle2, Loader2,
+  User, Bike, Banknote, Backpack, Settings2,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
@@ -119,7 +119,6 @@ export default function ListBikeFormPage() {
   const supabase = getBrowserSupabase()
   const geo = useGeolocation(false)
   const submissionIdRef = useRef<string>(crypto.randomUUID())
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Owner
   const [ownerName, setOwnerName] = useState('')
@@ -157,9 +156,6 @@ export default function ListBikeFormPage() {
   const [lng, setLng] = useState('')
 
   // Photos
-  const [photos, setPhotos] = useState<string[]>([])
-  const [photoUploading, setPhotoUploading] = useState(false)
-  const [photoError, setPhotoError] = useState<string | null>(null)
 
   // Selected catalog bike — when set, its imageUrl is used as the
   // preview card's photo until the owner uploads their own. Selecting
@@ -259,9 +255,7 @@ export default function ListBikeFormPage() {
       address: address || null,
       lat: Number.isFinite(latN) ? latN : 0,
       lng: Number.isFinite(lngN) ? lngN : 0,
-      imageUrls: photos.length > 0
-        ? photos
-        : selectedCatalog ? [selectedCatalog.imageUrl] : [],
+      imageUrls: selectedCatalog ? [selectedCatalog.imageUrl] : [],
       description: null,
       tags: [],
       rating: null,
@@ -279,7 +273,7 @@ export default function ListBikeFormPage() {
     brand, model, year, cc, transmission, color,
     dailyPrice, weeklyPrice, monthlyPrice, driverRate,
     helmetCount, raincoatCount, deliveryHotelVilla,
-    rentalMode, city, customCity, address, lat, lng, photos, selectedCatalog,
+    rentalMode, city, customCity, address, lat, lng, selectedCatalog,
   ])
 
   async function useMyGps() {
@@ -304,33 +298,6 @@ export default function ListBikeFormPage() {
     setLat(s.lat.toFixed(6))
     setLng(s.lng.toFixed(6))
   }
-
-  async function handlePhotoPick(files: FileList | null) {
-    if (!files || !files.length || !supabase) return
-    setPhotoError(null)
-    setPhotoUploading(true)
-    const uploaded: string[] = []
-    try {
-      for (const file of Array.from(files)) {
-        if (photos.length + uploaded.length >= 5) break
-        if (file.size > 5 * 1024 * 1024) { setPhotoError(`${file.name} > 5MB`); continue }
-        const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
-        const safeExt = ['jpg','jpeg','png','webp'].includes(ext) ? ext : 'jpg'
-        const path = `submissions/bike-rentals/${submissionIdRef.current}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${safeExt}`
-        const { error } = await supabase.storage.from('place-images').upload(path, file, {
-          contentType: file.type, upsert: false,
-        })
-        if (error) { setPhotoError(error.message); continue }
-        const { data: pub } = supabase.storage.from('place-images').getPublicUrl(path)
-        uploaded.push(pub.publicUrl)
-      }
-      setPhotos((prev) => [...prev, ...uploaded].slice(0, 5))
-    } finally {
-      setPhotoUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
-  function removePhoto(url: string) { setPhotos((prev) => prev.filter((p) => p !== url)) }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -421,9 +388,7 @@ export default function ListBikeFormPage() {
         address: address.trim() || null,
         location: `SRID=4326;POINT(${lngN} ${latN})`,
         lat: latN, lng: lngN,
-        image_urls: photos.length > 0
-          ? photos
-          : selectedCatalog ? [selectedCatalog.imageUrl] : [],
+        image_urls: selectedCatalog ? [selectedCatalog.imageUrl] : [],
         status: 'pending',
         submitted_name: ownerName.trim(),
         submitted_whatsapp: normaliseWhatsApp(whatsapp),
@@ -531,7 +496,29 @@ export default function ListBikeFormPage() {
           <SectionCard Icon={User} title="Owner">
             <Field label="Nama pemilik *"><input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputClass} required /></Field>
             <Field label="Nama company (opsional, kosongkan jika individual)"><input type="text" value={ownerCompany} onChange={(e) => setOwnerCompany(e.target.value)} className={inputClass} /></Field>
-            <Field label="WhatsApp * (08… atau +62…)"><input type="tel" value={whatsapp} onChange={(e) => setWhatsApp(e.target.value)} placeholder="081234567890" className={inputClass} required /></Field>
+            <Field label="WhatsApp *">
+              <div className="flex items-stretch">
+                <span
+                  aria-hidden
+                  className="inline-flex items-center px-3 text-bg font-extrabold text-[14px] border border-r-0 border-black/85 rounded-l-xl"
+                  style={{ background: 'rgba(250,204,21,0.18)' }}
+                >
+                  +62
+                </span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={whatsapp.replace(/^\+?62/, '').replace(/^0+/, '')}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/[^\d]/g, '').replace(/^0+/, '')
+                    setWhatsApp(digits ? `+62${digits}` : '')
+                  }}
+                  placeholder="81234567890"
+                  className="flex-1 bg-bg text-ink placeholder:text-white/40 border border-black/85 rounded-r-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:ring-2 focus:ring-bg/40 transition"
+                  required
+                />
+              </div>
+            </Field>
           </SectionCard>
 
           {/* BIKE */}
@@ -602,28 +589,6 @@ export default function ListBikeFormPage() {
                 <Toggle checked={deliveryHotelVilla} onChange={setDeliveryHotelVilla} label="Hotel / Villa" />
               </div>
             </div>
-          </SectionCard>
-
-          {/* PHOTOS */}
-          <SectionCard Icon={Camera} title="Foto (1–5)">
-            <div className="grid grid-cols-3 gap-2">
-              {photos.map((url) => (
-                <div key={url} className="relative aspect-square rounded-xl overflow-hidden border border-black/85 bg-bg">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => removePhoto(url)} aria-label="Remove photo"
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/85 text-white flex items-center justify-center hover:bg-black"><XIcon className="w-3 h-3" /></button>
-                </div>
-              ))}
-              {photos.length < 5 && (
-                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={photoUploading}
-                  className="aspect-square rounded-xl border-2 border-dashed border-bg/60 bg-bg/15 hover:bg-bg/25 flex flex-col items-center justify-center gap-1 text-bg text-[11px] font-extrabold uppercase tracking-wider disabled:opacity-60">
-                  {photoUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-                  <span>{photoUploading ? 'Upload…' : 'Tambah'}</span>
-                </button>
-              )}
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => handlePhotoPick(e.target.files)} />
-            {photoError && <p className="text-[12px] text-red-900 font-extrabold">{photoError}</p>}
           </SectionCard>
 
           {/* LOCATION — GPS button sets coords + auto-fills address via
