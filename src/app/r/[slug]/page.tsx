@@ -390,17 +390,29 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     <main className="min-h-screen pb-6">
       <PageBackground />
       <BackNav />
-      <div className="max-w-2xl mx-auto px-4 pt-2 space-y-3">
+      <div className="max-w-2xl mx-auto px-4 pt-2 space-y-4">
         <RiderHero rider={rider} />
 
+        {/* Booking area — wrapped in a dark backdrop card with explicit
+            padding so the entire booking flow (service tiles + pickup +
+            dropoff + Confirm) reads as one cohesive unit, visually
+            separated from the driver hero above. mt-6 = 24px clear
+            space between the hero photo block and the booking start. */}
+        <div
+          className="rounded-2xl mt-6 p-3 sm:p-4 space-y-3"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 18px 40px -20px rgba(0,0,0,0.55)',
+          }}
+        >
         {/* Service picker — 4 black tile-buttons with brand images.
-            Padding-top creates breathing room from the driver hero
-            above (no scroll added, just visual separation). Pulse hint
-            runs on all 4 until the customer makes a first choice. */}
+            Pulse hint runs on all 4 until the customer makes a first
+            choice. */}
         {(() => {
           const showPulseHint = !service && !dropoffLabel
           return (
-            <div className="grid grid-cols-4 gap-1.5 pt-3">
+            <div className="grid grid-cols-4 gap-1.5">
               {(['person','parcel','food'] as const).map(s => {
                 const active = service === s
                 return (
@@ -833,6 +845,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             </button>
           </div>
         )}
+        </div>{/* /booking-area card */}
 
         {/* Rental tiles — surface the driver's bike_rentals listing if
             they activated "Rent my bike" or "Bike + driver tour" from
