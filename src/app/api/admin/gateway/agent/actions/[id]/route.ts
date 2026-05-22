@@ -28,19 +28,43 @@ export const PATCH = withGateway(async (req) => {
   try { body = (await req.json()) as Body } catch { return fail('Invalid JSON', 400) }
   if (body.decision !== 'approved' && body.decision !== 'rejected') return fail('decision must be approved or rejected', 400)
 
-  const { data: action } = await sl
+  // ── Atomic claim (compare-and-swap) ──────────────────────────────
+  // Two admins can click Approve at the same millisecond. A plain
+  // SELECT-then-UPDATE has a TOCTOU window: both sessions read
+  // status='pending' and both execute the side-effect (sending the email
+  // twice, approving the receipt twice, etc).
+  //
+  // We atomically transition pending → <approved|rejected> in a single
+  // UPDATE guarded by .eq('status','pending'). Postgres serialises the
+  // two writes; the loser gets zero rows back and we return 409.
+  // Approved is used as the "claimed, executing" interim state because
+  // the existing CHECK constraint doesn't allow a separate 'executing'
+  // value — extending the constraint would be a larger surface-area
+  // change for no behavioural gain. The trailing UPDATE then transitions
+  // approved → completed/failed once the side-effect resolves.
+  const targetStatus = body.decision === 'approved' ? 'approved' : 'rejected'
+  const { data: claimed, error: claimErr } = await sl
     .from('agent_actions')
-    .select('id, action_type, args, status, session_id')
+    .update({ status: targetStatus, decided_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('status', 'pending')
+    .select('id, action_type, args, status, session_id')
     .maybeSingle()
-  if (!action) return fail('Action not found', 404)
-  if (action.status !== 'pending') return fail(`Action already ${action.status}`, 409)
+  if (claimErr) return fail(claimErr.message, 500)
+  if (!claimed) {
+    // Either the row doesn't exist OR another admin already decided it.
+    // Re-read to give the caller an accurate message.
+    const { data: existing } = await sl
+      .from('agent_actions')
+      .select('status')
+      .eq('id', id)
+      .maybeSingle()
+    if (!existing) return fail('Action not found', 404)
+    return fail(`Action already ${existing.status}`, 409)
+  }
+  const action = claimed
 
   if (body.decision === 'rejected') {
-    await sl.from('agent_actions').update({
-      status: 'rejected',
-      decided_at: new Date().toISOString(),
-    }).eq('id', id)
     return ok({ decision: 'rejected', id })
   }
 
@@ -88,20 +112,20 @@ export const PATCH = withGateway(async (req) => {
 
   const now = new Date().toISOString()
   if (executeErr) {
+    // Only transition the row we own (status='approved' from the CAS
+    // claim above). Guards against a stray manual DB write racing in.
     await sl.from('agent_actions').update({
       status: 'failed',
-      decided_at: now,
       executed_at: now,
       error: executeErr,
-    }).eq('id', id)
+    }).eq('id', id).eq('status', 'approved')
     return fail(executeErr, 500)
   }
   await sl.from('agent_actions').update({
     status: 'completed',
-    decided_at: now,
     executed_at: now,
     result,
-  }).eq('id', id)
+  }).eq('id', id).eq('status', 'approved')
   return ok({ decision: 'approved', completed: true, result, id })
 })
 

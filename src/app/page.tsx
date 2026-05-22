@@ -90,8 +90,36 @@ export default function LandingPage() {
   // the customer signs up later (any tab, any time within the window),
   // the agent code rides along to the drivers row → trigger inserts the
   // affiliate_referrals entry. See src/lib/affiliate/referrer.ts.
+  //
+  // Also log a 'direct' row in affiliate_banner_shares when BOTH ?ref=
+  // and ?b= (banner id) are present — that's an actual landed click on
+  // an affiliate-distributed banner. Fire-and-forget; never blocks.
   useEffect(() => {
     import('@/lib/affiliate/referrer').then((m) => m.captureReferrerFromUrl())
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const ref = (params.get('ref') || '').trim()
+      const banner = (params.get('b') || '').trim()
+      if (ref && banner && /^[A-Za-z0-9_-]+$/.test(ref) && /^[A-Za-z0-9_-]+$/.test(banner)) {
+        const payload = JSON.stringify({
+          agent_code: ref.toUpperCase(),
+          banner_id: banner,
+          platform: 'direct',
+          referrer: document.referrer || '',
+        })
+        const endpoint = '/api/affiliate/track-share'
+        if (navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: 'application/json' })
+          if (navigator.sendBeacon(endpoint, blob)) return
+        }
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(() => { /* swallow */ })
+      }
+    } catch { /* swallow */ }
   }, [])
   const t = STRINGS[locale]
 

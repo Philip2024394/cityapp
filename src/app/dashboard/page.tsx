@@ -93,9 +93,11 @@ export default function DashboardPage() {
   // don't see a flash of the simplified layout.
   const isActivated = !meLoaded || (ME.trips ?? 0) > 0 || online
 
-  // Demo ROI numbers — in production, sum quote_events for current month.
-  const monthQuoteCount  = 47
-  const monthLeadsValue  = 615_000
+  // Real ROI numbers — once `quote_events` aggregation is wired, replace
+  // null with the live counts. Until then, downstream consumers MUST hide
+  // any "this month" tile when the value is null (no fabricated metrics).
+  const monthQuoteCount: number | null  = null
+  const monthLeadsValue: number | null  = null
 
   return (
     <>
@@ -323,8 +325,8 @@ function ActivatedDashboard({
   ME: Rider
   online: boolean
   setOnline: (b: boolean) => void
-  monthQuoteCount: number
-  monthLeadsValue: number
+  monthQuoteCount: number | null
+  monthLeadsValue: number | null
 }) {
   return (
     <div className="space-y-4">
@@ -332,22 +334,26 @@ function ActivatedDashboard({
       <DriverInboxWidget />
       <BookingAlertsToggle />
 
-      {/* PENGHASILAN */}
-      <SectionHeader
-        title="Penghasilan kamu"
-        helpTitle="Tentang penghasilan kamu"
-        helpBody={
-          <>
-            <p>Angka ini real-time dari customer yang minta quote bulan ini. Target idealnya <strong>5× lipat dari biaya langganan</strong>.</p>
-            <p>Driver yang reply WhatsApp dalam 5 menit pertama biasanya dapat <strong>3× lebih banyak customer</strong> dari yang lambat reply.</p>
-          </>
-        }
-      />
-      <ROIHero
-        monthlyQuotes={monthQuoteCount}
-        monthlyLeadsValue={monthLeadsValue}
-        subscriptionMonthly={SUBSCRIPTION_MONTHLY}
-      />
+      {/* PENGHASILAN — render only when we have real numbers. No fabricated metrics. */}
+      {monthQuoteCount != null && monthLeadsValue != null && (
+        <>
+          <SectionHeader
+            title="Penghasilan kamu"
+            helpTitle="Tentang penghasilan kamu"
+            helpBody={
+              <>
+                <p>Angka ini real-time dari customer yang minta quote bulan ini. Target idealnya <strong>5× lipat dari biaya langganan</strong>.</p>
+                <p>Driver yang reply WhatsApp dalam 5 menit pertama biasanya dapat <strong>3× lebih banyak customer</strong> dari yang lambat reply.</p>
+              </>
+            }
+          />
+          <ROIHero
+            monthlyQuotes={monthQuoteCount}
+            monthlyLeadsValue={monthLeadsValue}
+            subscriptionMonthly={SUBSCRIPTION_MONTHLY}
+          />
+        </>
+      )}
 
       {/* TUMBUH */}
       <SectionHeader

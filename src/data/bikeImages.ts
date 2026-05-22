@@ -29,11 +29,20 @@ const GENERIC_BIKE_FALLBACK =
   'https://ik.imagekit.io/nepgaxllc/Untitledwrrssswdqw-removebg-preview.png?updatedAt=1778253308442'
 
 // Extension catalog — any (make, model) not in BIKE_CATALOG can be
-// declared here. Empty for now; populate as you upload more photos.
-// Format: `${makeSlug}-${modelSlug}` keys (lowercase, hyphens, no spaces).
+// declared here. Format: `${makeSlug}-${modelSlug}` keys (lowercase,
+// hyphens, no spaces). Visually identified from the badge on each photo.
 export const BIKE_MODEL_IMAGES: Record<string, string> = {
-  // Example:
-  //   'honda-beat': 'https://ik.imagekit.io/nepgaxllc/bikes/honda-beat.png',
+  // Yamaha — May 2026 additions
+  'yamaha-mio-s':   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_33_50%20AM.png',
+  'yamaha-gear':    'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_36_54%20AM.png',
+  'yamaha-fino':    'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_38_15%20AM.png',
+  // TODO: replace Fino fallback once dedicated Grand Filano asset exists.
+  'yamaha-filano':  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_38_15%20AM.png',
+  'yamaha-vixion':  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_42_56%20AM.png',
+  'yamaha-freego':  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_43_23%20AM.png',
+  'yamaha-wr-155':  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_48_10%20AM.png',
+  'yamaha-wr155':   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_48_10%20AM.png',
+  'yamaha-wr-155-r':'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2022,%202026,%2004_48_10%20AM.png',
 }
 
 // Recently uploaded stock photos not yet mapped to a specific make/model.
@@ -41,6 +50,9 @@ export const BIKE_MODEL_IMAGES: Record<string, string> = {
 // model is identified. `getRecentBikeVariant()` returns one deterministically
 // from this pool so listings get visual variety while waiting for mapping.
 export const RECENT_BIKE_VARIANTS: ReadonlyArray<string> = [
+  // The 6 May-22 photos were identified as specific Yamaha models
+  // (Mio S, Gear, Fino, Vixion, Freego, WR 155) and moved into
+  // BIKE_MODEL_IMAGES above so they only render for the right listings.
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2009_47_38%20PM.png',
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2009_45_17%20PM.png',
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2009_40_21%20PM.png',
