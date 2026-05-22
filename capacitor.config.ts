@@ -16,14 +16,15 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // The native plugin queues failed GPS pings locally and retries on
 // reconnect — so the location stream itself is resilient.
 //
-// PRODUCTION URL — UPDATE BEFORE FIRST BUILD:
-// Replace the URL below with the actual production deployment domain.
-// During the build:
-//   1. Set CAPACITOR_SERVER_URL in your shell (one-off) OR
-//   2. Hard-code it here before running `npx cap sync android`.
+// PRODUCTION URL — canonical: cityriders.id
+// `cityrider.streetlocal.live` is the legacy Vercel-issued domain; once DNS
+// for cityriders.id points at Vercel and the cert provisions, that becomes
+// canonical and the streetlocal.live subdomain 301s to it. Override via
+// CAPACITOR_SERVER_URL env at build time if you need to test against a
+// preview deployment.
 // ============================================================================
 
-const PROD_URL = process.env.CAPACITOR_SERVER_URL ?? 'https://cityrider.streetlocal.live'
+const PROD_URL = process.env.CAPACITOR_SERVER_URL ?? 'https://cityriders.id'
 
 const config: CapacitorConfig = {
   appId: 'live.streetlocal.cityrider',

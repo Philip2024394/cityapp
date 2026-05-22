@@ -2,6 +2,7 @@
 import { registerPlugin } from '@capacitor/core'
 import type { BackgroundGeolocationPlugin, Location, CallbackError } from '@capacitor-community/background-geolocation'
 import { isNative } from './isNative'
+import { restoreLocationQueue, sendOrQueueLocationPing } from './locationQueue'
 
 // The plugin ships type definitions only; the runtime proxy comes from
 // `registerPlugin`. The string name must match the iOS/Android native
@@ -42,6 +43,11 @@ export async function startNativeBackgroundPing(): Promise<StartResult> {
   if (!isNative()) return { ok: false, reason: 'not_native' }
   if (watcherId) return { ok: true, watcherId }
 
+  // Hydrate any pings persisted from a previous app session BEFORE the
+  // watcher fires — so the first live ping can piggyback a catch-up
+  // batch rather than waiting one full interval.
+  try { await restoreLocationQueue() } catch { /* best-effort */ }
+
   try {
     const id = await BackgroundGeolocation.addWatcher(
       {
@@ -65,21 +71,16 @@ export async function startNativeBackgroundPing(): Promise<StartResult> {
         if (now - lastSentAt < PING_MIN_INTERVAL_MS) return
         lastSentAt = now
 
-        try {
-          await fetch('/api/drivers/location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // Relative URL → resolved against server.url in Capacitor
-            // config, which points at production. Session cookie on that
-            // origin is automatically attached by the WebView's network
-            // stack — no Authorization header needed.
-            credentials: 'include',
-            body: JSON.stringify({ lat: location.latitude, lng: location.longitude }),
-          })
-        } catch (e) {
-          // Network blip — plugin keeps watching, next fix retries.
-          console.warn('[location-bridge] ping POST failed:', e)
-        }
+        // Hand off to the queue: it owns the live POST, exponential
+        // backoff, catch-up drain via /api/drivers/location/batch, and
+        // disk persistence. Relative URLs resolve against
+        // capacitor.config.server.url and inherit the WebView's session
+        // cookie automatically — no Authorization header needed.
+        await sendOrQueueLocationPing({
+          lat: location.latitude,
+          lng: location.longitude,
+          capturedAt: now,
+        })
       },
     )
     watcherId = id

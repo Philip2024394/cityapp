@@ -6,6 +6,12 @@ import { useDriverLocationPing, type DriverLocationPingState } from '@/hooks/use
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { isNative } from '@/lib/capacitor/isNative'
 import { startNativeBackgroundPing, stopNativeBackgroundPing } from '@/lib/capacitor/locationBridge'
+import {
+  maybePromptBatteryOpt,
+  acceptBatteryOptPrompt,
+  dismissBatteryOptPrompt,
+} from '@/lib/capacitor/batteryOptPrompt'
+import BatteryOptPromptModal from './BatteryOptPromptModal'
 
 // Simple online/offline toggle. The driver decides when they're working
 // by tapping the button — no shift duration picker, no auto-expiry.
@@ -43,6 +49,7 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
   const [pending, setPending] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [showDisclosure, setShowDisclosure] = useState(false)
+  const [showBatteryOpt, setShowBatteryOpt] = useState(false)
   const [ping, setPing] = useState<DriverLocationPingState>({
     status: 'idle', lastSentAt: null, lastError: null,
   })
@@ -99,6 +106,19 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
       return
     }
     onChange?.(true)
+
+    // 4. Battery-optimization prompt (Android only, once per device).
+    // Fired AFTER the successful handshake so we don't ask drivers who
+    // can't even reach the server — and so the explainer lands on a
+    // happy-path moment ("you're online — here's how to STAY online").
+    if (isNative()) {
+      try {
+        const shouldPrompt = await maybePromptBatteryOpt()
+        if (shouldPrompt) setShowBatteryOpt(true)
+      } catch {
+        /* prompt is best-effort — never block the online flow */
+      }
+    }
   }
 
   async function goOnline() {
@@ -143,6 +163,16 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
     persistConsent()
     setShowDisclosure(false)
     void commitOnline()
+  }
+
+  function onAcceptBatteryOpt() {
+    setShowBatteryOpt(false)
+    void acceptBatteryOptPrompt()
+  }
+
+  function onDismissBatteryOpt() {
+    setShowBatteryOpt(false)
+    void dismissBatteryOptPrompt()
   }
 
   // GPS denied — recovery path instead of a dead-end "tap to activate"
@@ -264,6 +294,15 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
         <BackgroundLocationDisclosure
           onAccept={onAcceptDisclosure}
           onDismiss={() => setShowDisclosure(false)}
+        />
+      )}
+
+      {/* Battery-optimization whitelist modal — Android only, shown ONCE
+          per device on first successful "Go Online" handshake. */}
+      {showBatteryOpt && (
+        <BatteryOptPromptModal
+          onAccept={onAcceptBatteryOpt}
+          onDismiss={onDismissBatteryOpt}
         />
       )}
     </>

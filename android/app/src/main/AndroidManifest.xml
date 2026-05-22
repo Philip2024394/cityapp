@@ -53,6 +53,23 @@
          WAKE_LOCK           — keep CPU awake long enough to deliver
                               location fixes; the plugin handles the
                               actual partial-wake-lock acquisition.
+         REQUEST_IGNORE_BATTERY_OPTIMIZATIONS — required so the driver
+                              can whitelist City Rider against
+                              aggressive vendor battery-savers
+                              (Xiaomi MIUI, Oppo ColorOS, Vivo FunTouch
+                              ~70% of Indonesia handsets). Without
+                              whitelisting, the foreground location
+                              service is killed after ~30-60 min, the
+                              driver silently goes "offline" mid-shift
+                              and stops appearing on the marketplace.
+                              GOOGLE PLAY NOTE: this permission is
+                              flagged as sensitive — the in-app
+                              prominent-disclosure modal in
+                              GoOnlineToggle.tsx already covers GPS;
+                              the BatteryOptPromptModal handles this
+                              one. We invoke it via a tiny in-app
+                              BatteryOpt plugin (intent-only, no
+                              policy-violating background work).
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -62,6 +79,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- VIBRATE — required by the "bookings" notification channel for the
          booking-alert vibration pattern (see src/lib/capacitor/pushChannel.ts). -->
     <uses-permission android:name="android.permission.VIBRATE" />
