@@ -22,6 +22,24 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // Midtrans Snap widget. Both are unavoidable today without nonce-based CSP
 // (which Next 15 still doesn't natively support per-request).
 // ============================================================================
+// frame-ancestors allow-list — origins that may embed cityrider in an
+// iframe. Used by the StreetLocal selling page's "View marketplace"
+// demo modal. X-Frame-Options is intentionally omitted (it has no
+// multi-origin syntax; modern browsers prefer frame-ancestors when
+// both are present, so this list is the actual gate).
+const FRAME_ANCESTORS = [
+  "'self'",
+  'https://streetlocal.live',
+  'https://www.streetlocal.live',
+  // Vite dev ports — Vite hops upward when 5173 is occupied.
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'http://localhost:5177',
+  'http://localhost:5178',
+].join(' ')
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com",
@@ -34,7 +52,7 @@ const CSP = [
   "manifest-src 'self'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  `frame-ancestors ${FRAME_ANCESTORS}`,
   "upgrade-insecure-requests",
 ].join('; ')
 
@@ -42,7 +60,6 @@ const SECURITY_HEADERS = [
   { key: 'Content-Security-Policy', value: CSP },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   // geolocation=self  : we use it for marketplace search + driver pings
   // camera=()         : never used
