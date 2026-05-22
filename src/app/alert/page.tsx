@@ -1,6 +1,6 @@
 'use client'
 import { Suspense, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { MessageCircle, Check, X as XIcon, AlertCircle } from 'lucide-react'
 
@@ -31,7 +31,6 @@ export default function Page() {
 }
 
 function Alert() {
-  const router = useRouter()
   const sp = useSearchParams()
   const pingId = sp.get('pingId')
   const source = sp.get('source') ?? 'other'
@@ -77,10 +76,6 @@ function Alert() {
       // If WhatsApp app didn't open, route to web build
       window.location.href = 'https://web.whatsapp.com/'
     }, 1500)
-  }
-
-  function dismiss() {
-    router.push('/dashboard')
   }
 
   return (
@@ -129,10 +124,14 @@ function Alert() {
           Open WhatsApp
         </button>
 
-        {/* Secondary — dismiss (still ack'd above) */}
-        <button
-          type="button"
-          onClick={dismiss}
+        {/* Secondary — dismiss (still ack'd above).
+            Converted from <button onClick={router.push}> to <Link prefetch>
+            2026-05 perf pass — the ack already fires in the mount effect
+            so we don't need a synchronous handler. Link prefetches
+            /dashboard so the back-nav lands instantly. */}
+        <Link
+          href="/dashboard"
+          prefetch
           className="w-full rounded-2xl flex items-center justify-center gap-2 transition active:scale-[0.99]"
           style={{
             background: 'rgba(255,255,255,0.05)',
@@ -145,7 +144,7 @@ function Alert() {
         >
           {acked ? <Check className="w-4 h-4" style={{ color: '#22C55E' }} /> : <XIcon className="w-4 h-4" />}
           Got it — back to dashboard
-        </button>
+        </Link>
 
         {/* Status line */}
         <div className="text-center text-[12px] text-muted/60">

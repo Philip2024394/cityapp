@@ -26,6 +26,7 @@ import { idr } from '@/lib/format/idr'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { nearestCity, citySlugLabel, SUPPORTED_CITIES } from '@/lib/cities'
 import { SERVICE_SHORT, type ServiceType, type Rider } from '@/types/rider'
+import { logNav } from '@/lib/perf/navTiming'
 import DriverRentalTiles from '@/components/rider/DriverRentalTiles'
 
 // Landing-page brand images — reused on the driver-page service tiles
@@ -76,6 +77,10 @@ type CrossSellDriver = {
 
 export default function RiderProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
+  // perf instrumentation — measures cari/rider → r/[slug] (Driver profile)
+  // transition. The destination uses a synchronous mock fallback so the
+  // mount itself should be cheap; this log lets us isolate the gap.
+  useEffect(() => { logNav(`r/[slug]:mount`) }, [])
   // Initial render uses sync mock lookup so the page boots instantly.
   // Then we upgrade to the live Supabase row if one exists.
   const [maybeRider, setMaybeRider] = useState<Rider | null>(() => findRiderBySlug(slug) ?? null)
@@ -712,6 +717,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
             <button
               onClick={() => {
                 if (confirmingBooking) return
+                logNav('r/[slug]:confirm-driver')
                 setConfirmingBooking(true)
                 // Build the WhatsApp message with tappable Google Maps
                 // pins for each endpoint + a directions link the driver

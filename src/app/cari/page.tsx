@@ -12,6 +12,7 @@ import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
+import { logNav } from '@/lib/perf/navTiming'
 import type { Rider, ServiceType } from '@/types/rider'
 
 // Per-service placeholder text — tailors the inputs to the picked service.
@@ -89,6 +90,11 @@ function PlanTripPageInner() {
   // viewport shrinks — we add that delta to the bottom padding so the route
   // re-fits into the still-visible map area above the keyboard.
   const [keyboardOffset, setKeyboardOffset] = useState(0)
+
+  // perf instrumentation — logs first useful client mount for the
+  // landing → /cari navigation pair. Paste console output into the
+  // perf audit doc to see the actual tap-to-paint delta.
+  useEffect(() => { logNav('cari:mount') }, [])
 
   useEffect(() => {
     const stack = bottomStackRef.current
@@ -216,6 +222,7 @@ function PlanTripPageInner() {
 
   function handleSearch() {
     if (!canSearch) return
+    logNav('cari:view-drivers')
     haptic.impact()
     const params = new URLSearchParams({
       pLat: pickup!.lat.toString(),
@@ -410,9 +417,14 @@ function PlanTripPageInner() {
           >
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
-              <button
-                type="button"
-                onClick={() => { haptic.tap(); router.push('/places') }}
+              {/* Converted from <button onClick={router.push}> to <Link prefetch>
+                  2026-05 perf pass — gives Next.js an opportunity to
+                  prefetch /places so the tap-to-paint gap is near-instant.
+                  haptic.tap() still fires synchronously on click. */}
+              <Link
+                href="/places"
+                prefetch
+                onClick={() => haptic.tap()}
                 aria-label="Browse nearby places"
                 className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
                 style={{
@@ -423,7 +435,7 @@ function PlanTripPageInner() {
               >
                 <Landmark className="w-3 h-3" strokeWidth={2.5} />
                 Places
-              </button>
+              </Link>
             </div>
             <PlaceAutocomplete
               value={pickupLabel}

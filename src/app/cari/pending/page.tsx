@@ -19,6 +19,7 @@ import { etaMinutes } from '@/lib/geo/eta'
 import { useHaptic } from '@/hooks/useHaptic'
 import { idr } from '@/lib/format/idr'
 import { presenceLabel, presenceTier, presenceDotColor, sessionLengthLabel } from '@/lib/drivers/presence'
+import { logNav } from '@/lib/perf/navTiming'
 import type { Rider, ServiceType } from '@/types/rider'
 
 // ============================================================================
@@ -137,6 +138,9 @@ export default function PendingBookingPage() {
   const [choiceForAlt, setChoiceForAlt] = useState<RankedAlt | null>(null)
   // Inline "Who replied?" prompt when there are parallel attempts.
   const [showConfirmChooser, setShowConfirmChooser] = useState(false)
+
+  // perf instrumentation — measures /cari/rider → /cari/pending transition.
+  useEffect(() => { logNav('cari/pending:mount') }, [])
 
   // Hydrate from sessionStorage on mount. If there's no pending booking,
   // bounce the user back to /cari.

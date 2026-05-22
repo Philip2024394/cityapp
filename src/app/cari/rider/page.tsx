@@ -16,6 +16,7 @@ import { useBeep } from '@/hooks/useBeep'
 import { SERVICE_ICONS, SERVICE_LABELS, SERVICE_SHORT, type Rider, type ServiceType } from '@/types/rider'
 import { presenceLabel, presenceTier, presenceDotColor } from '@/lib/drivers/presence'
 import { pingDriverContact } from '@/lib/notify/clientPing'
+import { logNav } from '@/lib/perf/navTiming'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
 // Customer-facing labels for the service-type toggle. Stable order so
@@ -76,6 +77,9 @@ function DriverResults() {
   // them WhatsApp is opening and the driver will reply there. Auto-dismiss.
   const [toast, setToast] = useState<{ driverName: string } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // perf instrumentation — measures /cari → /cari/rider transition.
+  useEffect(() => { logNav('cari/rider:mount') }, [])
 
   // Drivers the user has already tried in this session — surfaced as a
   // "Tried" pill on the card so they're not re-contacted accidentally.
@@ -180,6 +184,7 @@ function DriverResults() {
   // outside Permenhub PM 12/2019's definition of an aplikasi penyedia
   // jasa angkutan (transport-app operator).
   function onBookRider(rider: Rider, fare: number, perKm: number, pitstopFee: number) {
+    logNav('cari/rider:book-driver')
     haptic.buzz()
     beep.play()
     const link = buildWhatsAppLink({
@@ -287,12 +292,17 @@ function DriverResults() {
                   <div className="text-[12px] text-muted font-extrabold tracking-[0.2em]">TUJUAN</div>
                   <div className="text-[15px] font-extrabold text-white mt-1 truncate">{dropoffName}</div>
                 </div>
-                <button
-                  onClick={() => router.push(editTripHref)}
+                {/* Converted from <button onClick={router.push}> to <Link prefetch>
+                    2026-05 perf pass — same destination as the header
+                    "Edit trip" link; lets Next prefetch /cari with the
+                    trip params so the back-nav is instant. */}
+                <Link
+                  href={editTripHref}
+                  prefetch
                   className="text-[12px] font-bold text-muted hover:text-brand transition inline-flex items-center gap-1 pt-1"
                 >
                   <span aria-hidden>✎</span> Edit trip
-                </button>
+                </Link>
               </div>
 
               {/* Stub — distance / ETA / fare-from — solid brand yellow */}

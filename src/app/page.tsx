@@ -1,9 +1,9 @@
 'use client'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+import { logNav } from '@/lib/perf/navTiming'
 
 // Service tiles — the primary CTA on landing. Routes:
 //   person / parcel / food → /cari?service=<id>
@@ -78,8 +78,6 @@ function getStoredLocale(): Locale {
 }
 
 export default function LandingPage() {
-  const router = useRouter()
-
   // Locale state. SSR uses 'id' (deterministic); client hydrates and then
   // reads localStorage. The brief flash from 'id' → stored locale on first
   // paint is acceptable for a landing page.
@@ -122,10 +120,6 @@ export default function LandingPage() {
     } catch { /* swallow */ }
   }, [])
   const t = STRINGS[locale]
-
-  function pickService(href: string) {
-    router.push(href)
-  }
 
   function setLocaleAndStore(lang: Locale) {
     try { localStorage.setItem('cr_locale', lang) } catch { /* ignore */ }
@@ -191,9 +185,18 @@ export default function LandingPage() {
               has to pick the service type twice. */}
           <div className="pt-1 w-full max-w-sm mx-auto space-y-2">
             {SERVICE_TILES.map((tile, i) => (
-              <button
+              // Converted from <button onClick={router.push}> to <Link prefetch>
+              // 2026-05 perf pass — buttons skip Next.js auto-prefetch, so
+              // every landing → /cari nav incurred a full client-side
+              // load+chunk-fetch delay (~150-400ms in dev). Link prefetches
+              // the destination on hover/in-view so the tap → paint gap is
+              // near-instant. logNav fires synchronously inside the click
+              // so we can measure tap-to-mount time in DevTools.
+              <Link
                 key={tile.id}
-                onClick={() => pickService(tile.href)}
+                href={tile.href}
+                prefetch
+                onClick={() => logNav(`landing-tile:${tile.id}`)}
                 className="w-full flex items-center gap-2 p-1.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(250,204,21,0.30)]"
                 style={{ animation: `fadeUp 0.55s ease-out ${i * 0.08}s both` }}
                 aria-label={`Enter — ${tile.label}`}
@@ -209,7 +212,7 @@ export default function LandingPage() {
                   <span className="block text-[10px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
                 </span>
                 <ArrowRight className="w-4 h-4 shrink-0 opacity-80" />
-              </button>
+              </Link>
             ))}
 
             {/* Language toggle — small, below the tiles. */}
