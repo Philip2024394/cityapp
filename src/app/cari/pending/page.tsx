@@ -30,23 +30,43 @@ import type { Rider, ServiceType } from '@/types/rider'
 // it's how we keep cityrider on the directory side of PM 12/2019 while
 // still making the customer experience feel professional.
 //
-// Stage thresholds (seconds-based, redesigned 2026-05):
-//   sent     0–30s    confirmation + green pulse
-//   awaiting 30–60s   typing dots + reassurance + countdown to 60s
-//   nudge    60–90s   amber pulse, alternatives revealed (collapsed)
-//   switch   90s–600s red urgency, alternatives expanded
-//   stale    600s+    booking is probably dead — explicit "start over" path
+// Two-tier ACK-centric ladder (redesigned 2026-05, take 2):
+//
+//   TIER 1 — ack_window (0–30s, no ACK yet)
+//     Green, calm, hopeful. Driver has 30 seconds to tap "Got it" in
+//     their dashboard before the screen escalates. This mirrors Gojek's
+//     accept-button window — fast forcing function on the ONLY signal we
+//     get fast (the ACK), not on the slow signal (the WA reply).
+//
+//   no_ack_switch (≥30s, still no ACK)
+//     Red urgency, alternatives auto-expanded, prominent "Pilih driver
+//     lain" notification card. Driver had their chance to ack and didn't.
+//
+//   TIER 2 — ack_received (ACK landed before 30s, 0–120s post-ACK)
+//     Calm green. We KNOW the driver is engaged. Give them time to type.
+//     Alternatives stay hidden.
+//
+//   reply_late (ACK + 120-600s, no WA reply yet)
+//     Amber. Acknowledged but no reply for 2 minutes — soft escalation,
+//     alternatives appear collapsed below.
+//
+//   stale (any state, 600s+ total elapsed)
+//     Gray. Hard banner + "Mulai ulang booking" CTA.
 // ============================================================================
 
-type Stage = 'sent' | 'awaiting' | 'nudge' | 'switch' | 'stale'
+type Stage = 'ack_window' | 'ack_received' | 'reply_late' | 'no_ack_switch' | 'stale'
 
-function stageFromElapsed(ms: number): Stage {
-  const s = ms / 1000
-  if (s < 30) return 'sent'
-  if (s < 60) return 'awaiting'
-  if (s < 90) return 'nudge'
-  if (s < 600) return 'switch'
-  return 'stale'
+const ACK_WINDOW_MS = 30_000          // driver has 30s to tap "Got it"
+const POST_ACK_CALM_MS = 120_000      // 2 min calm after ACK
+const STALE_MS = 600_000              // 10 min total = give-up
+
+function stageFromState(elapsedMs: number, ackedAtMs: number | null): Stage {
+  if (elapsedMs >= STALE_MS) return 'stale'
+  if (ackedAtMs) {
+    const sinceAckMs = Date.now() - ackedAtMs
+    return sinceAckMs < POST_ACK_CALM_MS ? 'ack_received' : 'reply_late'
+  }
+  return elapsedMs < ACK_WINDOW_MS ? 'ack_window' : 'no_ack_switch'
 }
 
 function formatElapsed(ms: number): string {
@@ -60,25 +80,25 @@ function formatElapsed(ms: number): string {
 // Reassurance copy bank. We rotate one line every ~10s so the screen
 // never feels static. Each stage gets its own bank.
 const COPY_BANK: Record<Stage, string[]> = {
-  sent: [
-    'Most drivers reply within 1 minute',
-    'Your request landed in their WhatsApp inbox',
-    'Keep this tab open — we will keep ticking',
+  ack_window: [
+    'Driver biasanya konfirmasi dalam 30 detik',
+    'Pesan sudah sampai di WhatsApp driver',
+    'Tunggu sebentar — driver akan segera respon',
   ],
-  awaiting: [
-    'Most drivers reply within 1 minute',
-    'Driver may be finishing a current trip',
-    'You can nudge them anytime with the WhatsApp button',
+  ack_received: [
+    'Driver sudah lihat pesanmu — sedang ketik balasan',
+    'Biasanya driver balas dalam 1-2 menit',
+    'Buka WhatsApp untuk lihat percakapan',
   ],
-  nudge: [
-    'Still nothing? Try the alternative drivers below',
-    'You can message a backup driver alongside this one',
-    'Most drivers who reply, do so within 90 seconds',
+  reply_late: [
+    'Driver sudah lihat tapi belum balas — kemungkinan sibuk',
+    'Coba pilih driver lain di bawah sambil tetap tunggu balasan',
+    'Pesananmu ke driver pertama tetap aktif di WhatsApp',
   ],
-  switch: [
-    'This driver may be busy or off-duty',
-    'Tap an alternative below — they are online right now',
-    'You can keep this conversation open and message someone else too',
+  no_ack_switch: [
+    'Driver tidak respon dalam 30 detik — pilih driver lain di bawah',
+    'Banyak driver lain aktif sekarang',
+    'Pesananmu ke driver pertama tetap di WhatsApp — bisa pilih kedua driver',
   ],
   stale: [
     'Sudah 10 menit — driver kemungkinan tidak akan respon',
@@ -88,21 +108,21 @@ const COPY_BANK: Record<Stage, string[]> = {
 
 function stageColor(stage: Stage): { ring: string; text: string; glow: string } {
   switch (stage) {
-    case 'sent':     return { ring: '#22C55E', text: '#22C55E', glow: 'rgba(34,197,94,0.85)' }
-    case 'awaiting': return { ring: '#FB923C', text: '#FB923C', glow: 'rgba(251,146,60,0.85)' }
-    case 'nudge':    return { ring: '#F59E0B', text: '#F59E0B', glow: 'rgba(245,158,11,0.85)' }
-    case 'switch':   return { ring: '#EF4444', text: '#EF4444', glow: 'rgba(239,68,68,0.85)' }
-    case 'stale':    return { ring: '#64748B', text: '#94A3B8', glow: 'rgba(148,163,184,0.50)' }
+    case 'ack_window':    return { ring: '#22C55E', text: '#22C55E', glow: 'rgba(34,197,94,0.85)' }
+    case 'ack_received':  return { ring: '#22C55E', text: '#22C55E', glow: 'rgba(34,197,94,0.55)' }
+    case 'reply_late':    return { ring: '#F59E0B', text: '#F59E0B', glow: 'rgba(245,158,11,0.85)' }
+    case 'no_ack_switch': return { ring: '#EF4444', text: '#EF4444', glow: 'rgba(239,68,68,0.85)' }
+    case 'stale':         return { ring: '#64748B', text: '#94A3B8', glow: 'rgba(148,163,184,0.50)' }
   }
 }
 
 function stageHeadline(stage: Stage, name: string): string {
   switch (stage) {
-    case 'sent':     return `Pesanan terkirim ke ${name}`
-    case 'awaiting': return `Menunggu balasan ${name}…`
-    case 'nudge':    return `${name} belum balas — coba ingatkan?`
-    case 'switch':   return `Coba driver lain?`
-    case 'stale':    return `Sudah lama tidak ada balasan`
+    case 'ack_window':    return `Pesanan terkirim ke ${name}`
+    case 'ack_received':  return `${name} sudah lihat — menunggu balasan…`
+    case 'reply_late':    return `${name} sudah lihat tapi belum balas`
+    case 'no_ack_switch': return `Pilih driver lain — ${name} tidak respon`
+    case 'stale':         return `Sudah lama tidak ada balasan`
   }
 }
 
@@ -189,7 +209,10 @@ export default function PendingBookingPage() {
   }, [booking, ackedAt])
 
   const elapsedMs = useElapsedSince(booking?.sentAtMs ?? null)
-  const stage: Stage = stageFromElapsed(elapsedMs)
+  // Parse ackedAt ISO into ms once per change so the stage derivation
+  // doesn't re-parse on every tick.
+  const ackedAtMs = useMemo(() => (ackedAt ? new Date(ackedAt).getTime() : null), [ackedAt])
+  const stage: Stage = stageFromState(elapsedMs, ackedAtMs)
   const colors = stageColor(stage)
 
   const alternatives: RankedAlt[] = useMemo(() => {
@@ -381,9 +404,18 @@ export default function PendingBookingPage() {
   const copyBank = COPY_BANK[stage]
   const reassuranceIdx = Math.floor(elapsedMs / 10_000) % copyBank.length
   const reassuranceLine = copyBank[reassuranceIdx]
-  // Progress bar fills 0 → 100% across 0–90s, then sits at 100% for switch
-  // stage (with an indeterminate shimmer overlay).
-  const progressPct = Math.min(100, (elapsedMs / 90_000) * 100)
+  // Progress bar fills against the active window for the current stage:
+  //   ack_window     → 0→100% across 30s (urgency to ACK)
+  //   ack_received   → 0→100% across the 2-min post-ACK calm
+  //   reply_late /   → 100% with shimmer (waiting indefinitely)
+  //   no_ack_switch
+  //   stale          → not rendered (banner takes over)
+  let progressPct = 100
+  if (stage === 'ack_window') {
+    progressPct = Math.min(100, (elapsedMs / ACK_WINDOW_MS) * 100)
+  } else if (stage === 'ack_received' && ackedAtMs) {
+    progressPct = Math.min(100, ((Date.now() - ackedAtMs) / POST_ACK_CALM_MS) * 100)
+  }
   const driverTier = presenceTier(booking.driverLastSeenAt)
   const driverPresence = presenceLabel(booking.driverLastSeenAt)
   const driverSession = sessionLengthLabel(booking.driverSessionStartedAt)
@@ -464,10 +496,10 @@ export default function PendingBookingPage() {
                 className="text-[12px] uppercase tracking-wider font-extrabold"
                 style={{ color: colors.text }}
               >
-                {stage === 'sent' && 'Request sent · Pesanan terkirim'}
-                {stage === 'awaiting' && 'Awaiting reply · Menunggu balasan'}
-                {stage === 'nudge' && 'Slow reply · Belum balas'}
-                {stage === 'switch' && 'Driver may be busy'}
+                {stage === 'ack_window'    && 'Notifying driver · Memberi tahu driver'}
+                {stage === 'ack_received'  && 'Driver engaged · Driver sudah lihat'}
+                {stage === 'reply_late'    && 'Slow reply · Belum balas'}
+                {stage === 'no_ack_switch' && 'Driver tidak respon · Pilih lain'}
               </div>
               <h1 className="text-xl font-extrabold leading-tight mt-0.5 truncate">
                 {booking.driverName}
@@ -531,7 +563,7 @@ export default function PendingBookingPage() {
                 boxShadow: `0 0 8px ${colors.glow}`,
               }}
             />
-            {stage === 'switch' && (
+            {(stage === 'no_ack_switch' || stage === 'reply_late') && (
               <div
                 aria-hidden
                 className="absolute inset-0 rounded-full"
@@ -549,7 +581,7 @@ export default function PendingBookingPage() {
             <p className="text-[14px] font-extrabold leading-tight flex-1">
               {stageHeadline(stage, booking.driverName)}
             </p>
-            {(stage === 'awaiting' || stage === 'nudge') && <TypingDots color={colors.ring} />}
+            {stage === 'ack_received' && <TypingDots color={colors.ring} />}
           </div>
 
           {/* Rotating reassurance line — never the same for >10s, never
@@ -566,7 +598,7 @@ export default function PendingBookingPage() {
                 c) safety / payment is direct (not via the platform).
               No booking, no fare control, no dispatch claim — just an
               honest restatement of what already happened. */}
-          {(stage === 'sent' || stage === 'awaiting') && (
+          {(stage === 'ack_window' || stage === 'ack_received') && (
             <div
               className="mt-3 rounded-xl p-3 text-[12px] leading-relaxed"
               style={{
@@ -589,6 +621,36 @@ export default function PendingBookingPage() {
                 <li>· Konfirmasi tarif total dengan driver</li>
                 <li>· Bayar langsung (cash / QRIS / transfer)</li>
               </ul>
+            </div>
+          )}
+
+          {/* Urgent "Choose another driver" notification — fires when the
+              30-second ACK window expires with no driver acknowledgement.
+              Auto-dismisses if the driver acks late (stage transitions to
+              ack_received / reply_late). Red border + pulse to grab
+              attention without being modal-blocking. */}
+          {stage === 'no_ack_switch' && (
+            <div
+              role="alert"
+              className="mt-3 rounded-xl p-3"
+              style={{
+                background: 'rgba(239,68,68,0.10)',
+                border: '1px solid rgba(239,68,68,0.55)',
+                boxShadow: '0 0 0 1px rgba(239,68,68,0.20), 0 6px 20px rgba(239,68,68,0.20)',
+                animation: 'pendingRing 2.4s ease-out infinite',
+              }}
+            >
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#EF4444' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-extrabold text-[14px]" style={{ color: '#EF4444' }}>
+                    Pilih driver lain · Choose another driver
+                  </div>
+                  <p className="text-[13px] mt-1 leading-snug" style={{ color: 'rgba(255,255,255,0.78)' }}>
+                    {booking.driverName} belum konfirmasi dalam 30 detik. Pilih dari daftar driver online di bawah — pesananmu di WhatsApp tetap aktif.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -719,11 +781,11 @@ export default function PendingBookingPage() {
         {/* Alternative drivers — collapsed at the nudge stage (60s),
             expanded at the switch stage (90s+). The customer always
             picks — we never auto-broadcast. */}
-        {(stage === 'nudge' || stage === 'switch') && alternatives.length > 0 && (
+        {(stage === 'no_ack_switch' || stage === 'reply_late') && alternatives.length > 0 && (
           <AlternativesSection
             alternatives={alternatives}
-            forceOpen={stage === 'switch'}
-            urgent={stage === 'switch'}
+            forceOpen={stage === 'no_ack_switch'}
+            urgent={stage === 'no_ack_switch'}
             onTap={(alt) => setChoiceForAlt(alt)}
           />
         )}
