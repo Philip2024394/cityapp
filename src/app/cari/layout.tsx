@@ -1,20 +1,23 @@
-import { redirect } from 'next/navigation'
-import { getMyAccount, isActiveRentalCompany } from '@/lib/auth/account'
+import ClientAuthGuard from './ClientAuthGuard'
 
 // ============================================================================
-// /cari layout — vendor-only guard
+// /cari layout — vendor-only guard (client-side).
 // ----------------------------------------------------------------------------
-// Rental Bike Company accounts are vendor-only: they don't get to book bikes,
-// food, or parcels. Hitting any /cari/* route bounces them to their listings
-// dashboard. Anonymous and personal users pass through.
+// Previously this layout used `force-dynamic` and ran getMyAccount() server
+// side on every /cari/* navigation — two Supabase round-trips per nav. The
+// guard now runs in <ClientAuthGuard> after mount, sharing one cached
+// /api/me/account hit with the dashboard checks via fetchMyAccountCached.
+//
+// Trade-off: Rental Company accounts may see /cari content for a frame
+// before the redirect fires. Personal + anonymous users (the 99% case)
+// see no flash and the layout is fully cacheable.
 // ============================================================================
 
-export const dynamic = 'force-dynamic'
-
-export default async function CariLayout({ children }: { children: React.ReactNode }) {
-  const result = await getMyAccount()
-  if (result && isActiveRentalCompany(result.account)) {
-    redirect('/dashboard/rentals')
-  }
-  return <>{children}</>
+export default function CariLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <ClientAuthGuard />
+      {children}
+    </>
+  )
 }
