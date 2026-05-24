@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   Bike, Handshake, Sparkles, ChevronDown,
-  Compass, KeyRound,
+  Compass, KeyRound, Palette, Shirt, Wrench,
 } from 'lucide-react'
 
 // Header role/category dropdown. Two variants:
@@ -31,11 +31,14 @@ const JOIN_SECTIONS: Section[] = [
   {
     title: 'Join as',
     items: [
-      { label: 'Driver',         href: '/signup?intent=driver', icon: Bike },
-      { label: 'Tour Guide',     href: '/tour/list/new',        icon: Compass },
-      { label: 'Bike Rental',    href: '/rent/list/new',        icon: KeyRound },
-      { label: 'Massage Therapist', href: '/massage/signup',    icon: Sparkles },
-      { label: 'Partner (hotel/villa)', href: '/partners/signup', icon: Handshake },
+      { label: 'Driver',                href: '/signup?intent=driver', icon: Bike },
+      { label: 'Tour Guide',            href: '/tour/list/new',        icon: Compass },
+      { label: 'Bike Rental',           href: '/rent/list/new',        icon: KeyRound },
+      { label: 'Massage Therapist',     href: '/massage/signup',       icon: Sparkles },
+      { label: 'Beautician',            href: '/beautician/signup',    icon: Palette },
+      { label: 'Laundry shop',          href: '/laundry/signup',       icon: Shirt },
+      { label: 'Handyman (Tukang)',     href: '/handyman/signup',      icon: Wrench },
+      { label: 'Partner (hotel/villa)', href: '/partners/signup',      icon: Handshake },
     ],
   },
 ]
@@ -44,11 +47,14 @@ const SIGNIN_SECTIONS: Section[] = [
   {
     title: 'Open dashboard',
     items: [
-      { label: 'Driver',            href: '/dashboard',             icon: Bike },
-      { label: 'Tour Guide',        href: '/dashboard/tour-guide',  icon: Compass },
-      { label: 'Bike Rental',       href: '/dashboard/rentals',     icon: KeyRound },
-      { label: 'Massage Therapist', href: '/dashboard/massage',     icon: Sparkles },
-      { label: 'Partner',           href: '/dashboard/partner',     icon: Handshake },
+      { label: 'Driver',            href: '/dashboard',              icon: Bike },
+      { label: 'Tour Guide',        href: '/dashboard/tour-guide',   icon: Compass },
+      { label: 'Bike Rental',       href: '/dashboard/rentals',      icon: KeyRound },
+      { label: 'Massage Therapist', href: '/dashboard/massage',      icon: Sparkles },
+      { label: 'Beautician',        href: '/dashboard/beautician',   icon: Palette },
+      { label: 'Laundry shop',      href: '/dashboard/laundry',      icon: Shirt },
+      { label: 'Handyman',          href: '/dashboard/handyman',     icon: Wrench },
+      { label: 'Partner',           href: '/dashboard/partner',      icon: Handshake },
     ],
   },
 ]

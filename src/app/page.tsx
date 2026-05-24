@@ -13,7 +13,7 @@ import { logNav } from '@/lib/perf/navTiming'
 // Order: Ride → Parcel → Food → Rental → Tour → Massage.
 // All labels keep the "Bike X" prefix per the brand convention — every
 // service is delivered by an independent motorbike-equipped operator.
-type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'tour' | 'massage'
+type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'tour' | 'massage' | 'beautician' | 'laundry' | 'handyman'
 const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img: string; href: string }> = [
   { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
@@ -33,6 +33,15 @@ const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img
   { id: 'massage', label: 'Bike Massage', sub: 'Home & Hotel · 60/90/120 min',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledsssaaa-removebg-preview.png?updatedAt=1779390066960',
     href: '/massage' },
+  { id: 'beautician', label: 'Bike Beautician', sub: 'Makeup · Nail · Hair',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledassss-removebg-preview.png',
+    href: '/beautician' },
+  { id: 'laundry', label: 'Bike Laundry', sub: 'Pickup & dropoff · per kg',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasaaaaa-removebg-preview.png',
+    href: '/laundry' },
+  { id: 'handyman', label: 'Bike Handyman', sub: 'Tukang · Listrik · AC · Pipa',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasaasdasd-removebg-preview.png',
+    href: '/handyman' },
 ]
 
 // Background map (dark Yogyakarta + 42 pulsing rider pings + autoPan) now

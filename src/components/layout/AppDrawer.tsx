@@ -9,7 +9,7 @@ import {
   Handshake, QrCode,
   Clock, AlertTriangle, CheckCircle2, ListChecks, Wallet,
   Sparkles, Store, UserCog,
-  Compass, Map, KeyRound,
+  Compass, Map, KeyRound, Palette, Shirt, Wrench,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -61,6 +61,24 @@ const MASSAGE_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/massage/signup',    label: 'Register therapist',  icon: Sparkles },
 ]
 
+const BEAUTICIAN_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/beautician', label: 'Beautician dashboard', icon: UserCog },
+  { href: '/beautician',           label: 'Marketplace',          icon: Store },
+  { href: '/beautician/signup',    label: 'Register beautician',  icon: Palette },
+]
+
+const LAUNDRY_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/laundry', label: 'Laundry dashboard', icon: UserCog },
+  { href: '/laundry',           label: 'Marketplace',       icon: Store },
+  { href: '/laundry/signup',    label: 'Register laundry',  icon: Shirt },
+]
+
+const HANDYMAN_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/handyman', label: 'Tukang dashboard', icon: UserCog },
+  { href: '/handyman',           label: 'Marketplace',      icon: Store },
+  { href: '/handyman/signup',    label: 'Register tukang',  icon: Wrench },
+]
+
 const TOUR_GUIDE_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/dashboard/tour-guide', label: 'Tour Guide dashboard', icon: Compass },
   { href: '/tour',                 label: 'Tour marketplace',     icon: Map },
@@ -73,11 +91,14 @@ const RENTAL_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/rent/list/new',      label: 'List a new bike',   icon: Sparkles },
 ]
 
-type Variant = 'driver' | 'partner' | 'massage' | 'tour-guide' | 'rentals'
+type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'tour-guide' | 'rentals'
 const VARIANT_TITLE: Record<Variant, string> = {
   driver:        'Driver menu',
   partner:       'Partner menu',
   massage:       'Therapist menu',
+  beautician:    'Beautician menu',
+  laundry:       'Laundry menu',
+  handyman:      'Tukang menu',
   'tour-guide':  'Tour Guide menu',
   rentals:       'Rental owner menu',
 }
@@ -85,6 +106,9 @@ const VARIANT_LABEL: Record<Variant, string> = {
   driver:        'Driver navigation',
   partner:       'Partner navigation',
   massage:       'Therapist navigation',
+  beautician:    'Beautician navigation',
+  laundry:       'Laundry navigation',
+  handyman:      'Tukang navigation',
   'tour-guide':  'Tour Guide navigation',
   rentals:       'Rental owner navigation',
 }
@@ -105,6 +129,9 @@ export default function AppDrawer({
   const items =
     variant === 'partner'      ? PARTNER_NAV_ITEMS :
     variant === 'massage'      ? MASSAGE_NAV_ITEMS :
+    variant === 'beautician'   ? BEAUTICIAN_NAV_ITEMS :
+    variant === 'laundry'      ? LAUNDRY_NAV_ITEMS :
+    variant === 'handyman'     ? HANDYMAN_NAV_ITEMS :
     variant === 'tour-guide'   ? TOUR_GUIDE_NAV_ITEMS :
     variant === 'rentals'      ? RENTAL_NAV_ITEMS :
     DRIVER_NAV_ITEMS
@@ -317,6 +344,9 @@ export function AppDrawerTrigger({
   const label =
     variant === 'partner'    ? 'Open partner menu' :
     variant === 'massage'    ? 'Open therapist menu' :
+    variant === 'beautician' ? 'Open beautician menu' :
+    variant === 'laundry'    ? 'Open laundry menu' :
+    variant === 'handyman'   ? 'Open tukang menu' :
     variant === 'tour-guide' ? 'Open tour guide menu' :
     variant === 'rentals'    ? 'Open rental owner menu' :
     'Open driver menu'

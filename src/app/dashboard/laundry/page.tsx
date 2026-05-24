@@ -1,0 +1,248 @@
+'use client'
+import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+import AppNav from '@/components/layout/AppNav'
+import type { LaundryProvider, LaundryAvailability } from '@/lib/laundry/types'
+
+const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
+
+export default function LaundryDashboardPage() {
+  const [provider, setProvider] = useState<LaundryProvider | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [err, setErr]           = useState<string | null>(null)
+  const [editing, setEditing]   = useState(false)
+
+  const reload = useCallback(async () => {
+    setLoading(true)
+    try {
+      const r = await fetch('/api/laundry/me', { cache: 'no-store' })
+      if (r.status === 401) { setErr('not_signed_in'); return }
+      const j = await r.json() as { provider: LaundryProvider | null }
+      setProvider(j.provider)
+    } catch { setErr('fetch_failed') }
+    finally { setLoading(false) }
+  }, [])
+  useEffect(() => { reload() }, [reload])
+
+  async function setAvailability(next: LaundryAvailability) {
+    if (!provider) return
+    const prev = provider.availability
+    setProvider({ ...provider, availability: next })
+    try {
+      const r = await fetch('/api/laundry/me/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ availability: next }),
+      })
+      const j = await r.json() as { ok?: boolean; error?: string }
+      if (!j.ok) {
+        setProvider({ ...provider, availability: prev })
+        alert(j.error === 'not_verified' ? 'Awaiting admin verification.' : 'Could not update availability.')
+      }
+    } catch { setProvider({ ...provider, availability: prev }) }
+  }
+
+  if (loading) return <Shell><div className="px-4 pt-6 text-ink/50 text-[13px]">Loading…</div></Shell>
+  if (err === 'not_signed_in') {
+    return (
+      <Shell>
+        <div className="px-4 pt-20 max-w-md mx-auto text-center">
+          <h1 className="text-[20px] font-black mb-2">Sign in required</h1>
+          <Link href="/login?next=/dashboard/laundry" className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block">Sign in</Link>
+        </div>
+      </Shell>
+    )
+  }
+  if (!provider) {
+    return (
+      <Shell>
+        <div className="px-4 pt-20 max-w-md mx-auto text-center">
+          <h1 className="text-[20px] font-black mb-2">No laundry profile yet</h1>
+          <Link href="/laundry/signup" className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block">Register laundry shop</Link>
+        </div>
+      </Shell>
+    )
+  }
+
+  return (
+    <Shell>
+      <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
+        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+          <h1 className="text-[20px] font-black mb-1 truncate">{provider.display_name}</h1>
+          <div className="text-[12px] text-ink/60 font-mono mb-3">{provider.slug}</div>
+
+          {provider.status !== 'active' && (
+            <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 text-[12px] px-3 py-2 mb-3">
+              <strong>Awaiting verification.</strong> Profile not yet listed on marketplace.
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-2">
+            {(['online','busy','offline'] as const).map((a) => {
+              const active = provider.availability === a
+              return (
+                <button key={a} onClick={() => setAvailability(a)}
+                  className={`rounded-xl px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider transition border ${
+                    active ? 'bg-brand text-bg border-brand' : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                  }`}
+                >
+                  {a === 'online' ? 'Online' : a === 'busy' ? 'Busy' : 'Offline'}
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[14px] font-extrabold uppercase tracking-wider">Profile + prices</h2>
+            <button onClick={() => setEditing((v) => !v)} className="text-[12px] font-bold text-brand hover:underline">
+              {editing ? 'Close' : 'Edit'}
+            </button>
+          </div>
+          {!editing ? <ReadOnly provider={provider} /> : <EditForm provider={provider} onSaved={reload} />}
+        </section>
+
+        <p className="text-[12px] text-ink/60 text-center">
+          Public profile: <a href={`/laundry/${provider.slug}`} target="_blank" rel="noopener" className="text-brand hover:underline">/laundry/{provider.slug}</a>
+        </p>
+      </div>
+    </Shell>
+  )
+}
+
+function ReadOnly({ provider }: { provider: LaundryProvider }) {
+  const pkgs = [
+    provider.price_wash_per_kg_idr      != null ? { l: 'Wash',        v: provider.price_wash_per_kg_idr }      : null,
+    provider.price_wash_dry_per_kg_idr  != null ? { l: 'Wash + Dry',  v: provider.price_wash_dry_per_kg_idr }  : null,
+    provider.price_wash_iron_per_kg_idr != null ? { l: 'Wash + Iron', v: provider.price_wash_iron_per_kg_idr } : null,
+  ].filter((s): s is { l: string; v: number } => s !== null)
+  return (
+    <div className="space-y-3 text-[13px]">
+      <KV k="Years" v={String(provider.years_experience)} />
+      <KV k="Bio" v={provider.bio} multiline />
+      <div className="grid grid-cols-3 gap-2 pt-2">
+        {pkgs.map((s) => (
+          <div key={s.l} className="rounded-xl bg-black/40 border border-white/10 px-3 py-2 text-center">
+            <div className="text-[11px] text-ink/60 uppercase tracking-wider font-bold">{s.l}</div>
+            <div className="text-[14px] font-black text-brand">
+              Rp {s.v.toLocaleString('id-ID')}<span className="text-[10px] text-ink/55">/kg</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <KV k="Min order" v={provider.min_kg ? `${provider.min_kg} kg` : '—'} />
+      <KV k="Turnaround" v={provider.turnaround_hours ? `${provider.turnaround_hours} hours` : '—'} />
+      <KV k="WhatsApp" v={provider.whatsapp_e164} />
+      <KV k="City" v={provider.city ?? '—'} />
+      <KV k="Service area" v={provider.service_area_notes ?? '—'} multiline />
+    </div>
+  )
+}
+function KV({ k, v, multiline = false }: { k: string; v: string; multiline?: boolean }) {
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wider font-bold text-ink/55">{k}</div>
+      <div className={`text-[13px] text-ink ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
+    </div>
+  )
+}
+
+function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: () => void }) {
+  const [f, setF] = useState({
+    display_name: provider.display_name,
+    years_experience: provider.years_experience,
+    bio: provider.bio,
+    price_wash:      provider.price_wash_per_kg_idr ?? '' as string | number,
+    price_wash_dry:  provider.price_wash_dry_per_kg_idr ?? '' as string | number,
+    price_wash_iron: provider.price_wash_iron_per_kg_idr ?? '' as string | number,
+    min_kg:           provider.min_kg ?? '' as string | number,
+    turnaround_hours: provider.turnaround_hours ?? '' as string | number,
+    whatsapp_e164: provider.whatsapp_e164,
+    city: provider.city ?? '',
+    service_area_notes: provider.service_area_notes ?? '',
+    profile_image_url: provider.profile_image_url ?? '',
+    ktp_image_url: provider.ktp_image_url ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [flash, setFlash] = useState(false)
+
+  function upd<K extends keyof typeof f>(k: K, v: typeof f[K]) { setF((p) => ({ ...p, [k]: v })) }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const r = await fetch('/api/laundry/me/profile', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          display_name: f.display_name,
+          years_experience: f.years_experience,
+          bio: f.bio,
+          price_wash_per_kg_idr:      f.price_wash       === '' ? null : Number(f.price_wash),
+          price_wash_dry_per_kg_idr:  f.price_wash_dry   === '' ? null : Number(f.price_wash_dry),
+          price_wash_iron_per_kg_idr: f.price_wash_iron  === '' ? null : Number(f.price_wash_iron),
+          min_kg:                     f.min_kg            === '' ? null : Number(f.min_kg),
+          turnaround_hours:           f.turnaround_hours  === '' ? null : Number(f.turnaround_hours),
+          whatsapp_e164: f.whatsapp_e164,
+          city: f.city,
+          service_area_notes: f.service_area_notes,
+          profile_image_url: f.profile_image_url,
+          ktp_image_url: f.ktp_image_url,
+        }),
+      })
+      const j = await r.json() as { ok?: boolean; error?: string }
+      if (!r.ok || !j.ok) { alert(j.error || 'failed'); return }
+      setFlash(true); setTimeout(() => setFlash(false), 1800)
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-3">
+      <input type="text" value={f.display_name} onChange={(e) => upd('display_name', e.target.value)} className={inputCls} />
+      <input type="number" min={0} max={60} value={f.years_experience} onChange={(e) => upd('years_experience', Number(e.target.value))} placeholder="Years" className={inputCls} />
+      <textarea maxLength={300} rows={3} value={f.bio} onChange={(e) => upd('bio', e.target.value)} placeholder="Bio (max 300)" className={inputCls + ' resize-none'} />
+      <div className="grid grid-cols-3 gap-2">
+        <PriceInput label="Wash" v={f.price_wash}      onChange={(v) => upd('price_wash', v)} />
+        <PriceInput label="W+Dry" v={f.price_wash_dry}  onChange={(v) => upd('price_wash_dry', v)} />
+        <PriceInput label="W+Iron" v={f.price_wash_iron} onChange={(v) => upd('price_wash_iron', v)} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input type="number" step="0.1" min="0" value={f.min_kg as string | number} onChange={(e) => upd('min_kg', e.target.value)} placeholder="Min kg" className={inputCls} />
+        <input type="number" min="1" max="168" value={f.turnaround_hours as string | number} onChange={(e) => upd('turnaround_hours', e.target.value)} placeholder="Turnaround (h)" className={inputCls} />
+      </div>
+      <input type="tel" value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} className={inputCls} />
+      <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
+      <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
+      <input type="url"  value={f.profile_image_url} onChange={(e) => upd('profile_image_url', e.target.value)} placeholder="Profile image URL" className={inputCls} />
+      <input type="url"  value={f.ktp_image_url} onChange={(e) => upd('ktp_image_url', e.target.value)} placeholder="KTP image URL (private)" className={inputCls} />
+      {flash && <div className="rounded-lg border border-green-500/40 bg-green-500/10 text-green-200 text-[13px] px-3 py-2">Saved.</div>}
+      <button type="submit" disabled={saving} className="w-full rounded-full bg-brand text-bg px-6 py-3 text-[14px] font-extrabold uppercase tracking-wider disabled:opacity-60">
+        {saving ? 'Saving…' : 'Save changes'}
+      </button>
+    </form>
+  )
+}
+
+function PriceInput({ label, v, onChange }: { label: string; v: string | number; onChange: (v: string) => void }) {
+  return (
+    <label className="block">
+      <span className="text-[11px] font-bold text-ink/70 mb-1 inline-block uppercase">{label}</span>
+      <input type="number" min={0} value={v as string | number} onChange={(e) => onChange(e.target.value)} placeholder="—" className={inputCls + ' text-[13px]'} />
+    </label>
+  )
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="relative min-h-screen text-ink overflow-hidden">
+      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-black/75" />
+      <AppNav />
+      {children}
+    </main>
+  )
+}
+
+const inputCls = 'w-full rounded-xl bg-black/85 border border-white/15 px-4 py-3 text-[14px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand'
