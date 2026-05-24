@@ -27,10 +27,11 @@ export async function GET(req: Request) {
     .from('beautician_providers')
     .select(PUBLIC_COLS)
     .eq('status', 'active')
-    // Reals before mocks (is_mock asc), then online > busy > offline, then newest first
+    // Reals before mocks (is_mock asc), then newest first. Availability
+    // rank is applied in JS below — Postgres text order would sort
+    // alphabetically (busy < offline < online), surfacing busy first.
     .or('is_mock.eq.false,mock_hidden_at.is.null')
     .order('is_mock', { ascending: true })
-    .order('availability', { ascending: true })
     .order('created_at', { ascending: false })
     .limit(200)
 
@@ -42,5 +43,14 @@ export async function GET(req: Request) {
 
   const { data, error } = await q
   if (error) return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
-  return NextResponse.json({ providers: data ?? [] })
+
+  const rank: Record<string, number> = { online: 0, busy: 1, offline: 2 }
+  type SortRow = { is_mock: boolean | null; availability: string }
+  const providers = ((data ?? []) as unknown as SortRow[]).slice().sort((a, b) => {
+    const am = a.is_mock ? 1 : 0
+    const bm = b.is_mock ? 1 : 0
+    if (am !== bm) return am - bm
+    return (rank[a.availability] ?? 9) - (rank[b.availability] ?? 9)
+  })
+  return NextResponse.json({ providers })
 }

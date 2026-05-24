@@ -81,7 +81,16 @@ export default async function TourGuideFeedPage({
   const mocks: Row[] = ((mockRows as Omit<Row,'review_count'|'is_mock'>[] | null) ?? []).map((r) => ({
     ...r, review_count: 0, is_mock: true,
   }))
-  const list: Row[] = [...reals, ...mocks]
+  // Reals first, then mocks; within each bucket: online > busy > offline.
+  // JS sort is stable so the rating/created_at orders from the queries
+  // above are preserved within each availability tier.
+  const availabilityRank: Record<string, number> = { online: 0, busy: 1, offline: 2 }
+  const list: Row[] = [...reals, ...mocks].sort((a, b) => {
+    const am = a.is_mock ? 1 : 0
+    const bm = b.is_mock ? 1 : 0
+    if (am !== bm) return am - bm
+    return (availabilityRank[a.availability] ?? 9) - (availabilityRank[b.availability] ?? 9)
+  })
 
   return (
     <>

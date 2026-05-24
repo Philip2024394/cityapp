@@ -26,7 +26,6 @@ export async function GET(req: Request) {
     .eq('status', 'active')
     .or('is_mock.eq.false,mock_hidden_at.is.null')
     .order('is_mock', { ascending: true })
-    .order('availability', { ascending: true })
     .order('created_at', { ascending: false })
     .limit(200)
 
@@ -37,5 +36,18 @@ export async function GET(req: Request) {
 
   const { data, error } = await q
   if (error) return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
-  return NextResponse.json({ providers: data ?? [] })
+
+  // Availability rank: online > busy > offline. Postgres text order is
+  // alphabetical (busy < offline < online) which puts busy at the top —
+  // wrong. JS sort is stable so created_at desc and is_mock first are
+  // preserved within each availability bucket.
+  const rank: Record<string, number> = { online: 0, busy: 1, offline: 2 }
+  type SortRow = { is_mock: boolean | null; availability: string }
+  const providers = ((data ?? []) as unknown as SortRow[]).slice().sort((a, b) => {
+    const am = a.is_mock ? 1 : 0
+    const bm = b.is_mock ? 1 : 0
+    if (am !== bm) return am - bm
+    return (rank[a.availability] ?? 9) - (rank[b.availability] ?? 9)
+  })
+  return NextResponse.json({ providers })
 }
