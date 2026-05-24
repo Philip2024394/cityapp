@@ -601,12 +601,24 @@ function FeaturedDriverCard({
 
           {/* TOP-LEFT: brand + model + cc inline (e.g. "HONDA CB150R CC150").
               Sits opposite the flip button so the corner is balanced. */}
-          <div className="absolute top-3 left-4 z-20 max-w-[60%]">
+          <div className="absolute top-3 left-4 z-20 max-w-[55%]">
             <div className="text-[15px] font-black text-black leading-tight truncate uppercase tracking-wide">
               {(rider.bike.make || '—')} {(rider.bike.model || '')}
               {rider.bike.cc != null && <> CC{rider.bike.cc}</>}
             </div>
           </div>
+
+          {/* TOP-RIGHT (above flip button): plate. Indonesian customers
+              verify the driver by plate when the bike arrives — same
+              muscle memory as Gojek/Grab. Mirrors the brand on top-left. */}
+          {rider.bike.plate && (
+            <div className="absolute top-12 right-3 z-20 text-right max-w-[45%]">
+              <div className="text-[9px] uppercase tracking-wider font-extrabold text-black/55">Plate</div>
+              <div className="text-[13px] font-black text-black leading-tight truncate font-mono">
+                {rider.bike.plate}
+              </div>
+            </div>
+          )}
 
           {/* Bike hero photo — max-size with top + bottom padding reserving
               the caption rows. Centered, object-contain so the bike fits
@@ -625,14 +637,26 @@ function FeaturedDriverCard({
             />
           </div>
 
-          {/* BOTTOM line — colour · manual/automatic · year, all black
-              text directly on the yellow back panel. No container. */}
+          {/* BOTTOM line — colour · manual/automatic · year [· 📦 BOX].
+              Top box chip surfaces parcel/food delivery capability —
+              decisive signal for those service bookings. */}
           <div className="absolute bottom-3 left-0 right-0 px-4 flex items-center justify-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-black">
             {rider.bike.color && <span className="truncate">{rider.bike.color}</span>}
             {rider.bike.color && transmissionLabel && <span className="text-black/40">·</span>}
             {transmissionLabel && <span className="whitespace-nowrap">{transmissionLabel}</span>}
             {(rider.bike.color || transmissionLabel) && rider.bike.year && <span className="text-black/40">·</span>}
             {rider.bike.year && <span className="whitespace-nowrap">{rider.bike.year}</span>}
+            {rider.bike.hasBox && (
+              <>
+                <span className="text-black/40">·</span>
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 whitespace-nowrap text-[11px]"
+                  style={{ background: '#0A0A0A', color: '#FACC15' }}
+                >
+                  <span aria-hidden>📦</span> Box
+                </span>
+              </>
+            )}
           </div>
         </div>
 
