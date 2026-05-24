@@ -12,7 +12,7 @@ import { fireAlertServer } from '@/lib/ops/alert'
 //
 // IMPORTANT: configure this URL in Midtrans Dashboard → Settings →
 // Configuration → Payment Notification URL:
-//   https://cityrider.id/api/payments/snap/webhook
+//   https://cityriders.id/api/payments/snap/webhook
 //
 // Signature scheme (sha512):
 //   sha512(order_id + status_code + gross_amount + server_key)

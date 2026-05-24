@@ -17,7 +17,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // reconnect — so the location stream itself is resilient.
 //
 // PRODUCTION URL — canonical: cityriders.id
-// `cityrider.streetlocal.live` is the legacy Vercel-issued domain; once DNS
+// `cityriders.streetlocal.live` is the legacy Vercel-issued domain; once DNS
 // for cityriders.id points at Vercel and the cert provisions, that becomes
 // canonical and the streetlocal.live subdomain 301s to it. Override via
 // CAPACITOR_SERVER_URL env at build time if you need to test against a

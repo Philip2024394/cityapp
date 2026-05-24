@@ -216,11 +216,11 @@ export default function PlaceCard({
               w-[110px] inline-flex items-center justify-center gap-1 whitespace-nowrap
               rounded-lg
               px-2 py-1
-              text-[11px] font-extrabold uppercase tracking-wider text-bg
-              bg-gradient-to-r from-brand to-brand2
-              border border-black/85
-              shadow-[0_4px_12px_rgba(250,204,21,0.30)]
-              group-hover:from-brand2 group-hover:to-brand
+              text-[11px] font-extrabold uppercase tracking-wider text-ink
+              bg-bg
+              border border-brand/40
+              shadow-[0_4px_12px_rgba(0,0,0,0.55)]
+              group-hover:bg-black group-hover:border-brand/70
               transition-all
             "
             style={{ transform: 'translateY(2px)' }}
@@ -231,7 +231,7 @@ export default function PlaceCard({
               aria-hidden
               loading="lazy"
               className="h-4 w-auto shrink-0 -ml-0.5"
-              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.35))' }}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.55))' }}
             />
             <span className="whitespace-nowrap">Visit Now</span>
             <ArrowRight className="w-3 h-3 shrink-0" aria-hidden />

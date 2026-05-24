@@ -6,7 +6,7 @@ import PreloadTiles from '@/components/pwa/PreloadTiles'
 import CapacitorBoot from '@/components/pwa/CapacitorBoot'
 import DevToolbar from '@/components/dev/DevToolbar'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityrider.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

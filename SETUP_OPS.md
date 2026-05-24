@@ -26,7 +26,7 @@ Cityrider uses Supabase Auth phone OTP for signup + login. The code is wired cor
 
 ```bash
 # From a real Indonesian mobile, visit:
-https://cityrider.id/signup
+https://cityriders.id/signup
 
 # Enter your phone in 6281... format. You should receive an OTP within 10 s.
 ```
@@ -60,9 +60,9 @@ This is what flips you from "admin manually marks paid" to "drivers self-renew a
    - `MIDTRANS_PRODUCTION=true` once you want to bill real money (default: sandbox)
 6. Configure the webhook URL: **Settings** → **Configuration** → **Payment Notification URL**:
    ```
-   https://cityrider.id/api/payments/snap/webhook
+   https://cityriders.id/api/payments/snap/webhook
    ```
-   Health check: `GET https://cityrider.id/api/payments/snap/webhook` should return `{"ok":true,"route":"..."}`.
+   Health check: `GET https://cityriders.id/api/payments/snap/webhook` should return `{"ok":true,"route":"..."}`.
 
 ### Verify (sandbox first)
 
@@ -134,7 +134,7 @@ MIDTRANS_PRODUCTION=true           ← when ready for real money
 CRON_SECRET                        ← server only
 
 # OSRM road-routing (OPTIONAL — falls back to haversine × 1.3)
-OSRM_BASE_URL                      ← e.g. https://osrm.cityrider.id
+OSRM_BASE_URL                      ← e.g. https://osrm.cityriders.id
 
 # Affiliate session secret (REQUIRED for /api/affiliate/* routes after
 # migration 0018 — generate a random 32+ char string)
@@ -179,13 +179,13 @@ docker run -d --restart=always -p 5000:5000 \
   osrm/osrm-backend osrm-routed --algorithm mld /data/indonesia-latest.osrm
 ```
 
-Front this with nginx + Let's Encrypt at `https://osrm.cityrider.id`. Then set `OSRM_BASE_URL=https://osrm.cityrider.id` in Vercel env. No code change needed; the proxy auto-detects and starts using OSRM on the next quote.
+Front this with nginx + Let's Encrypt at `https://osrm.cityriders.id`. Then set `OSRM_BASE_URL=https://osrm.cityriders.id` in Vercel env. No code change needed; the proxy auto-detects and starts using OSRM on the next quote.
 
 ### Health check
 
 ```bash
 # Yogya → Bantul (~10 km)
-curl 'https://osrm.cityrider.id/route/v1/driving/110.3657,-7.7928;110.3287,-7.8881?overview=false'
+curl 'https://osrm.cityriders.id/route/v1/driving/110.3657,-7.7928;110.3287,-7.8881?overview=false'
 # Should return code='Ok' with routes[0].distance ≈ 11000 (metres)
 ```
 
@@ -233,7 +233,7 @@ Operational (you do these):
 - [ ] Twilio account funded with at least Rp 5 M (covers ~14,000 SMS).
 - [ ] Midtrans webhook URL configured + tested with sandbox.
 - [ ] Domain DNS pointing at Vercel.
-- [ ] `cityrider.id` SSL active (auto via Vercel).
+- [ ] `cityriders.id` SSL active (auto via Vercel).
 - [ ] Plausible / PostHog analytics script if you want traffic data.
 - [ ] First batch of admin users: insert into `profiles` with `role='admin'` directly via SQL.
 

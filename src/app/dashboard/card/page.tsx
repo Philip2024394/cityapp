@@ -28,7 +28,7 @@ export default function BusinessCardPage() {
   const profileUrl = ME
     ? (typeof window !== 'undefined'
         ? `${window.location.origin}/r/${ME.slug}`
-        : `https://cityrider.id/r/${ME.slug}`)
+        : `https://cityriders.id/r/${ME.slug}`)
     : ''
 
   function onPrint() {

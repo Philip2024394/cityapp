@@ -9,11 +9,15 @@ import QRCode from 'qrcode'
 //
 // Used by the public driver page share row and (later) the PDF sticker
 // generator. The "text" param should typically be an absolute URL like
-// https://cityrider.id/r/wayan-bali.
+// https://cityriders.id/r/wayan-bali.
 // ============================================================================
 
-export const dynamic = 'force-static'
-export const revalidate = 31_536_000 // 1 year
+// Dynamic — the SVG is a pure function of the `text` query param, but
+// `force-static` in Next 15 zeroes out searchParams at request time
+// (returns 400 every time). We instead get long-lived caching via the
+// Cache-Control header below, which is honoured by the browser and any
+// upstream CDN.
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -26,11 +30,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'text too long (max 1000)' }, { status: 400 })
   }
 
+  // Solid white background (not transparent) so the QR is readable on any
+  // surface — dark dashboards, printed cards, social shares. Scanners
+  // expect a quiet zone of contrast around the code; transparent broke
+  // visibility against the dark partner-dashboard scrim.
   const svg = await QRCode.toString(text, {
     type: 'svg',
     errorCorrectionLevel: 'M',
     margin: 1,
-    color: { dark: '#000000', light: '#00000000' }, // transparent background
+    color: { dark: '#000000', light: '#FFFFFF' },
   })
 
   return new NextResponse(svg, {

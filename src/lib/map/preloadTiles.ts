@@ -105,6 +105,18 @@ type NetworkInformationLike = {
 
 function shouldSkipPreload(): boolean {
   if (typeof navigator === 'undefined') return true
+
+  // Skip when PMTiles is the configured tile source — pmtiles serves via
+  // HTTP Range requests against a single archive, not XYZ tile fetches,
+  // so pre-warming the openfreemap XYZ URLs is pure waste (and floods
+  // the dev console with CORS errors since openfreemap doesn't send
+  // Access-Control-Allow-Origin). This honours the same env contract
+  // resilientStyle.ts uses.
+  if (process.env.NEXT_PUBLIC_PMTILES_URL) return true
+
+  // Dev kill switch — silences the openfreemap CORS storm completely.
+  if (process.env.NEXT_PUBLIC_MAPS_OFFLINE === 'true') return true
+
   // Honor Save-Data + slow-link hints. Indonesian users on prepaid plans
   // care more about MB used than instant tiles — respect that signal.
   const conn = (navigator as Navigator & { connection?: NetworkInformationLike }).connection

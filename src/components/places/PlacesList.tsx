@@ -216,10 +216,17 @@ export default function PlacesList({
         </div>
 
         {/* Yellow city-picker button — opens the city drawer. Drawer is
-            rendered below so we keep state in this component. */}
+            rendered below so we keep state in this component.
+            Blurs the trigger immediately to avoid vaul's aria-hidden
+            on <main> trapping focus on this button (see CategoryChips
+            for the full explanation). */}
         <button
           type="button"
-          onClick={() => { haptic.tap(); setCityPickerOpen(true) }}
+          onClick={(e) => {
+            (e.currentTarget as HTMLButtonElement).blur()
+            haptic.tap()
+            setCityPickerOpen(true)
+          }}
           aria-label={`Change city (currently ${cityLabel(currentCity)})`}
           className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-bg bg-gradient-to-br from-brand to-brand2 shadow-[0_4px_14px_rgba(250,204,21,0.30)] active:scale-95 transition"
         >

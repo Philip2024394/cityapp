@@ -1,25 +1,33 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   Menu, X as XIcon,
   LayoutDashboard, Bike, User, DollarSign, Package, Flame, Gift, Users,
   IdCard, MessageSquare, ClipboardList, Scale, Star, LogOut, Briefcase,
+  Handshake, QrCode,
+  Clock, AlertTriangle, CheckCircle2, ListChecks, Wallet,
+  Sparkles, Store, UserCog,
+  Compass, Map, KeyRound,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
 // ============================================================================
-// AppDrawer — RIGHT-side slide-in DRIVER navigation.
-// Opens from the header burger on driver-area pages only — never on
-// customer-facing surfaces. Single-section, driver-tools only.
+// AppDrawer — RIGHT-side slide-in navigation.
+// Two variants — pass `variant='driver'` (default) for the driver toolkit
+// or `variant='partner'` to expose the (much smaller) partner-program
+// surface only. Used by AppNav based on the route it's mounted on.
 // ============================================================================
 
-const DRIVER_NAV_ITEMS: ReadonlyArray<{
+type NavItem = {
   href: string
   label: string
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
-}> = [
+  external?: boolean
+}
+
+const DRIVER_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/dashboard',              label: 'Dashboard',          icon: LayoutDashboard },
   { href: '/profile',                label: 'Profile + bike',     icon: User },
   { href: '/pricing',                label: 'Pricing',            icon: DollarSign },
@@ -36,9 +44,87 @@ const DRIVER_NAV_ITEMS: ReadonlyArray<{
   { href: '/dashboard/legal',        label: 'Legal requirements', icon: Scale },
 ]
 
-export default function AppDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+const PARTNER_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/partner',                          label: 'Partner dashboard',  icon: LayoutDashboard },
+  { href: '/dashboard/partner/bookings?status=pending',  label: 'Pending bookings',   icon: Clock },
+  { href: '/dashboard/partner/bookings?status=overdue',  label: 'Overdue bookings',   icon: AlertTriangle },
+  { href: '/dashboard/partner/bookings?status=settled',  label: 'Settled bookings',   icon: CheckCircle2 },
+  { href: '/dashboard/partner/bookings?status=all',      label: 'All bookings',       icon: ListChecks },
+  { href: '/dashboard/partner/payout',                   label: 'Payout details',     icon: Wallet },
+  { href: '/partners',                                   label: 'Program overview',   icon: Handshake },
+  { href: '/partners/signup',                            label: 'Register new venue', icon: QrCode },
+]
+
+const MASSAGE_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/massage', label: 'Therapist dashboard', icon: UserCog },
+  { href: '/massage',           label: 'Marketplace',         icon: Store },
+  { href: '/massage/signup',    label: 'Register therapist',  icon: Sparkles },
+]
+
+const TOUR_GUIDE_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/tour-guide', label: 'Tour Guide dashboard', icon: Compass },
+  { href: '/tour',                 label: 'Tour marketplace',     icon: Map },
+  { href: '/tour/list/new',        label: 'List a new tour',      icon: Sparkles },
+]
+
+const RENTAL_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/rentals',  label: 'Rental dashboard',  icon: KeyRound },
+  { href: '/rent',               label: 'Rental marketplace', icon: Store },
+  { href: '/rent/list/new',      label: 'List a new bike',   icon: Sparkles },
+]
+
+type Variant = 'driver' | 'partner' | 'massage' | 'tour-guide' | 'rentals'
+const VARIANT_TITLE: Record<Variant, string> = {
+  driver:        'Driver menu',
+  partner:       'Partner menu',
+  massage:       'Therapist menu',
+  'tour-guide':  'Tour Guide menu',
+  rentals:       'Rental owner menu',
+}
+const VARIANT_LABEL: Record<Variant, string> = {
+  driver:        'Driver navigation',
+  partner:       'Partner navigation',
+  massage:       'Therapist navigation',
+  'tour-guide':  'Tour Guide navigation',
+  rentals:       'Rental owner navigation',
+}
+
+export default function AppDrawer({
+  open,
+  onClose,
+  variant = 'driver',
+}: {
+  open: boolean
+  onClose: () => void
+  variant?: Variant
+}) {
   const path = usePathname()
+  const searchParams = useSearchParams()
+  const currentSearch = searchParams?.toString() ?? ''
   const [email, setEmail] = useState<string | null>(null)
+  const items =
+    variant === 'partner'      ? PARTNER_NAV_ITEMS :
+    variant === 'massage'      ? MASSAGE_NAV_ITEMS :
+    variant === 'tour-guide'   ? TOUR_GUIDE_NAV_ITEMS :
+    variant === 'rentals'      ? RENTAL_NAV_ITEMS :
+    DRIVER_NAV_ITEMS
+
+  // Active match supports hrefs with query strings. Path piece must match
+  // (or be a prefix), and if the item carries a `?…` the current location's
+  // query string must contain those params. Lets us highlight the right
+  // bookings filter when multiple items share /dashboard/partner/bookings.
+  function isActive(href: string): boolean {
+    const [hrefPath, hrefQs = ''] = href.split('?')
+    const pathOk = path === hrefPath || path.startsWith(hrefPath + '/')
+    if (!pathOk) return false
+    if (!hrefQs) return true
+    const want = new URLSearchParams(hrefQs)
+    const have = new URLSearchParams(currentSearch)
+    for (const [k, v] of want.entries()) {
+      if (have.get(k) !== v) return false
+    }
+    return true
+  }
 
   useEffect(() => {
     const supabase = getBrowserSupabase()
@@ -89,7 +175,7 @@ export default function AppDrawer({ open, onClose }: { open: boolean; onClose: (
       <aside
         role="dialog"
         aria-modal="true"
-        aria-label="Driver navigation"
+        aria-label={VARIANT_LABEL[variant]}
         className="fixed top-0 right-0 bottom-0 z-[70] w-[82%] max-w-[340px] flex flex-col transition-transform"
         style={{
           background: 'rgba(15,15,20,0.97)',
@@ -102,7 +188,7 @@ export default function AppDrawer({ open, onClose }: { open: boolean; onClose: (
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-4 pt-safe h-14 shrink-0 border-b border-white/08">
           <div className="text-[13px] uppercase tracking-wider font-extrabold text-brand">
-            Driver menu
+            {VARIANT_TITLE[variant]}
           </div>
           <button
             onClick={onClose}
@@ -127,27 +213,23 @@ export default function AppDrawer({ open, onClose }: { open: boolean; onClose: (
             "ON" pill so the current location is unambiguous. */}
         <nav className="flex-1 overflow-y-auto px-3 py-3">
           <div className="space-y-1.5">
-            {DRIVER_NAV_ITEMS.map((item) => {
+            {items.map((item) => {
               const Icon = item.icon
-              const active = path === item.href || path.startsWith(item.href + '/')
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onClose}
-                  className="flex items-center gap-2.5 p-1 pr-2.5 rounded-lg transition active:scale-[0.99]"
-                  style={{
-                    background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
-                    color: '#0A0A0A',
-                    border: active
-                      ? '1px solid rgba(0,0,0,0.55)'
-                      : '1px solid rgba(0,0,0,0.20)',
-                    boxShadow: active
-                      ? '0 4px 12px rgba(250,204,21,0.35), 0 0 0 1.5px rgba(0,0,0,0.15) inset'
-                      : '0 2px 6px rgba(250,204,21,0.18)',
-                    minHeight: 44,
-                  }}
-                >
+              const active = !item.external && isActive(item.href)
+              const sharedClass = 'flex items-center gap-2.5 p-1 pr-2.5 rounded-lg transition active:scale-[0.99]'
+              const sharedStyle = {
+                background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
+                color: '#0A0A0A',
+                border: active
+                  ? '1px solid rgba(0,0,0,0.55)'
+                  : '1px solid rgba(0,0,0,0.20)',
+                boxShadow: active
+                  ? '0 4px 12px rgba(250,204,21,0.35), 0 0 0 1.5px rgba(0,0,0,0.15) inset'
+                  : '0 2px 6px rgba(250,204,21,0.18)',
+                minHeight: 44,
+              }
+              const inner = (
+                <>
                   <span
                     className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
                     style={{
@@ -169,6 +251,32 @@ export default function AppDrawer({ open, onClose }: { open: boolean; onClose: (
                       ON
                     </span>
                   )}
+                </>
+              )
+              if (item.external) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={sharedClass}
+                    style={sharedStyle}
+                  >
+                    {inner}
+                  </a>
+                )
+              }
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className={sharedClass}
+                  style={sharedStyle}
+                >
+                  {inner}
                 </Link>
               )
             })}
@@ -199,11 +307,23 @@ export default function AppDrawer({ open, onClose }: { open: boolean; onClose: (
 }
 
 /** Trigger button — drop into a header to open the drawer. */
-export function AppDrawerTrigger({ onClick }: { onClick: () => void }) {
+export function AppDrawerTrigger({
+  onClick,
+  variant = 'driver',
+}: {
+  onClick: () => void
+  variant?: Variant
+}) {
+  const label =
+    variant === 'partner'    ? 'Open partner menu' :
+    variant === 'massage'    ? 'Open therapist menu' :
+    variant === 'tour-guide' ? 'Open tour guide menu' :
+    variant === 'rentals'    ? 'Open rental owner menu' :
+    'Open driver menu'
   return (
     <button
       onClick={onClick}
-      aria-label="Open driver menu"
+      aria-label={label}
       className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-ink hover:bg-white/5 active:scale-95 transition"
     >
       <Menu className="w-5 h-5" strokeWidth={2.5} />

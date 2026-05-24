@@ -21,7 +21,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // ============================================================================
 
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/reverse'
-const USER_AGENT = 'CityRider/1.0 (cityrider.streetlocal.live)'
+const USER_AGENT = 'CityRider/1.0 (cityriders.streetlocal.live)'
 
 type LookupResponse = {
   lat: number

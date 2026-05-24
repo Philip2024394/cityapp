@@ -9,7 +9,7 @@ import type { MetadataRoute } from 'next'
 // crawler.
 // ============================================================================
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cityrider.id').replace(/\/$/, '')
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id').replace(/\/$/, '')
 
 export default function robots(): MetadataRoute.Robots {
   return {

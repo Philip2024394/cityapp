@@ -80,6 +80,17 @@ export function getResilientStyle(variant: 'positron' | 'dark'): Promise<MapStyl
   if (existing) return existing
 
   const promise = (async (): Promise<MapStyleSpec> => {
+    // DEV KILL SWITCH — when NEXT_PUBLIC_MAPS_OFFLINE=true we skip ALL
+    // tile-source fetches and render the bare dark canvas. Useful in
+    // dev to silence the openfreemap CORS-error storm (their tile
+    // endpoint doesn't send Access-Control-Allow-Origin, so every
+    // mount fires ~100 failed requests that take 1-2s each to time
+    // out). Production should leave this unset and rely on
+    // NEXT_PUBLIC_PMTILES_URL instead.
+    if (process.env.NEXT_PUBLIC_MAPS_OFFLINE === 'true') {
+      return emptyFallbackStyle(variant)
+    }
+
     const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL
     if (pmtilesUrl) {
       // PRIMARY: pmtiles + protomaps theme

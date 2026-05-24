@@ -131,8 +131,24 @@ export default function SignupPage() {
       setError(error.message)
       return
     }
-    // Drivers go through onboarding; customers go straight to discovery
-    router.push(role === 'driver' ? '/onboarding' : '/cari')
+    // Post-verify routing:
+    //   • ?next= URL param wins (used by /partners/signup gate to bring
+    //     hotel/villa signups back into the partner form)
+    //   • ?intent=partner → /partners/signup (canonical partner entry)
+    //   • Drivers → onboarding (subscription + bike profile)
+    //   • Customers → /cari (discovery)
+    let dest: string
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const next = (params.get('next') || '').trim()
+      const intent = (params.get('intent') || '').trim()
+      if (next && next.startsWith('/')) dest = next
+      else if (intent === 'partner')    dest = '/partners/signup'
+      else                              dest = role === 'driver' ? '/onboarding' : '/cari'
+    } catch {
+      dest = role === 'driver' ? '/onboarding' : '/cari'
+    }
+    router.push(dest)
     router.refresh()
   }
 

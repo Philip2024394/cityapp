@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 // runtime.
 // ============================================================================
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityrider.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
 
 const title = 'Contract drivers — find a regular delivery rider · City Rider'
 const description =

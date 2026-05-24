@@ -41,7 +41,7 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
     if (typeof window === 'undefined') return
     const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan City Rider — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali (Gojek/Grab masih potong 8% per Perpres 27/2026).
 
-Cek di cityrider.streetlocal.live`
+Cek di cityriders.streetlocal.live`
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }

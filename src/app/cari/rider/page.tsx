@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft, Star, ArrowRight } from 'lucide-react'
+import { Star, ArrowRight } from 'lucide-react'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
@@ -18,6 +18,7 @@ import { presenceLabel, presenceTier, presenceDotColor } from '@/lib/drivers/pre
 import { pingDriverContact } from '@/lib/notify/clientPing'
 import { logNav } from '@/lib/perf/navTiming'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+import PartnerBookingBadge from '@/components/rider/PartnerBookingBadge'
 
 // Customer-facing labels for the service-type toggle. Stable order so
 // the underline bar always slides over consistent positions.
@@ -221,7 +222,12 @@ function DriverResults() {
       toastTimerRef.current = setTimeout(() => setToast(null), 6000)
       return
     }
-    pingDriverContact(rider.id, 'cari_rider')
+    pingDriverContact(rider.id, 'cari_rider', {
+      fareIdr: fare,
+      pickupName,
+      dropoffName,
+      serviceType: filter,
+    })
     writePendingBooking({
       driverId: rider.id,
       driverSlug: rider.slug,
@@ -251,7 +257,7 @@ function DriverResults() {
 
   return (
     <>
-      <Header editTripHref={editTripHref} />
+      <Header />
 
       <main className="min-h-screen pb-16">
         <div className="max-w-xl mx-auto px-4 pt-3 space-y-4">
@@ -295,11 +301,13 @@ function DriverResults() {
                 {/* Converted from <button onClick={router.push}> to <Link prefetch>
                     2026-05 perf pass — same destination as the header
                     "Edit trip" link; lets Next prefetch /cari with the
-                    trip params so the back-nav is instant. */}
+                    trip params so the back-nav is instant.
+                    Restyled to a solid yellow button so it reads as an
+                    action (not a passive caption). */}
                 <Link
                   href={editTripHref}
                   prefetch
-                  className="text-[12px] font-bold text-muted hover:text-brand transition inline-flex items-center gap-1 pt-1"
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand text-bg text-[11px] font-extrabold uppercase tracking-wider hover:brightness-95 active:scale-95 transition self-start"
                 >
                   <span aria-hidden>✎</span> Edit trip
                 </Link>
@@ -335,6 +343,12 @@ function DriverResults() {
               </div>
             </div>
           </div>
+
+          {/* Partner attribution banner — renders only when a hotel/villa
+              QR has set partner_slug in localStorage (24h window). Tells
+              the guest they're being referred and that the driver will
+              owe a small commission to the venue. */}
+          <PartnerBookingBadge fareIdr={cheapest ?? null} />
 
           {/* Service-type toggle — Passenger / Parcel / Food. Yellow
               gradient bar underlines the active option. Replaces the
@@ -708,10 +722,13 @@ function FeaturedDriverCard({
   )
 }
 
-function Header({ editTripHref = '/cari' }: { editTripHref?: string }) {
+function Header() {
+  // The header's "Edit trip" link was removed per design — the inline
+  // yellow "Edit trip" button next to TUJUAN is now the single edit
+  // entry point. Logo is left-aligned alone; no right slot needed.
   return (
     <header className="sticky top-0 z-40 glass-strong pt-safe">
-      <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-xl mx-auto px-4 h-14 flex items-center">
         <div className="flex items-center gap-2">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
@@ -723,10 +740,6 @@ function Header({ editTripHref = '/cari' }: { editTripHref?: string }) {
             City <span className="gradient-text">Rider</span>
           </div>
         </div>
-        <Link href={editTripHref} className="flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink">
-          <ChevronLeft className="w-4 h-4" />
-          Edit trip
-        </Link>
       </div>
     </header>
   )

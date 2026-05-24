@@ -13,7 +13,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // just the static section. Better an incomplete sitemap than a build error.
 // ============================================================================
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cityrider.id').replace(/\/$/, '')
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id').replace(/\/$/, '')
 
 // Revalidate every 6 hours — Google re-crawls major sites at ~daily
 // cadence, so 6h captures fresh listings without hammering Supabase.

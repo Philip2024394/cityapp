@@ -2,7 +2,7 @@ import 'server-only'
 
 // Cross-origin allowlist for the affiliate proxy routes.
 // The landing app (Vite SPA hosting Affiliate.jsx) lives on a different
-// origin from cityrider.id, so the API needs explicit CORS allow-origin
+// origin from cityriders.id, so the API needs explicit CORS allow-origin
 // values. We never use the wildcard because that would expose the API
 // to any site embedding it.
 const ALLOWED_ORIGINS = [

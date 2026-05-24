@@ -98,6 +98,16 @@ export default function CategoryChips({
             <button
               type="button"
               aria-label="All categories"
+              // Blur the trigger as soon as it's tapped — vaul applies
+              // aria-hidden="true" to <main> when the drawer opens, and
+              // if THIS button still has focus inside main, the browser
+              // logs the "Blocked aria-hidden on an element because its
+              // descendant retained focus" WAI-ARIA warning. Blurring
+              // here moves focus off the button before vaul's state
+              // update fires, so by the time aria-hidden lands, nothing
+              // inside main is focused. Vaul's own focus trap then
+              // takes over inside Drawer.Content.
+              onClick={(e) => (e.currentTarget as HTMLButtonElement).blur()}
               className="shrink-0 ml-1 mb-1 w-11 h-11 self-center rounded-xl flex items-center justify-center text-bg bg-gradient-to-br from-brand to-brand2 shadow-[0_4px_14px_rgba(250,204,21,0.30)] active:scale-95 transition"
             >
               <Menu className="w-5 h-5" strokeWidth={2.75} />

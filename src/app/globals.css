@@ -189,6 +189,16 @@
     -webkit-backdrop-filter: none;
   }
 
+  /* Massage surface — the top AppNav header is transparent so it
+     doesn't add a black bar over the marketplace background image.
+     The City Rider brand text + drawer icon still float on the page. */
+  body[data-surface="massage"] header.glass-strong {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+  }
+
   /* Body text baseline 14px on driver pages.
      Overrides Tailwind arbitrary classes for sub-14 sizes — specificity
      of [attr] + class beats utility's single class. */

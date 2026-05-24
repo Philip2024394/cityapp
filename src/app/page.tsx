@@ -3,13 +3,15 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+import HeaderRoleMenu from '@/components/layout/HeaderRoleMenu'
 import { logNav } from '@/lib/perf/navTiming'
 
 // Service tiles — the primary CTA on landing. Routes:
 //   person / parcel / food → /cari?service=<id>
 //   rental                  → /rent (own marketplace, separate flow)
-// Order: Ride → Parcel → Food → Rental.
-type TileId = 'person' | 'parcel' | 'food' | 'rental'
+//   massage                 → /massage (sister marketplace, separate flow)
+// Order: Ride → Parcel → Food → Rental → Massage.
+type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'massage'
 const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img: string; href: string }> = [
   { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
@@ -23,6 +25,9 @@ const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img
   { id: 'rental', label: 'Bike Rental', sub: 'Self-ride · With driver',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledwrrssswdqw-removebg-preview.png?updatedAt=1778253308442',
     href: '/rent' },
+  { id: 'massage', label: 'Massage',    sub: 'Home & Hotel · 60/90/120 min',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledsssaaa-removebg-preview.png?updatedAt=1779390066960',
+    href: '/massage' },
 ]
 
 // Background map (dark Yogyakarta + 42 pulsing rider pings + autoPan) now
@@ -34,8 +39,6 @@ const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img
 // we wire next-intl across the rest of the app in a Phase 2 task.
 type Locale = 'id' | 'en'
 const STRINGS: Record<Locale, {
-  loginNav: string
-  signupNav: string
   pill: string
   h1Line1: string
   h1Line2: string
@@ -45,8 +48,6 @@ const STRINGS: Record<Locale, {
   trust: { commission: string; whatsapp: string; verified: string }
 }> = {
   id: {
-    loginNav: 'Login',
-    signupNav: 'Daftar',
     pill: 'Rider independen di kota kamu',
     h1Line1: 'Komunitas motor,',
     h1Line2: 'Indonesia.',
@@ -56,8 +57,6 @@ const STRINGS: Record<Locale, {
     trust: { commission: '0% komisi', whatsapp: 'WhatsApp', verified: 'Nomor WhatsApp ter-verifikasi' },
   },
   en: {
-    loginNav: 'Login',
-    signupNav: 'Sign up',
     pill: 'Independent riders in your city',
     h1Line1: 'Motorbike community,',
     h1Line2: 'Indonesia.',
@@ -133,8 +132,11 @@ export default function LandingPage() {
           Fixed viewport height + overflow-hidden so the landing never
           scrolls — the hero section flex-shrinks to fit. */}
 
-      {/* Top mini nav */}
-      <header className="relative z-20 pt-safe shrink-0">
+      {/* Top mini nav — z-50 so the Join dropdown stacks above the
+          hero (which is z-20). Without this, the dropdown opens but
+          sits BEHIND the service tiles because tiles render later in
+          the DOM at the same z-level. */}
+      <header className="relative z-50 pt-safe shrink-0">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
             <img
@@ -148,12 +150,18 @@ export default function LandingPage() {
             </div>
           </Link>
           <div className="flex items-center gap-1.5">
-            <Link href="/signup" className="text-[13px] font-extrabold text-bg bg-brand hover:bg-brand2 px-3 py-1.5 rounded-lg transition">
-              {t.signupNav}
-            </Link>
-            <Link href="/login" className="text-[13px] font-bold text-muted hover:text-ink px-3 py-1.5 rounded-lg hover:bg-white/5">
-              {t.loginNav}
-            </Link>
+            {/* Two dropdowns:
+                  • Sign in  → per-category dashboards + generic /login
+                  • Join     → per-category signups   + generic /signup
+                Both panels share styling — solid black, yellow border. */}
+            <HeaderRoleMenu
+              label={locale === 'id' ? 'Masuk' : 'Sign in'}
+              variant="signin"
+            />
+            <HeaderRoleMenu
+              label={locale === 'id' ? 'Gabung' : 'Join'}
+              variant="join"
+            />
           </div>
         </div>
       </header>

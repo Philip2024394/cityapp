@@ -11,7 +11,7 @@ import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import type { PlaceSuggestion } from '@/hooks/usePlaceSearch'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { TOUR_SERVICES, MAX_TOUR_SERVICES, type TourServiceId } from '@/data/tourServices'
-import { TOUR_LANGUAGES, type TourLanguageCode } from '@/data/tourLanguages'
+import { TOUR_LANGUAGES, MAIN_LANGUAGE_CODE, type TourLanguageCode } from '@/data/tourLanguages'
 
 // Same city list as the create form. Pre-fills from the existing city
 // value below; if the value isn't in the list (custom slug) we fall
@@ -64,7 +64,12 @@ export default function TourGuideEditForm({ row }: { row: Row }) {
   const [name, setName]         = useState(row.name)
   const [whatsapp, setWhatsApp] = useState(row.whatsapp_e164 || '')
   const [services, setServices] = useState<TourServiceId[]>((row.services ?? []) as TourServiceId[])
-  const [languages, setLanguages] = useState<TourLanguageCode[]>((row.languages?.length ? row.languages : ['id']) as TourLanguageCode[])
+  // Indonesian is the platform's main language — always present in the
+  // stored array even if the row was somehow saved without it.
+  const [languages, setLanguages] = useState<TourLanguageCode[]>(() => {
+    const fromRow = (row.languages ?? []) as TourLanguageCode[]
+    return fromRow.includes(MAIN_LANGUAGE_CODE) ? fromRow : [MAIN_LANGUAGE_CODE, ...fromRow]
+  })
   const [dayRate, setDayRate]   = useState<string>(row.day_rate_idr != null ? String(row.day_rate_idr) : '')
   const [notes, setNotes]       = useState<string>(row.notes ?? '')
   const [address, setAddress]   = useState<string>(row.address ?? '')
@@ -84,6 +89,9 @@ export default function TourGuideEditForm({ row }: { row: Row }) {
   }
 
   function toggleLanguage(code: TourLanguageCode) {
+    // Indonesian is non-removable — it's the platform's main language.
+    // Clicking the locked pill is a no-op.
+    if (code === MAIN_LANGUAGE_CODE) return
     setLanguages((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
   }
 
@@ -223,22 +231,37 @@ export default function TourGuideEditForm({ row }: { row: Row }) {
           </SectionCard>
 
           <SectionCard Icon={LanguagesIcon} title="Bahasa">
+            <p className="text-[12px] text-muted mb-2 leading-snug">
+              Bahasa Indonesia selalu aktif (wajib). Tambah bahasa lain yang kamu kuasai supaya
+              wisatawan internasional bisa menemukanmu lebih mudah.
+            </p>
             <div className="flex flex-wrap gap-2">
-              {TOUR_LANGUAGES.map((l) => (
-                <button
-                  key={l.code}
-                  type="button"
-                  onClick={() => toggleLanguage(l.code)}
-                  className="px-3 py-1.5 rounded-full text-[12px] font-extrabold transition border"
-                  style={{
-                    background: languages.includes(l.code) ? '#FACC15' : 'rgba(255,255,255,0.04)',
-                    color: languages.includes(l.code) ? '#0A0A0A' : '#fff',
-                    borderColor: languages.includes(l.code) ? '#FACC15' : 'rgba(255,255,255,0.10)',
-                  }}
-                >
-                  <span className="mr-1.5" aria-hidden>{l.flag}</span>{l.labelId}
-                </button>
-              ))}
+              {TOUR_LANGUAGES.map((l) => {
+                const active = languages.includes(l.code)
+                const locked = l.code === MAIN_LANGUAGE_CODE
+                return (
+                  <button
+                    key={l.code}
+                    type="button"
+                    onClick={() => toggleLanguage(l.code)}
+                    disabled={locked}
+                    aria-pressed={active}
+                    title={locked ? 'Bahasa utama — selalu aktif' : undefined}
+                    className="px-3 py-1.5 rounded-full text-[12px] font-extrabold transition border disabled:cursor-not-allowed"
+                    style={{
+                      background: active ? '#FACC15' : 'rgba(255,255,255,0.04)',
+                      color: active ? '#0A0A0A' : '#fff',
+                      borderColor: active ? '#FACC15' : 'rgba(255,255,255,0.10)',
+                      opacity: locked ? 0.95 : 1,
+                    }}
+                  >
+                    <span className="mr-1.5" aria-hidden>{l.flag}</span>{l.labelId}
+                    {locked && (
+                      <span className="ml-1.5 inline-flex items-center text-[9px] uppercase tracking-wider opacity-70">★</span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </SectionCard>
 

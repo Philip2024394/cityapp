@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, User, Flame, DollarSign, Package, Bike, CreditCard } from 'lucide-react'
+import { LayoutDashboard, User, Flame, DollarSign, Package, Bike, CreditCard, Receipt } from 'lucide-react'
 import { fetchMyAccountCached } from '@/lib/auth/client'
 
 const DRIVER_ITEMS = [
   { href: '/dashboard',           label: 'Home',     icon: LayoutDashboard },
   { href: '/dashboard/hotspots',  label: 'Hotspots', icon: Flame },
+  { href: '/dashboard/balances',  label: 'Owed',     icon: Receipt },
   { href: '/profile',             label: 'Profile',  icon: User },
   { href: '/pricing',             label: 'Pricing',  icon: DollarSign },
   { href: '/services',            label: 'Services', icon: Package },

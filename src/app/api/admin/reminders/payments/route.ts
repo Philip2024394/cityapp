@@ -38,7 +38,7 @@ type ReminderKind =
 type Plan = 'driver' | 'rental_company' | 'tour_guide'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cityrider.id'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cityriders.id'
 const RENEW_URL          = APP_URL + '/dashboard'
 const UPGRADE_URL        = APP_URL + '/rent/upgrade'
 const TOUR_UPGRADE_URL   = APP_URL + '/tour/upgrade'

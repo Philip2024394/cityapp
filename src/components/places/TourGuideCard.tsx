@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { MessageCircle, Star, MapPinned } from 'lucide-react'
 import { trackWaClick } from '@/lib/tracking/waClick'
-import { TOUR_LANGUAGES, type TourLanguage } from '@/data/tourLanguages'
+import { resolveDisplayLanguages } from '@/data/tourLanguages'
 import type { Rider } from '@/types/rider'
 
 // ============================================================================
@@ -18,15 +18,11 @@ function rateLabel(idr?: number | null): string {
   return `Rp ${idr.toLocaleString('en-US')}`
 }
 
-function pickLanguages(codes: string[] | undefined): TourLanguage[] {
-  if (!codes || codes.length === 0) return []
-  return codes
-    .map((c) => TOUR_LANGUAGES.find((l) => l.code === c))
-    .filter((l): l is TourLanguage => !!l)
-}
-
 export default function TourGuideCard({ driver }: { driver: Rider }) {
-  const languages = pickLanguages(driver.tourGuideLanguages)
+  // resolveDisplayLanguages guarantees Indonesian is index 0 even if
+  // the row's stored array omits it or has it later — Indonesian is
+  // the platform's main language, always shown first.
+  const languages = resolveDisplayLanguages(driver.tourGuideLanguages)
   const waText = encodeURIComponent(
     `Halo ${driver.name}! Saya tertarik tour 1 hari penuh (8 jam) bersama Anda lewat City Rider — bisa diskusi rute dan tempat-tempat yang bisa kita kunjungi?`,
   )
@@ -99,6 +95,35 @@ export default function TourGuideCard({ driver }: { driver: Rider }) {
           </span>
         )}
       </Link>
+
+      {/* Languages panel — right side of the profile image. Indonesian
+          always renders first (platform main language), then any add-on
+          languages the tour guide selected in the dashboard. */}
+      <div
+        className="absolute right-3 top-[68px] z-10 rounded-xl px-2 py-1.5 max-w-[42%]"
+        style={{
+          background: 'rgba(255,255,255,0.75)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+        }}
+      >
+        <div className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-black/70 leading-none mb-1">
+          Languages
+        </div>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          {languages.map((l, idx) => (
+            <span
+              key={l.code}
+              title={l.label}
+              aria-label={l.label}
+              className={`inline-flex items-center gap-0.5 text-[11px] font-bold leading-none ${idx === 0 ? 'text-black' : 'text-black/70'}`}
+            >
+              <span aria-hidden className="text-[12px]">{l.flag}</span>
+              <span>{l.label}</span>
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* Bottom info panel — day rate as the bold bottom-left headline,
           languages as flag chips on the sub-line. Contact CTA matches the

@@ -36,6 +36,14 @@ type Body = {
   driverId?: string
   customerAnonId?: string
   source?: 'cari_rider' | 'business' | 'profile_card'
+  // Partner Program attribution (optional). If the customer arrived via a
+  // hotel/villa QR code or partner link, these fields ride along so we can
+  // write a partner_bookings row and credit the partner with 8%.
+  partnerSlug?: string
+  fareIdr?: number
+  pickupName?: string
+  dropoffName?: string
+  serviceType?: string
 }
 
 type DriverRow = {
@@ -138,25 +146,90 @@ export async function POST(req: Request) {
   // Pull driver's display name so the push body is human-readable.
   const { data: driverRow } = await admin
     .from('drivers')
-    .select('user_id, name, city, business_name')
+    .select('user_id, name, city, business_name, partner_program_status')
     .eq('user_id', driverId)
     .maybeSingle()
-  const driver = driverRow as DriverRow | null
+  const driver = driverRow as (DriverRow & { partner_program_status?: string }) | null
   const customerArea = source === 'business' ? 'a business buyer' : 'a customer'
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Partner Program attribution
+  // If the guest arrived via a hotel/villa QR code (partnerSlug set in
+  // localStorage by /lib/partners/attribution and posted here by the
+  // Contact button), look up the partner, write a partner_bookings row,
+  // and enrich the push so the driver sees "FROM HOTEL X · Komisi Rp X".
+  // We skip silently on any error — attribution is best-effort and must
+  // never block the customer's wa.me handoff.
+  // ──────────────────────────────────────────────────────────────────────
+  let partnerInfo: { name: string; commission_idr: number } | null = null
+  const partnerSlug = typeof body.partnerSlug === 'string'
+    ? body.partnerSlug.trim().toLowerCase().slice(0, 64)
+    : ''
+  const fareIdr = typeof body.fareIdr === 'number' && body.fareIdr > 0
+    ? Math.round(body.fareIdr)
+    : null
+
+  if (partnerSlug && fareIdr && /^[a-z0-9_-]+$/.test(partnerSlug)) {
+    // Eligibility gate — a suspended driver is invisible to partner-QR
+    // attribution. They can still be contacted directly; they just don't
+    // accrue more partner debt while in the penalty box.
+    const eligible = driver?.partner_program_status !== 'suspended'
+    if (eligible) {
+      const { data: partnerRow } = await admin
+        .from('partners')
+        .select('id, name, commission_rate, status')
+        .eq('slug', partnerSlug)
+        .maybeSingle()
+      if (partnerRow && partnerRow.status === 'active') {
+        const rate = Number(partnerRow.commission_rate) || 0.08
+        const commission = Math.round(fareIdr * rate)
+        const { error: insErr } = await admin.from('partner_bookings').insert({
+          partner_id: partnerRow.id,
+          driver_user_id: driverId,
+          pickup_name: (body.pickupName || '').slice(0, 200) || null,
+          dropoff_name: (body.dropoffName || '').slice(0, 200) || null,
+          service_type: (body.serviceType || '').slice(0, 32) || null,
+          fare_idr: fareIdr,
+          commission_idr: commission,
+          rider_anon_id: customerAnonId,
+        })
+        if (!insErr) {
+          partnerInfo = { name: partnerRow.name, commission_idr: commission }
+        }
+      }
+    }
+  }
+
+  // Build the push body. Partner-attributed bookings get a louder, more
+  // explicit title so the driver knows commission is on the line BEFORE
+  // they accept the WhatsApp handover.
+  const idr = (n: number) => `Rp ${n.toLocaleString('id-ID')}`
+  const pushTitle = partnerInfo
+    ? `Booking dari ${partnerInfo.name}`
+    : 'New booking inquiry'
+  const pushBody = partnerInfo
+    ? `Komisi mitra ${idr(partnerInfo.commission_idr)} — buka WhatsApp sekarang`
+    : `${customerArea} just tapped Contact — check WhatsApp now`
 
   // Fire-and-forget — don't await. The customer's wa.me handoff on the
   // client side should not wait for FCM delivery.
   void sendDriverPush(driverId, {
-    title: 'New booking inquiry',
-    body: `${customerArea} just tapped Contact — check WhatsApp now`,
+    title: pushTitle,
+    body: pushBody,
     data: {
-      kind: 'contact_ping',
+      kind: partnerInfo ? 'partner_booking' : 'contact_ping',
       pingId,
       source,
+      ...(partnerInfo ? { partnerName: partnerInfo.name, commissionIdr: String(partnerInfo.commission_idr) } : {}),
     },
   }).catch(() => {
     // swallow — telemetry not yet wired
   })
 
-  return NextResponse.json({ ok: true, pingId, driver: driver ? { name: driver.name } : null })
+  return NextResponse.json({
+    ok: true,
+    pingId,
+    driver: driver ? { name: driver.name } : null,
+    partner: partnerInfo,
+  })
 }

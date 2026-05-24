@@ -448,29 +448,28 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                   </button>
                 )
               })}
-              <button
-                type="button"
-                onClick={() => { setPlacesOpen(true); haptic.tap() }}
-                className={`relative w-full rounded-xl text-center py-2 px-1.5 flex flex-col items-center gap-1 active:scale-95 transition ${showPulseHint ? 'cr-service-tile-pulse' : ''}`}
-                style={{
-                  background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
-                  border: '2px solid #FACC15',
-                  boxShadow: '0 4px 12px rgba(127,29,29,0.45)',
-                }}
-              >
-                {/* Same dark-red + yellow-rim look as the Reviews button
-                    above. Places stays a picker (no active state) — the
-                    bike/parcel/food tiles keep ownership of the green dot. */}
-                <img
-                  src={PLACES_TILE_IMAGE}
-                  alt=""
-                  className="h-9 w-auto object-contain"
-                  loading="eager"
-                />
-                <div className="text-[11px] font-extrabold text-white">
+              {/* Places button — matches the Saved pill design (same
+                  dark-red gradient, yellow rim, uppercase tracked text,
+                  small Lucide icon). Centered inside its grid cell so
+                  the row's visual rhythm with the bike/parcel/food tiles
+                  is preserved. */}
+              <div className={`flex items-center justify-center ${showPulseHint ? 'cr-service-tile-pulse' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => { setPlacesOpen(true); haptic.tap() }}
+                  aria-label="Pick a place"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
+                  style={{
+                    background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
+                    border: '2px solid #FACC15',
+                    boxShadow: '0 4px 12px rgba(127,29,29,0.45)',
+                    minHeight: 26,
+                  }}
+                >
+                  <MapPin className="w-3 h-3" strokeWidth={2.5} style={{ color: '#FACC15' }} />
                   Places
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
           )
         })()}
@@ -539,11 +538,19 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
              stands out as the action terminus against the three
              yellow controls. */
           <div className="space-y-2">
-            {/* PICKUP TILE — yellow gradient, label + autocomplete with
-                a dark-red GPS leftSlot button (mirrors /cari placement
-                so muscle memory carries between booking surfaces). */}
+            {/* PICKUP TILE — yellow gradient + brand watermark overlay,
+                label + autocomplete with a dark-red GPS leftSlot button
+                (mirrors /cari placement so muscle memory carries between
+                booking surfaces). The PNG sits over the gradient with
+                low opacity so the yellow still reads as primary. */}
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
+              style={{
+                backgroundImage: "url('https://ik.imagekit.io/nepgaxllc/Untitledsssxx-removebg-preview.png?updatedAt=1779200415319'), linear-gradient(to right, #FACC15, #EAB308)",
+                backgroundRepeat: 'no-repeat, no-repeat',
+                backgroundPosition: 'right center, left center',
+                backgroundSize: 'contain, cover',
+              }}
             >
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
@@ -676,11 +683,19 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               )
             })()}
 
-            {/* DROP OFF TILE — same autocomplete pattern as pickup.
-                Right side has the Saved-places chip (mirrors /cari) for
-                one-tap drop-off from the customer's saved list. */}
+            {/* DROP OFF TILE — same autocomplete pattern as pickup,
+                same brand watermark overlay so both ticket tiles read
+                as a matched pair. Right side has the Saved-places chip
+                (mirrors /cari) for one-tap drop-off from the customer's
+                saved list. */}
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
+              style={{
+                backgroundImage: "url('https://ik.imagekit.io/nepgaxllc/Untitledsssxx-removebg-preview.png?updatedAt=1779200415319'), linear-gradient(to right, #FACC15, #EAB308)",
+                backgroundRepeat: 'no-repeat, no-repeat',
+                backgroundPosition: 'right center, left center',
+                backgroundSize: 'contain, cover',
+              }}
             >
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
@@ -788,7 +803,12 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 // as /cari/rider — was previously missing on this page so
                 // drivers booked via /r/[slug] got the WhatsApp message
                 // with no notification sound. Fixed 2026-05.
-                pingDriverContact(rider.id, 'profile_card')
+                pingDriverContact(rider.id, 'profile_card', {
+                  fareIdr: quote?.fare ?? 0,
+                  pickupName: pickupLabel || 'My location',
+                  dropoffName: dropoffLabel || 'Destination',
+                  serviceType: service ?? undefined,
+                })
                 // Hand off to the post-WhatsApp waiting screen — same UX
                 // surface used by /cari/rider. The conversation continues
                 // on WhatsApp; this screen is only for the customer's

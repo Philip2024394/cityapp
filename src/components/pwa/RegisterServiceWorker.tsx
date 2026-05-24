@@ -18,6 +18,26 @@ export default function RegisterServiceWorker() {
     if (typeof window === 'undefined') return
     if (!('serviceWorker' in navigator)) return
 
+    // ── DEV-MODE: never register, and ACTIVELY UNREGISTER any existing
+    //    service worker + clear all caches. A stale SW from a previous
+    //    session intercepts dev requests and serves cached HTML/JS, so
+    //    Turbopack rebuilds don't show up in the browser. This kills it.
+    if (process.env.NODE_ENV !== 'production') {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => {
+          r.unregister().then((ok) => {
+            if (ok) console.log('[pwa-dev] unregistered stale service worker')
+          })
+        })
+      }).catch(() => { /* swallow */ })
+      if (typeof caches !== 'undefined') {
+        caches.keys().then((keys) => {
+          keys.forEach((k) => caches.delete(k))
+        }).catch(() => { /* swallow */ })
+      }
+      return
+    }
+
     const onLoad = () => {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })

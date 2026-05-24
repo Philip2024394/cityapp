@@ -32,12 +32,12 @@ $env:ANDROID_HOME
 ### Production URL — set before first build
 
 `capacitor.config.ts` reads `CAPACITOR_SERVER_URL` if set, else falls
-back to `https://cityrider.streetlocal.live`. Update that fallback (or
+back to `https://cityriders.streetlocal.live`. Update that fallback (or
 set the env var) to your real Vercel deploy URL before running
 `cap sync`:
 
 ```powershell
-$env:CAPACITOR_SERVER_URL = "https://cityrider.streetlocal.live"
+$env:CAPACITOR_SERVER_URL = "https://cityriders.streetlocal.live"
 npm run cap:sync
 ```
 
@@ -148,7 +148,7 @@ above.
 ## After Play Store approval
 
 Driver onboarding flow:
-1. Driver visits `cityrider.streetlocal.live` (the live web app).
+1. Driver visits `cityriders.streetlocal.live` (the live web app).
 2. Banner offers "Install the Android app for better location tracking".
 3. Tap → opens Play Store listing → install.
 4. Open app → same login as web.

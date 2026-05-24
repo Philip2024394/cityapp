@@ -17,7 +17,7 @@ import type { PlaceCategory } from '@/lib/places/types'
 // HTML between updates while still picking up moderation changes quickly.
 export const revalidate = 300
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityrider.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
 
 async function loadPlace(slug: string) {
   const supabase = await getServerSupabase()

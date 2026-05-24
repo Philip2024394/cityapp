@@ -37,6 +37,11 @@
       "comment": "Daily PDP overdue sweep — reads streetlocal Supabase data_deletion_requests via service-role cross-Supabase client, emails streetlocallive@gmail.com if any are past 30-day SLA. Requires STREETLOCAL_SUPABASE_URL + STREETLOCAL_SUPABASE_SERVICE_KEY env vars on this Vercel project. 02:00 UTC = 09:00 WIB (morning send, runs after payment reminders).",
       "path": "/api/admin/pdp/overdue?secret=$CRON_SECRET",
       "schedule": "0 2 * * *"
+    },
+    {
+      "comment": "Weekly partner-program delinquency sweep — calls suspend_delinquent_partner_drivers() (0044). Any driver with a pending partner_booking past its 7-day due_at gets partner_program_status='suspended' until the partner marks paid in /dashboard/partner. Mondays 03:00 UTC = 10:00 WIB.",
+      "path": "/api/cron/partner-suspend?secret=$CRON_SECRET",
+      "schedule": "0 3 * * 1"
     }
   ]
 }

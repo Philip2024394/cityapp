@@ -271,7 +271,7 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
                 </div>
                 <p className="text-[14px] text-muted leading-relaxed mt-1">
                   Customer tidak bisa lihat posisimu sampai izin lokasi diaktifkan.
-                  Buka pengaturan browser/HP → izinkan lokasi untuk cityrider.id.
+                  Buka pengaturan browser/HP → izinkan lokasi untuk cityriders.id.
                 </p>
                 <a
                   href="https://support.google.com/chrome/answer/142065"
