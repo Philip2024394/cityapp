@@ -58,6 +58,22 @@ export default function PrivacyPage() {
             <li>Acknowledgement timestamp when the rider taps the in-app alert (used for response-time metrics on the public B2B score)</li>
             <li>Tour-guide opt-in fields: day rate (Rp/8h), spoken languages, optional pitch notes — shown on /places when displayed</li>
           </ul>
+          <p className="font-bold text-ink/90 mt-3">From service providers (massage, beautician, laundry, handyman, home clean):</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            <li>Display name, bio, profile photo URL, years of experience</li>
+            <li>WhatsApp number (visible publicly so customers can contact you direct)</li>
+            <li>City + service-area notes (where you operate)</li>
+            <li>Service-specific fields: massage type + duration prices, beautician package prices, laundry per-kg rates, handyman trade list + hour/day rates, cleaner hour/day rates</li>
+            <li>Availability (online / busy / offline) toggled from your dashboard</li>
+            <li><strong className="text-ink">KTP photo (government ID)</strong> — uploaded direct to a <strong className="text-ink">private</strong> Supabase Storage bucket (<code className="text-[12px] bg-white/5 px-1 rounded">ktp-images</code>), scoped to your own folder by row-level security. Visible only to admin verifiers; never returned by the public marketplace. Required to flip your profile from <em>pending</em> to <em>active</em>. Stored in Singapore region.</li>
+          </ul>
+          <p className="font-bold text-ink/90 mt-3">From partner venues (hotels, villas, restaurants):</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            <li>Venue name, type (hotel/villa/restaurant/etc.), address, city, lat/lng</li>
+            <li>Owner contact email, phone, WhatsApp — stored privately, used for payout coordination</li>
+            <li>Payout method + account details (bank account, QRIS, e-wallet) — stored privately, visible only to drivers who have an outstanding commission with you, and to admin support</li>
+            <li>Commission rate (default 8%, capped at 15%)</li>
+          </ul>
         </Section>
 
         <Section title="Customer accounts + saved places (optional)">
@@ -156,10 +172,16 @@ export default function PrivacyPage() {
           <ul className="list-disc list-inside space-y-1">
             <li>The content of WhatsApp conversations between riders and customers</li>
             <li>Customer payment details or trip transaction records (we never touch money)</li>
-            <li>Rider bank accounts</li>
-            <li>Government IDs (KTP, SIM, NPWP) — riders self-declare compliance</li>
+            <li>Rider bank accounts (we don&apos;t need them — drivers are paid by customers direct on WhatsApp)</li>
+            <li>SIM (driver licence) or NPWP (tax ID) — drivers self-declare compliance with local transport rules</li>
             <li>Browsing history outside the City Rider app</li>
           </ul>
+          <p className="text-muted text-[13px] mt-2">
+            Note on KTP: we DO collect a KTP photo from service providers (massage, beautician,
+            laundry, handyman, home clean) as anti-fraud / identity verification. It is stored
+            privately as described above and is never visible on the marketplace. We do not
+            collect KTP from riders, customers, or partner venues.
+          </p>
         </Section>
 
         <Section title="Sharing + third-party processors">
@@ -180,6 +202,9 @@ export default function PrivacyPage() {
         <Section title="Retention">
           <ul className="list-disc list-inside space-y-1">
             <li>Rider profile data: retained while subscription is active + 30 days after cancellation, then deleted unless legally required to keep longer</li>
+            <li>Service-provider profile data (massage / beautician / laundry / handyman / home clean): same as riders — active subscription + 30 days, then deleted</li>
+            <li><strong className="text-ink">KTP photos:</strong> retained while the provider account is active; deleted from the private bucket within 7 days of account deletion or as soon as the provider replaces it during signup. Verifiers may keep a hashed audit trail of the verification decision (no image) for fraud-defence purposes.</li>
+            <li>Partner venue data: retained while the partner status is &quot;active&quot;; listings (name, city, lat/lng) survive owner deletion as anonymised public records since they aren&apos;t personal data; payout + contact fields are deleted with the owner&apos;s account</li>
             <li>Quote events: 12 months for rider analytics, then anonymised</li>
             <li>Contact-ping events: 90 days for B2B response-time metric, then deleted</li>
             <li>Push notification tokens: pruned automatically after 90 days of inactivity; removed immediately on sign-out, app uninstall, or token rotation by the OS</li>
