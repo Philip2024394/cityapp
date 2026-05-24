@@ -621,7 +621,11 @@ function FeaturedDriverCard({
               alt={`${rider.bike.make || ''} ${rider.bike.model || ''}`.trim() || 'Bike'}
               loading="lazy"
               className="max-w-full max-h-full w-auto h-auto object-contain"
-              style={{ filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.30))' }}
+              style={{
+                filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.30))',
+                transform: 'scale(1.2)',
+                transformOrigin: 'center',
+              }}
             />
           </div>
 
