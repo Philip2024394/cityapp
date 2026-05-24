@@ -4,6 +4,9 @@ import { ChevronLeft, MapPin, Phone, MessageCircle, Bike, Banknote } from 'lucid
 import AppNav from '@/components/layout/AppNav'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { getServerSupabase } from '@/lib/supabase/server'
+import ProfileSlugIslands from '@/components/profile/ProfileSlugIslands'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
 
 // Public detail page for an approved bike rental listing. Server-rendered
 // for SEO. status='approved' filter prevents pending/rejected leakage.
@@ -44,6 +47,11 @@ type Row = {
   owner_whatsapp_e164: string
   rating: number | null
   review_count: number | null
+  // mig 0072 universal profile fields
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  operating_hours: Record<string, string> | null
 }
 
 function idr(n: number | null): string {
@@ -228,6 +236,18 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
               </a>
             </div>
           </section>
+
+          <div className="space-y-3 mb-4">
+            <ProfileSlugIslands
+              providerType="bike_rental"
+              providerId={r.id}
+              shareUrl={`${SITE_URL}/rent/${r.slug}`}
+              shareName={title}
+              shareText={`Lihat sewa motor ${title} di City Riders:`}
+              socials={{ instagram: r.instagram_url, tiktok: r.tiktok_url, facebook: r.facebook_url }}
+              hours={r.operating_hours}
+            />
+          </div>
 
           <PlatformDisclaimer variant="compact" />
         </div>

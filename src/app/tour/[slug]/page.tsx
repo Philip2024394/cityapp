@@ -6,6 +6,10 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import { findTourService } from '@/data/tourServices'
 import { getLanguageByCode } from '@/data/tourLanguages'
 import TourContactButton from '@/components/tour/TourContactButton'
+import ProfileGallery from '@/components/profile/ProfileGallery'
+import ProfileSlugIslands from '@/components/profile/ProfileSlugIslands'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +31,13 @@ type Row = {
   notes: string | null
   rating: number | null
   review_count: number
+  // mig 0072 universal profile fields
+  cover_image_url: string | null
+  gallery_image_urls: string[] | null
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  operating_hours: Record<string, string> | null
 }
 
 function waLink(e164: string, name: string): string {
@@ -46,7 +57,7 @@ export default async function TourGuideDetailPage({
 
   const { data: row } = await admin
     .from('tour_guide_listings')
-    .select('id, slug, name, whatsapp_e164, city, address, services, languages, day_rate_idr, notes, rating, review_count')
+    .select('id, slug, name, whatsapp_e164, city, address, services, languages, day_rate_idr, notes, rating, review_count, cover_image_url, gallery_image_urls, instagram_url, tiktok_url, facebook_url, operating_hours')
     .eq('slug', slug)
     .eq('status', 'approved')
     .maybeSingle()
@@ -165,6 +176,21 @@ export default async function TourGuideDetailPage({
             <p className="text-[13px] text-ink leading-snug whitespace-pre-wrap">{r.notes}</p>
           </section>
         )}
+
+        {/* GALLERY — mig 0072 universal field, capped at 12 by DB CHECK */}
+        <ProfileGallery photos={r.gallery_image_urls ?? []} title="Foto" />
+
+        {/* Client island — view tracker, social chips, operating hours,
+            share-sheet trigger. Renders nothing for fields not set. */}
+        <ProfileSlugIslands
+          providerType="tour_guide"
+          providerId={r.id}
+          shareUrl={`${SITE_URL}/tour/${r.slug}`}
+          shareName={r.name}
+          shareText={`Lihat tour guide ${r.name} di City Riders:`}
+          socials={{ instagram: r.instagram_url, tiktok: r.tiktok_url, facebook: r.facebook_url }}
+          hours={r.operating_hours}
+        />
       </main>
     </>
   )
