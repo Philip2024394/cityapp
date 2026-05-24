@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/laundry/slug'
+import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 
 export const runtime = 'nodejs'
 
@@ -62,6 +63,13 @@ export async function POST(req: Request) {
 
   const minKg = (body.min_kg !== null && body.min_kg !== undefined && Number.isFinite(body.min_kg) && body.min_kg >= 0) ? body.min_kg : null
   const turn  = (body.turnaround_hours !== null && body.turnaround_hours !== undefined && Number.isFinite(body.turnaround_hours) && body.turnaround_hours > 0 && body.turnaround_hours <= 168) ? Math.round(body.turnaround_hours) : null
+
+  if (body.profile_image_url && !isAllowedImageUrl(body.profile_image_url)) {
+    return NextResponse.json({ error: 'invalid_image_url' }, { status: 400 })
+  }
+  if (body.ktp_image_url && !isValidKtpRef(body.ktp_image_url, user.id)) {
+    return NextResponse.json({ error: 'invalid_ktp' }, { status: 400 })
+  }
 
   const base = slugify(name)
   let slug = base

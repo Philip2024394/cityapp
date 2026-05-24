@@ -11,10 +11,14 @@ export async function GET() {
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ error: 'service_role_not_configured' }, { status: 503 })
 
-  const { data } = await admin
+  const { data, error } = await admin
     .from('laundry_providers')
     .select('*')
     .eq('user_id', user.id)
     .maybeSingle()
+  if (error) {
+    console.error('[laundry/me] fetch failed', { code: error.code, message: error.message })
+    return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
+  }
   return NextResponse.json({ provider: data ?? null })
 }

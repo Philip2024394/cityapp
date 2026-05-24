@@ -10,6 +10,10 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ error: 'service_role_not_configured' }, { status: 503 })
-  const { data } = await admin.from('home_clean_providers').select('*').eq('user_id', user.id).maybeSingle()
+  const { data, error } = await admin.from('home_clean_providers').select('*').eq('user_id', user.id).maybeSingle()
+  if (error) {
+    console.error('[home-clean/me] fetch failed', { code: error.code, message: error.message })
+    return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
+  }
   return NextResponse.json({ provider: data ?? null })
 }

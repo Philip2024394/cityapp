@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/home-clean/slug'
+import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 
 export const runtime = 'nodejs'
 
@@ -53,6 +54,13 @@ export async function POST(req: Request) {
   const day    = priceOrNull(body.day_rate_idr    ?? null)
   if (hourly === null && day === null) {
     return NextResponse.json({ error: 'at_least_one_price' }, { status: 400 })
+  }
+
+  if (body.profile_image_url && !isAllowedImageUrl(body.profile_image_url)) {
+    return NextResponse.json({ error: 'invalid_image_url' }, { status: 400 })
+  }
+  if (body.ktp_image_url && !isValidKtpRef(body.ktp_image_url, user.id)) {
+    return NextResponse.json({ error: 'invalid_ktp' }, { status: 400 })
   }
 
   const base = slugify(name)

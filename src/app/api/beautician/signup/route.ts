@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/beautician/slug'
+import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 
 // POST /api/beautician/signup
 // Creates a beautician_providers row owned by the authenticated user.
@@ -65,6 +66,13 @@ export async function POST(req: Request) {
   const pHair   = numOrNull(body.price_hair_idr)
   if (pMakeup === null && pNail === null && pHair === null) {
     return NextResponse.json({ error: 'at_least_one_service' }, { status: 400 })
+  }
+
+  if (body.profile_image_url && !isAllowedImageUrl(body.profile_image_url)) {
+    return NextResponse.json({ error: 'invalid_image_url' }, { status: 400 })
+  }
+  if (body.ktp_image_url && !isValidKtpRef(body.ktp_image_url, user.id)) {
+    return NextResponse.json({ error: 'invalid_ktp' }, { status: 400 })
   }
 
   const base = slugify(name)

@@ -17,12 +17,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   }
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ error: 'service_role_not_configured' }, { status: 503 })
-  const { data } = await admin
+  const { data, error } = await admin
     .from('handyman_providers')
     .select(PUBLIC_COLS)
     .eq('slug', slug)
     .eq('status', 'active')
     .maybeSingle()
+  if (error) {
+    console.error('[handyman/slug/public] fetch failed', { code: error.code, message: error.message })
+    return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
+  }
   if (!data) return NextResponse.json({ error: 'not_found' }, { status: 404 })
   return NextResponse.json({ provider: data })
 }

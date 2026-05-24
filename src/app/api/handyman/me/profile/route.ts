@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { ALL_SPECIALTIES, MAX_HANDYMAN_SPECIALTIES } from '@/lib/handyman/types'
+import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 
 export const runtime = 'nodejs'
 
@@ -75,8 +76,16 @@ export async function POST(req: Request) {
   }
   if (typeof body.city === 'string')               update.city = body.city.trim() || null
   if (typeof body.service_area_notes === 'string') update.service_area_notes = body.service_area_notes.trim() || null
-  if (typeof body.profile_image_url === 'string')  update.profile_image_url = body.profile_image_url.trim() || null
-  if (typeof body.ktp_image_url === 'string')      update.ktp_image_url = body.ktp_image_url.trim() || null
+  if (typeof body.profile_image_url === 'string') {
+    const v = body.profile_image_url.trim() || null
+    if (v && !isAllowedImageUrl(v)) return NextResponse.json({ error: 'invalid_image_url' }, { status: 400 })
+    update.profile_image_url = v
+  }
+  if (typeof body.ktp_image_url === 'string') {
+    const v = body.ktp_image_url.trim() || null
+    if (v && !isValidKtpRef(v, user.id)) return NextResponse.json({ error: 'invalid_ktp' }, { status: 400 })
+    update.ktp_image_url = v
+  }
 
   if (Object.keys(update).length === 0) return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 })
   update.updated_at = new Date().toISOString()

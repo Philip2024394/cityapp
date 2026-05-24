@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/massage/slug'
+import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 
 // POST /api/massage/signup
 // Creates a massage_providers row owned by the authenticated user. Status
@@ -75,6 +76,13 @@ export async function POST(req: Request) {
     if (!Number.isFinite(v) || v < 0) {
       return NextResponse.json({ error: 'invalid_price' }, { status: 400 })
     }
+  }
+
+  if (body.profile_image_url && !isAllowedImageUrl(body.profile_image_url)) {
+    return NextResponse.json({ error: 'invalid_image_url' }, { status: 400 })
+  }
+  if (body.ktp_image_url && !isValidKtpRef(body.ktp_image_url, user.id)) {
+    return NextResponse.json({ error: 'invalid_ktp' }, { status: 400 })
   }
 
   // Generate a unique slug — append -2, -3 on collision.
