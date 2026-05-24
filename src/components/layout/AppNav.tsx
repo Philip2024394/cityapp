@@ -19,6 +19,7 @@ const MASSAGE_ROUTE_PREFIXES    = ['/dashboard/massage', '/massage']
 const BEAUTICIAN_ROUTE_PREFIXES = ['/dashboard/beautician', '/beautician']
 const LAUNDRY_ROUTE_PREFIXES    = ['/dashboard/laundry',    '/laundry']
 const HANDYMAN_ROUTE_PREFIXES   = ['/dashboard/handyman',   '/handyman']
+const HOME_CLEAN_ROUTE_PREFIXES = ['/dashboard/home-clean', '/home-clean']
 // Tour Guide & Rentals: keep the public marketplaces (/tour and /rent)
 // drawer-free for customers; only the dashboard + listing-creation flows
 // open the provider drawer.
@@ -45,6 +46,10 @@ function isHandymanRoute(pathname: string | null): boolean {
   if (!pathname) return false
   return HANDYMAN_ROUTE_PREFIXES.some((p) => matches(pathname, p))
 }
+function isHomeCleanRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  return HOME_CLEAN_ROUTE_PREFIXES.some((p) => matches(pathname, p))
+}
 function isPartnerRoute(pathname: string | null): boolean {
   if (!pathname) return false
   return PARTNER_ROUTE_PREFIXES.some((p) => matches(pathname, p))
@@ -65,12 +70,13 @@ function isDriverRoute(pathname: string | null): boolean {
   if (isBeauticianRoute(pathname)) return false
   if (isLaundryRoute(pathname))    return false
   if (isHandymanRoute(pathname))   return false
+  if (isHomeCleanRoute(pathname))  return false
   if (isTourGuideRoute(pathname))  return false
   if (isRentalRoute(pathname))     return false
   return DRIVER_ROUTE_PREFIXES.some((p) => matches(pathname, p))
 }
 
-type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'tour-guide' | 'rentals'
+type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals'
 
 export default function AppNav() {
   const path = usePathname()
@@ -80,16 +86,18 @@ export default function AppNav() {
   const beauticianRoute = isBeauticianRoute(path)
   const laundryRoute    = isLaundryRoute(path)
   const handymanRoute   = isHandymanRoute(path)
+  const homeCleanRoute  = isHomeCleanRoute(path)
   const tourGuideRoute  = isTourGuideRoute(path)
   const rentalRoute     = isRentalRoute(path)
   const driverRoute     = isDriverRoute(path)
-  const showDrawer = partnerRoute || massageRoute || beauticianRoute || laundryRoute || handymanRoute || tourGuideRoute || rentalRoute || driverRoute
+  const showDrawer = partnerRoute || massageRoute || beauticianRoute || laundryRoute || handymanRoute || homeCleanRoute || tourGuideRoute || rentalRoute || driverRoute
   const variant: Variant =
     partnerRoute    ? 'partner' :
     massageRoute    ? 'massage' :
     beauticianRoute ? 'beautician' :
     laundryRoute    ? 'laundry' :
     handymanRoute   ? 'handyman' :
+    homeCleanRoute  ? 'home-clean' :
     tourGuideRoute  ? 'tour-guide' :
     rentalRoute     ? 'rentals' :
     'driver'
@@ -106,11 +114,12 @@ export default function AppNav() {
     else if (beauticianRoute)  document.body.dataset.surface = 'beautician'
     else if (laundryRoute)     document.body.dataset.surface = 'laundry'
     else if (handymanRoute)    document.body.dataset.surface = 'handyman'
+    else if (homeCleanRoute)   document.body.dataset.surface = 'home-clean'
     else if (tourGuideRoute)   document.body.dataset.surface = 'tour-guide'
     else if (rentalRoute)      document.body.dataset.surface = 'rentals'
     else delete document.body.dataset.surface
     return () => { delete document.body.dataset.surface }
-  }, [driverRoute, partnerRoute, massageRoute, beauticianRoute, laundryRoute, handymanRoute, tourGuideRoute, rentalRoute])
+  }, [driverRoute, partnerRoute, massageRoute, beauticianRoute, laundryRoute, handymanRoute, homeCleanRoute, tourGuideRoute, rentalRoute])
 
   return (
     <>

@@ -13,7 +13,7 @@ import { logNav } from '@/lib/perf/navTiming'
 // Order: Ride → Parcel → Food → Rental → Tour → Massage.
 // All labels keep the "Bike X" prefix per the brand convention — every
 // service is delivered by an independent motorbike-equipped operator.
-type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'tour' | 'massage' | 'beautician' | 'laundry' | 'handyman'
+type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'tour' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean'
 const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img: string; href: string }> = [
   { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
@@ -42,6 +42,9 @@ const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img
   { id: 'handyman', label: 'Bike Handyman', sub: 'Tukang · Listrik · AC · Pipa',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasaasdasd-removebg-preview.png',
     href: '/handyman' },
+  { id: 'home-clean', label: 'Bike Home Clean', sub: 'Bersih rumah · per jam / hari',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png',
+    href: '/home-clean' },
 ]
 
 // Background map (dark Yogyakarta + 42 pulsing rider pings + autoPan) now

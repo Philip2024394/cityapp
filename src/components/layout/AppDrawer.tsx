@@ -9,7 +9,7 @@ import {
   Handshake, QrCode,
   Clock, AlertTriangle, CheckCircle2, ListChecks, Wallet,
   Sparkles, Store, UserCog,
-  Compass, Map, KeyRound, Palette, Shirt, Wrench,
+  Compass, Map, KeyRound, Palette, Shirt, Wrench, Brush,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -79,6 +79,12 @@ const HANDYMAN_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/handyman/signup',    label: 'Register tukang',  icon: Wrench },
 ]
 
+const HOME_CLEAN_NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/dashboard/home-clean', label: 'Cleaner dashboard',  icon: UserCog },
+  { href: '/home-clean',           label: 'Marketplace',        icon: Store },
+  { href: '/home-clean/signup',    label: 'Register cleaner',   icon: Brush },
+]
+
 const TOUR_GUIDE_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/dashboard/tour-guide', label: 'Tour Guide dashboard', icon: Compass },
   { href: '/tour',                 label: 'Tour marketplace',     icon: Map },
@@ -91,7 +97,7 @@ const RENTAL_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/rent/list/new',      label: 'List a new bike',   icon: Sparkles },
 ]
 
-type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'tour-guide' | 'rentals'
+type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals'
 const VARIANT_TITLE: Record<Variant, string> = {
   driver:        'Driver menu',
   partner:       'Partner menu',
@@ -99,6 +105,7 @@ const VARIANT_TITLE: Record<Variant, string> = {
   beautician:    'Beautician menu',
   laundry:       'Laundry menu',
   handyman:      'Tukang menu',
+  'home-clean':  'Cleaner menu',
   'tour-guide':  'Tour Guide menu',
   rentals:       'Rental owner menu',
 }
@@ -109,6 +116,7 @@ const VARIANT_LABEL: Record<Variant, string> = {
   beautician:    'Beautician navigation',
   laundry:       'Laundry navigation',
   handyman:      'Tukang navigation',
+  'home-clean':  'Cleaner navigation',
   'tour-guide':  'Tour Guide navigation',
   rentals:       'Rental owner navigation',
 }
@@ -132,6 +140,7 @@ export default function AppDrawer({
     variant === 'beautician'   ? BEAUTICIAN_NAV_ITEMS :
     variant === 'laundry'      ? LAUNDRY_NAV_ITEMS :
     variant === 'handyman'     ? HANDYMAN_NAV_ITEMS :
+    variant === 'home-clean'   ? HOME_CLEAN_NAV_ITEMS :
     variant === 'tour-guide'   ? TOUR_GUIDE_NAV_ITEMS :
     variant === 'rentals'      ? RENTAL_NAV_ITEMS :
     DRIVER_NAV_ITEMS
@@ -347,6 +356,7 @@ export function AppDrawerTrigger({
     variant === 'beautician' ? 'Open beautician menu' :
     variant === 'laundry'    ? 'Open laundry menu' :
     variant === 'handyman'   ? 'Open tukang menu' :
+    variant === 'home-clean' ? 'Open cleaner menu' :
     variant === 'tour-guide' ? 'Open tour guide menu' :
     variant === 'rentals'    ? 'Open rental owner menu' :
     'Open driver menu'

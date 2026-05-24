@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   Bike, Handshake, Sparkles, ChevronDown,
-  Compass, KeyRound, Palette, Shirt, Wrench,
+  Compass, KeyRound, Palette, Shirt, Wrench, Brush,
 } from 'lucide-react'
 
 // Header role/category dropdown. Two variants:
@@ -38,6 +38,7 @@ const JOIN_SECTIONS: Section[] = [
       { label: 'Beautician',            href: '/beautician/signup',    icon: Palette },
       { label: 'Laundry shop',          href: '/laundry/signup',       icon: Shirt },
       { label: 'Handyman (Tukang)',     href: '/handyman/signup',      icon: Wrench },
+      { label: 'Home Clean',            href: '/home-clean/signup',    icon: Brush },
       { label: 'Partner (hotel/villa)', href: '/partners/signup',      icon: Handshake },
     ],
   },
@@ -54,6 +55,7 @@ const SIGNIN_SECTIONS: Section[] = [
       { label: 'Beautician',        href: '/dashboard/beautician',   icon: Palette },
       { label: 'Laundry shop',      href: '/dashboard/laundry',      icon: Shirt },
       { label: 'Handyman',          href: '/dashboard/handyman',     icon: Wrench },
+      { label: 'Home Clean',        href: '/dashboard/home-clean',   icon: Brush },
       { label: 'Partner',           href: '/dashboard/partner',      icon: Handshake },
     ],
   },
