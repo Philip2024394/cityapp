@@ -538,19 +538,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
              stands out as the action terminus against the three
              yellow controls. */
           <div className="space-y-2">
-            {/* PICKUP TILE — yellow gradient + brand watermark overlay,
-                label + autocomplete with a dark-red GPS leftSlot button
-                (mirrors /cari placement so muscle memory carries between
-                booking surfaces). The PNG sits over the gradient with
-                low opacity so the yellow still reads as primary. */}
+            {/* PICKUP TILE — yellow gradient, label + autocomplete with a
+                dark-red GPS leftSlot button (mirrors /cari placement so
+                muscle memory carries between booking surfaces). */}
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
-              style={{
-                backgroundImage: "url('https://ik.imagekit.io/nepgaxllc/Untitledsssxx-removebg-preview.png?updatedAt=1779200415319'), linear-gradient(to right, #FACC15, #EAB308)",
-                backgroundRepeat: 'no-repeat, no-repeat',
-                backgroundPosition: 'right center, left center',
-                backgroundSize: 'contain, cover',
-              }}
             >
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
@@ -683,19 +675,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               )
             })()}
 
-            {/* DROP OFF TILE — same autocomplete pattern as pickup,
-                same brand watermark overlay so both ticket tiles read
-                as a matched pair. Right side has the Saved-places chip
-                (mirrors /cari) for one-tap drop-off from the customer's
-                saved list. */}
+            {/* DROP OFF TILE — same autocomplete pattern as pickup.
+                Right side has the Saved-places chip (mirrors /cari) for
+                one-tap drop-off from the customer's saved list. */}
             <div
               className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
-              style={{
-                backgroundImage: "url('https://ik.imagekit.io/nepgaxllc/Untitledsssxx-removebg-preview.png?updatedAt=1779200415319'), linear-gradient(to right, #FACC15, #EAB308)",
-                backgroundRepeat: 'no-repeat, no-repeat',
-                backgroundPosition: 'right center, left center',
-                backgroundSize: 'contain, cover',
-              }}
             >
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>

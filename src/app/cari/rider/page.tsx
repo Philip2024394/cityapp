@@ -279,22 +279,36 @@ function DriverResults() {
             <div className="rounded-2xl overflow-hidden border border-line flex">
               {/* Main body — FROM / (PIT STOP) / TO — solid black */}
               <div
-                className="flex-1 min-w-0 p-4 space-y-3"
+                className="relative flex-1 min-w-0 p-4 space-y-3 overflow-hidden"
                 style={{ background: '#000000' }}
               >
-                <div>
+                {/* Decorative brand watermark — low opacity so the white
+                    text on top stays legible. removebg PNG sits over the
+                    black background, anchored to the right edge near the
+                    ticket's punch-out seam. */}
+                <img
+                  aria-hidden
+                  src="https://ik.imagekit.io/nepgaxllc/Untitledsssxx-removebg-preview.png?updatedAt=1779200415319"
+                  alt=""
+                  className="absolute pointer-events-none select-none"
+                  style={{
+                    right: 0, top: '50%', transform: 'translateY(-50%)',
+                    height: '90%', width: 'auto', opacity: 0.18, zIndex: 0,
+                  }}
+                />
+                <div className="relative z-10">
                   <div className="text-[12px] text-muted font-extrabold tracking-[0.2em]">DARI</div>
                   <div className="text-[15px] font-extrabold text-white mt-1 truncate">{pickupName}</div>
                 </div>
                 {pitstopNote && (
-                  <div className="pl-2 -ml-2 border-l-2 border-brand/40">
+                  <div className="relative z-10 pl-2 -ml-2 border-l-2 border-brand/40">
                     <div className="text-[12px] text-brand font-extrabold tracking-[0.2em] flex items-center gap-1">
                       <span aria-hidden>🛑</span> PIT STOP
                     </div>
                     <div className="text-[14px] text-white/85 mt-1 truncate">{pitstopNote}</div>
                   </div>
                 )}
-                <div>
+                <div className="relative z-10">
                   <div className="text-[12px] text-muted font-extrabold tracking-[0.2em]">TUJUAN</div>
                   <div className="text-[15px] font-extrabold text-white mt-1 truncate">{dropoffName}</div>
                 </div>
@@ -307,7 +321,7 @@ function DriverResults() {
                 <Link
                   href={editTripHref}
                   prefetch
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand text-bg text-[11px] font-extrabold uppercase tracking-wider hover:brightness-95 active:scale-95 transition self-start"
+                  className="relative z-10 mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand text-bg text-[11px] font-extrabold uppercase tracking-wider hover:brightness-95 active:scale-95 transition self-start"
                 >
                   <span aria-hidden>✎</span> Edit trip
                 </Link>
@@ -329,7 +343,7 @@ function DriverResults() {
                   <div className="text-[12px] font-extrabold tracking-wider text-black/60">WAKTU</div>
                   <div className="text-[16px] font-extrabold text-black leading-none mt-1 whitespace-nowrap">
                     ~{etaMinutes(tripKm)}
-                    <span className="text-[12px] ml-0.5 align-baseline">MIN</span>
+                    <span className="text-[10px] ml-0.5 align-baseline">MIN AWAY</span>
                   </div>
                 </div>
                 {cheapest != null && (
