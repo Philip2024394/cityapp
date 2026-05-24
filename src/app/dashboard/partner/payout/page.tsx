@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
+import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
+import { getBrowserSupabase } from '@/lib/supabase/client'
 
 // Partner payout setup. Driver-facing surfaces (Partner Debts → "View bank
 // details") only show details once this is filled. Until then, drivers see
@@ -48,6 +50,13 @@ export default function PartnerPayoutPage() {
 
   const [submitting, setSubmitting] = useState(false)
   const [saved, setSaved] = useState(false)
+  // Owner uid — needed by ProfileImageUploader to scope storage folder.
+  const [userId, setUserId] = useState<string | null>(null)
+  useEffect(() => {
+    const supabase = getBrowserSupabase()
+    if (!supabase) return
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -225,21 +234,19 @@ export default function PartnerPayoutPage() {
             </>
           )}
 
-          {showQris && (
-            <Field label="QRIS image URL *">
-              <input
-                type="url"
-                value={qrisUrl}
-                onChange={(e) => setQrisUrl(e.target.value)}
-                placeholder="https://… (paste QRIS PNG link)"
-                className={inputCls}
-                required
-              />
-              <p className="text-[11px] text-ink/50 mt-1">
-                Upload your QRIS image to ImageKit / R2 / Drive and paste the public URL here.
-                File-upload UI coming next round.
-              </p>
-            </Field>
+          {showQris && userId && (
+            <ProfileImageUploader
+              value={qrisUrl || null}
+              onChange={(v) => setQrisUrl(v ?? '')}
+              userId={userId}
+              label="QRIS image *"
+              helpText="Upload QRIS PNG/JPG · max 5MB. Driver melihat ini saat ingin bayar."
+            />
+          )}
+          {showQris && !userId && (
+            <div className="rounded-xl bg-black/40 border border-white/10 p-4 text-[12px] text-muted">
+              Loading uploader…
+            </div>
           )}
 
           <Field label="Notes (optional)">

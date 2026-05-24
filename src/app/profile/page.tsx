@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Camera, Save, Phone, Box, Loader2, Check } from 'lucide-react'
+import { Save, Phone, Box, Loader2, Check } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import LocationPicker, { type LocationPickerValue } from '@/components/rider/LocationPicker'
 import BikePicker from '@/components/rider/BikePicker'
 import BikeColorPicker from '@/components/rider/BikeColorPicker'
+import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import { getBikeImageUrl, isExactBikeImage } from '@/data/bikeImages'
 import { ikUrl } from '@/lib/images/imagekit'
 import { MOCK_RIDERS } from '@/data/mockRiders'
@@ -23,10 +24,18 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Auth user id — needed by ProfileImageUploader to scope storage folder.
+  const [userId, setUserId] = useState<string | null>(null)
 
   // Hydrate from Supabase once mounted
   useEffect(() => {
     let cancelled = false
+    const supabase = getBrowserSupabase()
+    if (supabase) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (!cancelled) setUserId(data.user?.id ?? null)
+      })
+    }
     fetchMyDriverBrowser().then((r) => {
       if (cancelled) return
       if (r) {
@@ -80,6 +89,7 @@ export default function ProfilePage() {
         business_name: form.name.trim(),
         whatsapp_e164: form.whatsapp.trim(),
         bio: form.bio.trim(),
+        brand_logo_url: form.photoUrl.trim() || null,
         ...locUpdate,
         bike_make: form.bikeMake.trim(),
         bike_model: form.bikeModel.trim(),
@@ -105,20 +115,23 @@ export default function ProfilePage() {
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
           <h1 className="text-2xl font-extrabold">Profile & Bike</h1>
 
-          {/* Photo */}
-          <div className="card-dark p-5 flex items-center gap-4">
-            <div className="relative shrink-0">
-              <img src={me.photoUrl} alt="" className="w-20 h-20 rounded-2xl object-cover" />
-              <button className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-brand text-bg flex items-center justify-center shadow-glow">
-                <Camera className="w-4 h-4" strokeWidth={2.5} />
-              </button>
+          {/* Rider photo — uploads to the public profile-images bucket
+              (mig 0071). Saves the public URL into the form so the next
+              save() persists it to drivers.brand_logo_url. */}
+          {userId ? (
+            <ProfileImageUploader
+              value={form.photoUrl || null}
+              onChange={(v) => set('photoUrl', v ?? '')}
+              userId={userId}
+              label="Rider photo"
+              helpText="JPG / PNG / WEBP · max 5MB · clear face, min 400px wide."
+            />
+          ) : (
+            <div className="card-dark p-5 flex items-center gap-4">
+              <Loader2 className="w-5 h-5 animate-spin text-muted" />
+              <div className="text-[13px] text-muted">Loading photo upload…</div>
             </div>
-            <div>
-              <div className="text-[13px] text-muted">Rider photo</div>
-              <div className="font-bold mt-0.5">Tap the camera to change</div>
-              <div className="text-[12px] text-dim mt-1">Must be clear, JPG/PNG, min 400px</div>
-            </div>
-          </div>
+          )}
 
           {/* Identity */}
           <Section title="Identity">
@@ -289,6 +302,9 @@ function formFromRider(r: Rider) {
     bio: r.bio,
     area: r.area,
     city: r.city,
+    // brand_logo_url on the drivers table — saved photo URL surfaces here.
+    // Empty string means "no photo set"; the upload component handles null/empty equivalently.
+    photoUrl: r.photoUrl && !r.photoUrl.includes('pravatar.cc') ? r.photoUrl : '',
     bikeMake: r.bike.make,
     bikeModel: r.bike.model,
     bikeYear: r.bike.year,
