@@ -1431,18 +1431,8 @@ function RiderHero({
             </>
           )}
         </div>
-        <div className="flex items-center gap-1.5 text-[13px] mt-1.5">
-          <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitledwrr-removebg-preview.png?updatedAt=1778253100200"
-            alt=""
-            aria-hidden
-            className="w-5 h-5 shrink-0 object-contain"
-          />
-          <span className="text-ink/90 font-extrabold">
-            {citySlugLabel(rider.city) || rider.city}
-          </span>
-          <span className="text-[11px] text-muted">· service area</span>
-        </div>
+        {/* City / service-area line removed per design — name + bike
+            model + trip count cover identity on the top container. */}
       </div>
     </div>
   )

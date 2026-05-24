@@ -1017,12 +1017,12 @@ function AlternativesSection({
                       />
                       {label}
                     </span>
-                    <span aria-hidden className="text-dim">·</span>
-                    <span>
-                      {alt.rider.locationFresh
-                        ? `${alt.distanceToPickup.toFixed(1)} km away`
-                        : `Based in ${alt.rider.area || alt.rider.city || 'service zone'}`}
-                    </span>
+                    {alt.rider.locationFresh && (
+                      <>
+                        <span aria-hidden className="text-dim">·</span>
+                        <span>{alt.distanceToPickup.toFixed(1)} km away</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="text-right shrink-0">

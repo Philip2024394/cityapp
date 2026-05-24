@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { MapPin, MessageCircle, Star } from 'lucide-react'
+import { MapPin, MessageCircle } from 'lucide-react'
 import type { Rider } from '@/types/rider'
 import { SERVICE_ICONS, SERVICE_LABELS } from '@/types/rider'
 import { idr } from '@/lib/format/idr'
@@ -27,24 +27,6 @@ export default function RiderCard({ rider, distanceKm, estimatedFare, onWhatsApp
           className="absolute inset-0 pointer-events-none opacity-60"
           style={{ background: 'radial-gradient(ellipse at top right, rgba(250,204,21,0.10), transparent 55%)' }}
         />
-      )}
-
-      {/* Star rating — top-left badge. Always rendered when rating is
-          present so customers can pick by score at a glance. Same
-          treatment as the massage cards. */}
-      {rider.rating != null && (
-        <div
-          className="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px]"
-          style={{
-            background: 'rgba(10,10,10,0.85)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-          }}
-        >
-          <Star className="w-3.5 h-3.5 fill-brand text-brand" strokeWidth={0} />
-          <span className="font-extrabold text-white">{rider.rating.toFixed(1)}</span>
-        </div>
       )}
 
       <div className="relative flex gap-3 items-stretch">
@@ -117,21 +99,13 @@ export default function RiderCard({ rider, distanceKm, estimatedFare, onWhatsApp
                   onWhatsApp()
                 }}
                 aria-disabled={rider.isMock}
-                className={`rounded-full px-4 py-1.5 flex items-center gap-1.5 text-[13px] font-extrabold border transition ${
-                  rider.isMock
-                    ? 'opacity-60 cursor-not-allowed'
-                    : 'hover:brightness-110 hover:scale-[1.03]'
+                className={`bg-[#25D366] text-white rounded-full px-3 py-1.5 flex items-center gap-1.5 text-[13px] font-extrabold shadow-[0_4px_12px_rgba(37,211,102,0.35)] transition ${
+                  rider.isMock ? 'opacity-60 cursor-not-allowed' : 'hover:scale-[1.03]'
                 }`}
-                style={{
-                  background: '#0A0A0A',
-                  color: '#FFFFFF',
-                  borderColor: 'rgba(255,255,255,0.25)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
-                }}
                 aria-label={`WhatsApp ${rider.name}`}
               >
-                <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
-                {rider.isMock ? 'Sample' : (hasQuote ? 'Book' : 'Contact')}
+                <MessageCircle className="w-3.5 h-3.5" />
+                {rider.isMock ? 'Sample' : (hasQuote ? 'Book' : 'Chat')}
               </button>
             )}
           </div>

@@ -568,28 +568,44 @@ function FeaturedDriverCard({
           <img
             src={rider.photoUrl}
             alt={rider.name}
-            className="w-[58px] h-[58px] rounded-2xl object-cover ring-2 ring-white/80"
+            className="w-[76px] h-[76px] rounded-2xl object-cover ring-2 ring-white/80"
           />
           <span className="dot-online absolute bottom-1 right-1 ring-2 ring-white" aria-label="Online" />
         </span>
-        {rider.rating != null && (
+        {/* Star rating + ETA stack — both shifted up via translateY so
+            they sit nearer the top of the avatar row. ETA only renders
+            when location is fresh; "Min 11" reads as "11 minutes away". */}
+        <span className="flex flex-col gap-1" style={{ transform: 'translateY(-12px)' }}>
+          {rider.rating != null && (
+            <span
+              className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[13px] font-bold leading-none"
+              style={{
+                background: 'rgba(255,255,255,0.7)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+              }}
+            >
+              <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500 shrink-0" aria-hidden />
+              <span className="text-black">{rider.rating.toFixed(1)}</span>
+              {rider.trips != null && (
+                <span className="text-[12px] text-gray-700 ml-0.5 font-semibold">
+                  ({rider.trips.toLocaleString('en-US')} trips)
+                </span>
+              )}
+            </span>
+          )}
           <span
-            className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[13px] font-bold leading-none"
+            className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[12px] font-extrabold leading-none"
             style={{
               background: 'rgba(255,255,255,0.7)',
+              color: '#0A0A0A',
               backdropFilter: 'blur(6px)',
               WebkitBackdropFilter: 'blur(6px)',
             }}
           >
-            <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500 shrink-0" aria-hidden />
-            <span className="text-black">{rider.rating.toFixed(1)}</span>
-            {rider.trips != null && (
-              <span className="text-[12px] text-gray-700 ml-0.5 font-semibold">
-                ({rider.trips.toLocaleString('en-US')} trips)
-              </span>
-            )}
+            Min {String(Math.min(eta, 99)).padStart(2, '0')}
           </span>
-        )}
+        </span>
       </Link>
 
       {/* Bottom info panel — overlays the lower portion of the image */}
@@ -598,42 +614,9 @@ function FeaturedDriverCard({
           {/* Trust chips: services offered + live presence pill + optional
               "Online until 17:00" shift badge. All driver-self telemetry
               — no customer event data. */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(() => {
-              const tier = presenceTier(rider.lastSeenAt)
-              const label = presenceLabel(rider.lastSeenAt)
-              const dotColor = presenceDotColor(tier)
-              const isFresh = tier === 'active_now' || tier === 'recent'
-              return (
-                <span
-                  className="pill-soft inline-flex items-center gap-1.5"
-                  style={{
-                    background: isFresh ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.55)',
-                    color: '#0A0A0A',
-                  }}
-                  aria-label={label}
-                  title={label}
-                >
-                  <span
-                    aria-hidden
-                    className="inline-block w-2 h-2 rounded-full"
-                    style={{
-                      background: dotColor,
-                      boxShadow: tier === 'active_now' ? `0 0 6px ${dotColor}` : undefined,
-                      animation: tier === 'active_now' ? 'pulse 1.6s ease-in-out infinite' : undefined,
-                    }}
-                  />
-                  <span className="text-[12px] font-bold">{label}</span>
-                </span>
-              )
-            })()}
-            {rider.services.filter(s => s !== 'parcel' && s !== 'food').map(s => (
-              <span key={s} className="pill-soft" aria-label={SERVICE_LABELS[s]}>
-                <span aria-hidden>{SERVICE_ICONS[s]}</span>
-                {SERVICE_SHORT[s]}
-              </span>
-            ))}
-          </div>
+          {/* Presence pill ("Active 1h ago") + person/ride service pill
+              removed per design — kept the data layer (presenceTier etc.)
+              available for other surfaces. */}
 
           {/* Price block (left) + Primary CTA (right). When the driver's
               GPS is stale (>15 min) we refuse to render an ETA — it would
@@ -644,20 +627,10 @@ function FeaturedDriverCard({
               <span className="text-[17px] font-extrabold text-gray-700 whitespace-nowrap">
                 {idr(fare)}
               </span>
-              <span className="mt-1.5 text-[12px] font-bold text-gray-700 whitespace-nowrap">
-                {rider.locationFresh
-                  ? <>~{eta} {eta === 1 ? 'min' : 'mins'} away</>
-                  : <>Based in {rider.area || rider.city || 'service zone'}</>}
-                {minApplied && <span className="text-brand ml-1.5">· min fare</span>}
-              </span>
-              {item.outOfZone && (
-                <span
-                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-extrabold whitespace-nowrap"
-                  style={{ color: '#0A0A0A' }}
-                  title="Trip melewati zona kerja driver — pulang-pergi"
-                >
-                  <span aria-hidden>↔️</span>
-                  Pulang-pergi · {item.chargeableKm.toFixed(1)} km
+              {rider.locationFresh && (
+                <span className="mt-1.5 text-[12px] font-bold text-gray-700 whitespace-nowrap">
+                  ~{eta} {eta === 1 ? 'min' : 'mins'} away
+                  {minApplied && <span className="text-brand ml-1.5">· min fare</span>}
                 </span>
               )}
               {/* Pit-stop fee line — only shown when the customer asked
@@ -693,7 +666,7 @@ function FeaturedDriverCard({
               <button
                 onClick={onWhatsApp}
                 aria-label={tried ? `Re-contact ${rider.name}` : `Book ${rider.name}`}
-                className="h-[39px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60"
+                className="h-[32px] min-w-[118px] pl-2.5 pr-1 rounded-full flex items-center justify-between gap-1 border border-black active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-brand/60"
                 style={{
                   background: tried
                     ? 'linear-gradient(135deg, #94A3B8, #64748B)'
@@ -708,7 +681,7 @@ function FeaturedDriverCard({
                 </span>
                 <span
                   aria-hidden
-                  className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                   style={{ background: '#000' }}
                 >
                   <ArrowRight className="w-3 h-3 text-white" strokeWidth={3} />
