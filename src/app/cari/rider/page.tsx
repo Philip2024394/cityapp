@@ -19,6 +19,7 @@ import { pingDriverContact } from '@/lib/notify/clientPing'
 import { logNav } from '@/lib/perf/navTiming'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import PartnerBookingBadge from '@/components/rider/PartnerBookingBadge'
+import { getBikeImageUrl } from '@/data/bikeImages'
 
 // Customer-facing labels for the service-type toggle. Stable order so
 // the underline bar always slides over consistent positions.
@@ -565,6 +566,11 @@ function FeaturedDriverCard({
     rider.bike.type === 'sport'  ? 'Sport / Manual' :
     rider.bike.type === 'manual' ? 'Manual' : 'Unknown'
 
+  // Bike gallery lookup — make+model → curated imagekit photo (catalog
+  // first, then extension map, then a stable per-key recent variant,
+  // finally generic silhouette). Never null.
+  const bikePhotoUrl = getBikeImageUrl(rider.bike.make, rider.bike.model)
+
   return (
     <div
       className="relative animate-[fadeUp_0.4s_ease-out_both]"
@@ -592,16 +598,34 @@ function FeaturedDriverCard({
           }}
         >
           <FlipBtn onBack />
-          <div className="flex items-center gap-2.5 mb-4 pr-12">
+
+          {/* Bike hero photo — looked up from the gallery via make+model
+              (data/bikeImages.ts). Sized to dominate the back face. */}
+          <div
+            className="relative -mx-5 -mt-5 mb-3 h-[140px] overflow-hidden"
+            style={{
+              background: 'linear-gradient(180deg, rgba(10,10,10,0.06), transparent 60%)',
+            }}
+          >
+            <img
+              src={bikePhotoUrl}
+              alt={`${rider.bike.make || ''} ${rider.bike.model || ''}`.trim() || 'Bike'}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.30))' }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 mb-3 pr-12">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: '#0A0A0A', boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: '#0A0A0A' }}
             >
-              <Bike className="w-6 h-6 text-brand" strokeWidth={2.5} />
+              <Bike className="w-4 h-4 text-brand" strokeWidth={2.5} />
             </div>
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider font-extrabold text-black/65">Bike</div>
-              <div className="text-[18px] font-black text-black leading-tight truncate">
+              <div className="text-[16px] font-black text-black leading-tight truncate">
                 {rider.bike.make || '—'} {rider.bike.model || ''}
               </div>
             </div>
