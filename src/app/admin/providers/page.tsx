@@ -30,7 +30,7 @@ export default async function ProvidersAdminPage() {
       .select('id, slug, name, partner_type, status, contact_email, contact_whatsapp, city, created_at')
       .order('created_at', { ascending: false }).limit(100),
     admin.from('massage_providers')
-      .select('id, slug, display_name, gender, status, availability, ktp_image_url, whatsapp_e164, city, is_mock, created_at')
+      .select('id, slug, display_name, gender, status, availability, ktp_image_url, whatsapp_e164, city, is_mock, mock_hidden_at, created_at')
       .order('created_at', { ascending: false }).limit(100),
     admin.from('tour_guide_listings')
       .select('id, slug, name, whatsapp_e164, city, status, availability, created_at')
