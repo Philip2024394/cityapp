@@ -263,33 +263,114 @@ async function maybeSend(
 ): Promise<MaybeSendResult> {
   if (!admin) return 'failed'
 
-  // Idempotency: bail if we've already sent this (user_id, kind, period_end)
-  const { data: existing } = await admin
+  // Idempotency: bail only if the EMAIL row already exists. The WA queue
+  // row gets its own check below so we can queue a WA reminder even if
+  // we sent the email yesterday and only just learned the user's number.
+  const { data: existingEmail } = await admin
     .from('payment_reminders_log')
     .select('id')
     .eq('user_id', args.userId)
     .eq('kind', args.kind)
     .eq('period_end', args.periodEnd.toISOString())
+    .eq('channel', 'email')
     .maybeSingle()
-  if (existing) return 'skipped_already_sent'
 
-  // Resolve email. Auth-side getUserById is the canonical lookup.
+  // Resolve email + WA number. Auth-side getUserById is the canonical
+  // email lookup; WA number comes from the user_metadata (set during
+  // signup) with a fallback to user.phone.
   const { data: userRow } = await admin.auth.admin.getUserById(args.userId)
   const email = userRow?.user?.email
-  if (!email) return 'skipped_no_email'
+  const meta = (userRow?.user?.user_metadata ?? {}) as Record<string, unknown>
+  const waNumber =
+    (typeof meta.whatsapp === 'string' && meta.whatsapp) ||
+    (typeof meta.whatsapp_e164 === 'string' && meta.whatsapp_e164) ||
+    (userRow?.user?.phone ? `+${userRow.user.phone}` : null)
 
-  const { subject, html } = composeMessage(args)
-  const send = await sendEmail({ to: email, subject, html })
+  // EMAIL — fire once if not already sent.
+  let emailSent = !!existingEmail
+  if (!existingEmail) {
+    if (!email) return 'skipped_no_email'
+    const { subject, html } = composeMessage(args)
+    const send = await sendEmail({ to: email, subject, html })
+    await admin.from('payment_reminders_log').insert({
+      user_id:    args.userId,
+      kind:       args.kind,
+      period_end: args.periodEnd.toISOString(),
+      channel:    'email',
+      error:      send.ok ? null : send.error,
+    })
+    emailSent = send.ok
+  }
 
-  await admin.from('payment_reminders_log').insert({
-    user_id:    args.userId,
-    kind:       args.kind,
-    period_end: args.periodEnd.toISOString(),
-    channel:    'email',
-    error:      send.ok ? null : send.error,
+  // WA — queue once if number known and not already queued/sent. Unique
+  // constraint (user, kind, period_end, channel) prevents duplicate
+  // queue rows; we still pre-check to avoid noisy insert errors.
+  if (waNumber) {
+    const { data: existingWa } = await admin
+      .from('payment_reminders_log')
+      .select('id')
+      .eq('user_id', args.userId)
+      .eq('kind', args.kind)
+      .eq('period_end', args.periodEnd.toISOString())
+      .eq('channel', 'whatsapp')
+      .maybeSingle()
+    if (!existingWa) {
+      await admin.from('payment_reminders_log').insert({
+        user_id:         args.userId,
+        kind:            args.kind,
+        period_end:      args.periodEnd.toISOString(),
+        channel:         'whatsapp',
+        whatsapp_number: waNumber,
+        wa_message:      composeWaMessage(args),
+        sent_at:         null,  // queued for admin click-to-send
+      })
+    }
+  }
+
+  if (existingEmail) return 'skipped_already_sent'
+
+  return emailSent ? 'sent' : 'failed'
+}
+
+// Plain-text version of composeMessage for the WhatsApp queue. Mirrors
+// the email content but flat — no HTML, uses line breaks. Admin clicks
+// "Open WhatsApp" in /admin/wa-queue which deep-links to wa.me with
+// this text pre-filled.
+function composeWaMessage(args: {
+  kind: ReminderKind
+  periodEnd: Date
+  plan: Plan
+  renewUrl: string
+  verticalLabel?: string
+}): string {
+  const dueLabel = args.periodEnd.toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'long', year: 'numeric',
   })
+  const planLabel = args.verticalLabel
+    ?? (args.plan === 'rental_company' ? 'Rental Company'
+      : args.plan === 'tour_guide' ? 'Tour Guide'
+      : 'City Rider Driver')
 
-  return send.ok ? 'sent' : 'failed'
+  const k = args.kind as string
+  if (k.endsWith('_t_minus_7')) {
+    return `Halo! Subscription ${planLabel} kamu akan habis dalam 7 hari (${dueLabel}). Renew sekarang biar tetap aktif: ${args.renewUrl}`
+  }
+  if (k.endsWith('_t_minus_3')) {
+    return `Reminder: subscription ${planLabel} kamu jatuh tempo dalam 3 hari (${dueLabel}). Renew: ${args.renewUrl}`
+  }
+  if (k.endsWith('_t_minus_1')) {
+    return `Besok subscription ${planLabel} kamu habis (${dueLabel}). Renew hari ini biar tetap online: ${args.renewUrl}`
+  }
+  if (k.endsWith('_t_plus_1')) {
+    return `Subscription ${planLabel} kamu sudah lewat (${dueLabel}). Listing kamu di-pause sementara. Renew di sini buat aktif lagi: ${args.renewUrl}`
+  }
+  if (k === 'driver_t_plus_7') {
+    return `Reminder terakhir — sudah 7 hari sejak subscription kamu habis (${dueLabel}). Renew dalam 24 jam supaya profil tidak di-archive: ${args.renewUrl}`
+  }
+  if (k === 'pending_intent_stuck') {
+    return `Kamu mulai pembayaran ${planLabel} pada ${dueLabel} tapi belum selesai. Lanjut bayar di sini: ${args.renewUrl}`
+  }
+  return `Reminder subscription ${planLabel}. Renew: ${args.renewUrl}`
 }
 
 function bumpSummary(summary: {
