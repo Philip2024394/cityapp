@@ -773,22 +773,28 @@ function FeaturedDriverCard({
               )}
             </span>
           )}
-          <span
-            className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[12px] font-extrabold leading-none"
-            style={{
-              background: 'rgba(255,255,255,0.7)',
-              color: '#0A0A0A',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-            }}
-          >
-            Min {String(Math.min(eta, 99)).padStart(2, '0')}
-            {Number.isFinite(distanceToPickup) && distanceToPickup > 0 && (
-              <span className="text-black/55 font-bold">
-                · {distanceToPickup.toFixed(1)} km
-              </span>
-            )}
-          </span>
+          {/* Min · km pill — gated on locationFresh so we don't quote
+              an ETA derived from a stale GPS snapshot. Matches the
+              bottom panel's "~X mins away" line which already hides
+              under the same condition. */}
+          {rider.locationFresh && (
+            <span
+              className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[12px] font-extrabold leading-none"
+              style={{
+                background: 'rgba(255,255,255,0.7)',
+                color: '#0A0A0A',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+              }}
+            >
+              Min {String(Math.min(eta, 99)).padStart(2, '0')}
+              {Number.isFinite(distanceToPickup) && distanceToPickup > 0 && (
+                <span className="text-black/55 font-bold">
+                  · {distanceToPickup.toFixed(1)} km
+                </span>
+              )}
+            </span>
+          )}
         </span>
       </Link>
 
