@@ -71,4 +71,7 @@ export type BikeRental = {
   verified: boolean
   availableNow: boolean
   listingTier: ListingTier
+  /** Seeded mock from mock_bike_rentals — rendered alongside real
+   *  listings to populate the marketplace; contact button disabled. */
+  isMock?: boolean
 }

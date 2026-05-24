@@ -118,6 +118,22 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
       />
 
       <div className="relative flex flex-col gap-2.5 p-3">
+        {/* Star rating — top-left of the card. Consistent placement
+            with /cari driver cards and /massage therapist cards. */}
+        {r.rating != null && (
+          <div
+            className="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px]"
+            style={{
+              background: 'rgba(10,10,10,0.85)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+            }}
+          >
+            <Star className="w-3.5 h-3.5 fill-brand stroke-brand" strokeWidth={0} aria-hidden />
+            <span className="font-extrabold text-white">{r.rating.toFixed(1)}</span>
+          </div>
+        )}
         {/* Driver figure overlay — with-driver listings only. */}
         {withDriver && (
           <img
@@ -149,15 +165,7 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
                 >
                   {r.brand}
                 </div>}
-            {r.rating != null && (
-              <span
-                className="absolute bottom-0 left-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black text-[11px] font-extrabold text-brand"
-                style={{ transform: 'translateY(30px)' }}
-              >
-                <Star className="w-2.5 h-2.5 fill-brand stroke-brand" aria-hidden />
-                {r.rating.toFixed(1)}
-              </span>
-            )}
+            {/* Rating moved to top-left badge — see card-level overlay above. */}
           </div>
 
           {/* Trust + title — on bike-only cards (no driver overlay)
@@ -273,20 +281,17 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
             href={whatsappLink(r.ownerWhatsapp, r.ownerName, r.brand, r.model)}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => trackWaClick({ context: 'rental_card', targetPhone: r.ownerWhatsapp, meta: { rental_id: r.id, brand: r.brand, model: r.model } })}
-            className="
-              shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap
-              rounded-lg
-              px-3 py-2
-              text-[12px] font-extrabold uppercase tracking-wider text-bg
-              bg-gradient-to-r from-brand to-brand2
-              border border-black/85
-              active:scale-[0.99]
-              transition-all
-            "
+            aria-disabled={r.isMock}
+            onClick={(e) => {
+              if (r.isMock) { e.preventDefault(); return }
+              trackWaClick({ context: 'rental_card', targetPhone: r.ownerWhatsapp, meta: { rental_id: r.id, brand: r.brand, model: r.model } })
+            }}
+            className={`shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[12px] font-extrabold uppercase tracking-wider text-bg bg-gradient-to-r from-brand to-brand2 border border-black/85 transition-all ${
+              r.isMock ? 'opacity-60 cursor-not-allowed' : 'active:scale-[0.99]'
+            }`}
             style={{ transform: 'translateY(-4px)' }}
           >
-            Book Rental
+            {r.isMock ? 'Sample' : 'Book Rental'}
             <ArrowRight className="w-3 h-3" aria-hidden />
           </a>
         </div>

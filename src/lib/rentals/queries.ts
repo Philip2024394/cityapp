@@ -126,5 +126,102 @@ export async function listRentalsForCity(city: string): Promise<BikeRental[]> {
     .order('rating', { ascending: false, nullsFirst: false })
 
   if (error || !data) return []
-  return (data as unknown as RentalRow[]).map(rowToRental)
+  const reals = (data as unknown as RentalRow[]).map(rowToRental)
+
+  // Merge in visible mock rentals (migration 0051). One mock is hidden
+  // automatically each time a real bike_rentals row is inserted (DB
+  // trigger). Reals always sort before mocks in the returned list.
+  const mocks = await listMockRentalsForCity(city)
+  return [...reals, ...mocks]
+}
+
+type MockRentalRow = {
+  id: string
+  slug: string
+  owner_name: string
+  owner_whatsapp_e164: string
+  brand: string
+  model: string
+  year: number | null
+  cc: number | null
+  transmission: Transmission | null
+  bike_type: string | null
+  color: string | null
+  daily_price_idr: number
+  weekly_price_idr: number | null
+  monthly_price_idr: number | null
+  security_deposit_idr: number | null
+  city: string | null
+  image_urls: string[]
+  rating: number | null
+  available_now: boolean
+}
+
+async function listMockRentalsForCity(city: string): Promise<BikeRental[]> {
+  const supabase = await getServerSupabase()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('mock_bike_rentals')
+    .select(
+      'id, slug, owner_name, owner_whatsapp_e164, brand, model, year, cc, ' +
+      'transmission, bike_type, color, daily_price_idr, weekly_price_idr, ' +
+      'monthly_price_idr, security_deposit_idr, city, image_urls, rating, ' +
+      'available_now'
+    )
+    .is('mock_hidden_at', null)
+    .ilike('city', `%${city}%`)
+    .limit(20)
+  if (error || !data) return []
+  return (data as unknown as MockRentalRow[]).map(mockRentalRowToBikeRental)
+}
+
+function mockRentalRowToBikeRental(r: MockRentalRow): BikeRental {
+  return {
+    id: r.id,
+    slug: r.slug,
+    ownerName: r.owner_name,
+    ownerCompany: null,
+    ownerWhatsapp: r.owner_whatsapp_e164,
+    ownerLanguages: [],
+    ownerResponseTimeMin: null,
+    brand: r.brand,
+    model: r.model,
+    year: r.year ?? 0,
+    cc: r.cc ?? 0,
+    transmission: (r.transmission ?? 'automatic') as Transmission,
+    bikeType: r.bike_type,
+    color: r.color,
+    dailyPriceIdr: r.daily_price_idr,
+    weeklyPriceIdr: r.weekly_price_idr,
+    monthlyPriceIdr: r.monthly_price_idr,
+    securityDepositIdr: r.security_deposit_idr,
+    driverRatePerDayIdr: null,
+    tour3hIdr: null,
+    tour6hIdr: null,
+    tour8hIdr: null,
+    fuelIncluded: false,
+    helmetCount: 2,
+    raincoatCount: 0,
+    hasPhoneHolder: false,
+    hasPhoneCharger: false,
+    hasDeliveryBox: false,
+    readyToWork: false,
+    deliversToHotel: false,
+    deliversToVilla: false,
+    pickupDropoff: false,
+    rentalMode: 'self_ride',
+    city: r.city ?? '',
+    address: null,
+    lat: 0,
+    lng: 0,
+    imageUrls: r.image_urls ?? [],
+    description: null,
+    tags: [],
+    rating: r.rating,
+    reviewCount: 0,
+    verified: false,
+    availableNow: r.available_now,
+    listingTier: 'free',
+    isMock: true,
+  }
 }

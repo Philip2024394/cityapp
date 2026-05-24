@@ -138,6 +138,10 @@ export type MassageProviderPublic = Pick<
   | 'profile_image_url'
   | 'availability'
 > & {
+  // Returned by /api/massage/marketplace so cards can render mocks
+  // differently (inert Book Now, "Sample listing" badge, etc.). Real
+  // profiles always render before mocks (sorted server-side).
+  is_mock?: boolean
   rating?: number | null
   rating_count?: number | null
 }

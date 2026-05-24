@@ -158,9 +158,85 @@ export async function fetchActiveDriversBrowser(): Promise<Rider[]> {
   // marketplace must not show riders whose billing has lapsed, even
   // if drivers.status is still 'active'. Suspension is rare; the
   // billing wall is the load-bearing gate.
-  return (data as DriverRowWithSub[])
+  const reals = (data as DriverRowWithSub[])
     .map((row) => driverRowToRider(row, pickSub(row)))
     .filter((r) => r.subscriptionStatus !== 'past_due' && r.subscriptionStatus !== 'canceled')
+
+  // Merge in mock drivers (seeded marketplace pool from migration 0050).
+  // One mock is hidden automatically each time a real driver is inserted
+  // (DB AFTER-INSERT trigger), so this query is naturally rate-limited.
+  // Reals always come first in the returned list.
+  const mocks = await fetchMockDriversBrowser()
+  return [...reals, ...mocks]
+}
+
+// Pull the visible-mock pool. Failures fall back to empty so an outage
+// of mock_drivers never breaks the real marketplace.
+async function fetchMockDriversBrowser(): Promise<Rider[]> {
+  const supabase = getBrowserSupabase()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('mock_drivers')
+    .select('*')
+    .is('mock_hidden_at', null)
+    .order('availability', { ascending: true })
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error || !data) return []
+  return (data as MockDriverRow[]).map(mockDriverRowToRider)
+}
+
+type MockDriverRow = {
+  id: string
+  slug: string
+  business_name: string
+  bio: string | null
+  whatsapp_e164: string
+  profile_image_url: string | null
+  city: string | null
+  area: string | null
+  services: string[]
+  price_per_km: number
+  min_fee: number
+  bike_make: string | null
+  bike_model: string | null
+  bike_year: number | null
+  bike_type: 'matic' | 'sport' | 'manual' | null
+  rating: number | null
+  availability: 'online' | 'busy' | 'offline'
+  created_at: string
+}
+
+function mockDriverRowToRider(row: MockDriverRow): Rider {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.business_name,
+    photoUrl: row.profile_image_url || `https://i.pravatar.cc/300?u=${row.slug}`,
+    whatsappE164: row.whatsapp_e164,
+    bio: row.bio || '',
+    area: row.area || '',
+    city: row.city || '',
+    services: (row.services || []) as ServiceType[],
+    bike: {
+      make: row.bike_make || '',
+      model: row.bike_model || '',
+      year: row.bike_year || 0,
+      color: '',
+      type: (row.bike_type || 'matic') as 'matic' | 'sport' | 'manual',
+      hasBox: false,
+    },
+    pricePerKm: row.price_per_km,
+    minFee: row.min_fee,
+    isOnline: row.availability === 'online',
+    availability: row.availability,
+    lastSeenAt: row.created_at,
+    lat: 0,
+    lng: 0,
+    subscriptionStatus: 'active',
+    rating: row.rating ?? undefined,
+    isMock: true,
+  }
 }
 
 // ============================================================================

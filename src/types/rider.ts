@@ -136,6 +136,11 @@ export type Rider = {
   rating?: number
   /** Total completed trips. Undefined for new riders. */
   trips?: number
+  /** Seeded mock profile (from mock_drivers table). Marketplace renders
+   *  these alongside real drivers to populate the surface at launch;
+   *  Chat button is disabled to prevent real bookings. Real drivers
+   *  always sort before mocks. */
+  isMock?: boolean
 }
 
 export type QuoteEvent = {

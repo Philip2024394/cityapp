@@ -24,20 +24,34 @@ type Row = {
   notes: string | null
   rating: number | null
   review_count: number
+  is_mock?: boolean
 }
 
 export default async function TourGuideFeedPage() {
   const admin = getAdminSupabase()
   if (!admin) return <p className="p-6 text-muted">Server not configured.</p>
 
-  const { data: rows } = await admin
+  // Real guides
+  const { data: realRows } = await admin
     .from('tour_guide_listings')
     .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, review_count')
     .eq('status', 'approved')
     .order('rating', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
 
-  const list = (rows as Row[] | null) ?? []
+  // Mock guides (migration 0052). Auto-hidden one-per-real-signup by
+  // the DB trigger; reals always render before mocks.
+  const { data: mockRows } = await admin
+    .from('mock_tour_guide_listings')
+    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating')
+    .is('mock_hidden_at', null)
+    .order('rating', { ascending: false, nullsFirst: false })
+
+  const reals: Row[] = (realRows as Row[] | null) ?? []
+  const mocks: Row[] = ((mockRows as Omit<Row,'review_count'|'is_mock'>[] | null) ?? []).map((r) => ({
+    ...r, review_count: 0, is_mock: true,
+  }))
+  const list: Row[] = [...reals, ...mocks]
 
   return (
     <>
@@ -75,15 +89,26 @@ export default async function TourGuideFeedPage() {
             {list.map((r) => (
               <Link
                 key={r.id}
-                href={`/tour/${r.slug}`}
-                className="block card p-4 active:scale-[0.99] transition"
+                href={r.is_mock ? '#' : `/tour/${r.slug}`}
+                onClick={r.is_mock ? (e) => e.preventDefault() : undefined}
+                aria-disabled={r.is_mock}
+                className={`block card p-4 transition ${
+                  r.is_mock ? 'opacity-85 cursor-not-allowed' : 'active:scale-[0.99]'
+                }`}
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-extrabold text-ink leading-tight truncate">{r.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-[15px] font-extrabold text-ink leading-tight truncate">{r.name}</div>
+                      {r.is_mock && (
+                        <span className="shrink-0 text-[9px] uppercase tracking-wider font-extrabold bg-yellow-400/20 text-yellow-200 border border-yellow-400/40 px-1.5 py-0.5 rounded">
+                          Sample
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-muted capitalize">{r.city.replace(/-/g, ' ')}</div>
                   </div>
-                  {r.rating != null && r.review_count > 0 && (
+                  {r.rating != null && (r.is_mock || r.review_count > 0) && (
                     <div className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black text-brand text-[11px] font-extrabold">
                       ★ {r.rating.toFixed(1)}
                     </div>

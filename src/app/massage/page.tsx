@@ -13,67 +13,11 @@ import { MASSAGE_TYPE_SHORT, type MassageProviderPublic } from '@/lib/massage/ty
 const MASSAGE_CARD_BG =
   'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png'
 
-// Demo cards shown when the marketplace is empty so the UI never looks
-// broken pre-launch. Vanish automatically once any active provider is
-// listed via /massage/signup → admin verification. Slugs start with
-// "demo-" and links route to a friendly "preview" page (the slug won't
-// exist in the DB) — the cards themselves are visual previews only.
-const DEMO_PROVIDERS: MassageProviderPublic[] = [
-  {
-    slug: 'demo-sari-traditional-bali',
-    display_name: 'Sari',
-    gender: 'woman',
-    years_experience: 8,
-    massage_type: 'balinese',
-    bio: 'Traditional Balinese massage, deep tissue and aromatherapy. Soft hands, hotel-room outcalls in Kuta / Seminyak / Canggu. Calm bedside manner.',
-    price_60min_idr: 180_000,
-    price_90min_idr: 260_000,
-    price_120min_idr: 340_000,
-    city: 'Bali — Kuta',
-    service_area_notes: 'Kuta · Seminyak · Canggu · Legian',
-    whatsapp_e164: '+6281234567890',
-    profile_image_url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2023,%202026,%2001_50_25%20AM.png?updatedAt=1779475847340',
-    availability: 'online',
-    rating: 4.8,
-    rating_count: 42,
-  },
-  {
-    slug: 'demo-mas-andi-shiatsu',
-    display_name: 'Mas Andi',
-    gender: 'man',
-    years_experience: 12,
-    massage_type: 'shiatsu',
-    bio: 'Shiatsu and sports recovery — runners, surfers, golfers. Trained in Japan, 12 years practice. Brings own portable table and oils.',
-    price_60min_idr: 220_000,
-    price_90min_idr: 320_000,
-    price_120min_idr: 420_000,
-    city: 'Yogyakarta',
-    service_area_notes: 'Yogya Central · Sleman · hotel outcalls',
-    whatsapp_e164: '+6281234567891',
-    profile_image_url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2023,%202026,%2002_37_05%20AM.png?updatedAt=1779478648118',
-    availability: 'busy',
-    rating: 4.9,
-    rating_count: 87,
-  },
-  {
-    slug: 'demo-ibu-wayan-reflexology',
-    display_name: 'Ibu Wayan',
-    gender: 'woman',
-    years_experience: 20,
-    massage_type: 'refleksi',
-    bio: 'Reflexology + traditional pijat. 20 years experience, regular clients in Denpasar villas and hotels. English and Bahasa.',
-    price_60min_idr: 150_000,
-    price_90min_idr: 220_000,
-    price_120min_idr: 290_000,
-    city: 'Denpasar',
-    service_area_notes: 'Denpasar · Sanur · Renon',
-    whatsapp_e164: '+6281234567892',
-    profile_image_url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2023,%202026,%2001_58_30%20AM.png?updatedAt=1779476325724',
-    availability: 'offline',
-    rating: 4.6,
-    rating_count: 23,
-  },
-]
+// Mock therapists now live in the massage_providers table with
+// is_mock = true (see migration 0049). They're returned by the
+// marketplace API alongside real profiles and auto-hidden one-by-one
+// as real therapists sign up. Card UI renders mocks identically but
+// the Book Now button is replaced with a "Sample listing" pill.
 
 export default function MassageMarketplacePage() {
   return (
@@ -153,14 +97,14 @@ function MarketplaceInner() {
             {[0,1,2,3].map((i) => <div key={i} className="h-40 bg-white/5 rounded-2xl animate-pulse" />)}
           </div>
         ) : providers.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {DEMO_PROVIDERS
-              .filter((p) => gender === 'all' || p.gender === gender)
-              .map((p) => <ProviderCard key={p.slug} provider={p} demo />)}
+          <div className="rounded-2xl bg-black/85 border border-white/10 p-8 text-center text-ink/65 text-[13px]">
+            No therapists listed in this category yet.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {providers.map((p) => <ProviderCard key={p.slug} provider={p} />)}
+            {providers.map((p) => (
+              <ProviderCard key={p.slug} provider={p} demo={p.is_mock === true} />
+            ))}
           </div>
         )}
 
@@ -282,7 +226,7 @@ function ProviderCard({ provider: p, demo = false }: { provider: MassageProvider
           aria-label={`WhatsApp ${p.display_name}`}
         >
           <MessageCircle className="w-3.5 h-3.5" style={{ color: '#0A0A0A' }} />
-          Book Now
+          {demo ? 'Sample' : 'Book Now'}
         </a>
       </div>
     </div>

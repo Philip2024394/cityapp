@@ -15,6 +15,7 @@ const PUBLIC_COLS = [
   'whatsapp_e164',
   'profile_image_url',
   'availability',
+  'is_mock',
 ].join(', ')
 
 export async function GET(req: Request) {
@@ -29,9 +30,14 @@ export async function GET(req: Request) {
     .from('massage_providers')
     .select(PUBLIC_COLS)
     .eq('status', 'active')
-    // Sort online > busy > offline, then newest joiners first.
+    // Mocks are listed alongside reals to populate the marketplace at
+    // launch; once a mock is hidden (real signup displaces it) we drop
+    // it from the response. Reals ALWAYS render before mocks via the
+    // is_mock ASC order.
+    .or('is_mock.eq.false,mock_hidden_at.is.null')
+    .order('is_mock',      { ascending: true })
     .order('availability', { ascending: true })
-    .order('created_at', { ascending: false })
+    .order('created_at',   { ascending: false })
     .limit(200)
 
   if (city)   q = q.ilike('city', city)
