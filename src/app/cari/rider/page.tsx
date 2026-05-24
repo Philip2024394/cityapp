@@ -749,6 +749,11 @@ function FeaturedDriverCard({
             }}
           >
             Min {String(Math.min(eta, 99)).padStart(2, '0')}
+            {Number.isFinite(distanceToPickup) && distanceToPickup > 0 && (
+              <span className="text-black/55 font-bold">
+                · {distanceToPickup.toFixed(1)} km
+              </span>
+            )}
           </span>
         </span>
       </Link>
