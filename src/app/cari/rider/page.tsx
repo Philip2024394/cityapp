@@ -654,6 +654,18 @@ function FeaturedDriverCard({
             </div>
           )}
 
+          {/* BOTTOM-LEFT: brand mark watermark. Sits below the photo
+              hero, left of the centered colour/transmission/year row,
+              so it adds brand presence without competing for attention. */}
+          <img
+            aria-hidden
+            src="https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg-preview.png?updatedAt=1779107454479"
+            alt=""
+            loading="lazy"
+            className="absolute bottom-2 left-3 z-20 h-7 w-auto pointer-events-none select-none"
+            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}
+          />
+
           {/* Bike hero photo — max-size with top + bottom padding reserving
               the caption rows. Centered, object-contain so the bike fits
               without crop. */}
