@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Star, ArrowRight } from 'lucide-react'
+import { Star, ArrowRight, RotateCw, Bike, Cog, Settings2, Palette, Hash, Package } from 'lucide-react'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
@@ -534,14 +534,100 @@ function FeaturedDriverCard({
 }) {
   const { rider, fare, distanceToPickup, minApplied } = item
   const eta = etaMinutes(distanceToPickup)
+  const [flipped, setFlipped] = useState(false)
+
+  function toggleFlip(e: React.MouseEvent) {
+    e.preventDefault(); e.stopPropagation()
+    setFlipped((v) => !v)
+  }
+
+  const FlipBtn = ({ onBack = false }: { onBack?: boolean }) => (
+    <button
+      type="button"
+      onClick={toggleFlip}
+      aria-label={onBack ? 'Show driver details' : 'Show bike details'}
+      className="absolute top-2 right-2 z-30 w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90"
+      style={{
+        background: 'rgba(10,10,10,0.92)',
+        border: '1.5px solid #FACC15',
+        color: '#FACC15',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        boxShadow: '0 3px 10px rgba(0,0,0,0.45)',
+      }}
+    >
+      <RotateCw className="w-4 h-4" strokeWidth={2.5} />
+    </button>
+  )
+
+  const transmissionLabel =
+    rider.bike.type === 'matic'  ? 'Automatic' :
+    rider.bike.type === 'sport'  ? 'Sport / Manual' :
+    rider.bike.type === 'manual' ? 'Manual' : 'Unknown'
 
   return (
-    <article
-      className={
-        'card card-driver relative overflow-hidden animate-[fadeUp_0.4s_ease-out_both]' +
-        (isCheapest ? ' card-driver-cheapest' : '')
-      }
+    <div
+      className="relative animate-[fadeUp_0.4s_ease-out_both]"
+      style={{ perspective: '1400px' }}
     >
+      <div
+        className="relative"
+        style={{
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: flipped ? 'rotateY(180deg)' : 'none',
+        }}
+      >
+        {/* Back-face spec sheet — yellow brand panel. Absolute inset:0 so
+            it matches the front face's height (set by the photo image). */}
+        <div
+          className="absolute inset-0 rounded-3xl overflow-hidden p-5 flex flex-col"
+          style={{
+            background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
+            border: '1px solid rgba(0,0,0,0.85)',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
+          }}
+        >
+          <FlipBtn onBack />
+          <div className="flex items-center gap-2.5 mb-4 pr-12">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ background: '#0A0A0A', boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }}
+            >
+              <Bike className="w-6 h-6 text-brand" strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider font-extrabold text-black/65">Bike</div>
+              <div className="text-[18px] font-black text-black leading-tight truncate">
+                {rider.bike.make || '—'} {rider.bike.model || ''}
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 flex-1 content-start">
+            <SpecTile icon={Cog}        label="Engine"       value={rider.bike.cc ? `${rider.bike.cc} cc` : '—'} />
+            <SpecTile icon={Settings2}  label="Transmission" value={transmissionLabel} />
+            <SpecTile icon={Palette}    label="Colour"       value={rider.bike.color || '—'} />
+            <SpecTile icon={Hash}       label="Plate"        value={rider.bike.plate || '—'} mono />
+            <SpecTile icon={Bike}       label="Year"         value={rider.bike.year ? String(rider.bike.year) : '—'} />
+            <SpecTile icon={Package}    label="Top box"      value={rider.bike.hasBox ? 'Yes' : 'No'} />
+          </div>
+        </div>
+
+        {/* Front face — the original card photo + overlays. */}
+        <article
+          className={
+            'card card-driver relative overflow-hidden' +
+            (isCheapest ? ' card-driver-cheapest' : '')
+          }
+          style={{
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+          }}
+        >
+          <FlipBtn />
       <img
         src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2018,%202026,%2001_32_57%20AM.png"
         alt=""
@@ -562,8 +648,9 @@ function FeaturedDriverCard({
       </div>
 
       {/* Bike model — plain uppercase text in the top-right corner.
-          Line 1: MAKE MODEL  |  Line 2: YEAR */}
-      <div className="absolute top-3 right-[28px] z-10 text-right max-w-[42%]">
+          Line 1: MAKE MODEL  |  Line 2: YEAR. Shifted left to clear the
+          flip button at right-2. */}
+      <div className="absolute top-3 right-[52px] z-10 text-right max-w-[38%]">
         <div className="text-[14px] font-extrabold text-black leading-tight truncate uppercase tracking-wide">
           {rider.bike.make} {rider.bike.model}
         </div>
@@ -705,7 +792,39 @@ function FeaturedDriverCard({
           </div>
         </div>
       </div>
-    </article>
+        </article>
+      </div>
+    </div>
+  )
+}
+
+// Spec tile for the back-face bike sheet. Black-on-yellow chip.
+function SpecTile({
+  icon: Icon, label, value, mono = false,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  label: string
+  value: string
+  mono?: boolean
+}) {
+  return (
+    <div
+      className="rounded-xl px-3 py-2"
+      style={{
+        background: 'rgba(10,10,10,0.92)',
+        border: '1px solid rgba(0,0,0,0.85)',
+      }}
+    >
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-brand">
+        <Icon className="w-3 h-3" strokeWidth={2.5} />
+        {label}
+      </div>
+      <div
+        className={`text-[14px] font-extrabold text-white mt-0.5 truncate ${mono ? 'font-mono' : ''}`}
+      >
+        {value}
+      </div>
+    </div>
   )
 }
 
