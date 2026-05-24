@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ replaced the legacy `android:allowBackup` mechanism with
+  this rules file. We opt OUT of every form of automated backup:
+
+    • cloud-backup   — Google Drive auto-backup
+    • device-transfer — phone-to-phone transfer on setup
+
+  Rationale: the app holds the driver's background-location queue,
+  partner-attribution session ids, FCM tokens, and the Supabase auth
+  session. None of these should leave the device automatically — they
+  must be re-acquired on a fresh install via a clean sign-in.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

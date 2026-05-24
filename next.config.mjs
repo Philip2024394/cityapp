@@ -91,6 +91,17 @@ const nextConfig = {
         source: '/:path*',
         headers: SECURITY_HEADERS,
       },
+      {
+        // Android App Links verification needs JSON content-type and
+        // permissive CORS so Google's verifier can fetch the file.
+        // Public deeplink contract — cache for 1 hour.
+        source: '/.well-known/assetlinks.json',
+        headers: [
+          { key: 'Content-Type',                 value: 'application/json' },
+          { key: 'Access-Control-Allow-Origin',  value: '*' },
+          { key: 'Cache-Control',                value: 'public, max-age=3600' },
+        ],
+      },
     ]
   },
 }
