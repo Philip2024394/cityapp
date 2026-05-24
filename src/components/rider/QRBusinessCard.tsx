@@ -23,6 +23,16 @@ export default function QRBusinessCard({ rider, profileUrl }: Props) {
       </div>
 
       <div className="bizcard-body">
+        {/* Decorative artwork — sits behind the left column, low opacity
+            so the text on top stays legible. removebg PNG so the yellow
+            card bg shows through. */}
+        <img
+          aria-hidden
+          src="https://ik.imagekit.io/nepgaxllc/Untitledsssxx-removebg-preview.png?updatedAt=1779200415319"
+          alt=""
+          className="bizcard-art"
+        />
+
         {/* Left column: photo + identity */}
         <div className="bizcard-left">
           <img src={rider.photoUrl} alt={rider.name} className="bizcard-photo" />
@@ -113,8 +123,24 @@ export default function QRBusinessCard({ rider, profileUrl }: Props) {
         .bizcard-body {
           display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px;
           padding: 22px;
+          position: relative;
+          isolation: isolate; /* contains the absolute artwork z-index */
         }
-        .bizcard-left { display: flex; flex-direction: column; gap: 10px; }
+        /* Decorative left-side artwork — sits behind everything in the body.
+           Pointer-events:none so it never intercepts taps on text content. */
+        .bizcard-art {
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 55%;
+          object-fit: contain;
+          object-position: left center;
+          opacity: 0.18;
+          z-index: 0;
+          pointer-events: none;
+          user-select: none;
+        }
+        .bizcard-left  { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
+        .bizcard-right { position: relative; z-index: 1; }
         .bizcard-photo {
           width: 92px; height: 92px; border-radius: 18px; object-fit: cover;
           border: 3px solid #0A0A0A;
