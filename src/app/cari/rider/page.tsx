@@ -599,17 +599,13 @@ function FeaturedDriverCard({
         >
           <FlipBtn onBack />
 
-          {/* TOP-LEFT: brand + cc. Sits opposite the flip button so the
-              corner is balanced. */}
+          {/* TOP-LEFT: brand + model + cc inline (e.g. "HONDA CB150R CC150").
+              Sits opposite the flip button so the corner is balanced. */}
           <div className="absolute top-3 left-4 z-20 max-w-[60%]">
             <div className="text-[15px] font-black text-black leading-tight truncate uppercase tracking-wide">
               {(rider.bike.make || '—')} {(rider.bike.model || '')}
+              {rider.bike.cc != null && <> CC{rider.bike.cc}</>}
             </div>
-            {rider.bike.cc != null && (
-              <div className="text-[13px] font-extrabold text-black/80 leading-tight mt-0.5">
-                {rider.bike.cc} CC
-              </div>
-            )}
           </div>
 
           {/* Bike hero photo — max-size with top + bottom padding reserving
