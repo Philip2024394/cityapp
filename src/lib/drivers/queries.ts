@@ -141,8 +141,12 @@ export async function fetchActiveDriversBrowser(): Promise<Rider[]> {
   // even if they forgot to flip offline. NULL online_until means
   // "until I toggle off" — also accepted.
   const nowIso = new Date().toISOString()
+  // Public marketplace read → drivers_public view (omits payment cols
+  // per mig 0067). Subscription relationship still navigates via the FK
+  // on the underlying drivers table — PostgREST follows it through the
+  // security_invoker view.
   const { data, error } = await supabase
-    .from('drivers')
+    .from('drivers_public')
     .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('status', 'active')
     .or(`online_until.is.null,online_until.gt.${nowIso}`)
@@ -249,7 +253,7 @@ export async function fetchDriverBySlugBrowser(slug: string): Promise<Rider | nu
   const supabase = getBrowserSupabase()
   if (!supabase) return MOCK_RIDERS.find((r) => r.slug === slug) ?? null
   const { data, error } = await supabase
-    .from('drivers')
+    .from('drivers_public')
     .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('slug', slug)
     .eq('status', 'active')
@@ -297,7 +301,7 @@ export async function fetchTourGuideDriversBrowser(city?: string): Promise<Rider
     return MOCK_RIDERS.filter((r) => r.tourGuideEnabled && (!city || r.city.toLowerCase() === city.toLowerCase()))
   }
   let q = supabase
-    .from('drivers')
+    .from('drivers_public')
     .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('status', 'active')
     .eq('tour_guide_enabled', true)
