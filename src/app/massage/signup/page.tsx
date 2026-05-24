@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
+import KtpUploader from '@/components/kyc/KtpUploader'
 import { MASSAGE_TYPE_GROUPS, type MassageType } from '@/lib/massage/types'
 
 // Massage provider signup. Auth-gated like /partners/signup — must be
@@ -17,7 +18,7 @@ const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202
 type AuthState =
   | { status: 'loading' }
   | { status: 'anon' }
-  | { status: 'signedIn'; email: string | null }
+  | { status: 'signedIn'; userId: string; email: string | null }
   | { status: 'alreadyProvider'; slug: string }
 
 export default function MassageSignupPage() {
@@ -41,14 +42,14 @@ export default function MassageSignupPage() {
           }
         }
       } catch { /* fall through */ }
-      setAuth({ status: 'signedIn', email: user.email ?? null })
+      setAuth({ status: 'signedIn', userId: user.id, email: user.email ?? null })
     })
   }, [router])
 
   if (auth.status === 'loading')   return <Shell><Loading /></Shell>
   if (auth.status === 'alreadyProvider') return <Shell><AlreadyProvider /></Shell>
   if (auth.status === 'anon')      return <Shell><Gate /></Shell>
-  return <Shell><Form /></Shell>
+  return <Shell><Form userId={auth.userId} /></Shell>
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -109,7 +110,7 @@ function Gate() {
   )
 }
 
-function Form() {
+function Form({ userId }: { userId: string }) {
   const router = useRouter()
   const [f, setF] = useState({
     display_name: '',
@@ -251,10 +252,7 @@ function Form() {
           <p className="text-[11px] text-ink/50 mt-1">Upload-from-device UI coming soon — for now paste an ImageKit / Drive URL.</p>
         </Field>
 
-        <Field label="KTP image URL (private — admin verification only)">
-          <input type="url" value={f.ktp_image_url} onChange={(e) => upd('ktp_image_url', e.target.value)} placeholder="https://… (paste KTP image URL)" className={inputCls} />
-          <p className="text-[11px] text-ink/50 mt-1">Stored privately, only visible to verifiers. Required before profile goes live.</p>
-        </Field>
+        <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={userId} />
 
         {err && (
           <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[13px] px-3 py-2">{err}</div>

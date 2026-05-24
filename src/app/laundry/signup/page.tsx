@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
+import KtpUploader from '@/components/kyc/KtpUploader'
 
 const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 type AuthState =
   | { status: 'loading' }
   | { status: 'anon' }
-  | { status: 'signedIn'; email: string | null }
+  | { status: 'signedIn'; userId: string; email: string | null }
   | { status: 'alreadyProvider' }
 
 export default function LaundrySignupPage() {
@@ -30,14 +31,14 @@ export default function LaundrySignupPage() {
           if (j.provider) { setAuth({ status: 'alreadyProvider' }); setTimeout(() => router.replace('/dashboard/laundry'), 400); return }
         }
       } catch { /* fall through */ }
-      setAuth({ status: 'signedIn', email: user.email ?? null })
+      setAuth({ status: 'signedIn', userId: user.id, email: user.email ?? null })
     })
   }, [router])
 
   if (auth.status === 'loading') return <Shell><div className="flex items-center justify-center pt-32"><div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" /></div></Shell>
   if (auth.status === 'alreadyProvider') return <Shell><div className="px-4 pt-20 text-center"><h1 className="text-[20px] font-black">Opening your dashboard…</h1></div></Shell>
   if (auth.status === 'anon') return <Shell><Gate /></Shell>
-  return <Shell><Form /></Shell>
+  return <Shell><Form userId={auth.userId} /></Shell>
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -73,7 +74,7 @@ function Gate() {
   )
 }
 
-function Form() {
+function Form({ userId }: { userId: string }) {
   const router = useRouter()
   const [f, setF] = useState({
     display_name: '',
@@ -182,7 +183,7 @@ function Form() {
         <Field label="City"><input value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="Denpasar" className={inputCls} /></Field>
         <Field label="Service area"><input value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Kuta · Seminyak · Canggu" className={inputCls} /></Field>
         <Field label="Profile image URL"><input type="url" value={f.profile_image_url} onChange={(e) => upd('profile_image_url', e.target.value)} placeholder="https://… (hosted image URL)" className={inputCls} /></Field>
-        <Field label="KTP image URL (private)"><input type="url" value={f.ktp_image_url} onChange={(e) => upd('ktp_image_url', e.target.value)} placeholder="https://… (KTP image URL)" className={inputCls} /></Field>
+        <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={userId} />
 
         {err && <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[13px] px-3 py-2">{err}</div>}
 
