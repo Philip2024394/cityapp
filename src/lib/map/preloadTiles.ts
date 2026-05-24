@@ -179,6 +179,55 @@ export async function preloadCityTiles(
 }
 
 /**
+ * Pre-warm tiles for an arbitrary bbox — not tied to PRELOAD_CITIES.
+ * Used by /cari to warm the actual pickup → dropoff corridor for the
+ * user's specific trip, including locations outside our 10 curated
+ * cities. Bbox is auto-expanded by ~200m on each side so route
+ * pan/zoom outside the strict bounds still hits cached tiles.
+ *
+ * Returns 0 when skipped (save-data, 2G, PMTiles configured, etc.) or
+ * when the bbox is invalid.
+ */
+export async function preloadBbox(
+  bbox: [number, number, number, number],
+  opts?: { zmin?: number; zmax?: number; label?: string },
+): Promise<number> {
+  if (shouldSkipPreload()) return 0
+  const [w, s, e, n] = bbox
+  if (![w, s, e, n].every((v) => Number.isFinite(v))) return 0
+  if (w >= e || s >= n) return 0
+  // Pad bbox by ~200m on each side so the user's pinch-out and slight
+  // pan after the route loads still hits cached tiles.
+  const pad = 0.002 // ~220m at the equator
+  const padded: [number, number, number, number] = [w - pad, s - pad, e + pad, n + pad]
+  const zmin = opts?.zmin ?? DEFAULT_ZOOM_MIN
+  const zmax = opts?.zmax ?? DEFAULT_ZOOM_MAX
+  const urls = buildTileUrls(padded, zmin, zmax)
+  await runConcurrent(urls, CONCURRENCY)
+  return urls.length
+}
+
+/**
+ * Compute a tight bbox containing both points + an optional buffer
+ * (default 5km). Used to derive the warm region for /cari when both
+ * pickup + dropoff are set.
+ */
+export function bboxFromPoints(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number },
+  bufferKm = 5,
+): [number, number, number, number] {
+  const minLat = Math.min(a.lat, b.lat)
+  const maxLat = Math.max(a.lat, b.lat)
+  const minLng = Math.min(a.lng, b.lng)
+  const maxLng = Math.max(a.lng, b.lng)
+  const latPad = bufferKm / 111
+  // Lng pad shrinks with latitude (away from equator).
+  const lngPad = bufferKm / (111 * Math.cos((minLat * Math.PI) / 180))
+  return [minLng - lngPad, minLat - latPad, maxLng + lngPad, maxLat + latPad]
+}
+
+/**
  * Pick the nearest PRELOAD_CITIES entry to the given lat/lng. Returns
  * undefined if no city centroid is within ~150km (likely the user is
  * outside our primary markets).

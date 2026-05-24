@@ -72,6 +72,26 @@ type MapStyleSpec = {
 const styleCache = new Map<'positron' | 'dark', Promise<MapStyleSpec>>()
 
 /**
+ * Returns a Capacitor-asset URL for the given relative path inside
+ * android/app/src/main/assets/, or null when not running inside a
+ * Capacitor WebView (browser, SSR, dev server).
+ *
+ * Capacitor 8 maps native assets onto the WebView under the scheme:
+ *   capacitor://localhost/_capacitor_file_/android_asset/<path>
+ * We sniff for the Capacitor global rather than @capacitor/core to keep
+ * this module dependency-free (server-side imports of this file would
+ * otherwise pull a browser-only package). The sniff is null-safe so
+ * the function returns null on every non-native surface.
+ */
+function resolveCapacitorAssetUrl(relativePath: string): string | null {
+  if (typeof window === 'undefined') return null
+  const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor
+  if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return null
+  if (typeof cap.getPlatform === 'function' && cap.getPlatform() !== 'android') return null
+  return `capacitor://localhost/_capacitor_file_/android_asset/${relativePath.replace(/^\/+/, '')}`
+}
+
+/**
  * Builds the MapLibre style for the given variant. Memoised per variant
  * for the page lifetime so we never re-fetch within a session.
  */
@@ -91,9 +111,29 @@ export function getResilientStyle(variant: 'positron' | 'dark'): Promise<MapStyl
       return emptyFallbackStyle(variant)
     }
 
+    // BUNDLED-APK PATH (Layer 4 per TILE_RESILIENCE.md):
+    // On Capacitor, prefer a PMTiles archive shipped inside the APK at
+    // android/app/src/main/assets/tiles/cities-overview.pmtiles. Lets
+    // the app render a map with literally zero internet on first launch.
+    // Capacitor exposes asset files via the capacitor:// scheme; the
+    // resolveCapacitorAssetUrl helper builds the right URL or returns
+    // null when we're not on Capacitor (web / dev / SSR).
+    const capacitorAsset = resolveCapacitorAssetUrl('tiles/cities-overview.pmtiles')
+    if (capacitorAsset) {
+      // Detect at runtime — only commit to bundled asset if it actually
+      // resolves (HEAD-style probe). Falls through to env-var path if
+      // the bundled file isn't present in this build of the APK.
+      try {
+        const probe = await fetch(capacitorAsset, { method: 'GET', headers: { Range: 'bytes=0-15' } })
+        if (probe.ok || probe.status === 206) {
+          return buildProtomapsStyle(`pmtiles://${capacitorAsset}`, variant)
+        }
+      } catch { /* asset missing — fall through */ }
+    }
+
     const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL
     if (pmtilesUrl) {
-      // PRIMARY: pmtiles + protomaps theme
+      // PRIMARY (web + R2-backed APK): pmtiles + protomaps theme
       return buildProtomapsStyle(pmtilesUrl, variant)
     }
     // FALLBACK: original OpenFreeMap path

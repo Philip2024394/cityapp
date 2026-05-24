@@ -12,6 +12,7 @@ import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
 import { haversineKm } from '@/lib/geo/haversine'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
+import { preloadBbox, bboxFromPoints } from '@/lib/map/preloadTiles'
 import { logNav } from '@/lib/perf/navTiming'
 import type { Rider, ServiceType } from '@/types/rider'
 
@@ -141,6 +142,28 @@ function PlanTripPageInner() {
       if (!pickupLabel) setPickupLabel('My location')
     }
   }, [geo.coords, pickup, pickupLabel])
+
+  // Phase C — auto-warm the pickup→dropoff bbox once both ends are set.
+  // Fires only once per coord pair (state guard via JSON key), idle-
+  // scheduled so it never competes with the user typing. Cooperates
+  // with shouldSkipPreload() so 2G / Save-Data users are unaffected.
+  const [warmedKey, setWarmedKey] = useState<string | null>(null)
+  useEffect(() => {
+    if (!pickup || !dropoff) return
+    const key = `${pickup.lat.toFixed(3)},${pickup.lng.toFixed(3)}|${dropoff.lat.toFixed(3)},${dropoff.lng.toFixed(3)}`
+    if (warmedKey === key) return
+    const idle = (cb: () => void) => {
+      type RIC = (fn: () => void, opts?: { timeout?: number }) => number
+      const ric = (window as Window & { requestIdleCallback?: RIC }).requestIdleCallback
+      if (typeof ric === 'function') ric(cb, { timeout: 2500 })
+      else setTimeout(cb, 600)
+    }
+    idle(() => {
+      void preloadBbox(bboxFromPoints(pickup, dropoff, 5))
+        .then(() => setWarmedKey(key))
+        .catch(() => { /* best-effort */ })
+    })
+  }, [pickup, dropoff, warmedKey])
 
   // Road-distance preview. Renders instantly with haversine × 1.3
   // and upgrades to the OSRM real road km once the proxy responds, so
