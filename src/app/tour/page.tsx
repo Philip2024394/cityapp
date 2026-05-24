@@ -86,16 +86,12 @@ export default async function TourGuideFeedPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {list.map((r) => (
-              <Link
-                key={r.id}
-                href={r.is_mock ? '#' : `/tour/${r.slug}`}
-                onClick={r.is_mock ? (e) => e.preventDefault() : undefined}
-                aria-disabled={r.is_mock}
-                className={`block card p-4 transition ${
-                  r.is_mock ? 'opacity-85 cursor-not-allowed' : 'active:scale-[0.99]'
-                }`}
-              >
+            {list.map((r) => {
+              // Server component — can't pass onClick to Link, so mocks
+              // render as a plain non-interactive <div> and reals as a
+              // navigable <Link>. Cleaner than a polymorphic wrapper.
+              const inner = (
+                <>
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
@@ -133,8 +129,26 @@ export default async function TourGuideFeedPage() {
                     </div>
                   )}
                 </div>
-              </Link>
-            ))}
+                </>
+              )
+              return r.is_mock ? (
+                <div
+                  key={r.id}
+                  aria-disabled
+                  className="block card p-4 opacity-85 cursor-not-allowed"
+                >
+                  {inner}
+                </div>
+              ) : (
+                <Link
+                  key={r.id}
+                  href={`/tour/${r.slug}`}
+                  className="block card p-4 active:scale-[0.99] transition"
+                >
+                  {inner}
+                </Link>
+              )
+            })}
           </div>
         )}
 
