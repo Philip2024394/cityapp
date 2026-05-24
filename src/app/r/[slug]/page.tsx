@@ -7,10 +7,10 @@ import {
   MapPin, Bike as BikeIcon, Star, X as XIcon,
   Search as SearchIcon, Check, Plus,
 } from 'lucide-react'
-import OfflineFallback from '@/components/rider/OfflineFallback'
+import DriverUnavailableCard from '@/components/rider/DriverUnavailableCard'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import ReportReviewButton from '@/components/reviews/ReportReviewButton'
-import { findRiderBySlug, getOnlineRiders } from '@/data/mockRiders'
+import { findRiderBySlug } from '@/data/mockRiders'
 import { fetchDriverBySlugBrowser } from '@/lib/drivers/queries'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -19,7 +19,7 @@ import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
-import { writePendingBooking } from '@/lib/booking/pending-booking'
+import { writePendingBooking, readTriedDriverIds } from '@/lib/booking/pending-booking'
 import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
 import { pingDriverContact } from '@/lib/notify/clientPing'
 import { idr } from '@/lib/format/idr'
@@ -90,6 +90,24 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
       if (!cancelled && r) setMaybeRider(r)
     })
     return () => { cancelled = true }
+  }, [slug])
+
+  // Re-fetch when the tab regains focus — driver could have toggled
+  // availability while the user was on this page (or returning from
+  // WhatsApp). Keeps the busy/offline card honest without polling.
+  useEffect(() => {
+    function refetchOnFocus() {
+      if (document.visibilityState !== 'visible') return
+      fetchDriverBySlugBrowser(slug).then((r) => {
+        if (r) setMaybeRider(r)
+      }).catch(() => { /* best-effort */ })
+    }
+    document.addEventListener('visibilitychange', refetchOnFocus)
+    window.addEventListener('focus', refetchOnFocus)
+    return () => {
+      document.removeEventListener('visibilitychange', refetchOnFocus)
+      window.removeEventListener('focus', refetchOnFocus)
+    }
   }, [slug])
 
   // Layer 1 ↔ Layer 2 content: places this driver curates + nearby drivers
@@ -310,6 +328,26 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
   // touch lag = double-tap → two window.open(wa.me) calls + two
   // writePendingBooking() entries. Driver gets double WhatsApp pings.
   const [confirmingBooking, setConfirmingBooking] = useState(false)
+
+  // "Already contacted" state — read from localStorage on mount + whenever
+  // tab regains focus (user returns from WhatsApp). Used to change the
+  // Confirm Driver CTA label so returners see they already contacted
+  // this driver and avoid an accidental second WhatsApp ping.
+  const [alreadyTried, setAlreadyTried] = useState(false)
+  useEffect(() => {
+    if (!maybeRider) return
+    function check() {
+      const ids = new Set(readTriedDriverIds())
+      setAlreadyTried(ids.has(maybeRider!.id))
+    }
+    check()
+    document.addEventListener('visibilitychange', check)
+    window.addEventListener('focus', check)
+    return () => {
+      document.removeEventListener('visibilitychange', check)
+      window.removeEventListener('focus', check)
+    }
+  }, [maybeRider])
   const showLocChip =
     !locChipDismissed && !geo.coords && geo.status !== 'requesting'
 
@@ -329,49 +367,24 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     if (geo.coords) { setPickup(geo.coords); setPickupLabel('My location') }
   }
 
-  // PAST_DUE: subscription lapsed. We don't expose the billing detail
-  // publicly — visitor sees a neutral "profile sedang tidak aktif"
-  // banner + nearby alternatives. The driver themselves sees the red
-  // renewal banner on /dashboard, so the recovery path is unambiguous.
-  const isPastDue = rider.subscriptionStatus === 'past_due'
-                 || rider.subscriptionStatus === 'canceled'
-  if (isPastDue) {
-    const nearby = getOnlineRiders(rider.id)
-    return (
-      <main className="min-h-screen pb-16">
-        <PageBackground />
-        <BackNav />
-        <div className="max-w-2xl mx-auto px-4 pt-2">
-          <RiderHero rider={rider} dimmed busy={false} />
-          <div className="mt-5 space-y-3">
-            <div
-              className="card p-4"
-              style={{ background: 'rgba(148,163,184,0.05)', borderColor: 'rgba(148,163,184,0.20)' }}
-            >
-              <div className="text-[13px] font-extrabold uppercase tracking-wider text-muted">
-                Profile sedang tidak aktif
-              </div>
-              <p className="text-[14px] text-ink/85 leading-relaxed mt-1.5">
-                {rider.name} sedang tidak menerima booking. Coba driver lain di sekitarmu.
-              </p>
-            </div>
-            <OfflineFallback
-              offlineRider={rider}
-              nearbyRiders={nearby}
-              customerLocation={pickup ?? geo.coords}
-            />
-          </div>
-        </div>
-      </main>
-    )
-  }
-
   // OFFLINE / BUSY fallback view. A driver who is BUSY (on a service)
   // is shown with distinct copy and a blue "on service" badge — offline
   // drivers are greyscaled and labelled offline.
-  if (!rider.isOnline) {
-    const nearby = getOnlineRiders(rider.id)
+  // Driver not bookable — replace the booking section with a status card
+  // + "Lihat driver lain" CTA that carries the user's trip-in-progress
+  // forward to /cari/rider. Three reasons collapse to the same UX with
+  // different copy + colour:
+  //   busy    — currently on a delivery
+  //   offline — went off-duty
+  //   lapsed  — subscription past_due / canceled (was an audit gap —
+  //             past_due drivers' /r/[slug] used to render the full
+  //             booking flow even though they couldn't accept work)
+  const subLapsed = rider.subscriptionStatus === 'past_due'
+                 || rider.subscriptionStatus === 'canceled'
+  if (!rider.isOnline || subLapsed) {
     const isBusy = rider.availability === 'busy'
+    const reason: 'busy' | 'offline' | 'lapsed' =
+      subLapsed ? 'lapsed' : isBusy ? 'busy' : 'offline'
     return (
       <main className="min-h-screen pb-16">
         <PageBackground />
@@ -379,10 +392,15 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
         <div className="max-w-2xl mx-auto px-4 pt-2">
           <RiderHero rider={rider} dimmed={!isBusy} busy={isBusy} />
           <div className="mt-5">
-            <OfflineFallback
-              offlineRider={rider}
-              nearbyRiders={nearby}
-              customerLocation={pickup ?? geo.coords}
+            <DriverUnavailableCard
+              driverName={rider.name}
+              reason={reason}
+              service={service}
+              pickup={pickup}
+              pickupLabel={pickupLabel}
+              dropoff={dropoff}
+              dropoffLabel={dropoffLabel}
+              pitstop={pitstop}
             />
           </div>
         </div>
@@ -836,7 +854,11 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               }}
             >
               <Check className="w-4 h-4" style={{ color: '#FACC15' }} />
-              <span>{confirmingBooking ? 'Membuka WhatsApp…' : 'Confirm Driver'}</span>
+              <span>{
+                confirmingBooking ? 'Membuka WhatsApp…'
+                : alreadyTried    ? 'Sudah dihubungi · Chat lagi'
+                                  : 'Confirm Driver'
+              }</span>
               {quote ? (
                 <span
                   className="ml-2 font-extrabold tabular-nums cr-fare-heartbeat"
