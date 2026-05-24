@@ -43,7 +43,7 @@ const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasaasdasd-removebg-preview.png',
     href: '/handyman' },
   { id: 'home-clean', label: 'Bike Home Clean', sub: 'Bersih rumah · per jam / hari',
-    img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdasd-removebg-preview%20(1).png',
     href: '/home-clean' },
 ]
 

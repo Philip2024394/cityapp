@@ -6,7 +6,7 @@ import { MessageCircle, Star, Sparkles } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import type { HomeCleanProviderPublic } from '@/lib/home-clean/types'
 
-const HOME_CLEAN_CARD_BG = 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png'
+const HOME_CLEAN_CARD_BG = 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdasd-removebg-preview%20(1).png'
 
 export default function HomeCleanMarketplacePage() {
   return (
