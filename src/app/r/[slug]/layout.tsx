@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { fetchDriverBySlugServer } from '@/lib/drivers/queries.server'
 import JsonLd from '@/components/seo/JsonLd'
 
@@ -54,6 +55,36 @@ export default async function RiderLayout({
 }) {
   const { slug } = await params
   const driver = await fetchDriverBySlugServer(slug).catch(() => null)
+
+  // Lapsed-driver redirect — runs BEFORE any HTML renders so the user
+  // never sees a broken-looking "this driver is dead" profile page.
+  // A driver shared their link on social media → that traffic is
+  // valuable; we land the visitor on the main booking page instead of
+  // burning the click. Query params preserve attribution so we can
+  // see in analytics which lapsed driver brought how much traffic.
+  //
+  // Conditions that trigger redirect:
+  //   • drivers.status        in ('suspended', 'removed')   — admin action
+  //   • subscriptionStatus    in ('past_due', 'canceled')   — billing lapsed
+  //
+  // Onine/busy/offline drivers fall through — the page handles those
+  // states with the DriverUnavailableCard (lets the visitor see the
+  // driver they expected + a fast escape to alternates).
+  if (driver) {
+    const subLapsed = driver.subscriptionStatus === 'past_due'
+                   || driver.subscriptionStatus === 'canceled'
+    // The Rider type doesn't surface drivers.status directly; the
+    // queries layer filters out non-active drivers from public reads.
+    // So if we got a Rider back, status is 'active' (or mock). The
+    // lapsed gate above catches the only remaining bookable-but-dead state.
+    if (subLapsed) {
+      const qs = new URLSearchParams({
+        from: 'lapsed_driver',
+        slug: driver.slug,
+      })
+      redirect(`/cari?${qs.toString()}`)
+    }
+  }
 
   // JSON-LD LocalBusiness — gives Google a structured handle on each
   // driver so they can appear in Maps / Knowledge Graph results.
