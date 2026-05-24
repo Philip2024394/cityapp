@@ -92,11 +92,64 @@ async function runExpiry() {
     flippedOffline = (flipped ?? []).length
   }
 
+  // Pass 3 — sweep the 5 service-provider verticals.
+  // Schema across the 5 is identical: subscription_status (trial/active/
+  // expired/cancelled), trial_ends_at, paid_until, availability. Logic:
+  //   • trial   + trial_ends_at < now() AND paid_until null/past →
+  //                                   subscription_status='expired'
+  //   • active  + paid_until < now()                                 →
+  //                                   subscription_status='expired'
+  //   • any expired/cancelled with availability ∈ {online,busy} →
+  //                                   availability='offline'
+  const PROVIDER_TABLES = [
+    'massage_providers',
+    'beautician_providers',
+    'laundry_providers',
+    'handyman_providers',
+    'home_clean_providers',
+  ] as const
+  const providerCounts: Record<string, { trial_expired: number; paid_expired: number; flipped_offline: number }> = {}
+  for (const table of PROVIDER_TABLES) {
+    // 3a — trial lapsed (no successful payment): subscription_status='expired'
+    const { data: trialFlip } = await admin
+      .from(table)
+      .update({ subscription_status: 'expired' })
+      .eq('subscription_status', 'trial')
+      .lt('trial_ends_at', now)
+      .or('paid_until.is.null,paid_until.lt.' + now)
+      .select('id')
+
+    // 3b — paid window expired: subscription_status='expired'
+    const { data: paidFlip } = await admin
+      .from(table)
+      .update({ subscription_status: 'expired' })
+      .eq('subscription_status', 'active')
+      .lt('paid_until', now)
+      .select('id')
+
+    // 3c — flip availability offline for any expired/cancelled rows
+    // that are still online/busy. Matches the driver-side belt+braces
+    // logic above so an expired provider can't keep appearing online.
+    const { data: avFlip } = await admin
+      .from(table)
+      .update({ availability: 'offline' })
+      .in('subscription_status', ['expired', 'cancelled'])
+      .in('availability', ['online', 'busy'])
+      .select('id')
+
+    providerCounts[table] = {
+      trial_expired:   (trialFlip ?? []).length,
+      paid_expired:    (paidFlip  ?? []).length,
+      flipped_offline: (avFlip    ?? []).length,
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     ran_at: now,
     trial_expired: (trialsExpired ?? []).length,
     active_expired: (activeExpired ?? []).length,
     drivers_flipped_offline: flippedOffline,
+    providers: providerCounts,
   })
 }

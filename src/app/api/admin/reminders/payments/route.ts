@@ -33,15 +33,27 @@ type ReminderKind =
   | 'rental_company_t_plus_1'
   | 'tour_guide_t_minus_7' | 'tour_guide_t_minus_3' | 'tour_guide_t_minus_1'
   | 'tour_guide_t_plus_1'
+  | `${'massage'|'beautician'|'laundry'|'handyman'|'home_clean'}_t_${'minus_7'|'minus_3'|'minus_1'|'plus_1'}`
   | 'pending_intent_stuck'
 
 type Plan = 'driver' | 'rental_company' | 'tour_guide'
+  | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cityriders.id'
 const RENEW_URL          = APP_URL + '/dashboard'
 const UPGRADE_URL        = APP_URL + '/rent/upgrade'
 const TOUR_UPGRADE_URL   = APP_URL + '/tour/upgrade'
+
+// Per-vertical config for the 5 service-provider reminders (F4 — closes
+// the lifecycle audit gap that left these verticals reminder-less).
+const PROVIDER_CONFIG = [
+  { plan: 'massage'     as const, table: 'massage_providers'     as const, label: 'Massage Therapist', upgradeUrl: APP_URL + '/massage/upgrade'    },
+  { plan: 'beautician'  as const, table: 'beautician_providers'  as const, label: 'Beautician',        upgradeUrl: APP_URL + '/beautician/upgrade' },
+  { plan: 'laundry'     as const, table: 'laundry_providers'     as const, label: 'Bike Laundry',      upgradeUrl: APP_URL + '/laundry/upgrade'    },
+  { plan: 'handyman'    as const, table: 'handyman_providers'    as const, label: 'Handyman (Tukang)', upgradeUrl: APP_URL + '/handyman/upgrade'   },
+  { plan: 'home_clean'  as const, table: 'home_clean_providers'  as const, label: 'Bike Home Clean',   upgradeUrl: APP_URL + '/home-clean/upgrade' },
+] as const
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -139,6 +151,41 @@ async function runSweep() {
     if (result === 'sent') summary.tour_guide_reminded++
   }
 
+  // ── Service-provider verticals (5 tables, identical shape) ──────────
+  // Each vertical has a paid_until column (active subs) AND a
+  // trial_ends_at column (pre-paid users). Sweep both: if paid_until
+  // is set use that as the due date, else fall back to trial_ends_at.
+  // Schema check enforces subscription_status in {trial, active, expired, cancelled}.
+  const providerRemindedByPlan: Record<string, number> = {}
+  for (const cfg of PROVIDER_CONFIG) {
+    const { data: rows } = await admin
+      .from(cfg.table)
+      .select('user_id, subscription_status, trial_ends_at, paid_until')
+      .in('subscription_status', ['trial', 'active', 'expired'])
+    let reminded = 0
+    for (const row of rows ?? []) {
+      const userId = row.user_id as string | null
+      if (!userId) continue
+      // Pick due date: paid_until if set + active, else trial_ends_at.
+      const dueIso = row.paid_until ?? row.trial_ends_at
+      if (!dueIso) continue
+      const periodEnd = new Date(dueIso as string)
+      const offsetDays = Math.round((periodEnd.getTime() - now) / DAY_MS)
+      if (offsetDays > 7 || offsetDays < -1) continue
+      const kind = pickKindForOffset(periodEnd, now, cfg.plan)
+      if (!kind) continue
+
+      const result = await maybeSend(admin, {
+        userId, kind, periodEnd, plan: cfg.plan,
+        renewUrl: cfg.upgradeUrl,
+        verticalLabel: cfg.label,
+      })
+      bumpSummary(summary, result)
+      if (result === 'sent') reminded++
+    }
+    providerRemindedByPlan[cfg.plan] = reminded
+  }
+
   // ── Stuck pending Snap intents (24h–72h old) ────────────────────────
   // Earlier than 24h: user might still be paying. Older than 72h:
   // they've clearly abandoned, no point pinging.
@@ -161,7 +208,12 @@ async function runSweep() {
     if (result === 'sent') summary.stuck_intent_reminded++
   }
 
-  return NextResponse.json({ ok: true, ...summary, finished_at: new Date().toISOString() })
+  return NextResponse.json({
+    ok: true,
+    ...summary,
+    providers_reminded_by_plan: providerRemindedByPlan,
+    finished_at: new Date().toISOString(),
+  })
 }
 
 // ── helpers ────────────────────────────────────────────────────────────
@@ -184,6 +236,12 @@ function pickKindForOffset(periodEnd: Date, now: number, plan: Plan): ReminderKi
     if (dayOffset === 3)  return 'tour_guide_t_minus_3'
     if (dayOffset === 1)  return 'tour_guide_t_minus_1'
     if (dayOffset === -1) return 'tour_guide_t_plus_1'
+  } else {
+    // Service-provider verticals — same offsets, kind encodes the plan.
+    if (dayOffset === 7)  return `${plan}_t_minus_7` as ReminderKind
+    if (dayOffset === 3)  return `${plan}_t_minus_3` as ReminderKind
+    if (dayOffset === 1)  return `${plan}_t_minus_1` as ReminderKind
+    if (dayOffset === -1) return `${plan}_t_plus_1`  as ReminderKind
   }
   return null
 }
@@ -198,6 +256,9 @@ async function maybeSend(
     periodEnd: Date
     plan: Plan
     renewUrl: string
+    /** Optional human-readable vertical label used by service-provider
+     *  emails (e.g. "Massage Therapist"). Defaults to a plan-based label. */
+    verticalLabel?: string
   },
 ): Promise<MaybeSendResult> {
   if (!admin) return 'failed'
@@ -249,18 +310,30 @@ function composeMessage(args: {
   periodEnd: Date
   plan: Plan
   renewUrl: string
+  verticalLabel?: string
 }): { subject: string; html: string } {
   const dueLabel = args.periodEnd.toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
-  const planLabel = args.plan === 'rental_company' ? 'Rental Company'
-    : args.plan === 'tour_guide' ? 'Tour Guide'
-    : 'City Rider Driver'
+  const planLabel = args.verticalLabel
+    ?? (args.plan === 'rental_company' ? 'Rental Company'
+      : args.plan === 'tour_guide' ? 'Tour Guide'
+      : 'City Rider Driver')
 
-  switch (args.kind) {
+  // Normalise provider kinds (massage_t_minus_7 etc.) to the matching
+  // base offset bucket so the switch below can stay tight. The plan +
+  // verticalLabel carry the per-vertical context.
+  const normalisedKind: ReminderKind = (() => {
+    const k = args.kind as string
+    if (k.endsWith('_t_minus_7')) return 'driver_t_minus_7'
+    if (k.endsWith('_t_minus_3')) return 'driver_t_minus_3'
+    if (k.endsWith('_t_minus_1')) return 'driver_t_minus_1'
+    if (k.endsWith('_t_plus_1'))  return 'driver_t_plus_1'
+    return args.kind
+  })()
+
+  switch (normalisedKind) {
     case 'driver_t_minus_7':
-    case 'rental_company_t_minus_7':
-    case 'tour_guide_t_minus_7':
       return {
         subject: `Subscription ${planLabel} kamu jatuh tempo dalam 7 hari`,
         html: renderEmail({
@@ -272,8 +345,6 @@ function composeMessage(args: {
         }),
       }
     case 'driver_t_minus_3':
-    case 'rental_company_t_minus_3':
-    case 'tour_guide_t_minus_3':
       return {
         subject: `3 hari lagi — subscription ${planLabel} jatuh tempo`,
         html: renderEmail({
@@ -285,8 +356,6 @@ function composeMessage(args: {
         }),
       }
     case 'driver_t_minus_1':
-    case 'rental_company_t_minus_1':
-    case 'tour_guide_t_minus_1':
       return {
         subject: `Besok subscription ${planLabel} kamu habis`,
         html: renderEmail({
@@ -298,8 +367,6 @@ function composeMessage(args: {
         }),
       }
     case 'driver_t_plus_1':
-    case 'rental_company_t_plus_1':
-    case 'tour_guide_t_plus_1':
       return {
         subject: `Subscription ${planLabel} kamu sudah lewat`,
         html: renderEmail({
@@ -308,7 +375,8 @@ function composeMessage(args: {
           bodyHtml: `<p>Subscription ${planLabel} kamu sudah lewat (${dueLabel}). ${
             args.plan === 'rental_company' ? 'Semua listing motormu sudah di-pause sementara dan tidak tayang di /rent.'
             : args.plan === 'tour_guide'   ? 'Listing tour guide kamu sudah di-pause sementara dan tidak tayang di /tour.'
-            : 'Statusmu sudah past_due — kamu tidak muncul lagi di marketplace.'
+            : args.plan === 'driver'       ? 'Statusmu sudah past_due — kamu tidak muncul lagi di marketplace.'
+            : `Listing ${planLabel} kamu sudah di-pause dan tidak tayang lagi di marketplace.`
           } Renew sekarang untuk aktifkan lagi langsung.</p>`,
           ctaUrl: args.renewUrl,
           ctaLabel: args.plan === 'driver' ? 'Renew sekarang' : 'Aktifkan kembali',
@@ -334,6 +402,20 @@ function composeMessage(args: {
           bodyHtml: `<p>Hai! Sepertinya kamu mulai pembayaran City Rider (${planLabel}) pada ${dueLabel} tapi belum selesai. Mulai ulang pembayaran di bawah ini — Snap support QRIS, GoPay, OVO, ShopeePay, kartu kredit, dan VA bank besar.</p>`,
           ctaUrl: args.renewUrl,
           ctaLabel: 'Lanjut bayar',
+        }),
+      }
+    default:
+      // The provider t_minus_* / t_plus_1 kinds normalise to driver_* before
+      // hitting this switch, but TypeScript can't follow the template-literal
+      // narrowing through the endsWith() guards. Defensive generic fallback.
+      return {
+        subject: `Reminder subscription ${planLabel}`,
+        html: renderEmail({
+          heading: 'Reminder subscription',
+          preheader: `Subscription ${planLabel} jatuh tempo ${dueLabel}.`,
+          bodyHtml: `<p>Subscription ${planLabel} kamu jatuh tempo ${dueLabel}. Renew sekarang biar listing tetap aktif.</p>`,
+          ctaUrl: args.renewUrl,
+          ctaLabel: 'Renew sekarang',
         }),
       }
   }
