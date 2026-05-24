@@ -39,6 +39,7 @@ type Row = {
   image_urls: string[] | null
   fuel_included: boolean | null
   availability: 'online' | 'busy' | 'offline'
+  bike_brand: string | null
   is_mock?: boolean
 }
 
@@ -63,7 +64,7 @@ export default async function TourGuideFeedPage({
   // Real guides
   const { data: realRows } = await admin
     .from('tour_guide_listings')
-    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, review_count, image_urls, fuel_included, availability')
+    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, review_count, image_urls, fuel_included, availability, bike_brand')
     .eq('status', 'approved')
     .order('rating', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -72,7 +73,7 @@ export default async function TourGuideFeedPage({
   // the DB trigger; reals always render before mocks.
   const { data: mockRows } = await admin
     .from('mock_tour_guide_listings')
-    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, image_urls, fuel_included, availability')
+    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, image_urls, fuel_included, availability, bike_brand')
     .is('mock_hidden_at', null)
     .order('rating', { ascending: false, nullsFirst: false })
 
@@ -210,16 +211,28 @@ export default async function TourGuideFeedPage({
                         ))}
                     </div>
                     {r.day_rate_idr != null && (
-                      <div className="inline-flex items-center gap-2">
-                        <img
-                          src="https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg-preview.png?updatedAt=1779107454479"
-                          alt=""
-                          aria-hidden
-                          className="h-8 w-auto -my-2"
-                          loading="lazy"
-                        />
-                        <div className="font-extrabold leading-none" style={{ color: '#0A0A0A' }}>
-                          Rp {r.day_rate_idr.toLocaleString('id-ID')} <span className="font-bold" style={{ color: '#4B5563' }}>/ hari</span>
+                      <div className="inline-flex flex-col items-center leading-none -my-2">
+                        {/* Brand — header-size text, centered above the
+                            logo + price. Tight leading + negative margin
+                            keep the column within the 32px logo height
+                            so card height doesn't grow. */}
+                        <span
+                          className="text-[15px] font-extrabold uppercase tracking-tight leading-none"
+                          style={{ color: '#0A0A0A', transform: 'translateY(-8px)' }}
+                        >
+                          {(r.bike_brand ?? 'Honda')} Bike
+                        </span>
+                        <div className="inline-flex items-center gap-1 mt-0.5">
+                          <img
+                            src="https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg-preview.png?updatedAt=1779107454479"
+                            alt=""
+                            aria-hidden
+                            className="h-6 w-auto"
+                            loading="lazy"
+                          />
+                          <span className="font-extrabold leading-none" style={{ color: '#0A0A0A' }}>
+                            Rp {r.day_rate_idr.toLocaleString('id-ID')} <span className="font-bold text-[11px]" style={{ color: '#4B5563' }}>/ hari</span>
+                          </span>
                         </div>
                       </div>
                     )}
@@ -243,7 +256,7 @@ export default async function TourGuideFeedPage({
                         style={{
                           background: '#0A0A0A',
                           color: '#FFFFFF',
-                          border: '1px solid rgba(255,255,255,0.25)',
+                          border: 'none',
                         }}
                       >
                         <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
@@ -258,7 +271,7 @@ export default async function TourGuideFeedPage({
                         style={{
                           background: '#0A0A0A',
                           color: '#FFFFFF',
-                          border: '1px solid rgba(255,255,255,0.25)',
+                          border: 'none',
                         }}
                       >
                         <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
