@@ -228,7 +228,11 @@ function LocaleToggle({ locale, setLocale }: { locale: Locale; setLocale: (l: Lo
 // ─────────────────────────────────────────────────────────────────────
 // Anonymous gate
 // ─────────────────────────────────────────────────────────────────────
-type T = typeof STRINGS['id']
+// Use the UNION of both locales so STRINGS[locale] (id | en) is
+// assignable to T. Previously this was narrowed to STRINGS['id']
+// which made it impossible to pass the English variant — produced
+// 3 long-standing typecheck errors at the page's variant dispatch.
+type T = typeof STRINGS[Locale]
 
 function AuthGate({ t, locale, setLocale }: { t: T; locale: Locale; setLocale: (l: Locale) => void }) {
   return (
