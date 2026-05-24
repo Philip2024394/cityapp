@@ -157,11 +157,11 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-contain"
-                  style={{ transform: 'translate(10px, 10px)' }}
+                  style={{ transform: 'translate(10px, 20px)' }}
                 />
               : <div
                   className="w-full h-full flex items-center justify-center text-[12px] font-extrabold uppercase tracking-wider text-black/70"
-                  style={{ transform: 'translate(10px, 10px)' }}
+                  style={{ transform: 'translate(10px, 20px)' }}
                 >
                   {r.brand}
                 </div>}
