@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 import KtpUploader from '@/components/kyc/KtpUploader'
+import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import { MASSAGE_TYPE_GROUPS, type MassageType } from '@/lib/massage/types'
 
 // Massage provider signup. Auth-gated like /partners/signup — must be
@@ -247,10 +248,7 @@ function Form({ userId }: { userId: string }) {
           <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="e.g. Hotel Kuta · Seminyak · Canggu" className={inputCls} />
         </Field>
 
-        <Field label="Profile image URL">
-          <input type="url" value={f.profile_image_url} onChange={(e) => upd('profile_image_url', e.target.value)} placeholder="https://… (paste hosted image URL)" className={inputCls} />
-          <p className="text-[11px] text-ink/50 mt-1">Upload-from-device UI coming soon — for now paste an ImageKit / Drive URL.</p>
-        </Field>
+        <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={userId} />
 
         <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={userId} />
 

@@ -4,6 +4,8 @@ import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import AvailabilityDot from '@/components/massage/AvailabilityDot'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
+import KtpUploader from '@/components/kyc/KtpUploader'
+import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import {
   MASSAGE_TYPE_GROUPS,
   MASSAGE_TYPE_LABELS,
@@ -292,8 +294,8 @@ function EditForm({
       <input type="tel" value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} placeholder="+62 812 …" className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area notes" className={inputCls} />
-      <input type="url"  value={f.profile_image_url}  onChange={(e) => upd('profile_image_url', e.target.value)} placeholder="Profile image URL" className={inputCls} />
-      <input type="url"  value={f.ktp_image_url}      onChange={(e) => upd('ktp_image_url', e.target.value)} placeholder="KTP image URL (private)" className={inputCls} />
+      {provider.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={provider.user_id} />}
+      {provider.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={provider.user_id} />}
 
       {savedFlash && (
         <div className="rounded-lg border border-green-500/40 bg-green-500/10 text-green-200 text-[13px] px-3 py-2">

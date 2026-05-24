@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
+import KtpUploader from '@/components/kyc/KtpUploader'
+import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import {
   ALL_SPECIALTIES, SPECIALTY_LABELS, MAX_HANDYMAN_SPECIALTIES,
   type HandymanProvider, type HandymanAvailability, type HandymanSpecialty,
@@ -237,8 +239,8 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
       <input type="tel"  value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
-      <input type="url"  value={f.profile_image_url} onChange={(e) => upd('profile_image_url', e.target.value)} placeholder="Profile image URL" className={inputCls} />
-      <input type="url"  value={f.ktp_image_url} onChange={(e) => upd('ktp_image_url', e.target.value)} placeholder="KTP image URL (private)" className={inputCls} />
+      {p.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={p.user_id} />}
+      {p.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={p.user_id} />}
       {flash && <div className="rounded-lg border border-green-500/40 bg-green-500/10 text-green-200 text-[13px] px-3 py-2">Saved.</div>}
       <button type="submit" disabled={saving} className="w-full rounded-full bg-brand text-bg px-6 py-3 text-[14px] font-extrabold uppercase tracking-wider disabled:opacity-60">
         {saving ? 'Saving…' : 'Save changes'}
