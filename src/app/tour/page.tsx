@@ -38,17 +38,32 @@ type Row = {
   review_count: number
   image_urls: string[] | null
   fuel_included: boolean | null
+  availability: 'online' | 'busy' | 'offline'
   is_mock?: boolean
 }
 
-export default async function TourGuideFeedPage() {
+export default async function TourGuideFeedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ city?: string }>
+}) {
   const admin = getAdminSupabase()
   if (!admin) return <p className="p-6 text-muted">Server not configured.</p>
+
+  // City heading above the card grid. Pulled from ?city= URL param so
+  // partner-QR / landing links can override; defaults to Yogyakarta
+  // (primary market). Display-only for now — does not yet filter the
+  // tour-guide query.
+  const { city: cityParam } = await searchParams
+  const cityLabel = (cityParam?.trim() || 'Yogyakarta')
+    // Title-case so "yogyakarta" → "Yogyakarta", "bali-ubud" → "Bali Ubud".
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
 
   // Real guides
   const { data: realRows } = await admin
     .from('tour_guide_listings')
-    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, review_count, image_urls, fuel_included')
+    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, review_count, image_urls, fuel_included, availability')
     .eq('status', 'approved')
     .order('rating', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -57,7 +72,7 @@ export default async function TourGuideFeedPage() {
   // the DB trigger; reals always render before mocks.
   const { data: mockRows } = await admin
     .from('mock_tour_guide_listings')
-    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, image_urls, fuel_included')
+    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, image_urls, fuel_included, availability')
     .is('mock_hidden_at', null)
     .order('rating', { ascending: false, nullsFirst: false })
 
@@ -74,10 +89,10 @@ export default async function TourGuideFeedPage() {
         <header className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-[24px] sm:text-[28px] font-extrabold tracking-tight leading-tight">
-              Tour <span className="gradient-text">Guides</span>
+              {cityLabel} <span className="gradient-text">Guides</span>
             </h1>
             <p className="mt-1 text-[13px] text-muted leading-snug">
-              Guide lokal di seluruh Indonesia. WhatsApp langsung tanpa komisi platform.
+              Local tour guides — WhatsApp langsung tanpa komisi platform.
             </p>
           </div>
           <Link
@@ -138,25 +153,41 @@ export default async function TourGuideFeedPage() {
                   )}
 
                   <div className="flex items-start gap-3 mb-3">
-                    {/* Profile image — yellow ring matches brand. */}
-                    {photo
-                      ? <img
-                          src={photo}
-                          alt={r.name}
-                          className="w-14 h-14 rounded-2xl object-cover shrink-0 bg-white/5"
-                          style={{
-                            border: '2px solid #FACC15',
-                            boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                          }}
-                        />
-                      : <div
-                          className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-[20px] font-black shrink-0"
-                          style={{
-                            color: '#0A0A0A',
-                            border: '2px solid #FACC15',
-                            boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                          }}
-                        >{r.name[0]}</div>}
+                    {/* Profile image + availability dot at bottom-right
+                        of the avatar. Green pulsing for online (uses the
+                        global `pulse-online` keyframes), solid orange
+                        otherwise. Same pattern as massage cards. */}
+                    <div className="relative shrink-0">
+                      {photo
+                        ? <img
+                            src={photo}
+                            alt={r.name}
+                            className="w-14 h-14 rounded-2xl object-cover bg-white/5"
+                            style={{
+                              border: '2px solid #FACC15',
+                              boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
+                            }}
+                          />
+                        : <div
+                            className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-[20px] font-black"
+                            style={{
+                              color: '#0A0A0A',
+                              border: '2px solid #FACC15',
+                              boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
+                            }}
+                          >{r.name[0]}</div>}
+                      <span
+                        aria-label={r.availability === 'online' ? 'Online — available' : 'Busy / offline'}
+                        className={`absolute -bottom-1 -right-1 rounded-full ${r.availability === 'online' ? 'animate-pulse-online' : ''}`}
+                        style={{
+                          width: 14,
+                          height: 14,
+                          background: r.availability === 'online' ? '#22C55E' : '#F97316',
+                          border: '2px solid #FFFFFF',
+                          boxShadow: r.availability === 'online' ? undefined : '0 1px 4px rgba(0,0,0,0.35)',
+                        }}
+                      />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-[15px] font-extrabold leading-tight truncate" style={{ color: '#0A0A0A' }}>{r.name}</div>
                       <div className="text-[12px] capitalize" style={{ color: '#374151' }}>{r.city.replace(/-/g, ' ')}</div>

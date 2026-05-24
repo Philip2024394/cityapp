@@ -6,6 +6,9 @@ import { getServerSupabase } from '@/lib/supabase/server'
 import { findTourService } from '@/data/tourServices'
 import { getLanguageByCode } from '@/data/tourLanguages'
 import DeleteTourGuideButton from '@/components/tour/DeleteTourGuideButton'
+import TourAvailabilityToggle from '@/components/tour/TourAvailabilityToggle'
+import TourServicePicker from '@/components/tour/TourServicePicker'
+import type { TourServiceId } from '@/data/tourServices'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +23,7 @@ type Row = {
   day_rate_idr: number | null
   notes: string | null
   status: 'pending' | 'approved' | 'rejected' | 'suspended' | 'paused'
+  availability: 'online' | 'busy' | 'offline'
   rejection_note: string | null
   updated_at: string
 }
@@ -33,7 +37,7 @@ export default async function DashboardTourGuidePage() {
 
   const { data: rows } = await supabase
     .from('tour_guide_listings')
-    .select('id, slug, name, city, address, services, languages, day_rate_idr, notes, status, rejection_note, updated_at')
+    .select('id, slug, name, city, address, services, languages, day_rate_idr, notes, status, availability, rejection_note, updated_at')
     .eq('owner_user_id', user.id)
     .order('updated_at', { ascending: false })
 
@@ -103,6 +107,15 @@ export default async function DashboardTourGuidePage() {
                   <span className="text-muted font-bold text-[12px]"> / hari</span>
                 </div>
               )}
+
+              <TourAvailabilityToggle
+                initial={row.availability}
+                approved={row.status === 'approved'}
+              />
+
+              <TourServicePicker
+                initial={(row.services?.[0] as TourServiceId | undefined) ?? null}
+              />
 
               {row.services?.length > 0 && (
                 <div>
