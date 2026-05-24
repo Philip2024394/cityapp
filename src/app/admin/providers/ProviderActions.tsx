@@ -10,6 +10,7 @@ type Action =
   | 'approve' | 'reject' | 'suspend' | 'activate'
   | 'toggle_mock_visibility'
   | 'settle' | 'dispute' | 'waive'
+  | 'mark_paid_monthly' | 'mark_paid_yearly'
 
 type ButtonSpec = { action: Action; label: string; tone: 'primary' | 'danger' | 'warn' | 'ghost'; needsReason?: boolean }
 

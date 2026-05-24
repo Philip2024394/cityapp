@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
+import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import type { LaundryProvider, LaundryAvailability } from '@/lib/laundry/types'
 
 const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
@@ -67,6 +68,7 @@ export default function LaundryDashboardPage() {
   return (
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
+        <ProviderRenewBanner provider={provider} upgradeHref="/laundry/upgrade" />
         <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
           <h1 className="text-[20px] font-black mb-1 truncate">{provider.display_name}</h1>
           <div className="text-[12px] text-ink/60 font-mono mb-3">{provider.slug}</div>

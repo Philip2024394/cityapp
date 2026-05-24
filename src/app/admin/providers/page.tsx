@@ -23,6 +23,7 @@ export default async function ProvidersAdminPage() {
   // ── Fetch all relevant rows in parallel — small tables, OK to read full ──
   const [
     partnersRes, massageRes, tourRes,
+    beauticianRes, laundryRes, handymanRes, homeCleanRes,
     mockDriversRes, mockRentalsRes, mockToursRes,
     bookingsRes,
   ] = await Promise.all([
@@ -33,7 +34,19 @@ export default async function ProvidersAdminPage() {
       .select('id, slug, display_name, gender, status, availability, ktp_image_url, whatsapp_e164, city, is_mock, mock_hidden_at, created_at')
       .order('created_at', { ascending: false }).limit(100),
     admin.from('tour_guide_listings')
-      .select('id, slug, name, whatsapp_e164, city, status, availability, created_at')
+      .select('id, slug, name, whatsapp_e164, city, status, availability, paid_until, created_at')
+      .order('created_at', { ascending: false }).limit(100),
+    admin.from('beautician_providers')
+      .select('id, slug, display_name, status, availability, ktp_image_url, whatsapp_e164, city, is_mock, mock_hidden_at, subscription_status, paid_until, created_at')
+      .order('created_at', { ascending: false }).limit(100),
+    admin.from('laundry_providers')
+      .select('id, slug, display_name, status, availability, ktp_image_url, whatsapp_e164, city, is_mock, mock_hidden_at, subscription_status, paid_until, created_at')
+      .order('created_at', { ascending: false }).limit(100),
+    admin.from('handyman_providers')
+      .select('id, slug, display_name, status, availability, ktp_image_url, whatsapp_e164, city, is_mock, mock_hidden_at, subscription_status, paid_until, created_at')
+      .order('created_at', { ascending: false }).limit(100),
+    admin.from('home_clean_providers')
+      .select('id, slug, display_name, status, availability, ktp_image_url, whatsapp_e164, city, is_mock, mock_hidden_at, subscription_status, paid_until, created_at')
       .order('created_at', { ascending: false }).limit(100),
     admin.from('mock_drivers')
       .select('id, slug, business_name, city, services, availability, mock_hidden_at, created_at')
@@ -55,6 +68,10 @@ export default async function ProvidersAdminPage() {
   const partners      = partnersRes.data ?? []
   const massage       = massageRes.data ?? []
   const tours         = tourRes.data ?? []
+  const beautician    = beauticianRes.data ?? []
+  const laundry       = laundryRes.data ?? []
+  const handyman      = handymanRes.data ?? []
+  const homeClean     = homeCleanRes.data ?? []
   const mockDrivers   = mockDriversRes.data ?? []
   const mockRentals   = mockRentalsRes.data ?? []
   const mockTours     = mockToursRes.data ?? []
@@ -62,14 +79,22 @@ export default async function ProvidersAdminPage() {
 
   // Counts shown at the top so admin sees pending workload at a glance.
   const counts = {
-    partnersPending: partners.filter((p) => p.status === 'pending').length,
-    massagePending:  massage.filter((m) => m.status === 'pending' && !m.is_mock).length,
-    toursPending:    tours.filter((t) => t.status === 'pending').length,
-    bookingsAwait:   bookings.filter((b) => b.status === 'pending').length,
-    mockVisible:     mockDrivers.filter((m) => !m.mock_hidden_at).length
-                   + mockRentals.filter((m) => !m.mock_hidden_at).length
-                   + mockTours.filter((m) => !m.mock_hidden_at).length
-                   + massage.filter((m) => m.is_mock && !m.mock_hidden_at).length,
+    partnersPending:   partners.filter((p) => p.status === 'pending').length,
+    massagePending:    massage.filter((m) => m.status === 'pending' && !m.is_mock).length,
+    toursPending:      tours.filter((t) => t.status === 'pending').length,
+    beauticianPending: beautician.filter((b) => b.status === 'pending' && !b.is_mock).length,
+    laundryPending:    laundry.filter((l) => l.status === 'pending' && !l.is_mock).length,
+    handymanPending:   handyman.filter((h) => h.status === 'pending' && !h.is_mock).length,
+    homeCleanPending:  homeClean.filter((c) => c.status === 'pending' && !c.is_mock).length,
+    bookingsAwait:     bookings.filter((b) => b.status === 'pending').length,
+    mockVisible:       mockDrivers.filter((m) => !m.mock_hidden_at).length
+                     + mockRentals.filter((m) => !m.mock_hidden_at).length
+                     + mockTours.filter((m) => !m.mock_hidden_at).length
+                     + massage.filter((m) => m.is_mock && !m.mock_hidden_at).length
+                     + beautician.filter((m) => m.is_mock && !m.mock_hidden_at).length
+                     + laundry.filter((m) => m.is_mock && !m.mock_hidden_at).length
+                     + handyman.filter((m) => m.is_mock && !m.mock_hidden_at).length
+                     + homeClean.filter((m) => m.is_mock && !m.mock_hidden_at).length,
   }
 
   return (
@@ -84,11 +109,15 @@ export default async function ProvidersAdminPage() {
 
       {/* Workload counters */}
       <section className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[12px]">
-        <Counter label="Partners pending"  n={counts.partnersPending} />
-        <Counter label="Massage pending"   n={counts.massagePending} />
-        <Counter label="Tours pending"     n={counts.toursPending} />
+        <Counter label="Partners pending"   n={counts.partnersPending} />
+        <Counter label="Massage pending"    n={counts.massagePending} />
+        <Counter label="Beautician pending" n={counts.beauticianPending} />
+        <Counter label="Laundry pending"    n={counts.laundryPending} />
+        <Counter label="Handyman pending"   n={counts.handymanPending} />
+        <Counter label="Home Clean pending" n={counts.homeCleanPending} />
+        <Counter label="Tours pending"      n={counts.toursPending} />
         <Counter label="Bookings to settle" n={counts.bookingsAwait} />
-        <Counter label="Mocks visible"     n={counts.mockVisible} />
+        <Counter label="Mocks visible"      n={counts.mockVisible} />
       </section>
 
       {/* ─── PARTNERS ────────────────────────────────────────────────── */}
@@ -114,6 +143,7 @@ export default async function ProvidersAdminPage() {
                       ...(p.status !== 'active'    ? [{ action: 'approve' as const, label: 'Approve', tone: 'primary' as const }] : []),
                       ...(p.status !== 'suspended' ? [{ action: 'suspend' as const, label: 'Suspend', tone: 'warn' as const }] : []),
                       ...(p.status === 'suspended' ? [{ action: 'activate' as const, label: 'Reactivate', tone: 'ghost' as const }] : []),
+                      ...(p.status === 'pending'   ? [{ action: 'reject' as const,  label: 'Reject',  tone: 'danger' as const, needsReason: true }] : []),
                     ]}
                   />
                 </td>
@@ -151,6 +181,11 @@ export default async function ProvidersAdminPage() {
                       ...(m.status !== 'active'    ? [{ action: 'approve' as const, label: 'Approve', tone: 'primary' as const }] : []),
                       ...(m.status !== 'suspended' ? [{ action: 'suspend' as const, label: 'Suspend', tone: 'warn' as const }] : []),
                       ...(m.status === 'suspended' ? [{ action: 'activate' as const, label: 'Reactivate', tone: 'ghost' as const }] : []),
+                      ...(m.status === 'pending'   ? [{ action: 'reject' as const,  label: 'Reject',  tone: 'danger' as const, needsReason: true }] : []),
+                      ...(m.status === 'active'    ? [
+                        { action: 'mark_paid_monthly' as const, label: '+30d',  tone: 'ghost' as const },
+                        { action: 'mark_paid_yearly'  as const, label: '+365d', tone: 'ghost' as const },
+                      ] : []),
                     ]}
                   />
                 </td>
@@ -159,6 +194,38 @@ export default async function ProvidersAdminPage() {
           </Table>
         )}
       </Section>
+
+      {/* ─── BEAUTICIAN ──────────────────────────────────────────────── */}
+      <StandardProviderSection
+        title="Beauticians"
+        table="beautician_providers"
+        emptyMsg="No real beautician signups yet."
+        rows={beautician.filter((b) => !b.is_mock)}
+      />
+
+      {/* ─── LAUNDRY ────────────────────────────────────────────────── */}
+      <StandardProviderSection
+        title="Laundry shops"
+        table="laundry_providers"
+        emptyMsg="No real laundry shop signups yet."
+        rows={laundry.filter((l) => !l.is_mock)}
+      />
+
+      {/* ─── HANDYMAN ────────────────────────────────────────────────── */}
+      <StandardProviderSection
+        title="Handyman (Tukang)"
+        table="handyman_providers"
+        emptyMsg="No real handyman signups yet."
+        rows={handyman.filter((h) => !h.is_mock)}
+      />
+
+      {/* ─── HOME CLEAN ─────────────────────────────────────────────── */}
+      <StandardProviderSection
+        title="Home Clean"
+        table="home_clean_providers"
+        emptyMsg="No real cleaner signups yet."
+        rows={homeClean.filter((c) => !c.is_mock)}
+      />
 
       {/* ─── TOUR GUIDES ─────────────────────────────────────────────── */}
       <Section title="Tour guides">
@@ -184,6 +251,10 @@ export default async function ProvidersAdminPage() {
                       ...(t.status === 'approved'  ? [{ action: 'suspend' as const, label: 'Suspend', tone: 'warn' as const }] : []),
                       ...(t.status === 'suspended' ? [{ action: 'activate' as const, label: 'Reactivate', tone: 'ghost' as const }] : []),
                       ...(t.status === 'pending'   ? [{ action: 'reject' as const,  label: 'Reject',  tone: 'danger' as const, needsReason: true }] : []),
+                      ...(t.status === 'approved'  ? [
+                        { action: 'mark_paid_monthly' as const, label: '+30d',  tone: 'ghost' as const },
+                        { action: 'mark_paid_yearly'  as const, label: '+365d', tone: 'ghost' as const },
+                      ] : []),
                     ]}
                   />
                 </td>
@@ -279,6 +350,77 @@ function Counter({ label, n }: { label: string; n: number }) {
       <div className="text-[10px] uppercase tracking-wider font-extrabold text-muted">{label}</div>
       <div className={`text-[22px] font-extrabold leading-none mt-1 ${n > 0 ? 'text-brand' : 'text-ink/70'}`}>{n}</div>
     </div>
+  )
+}
+
+// Shared section for the 5 "standard" provider tables (massage / beautician
+// / laundry / handyman / home_clean). All have the same lifecycle:
+// pending → active → suspended/removed, status badge, KTP view link,
+// approve/suspend/reactivate/reject + mark-paid actions.
+type StandardProviderRow = {
+  id: string
+  slug: string
+  display_name: string
+  status: string
+  city: string | null
+  ktp_image_url: string | null
+  paid_until?: string | null
+  subscription_status?: string | null
+}
+
+function StandardProviderSection({
+  title, table, emptyMsg, rows,
+}: {
+  title: string
+  table: 'massage_providers' | 'beautician_providers' | 'laundry_providers' | 'handyman_providers' | 'home_clean_providers'
+  emptyMsg: string
+  rows: StandardProviderRow[]
+}) {
+  return (
+    <Section title={title}>
+      {rows.length === 0 ? (
+        <Empty>{emptyMsg}</Empty>
+      ) : (
+        <Table head={['Name', 'City', 'KTP', 'Paid until', 'Status', 'Actions']}>
+          {rows.map((p) => (
+            <tr key={p.id} className="border-t border-line">
+              <td className="py-2 pr-3">
+                <div className="font-bold">{p.display_name}</div>
+                <div className="text-[11px] text-muted truncate">{p.slug}</div>
+              </td>
+              <td className="py-2 pr-3 text-[12px] text-muted">{p.city ?? '—'}</td>
+              <td className="py-2 pr-3 text-[12px]">
+                {p.ktp_image_url
+                  ? <a href={p.ktp_image_url} target="_blank" rel="noopener" className="text-brand underline">View</a>
+                  : <span className="text-muted">—</span>}
+              </td>
+              <td className="py-2 pr-3 text-[11px] text-muted">
+                {p.paid_until
+                  ? new Date(p.paid_until).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : <span className="text-dim">trial</span>}
+              </td>
+              <td className="py-2 pr-3"><Pill v={p.status} /></td>
+              <td className="py-2">
+                <ProviderActions
+                  table={table}
+                  id={p.id}
+                  buttons={[
+                    ...(p.status !== 'active'    ? [{ action: 'approve' as const, label: 'Approve', tone: 'primary' as const }] : []),
+                    ...(p.status !== 'suspended' ? [{ action: 'suspend' as const, label: 'Suspend', tone: 'warn' as const }] : []),
+                    ...(p.status === 'suspended' ? [{ action: 'activate' as const, label: 'Reactivate', tone: 'ghost' as const }] : []),
+                    ...(p.status === 'pending'   ? [{ action: 'reject' as const,  label: 'Reject',  tone: 'danger' as const, needsReason: true }] : []),
+                    ...(p.status === 'active'    ? [
+                      { action: 'mark_paid_monthly' as const, label: '+30d',  tone: 'ghost' as const },
+                      { action: 'mark_paid_yearly'  as const, label: '+365d', tone: 'ghost' as const },
+                    ] : []),
+                  ]}
+                />
+              </td>
+            </tr>
+          ))}
+        </Table>
+      )}
+    </Section>
   )
 }
 

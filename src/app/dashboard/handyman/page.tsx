@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
+import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import {
   ALL_SPECIALTIES, SPECIALTY_LABELS, MAX_HANDYMAN_SPECIALTIES,
   type HandymanProvider, type HandymanAvailability, type HandymanSpecialty,
@@ -57,6 +58,7 @@ export default function HandymanDashboardPage() {
   return (
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
+        <ProviderRenewBanner provider={p} upgradeHref="/handyman/upgrade" />
         <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
           <h1 className="text-[20px] font-black mb-1 truncate">{p.display_name}</h1>
           <div className="text-[12px] text-ink/60 font-mono mb-3">{p.slug}</div>

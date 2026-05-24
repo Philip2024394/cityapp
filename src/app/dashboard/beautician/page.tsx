@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
+import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import type { BeauticianProvider, BeauticianAvailability } from '@/lib/beautician/types'
 
 const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
@@ -72,6 +73,7 @@ export default function BeauticianDashboardPage() {
   return (
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
+        <ProviderRenewBanner provider={provider} upgradeHref="/beautician/upgrade" />
         {/* Header card */}
         <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
           <div className="flex items-center gap-3 mb-4">

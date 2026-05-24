@@ -30,6 +30,13 @@ const ALLOWED_PRODUCTS = new Set([
   'rental_company_yearly',
   'tour_guide_monthly',
   'tour_guide_yearly',
+  // F1 — five new service-provider verticals. Each accepts monthly +
+  // yearly. Extension triggers live in migration 0068.
+  'massage_monthly',     'massage_yearly',
+  'beautician_monthly',  'beautician_yearly',
+  'laundry_monthly',     'laundry_yearly',
+  'handyman_monthly',    'handyman_yearly',
+  'home_clean_monthly',  'home_clean_yearly',
 ])
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import AvailabilityDot from '@/components/massage/AvailabilityDot'
+import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import {
   MASSAGE_TYPE_GROUPS,
   MASSAGE_TYPE_LABELS,
@@ -83,6 +84,7 @@ export default function MassageDashboardPage() {
   return (
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
+        <ProviderRenewBanner provider={provider} upgradeHref="/massage/upgrade" />
         {/* Header card */}
         <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
           <div className="flex items-center gap-3 mb-4">

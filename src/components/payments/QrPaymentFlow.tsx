@@ -31,6 +31,11 @@ export type QrProduct =
   | 'rental_company_yearly'
   | 'tour_guide_monthly'
   | 'tour_guide_yearly'
+  | 'massage_monthly'     | 'massage_yearly'
+  | 'beautician_monthly'  | 'beautician_yearly'
+  | 'laundry_monthly'     | 'laundry_yearly'
+  | 'handyman_monthly'    | 'handyman_yearly'
+  | 'home_clean_monthly'  | 'home_clean_yearly'
 
 type QrCodeRow = {
   id: string
@@ -49,6 +54,12 @@ const AMOUNT_BY_PRODUCT: Record<QrProduct, number> = {
   rental_company_yearly:  350_000,
   tour_guide_monthly:     38_000,
   tour_guide_yearly:      350_000,
+  // F1 — uniform Rp 38K/350K pricing across the 5 service-provider verticals.
+  massage_monthly:        38_000,  massage_yearly:        350_000,
+  beautician_monthly:     38_000,  beautician_yearly:     350_000,
+  laundry_monthly:        38_000,  laundry_yearly:        350_000,
+  handyman_monthly:       38_000,  handyman_yearly:       350_000,
+  home_clean_monthly:     38_000,  home_clean_yearly:     350_000,
 }
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
