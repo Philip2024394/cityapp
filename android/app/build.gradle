@@ -1,5 +1,29 @@
 apply plugin: 'com.android.application'
 
+// ============================================================================
+// Release-signing config — loaded from android/keystore.properties (gitignored).
+// ----------------------------------------------------------------------------
+// Generate the keystore once (KEEP IT SAFE — losing it means losing the
+// ability to ship updates to existing installs):
+//
+//   keytool -genkey -v -keystore android/cityrider-release.keystore \
+//           -alias cityrider -keyalg RSA -keysize 2048 -validity 10000
+//
+// Then create android/keystore.properties (template at keystore.properties.example):
+//
+//   storeFile=cityrider-release.keystore
+//   storePassword=<your-password>
+//   keyAlias=cityrider
+//   keyPassword=<your-password>
+//
+// If the file is missing the build still works but only debug-signed.
+// ============================================================================
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "live.streetlocal.cityrider"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +40,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile     file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias      keystoreProperties['keyAlias']
+                keyPassword   keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
