@@ -3,11 +3,24 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import AppNav from '@/components/layout/AppNav'
-import AvailabilityDot from '@/components/massage/AvailabilityDot'
+import ProfileHero        from '@/components/profile/ProfileHero'
+import ProfileGallery     from '@/components/profile/ProfileGallery'
+import PricingBlock       from '@/components/profile/PricingBlock'
+import StickyContactBar   from '@/components/profile/StickyContactBar'
+import SocialShareSheet   from '@/components/profile/SocialShareSheet'
+import TrustBadges        from '@/components/profile/TrustBadges'
+import AboutSection       from '@/components/profile/AboutSection'
+import OperatingHoursCard from '@/components/profile/OperatingHoursCard'
+import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
-import type { MassageProviderPublic } from '@/lib/massage/types'
+import { MASSAGE_TYPE_LABELS, type MassageProviderPublic } from '@/lib/massage/types'
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
+// ============================================================================
+// /massage/[slug] — universal profile page composing the shared kit.
+// Server-side metadata + JSON-LD + lapsed redirect live in layout.tsx.
+// Page itself stays client to handle: partner attribution, view tracker,
+// share sheet open state, sticky CTA.
+// ============================================================================
 
 export default function MassageProviderPage() {
   const params = useParams<{ slug: string }>()
@@ -15,10 +28,10 @@ export default function MassageProviderPage() {
   const [p, setP] = useState<MassageProviderPublic | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
+  const [shareOpen, setShareOpen] = useState(false)
 
+  // Capture ?partner= attribution + read stored slug (hotel-QR → /massage/x).
   useEffect(() => {
-    // Capture ?partner= attribution (same pattern as /p/[slug]) so a
-    // hotel-QR scan that lands here still credits the partner.
     capturePartnerFromUrl()
     setPartnerTag(getStoredPartnerSlug())
   }, [])
@@ -32,6 +45,9 @@ export default function MassageProviderPage() {
       })
       .catch(() => setNotFound(true))
   }, [slug])
+
+  // Track view once provider id is known (deduped per browser-session).
+  useProfileViewTracker({ providerType: 'massage', providerId: p?.id })
 
   if (notFound) {
     return (
@@ -47,91 +63,122 @@ export default function MassageProviderPage() {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
   }
 
-  return (
-    <Shell>
-      <div className="px-4 pt-8 pb-24 max-w-2xl mx-auto">
-        <Link href="/massage" className="text-[12px] text-ink/70 hover:text-ink inline-block mb-4">← Back to marketplace</Link>
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://cityriders.id'
+  const profileUrl = `${siteOrigin}/massage/${p.slug}`
 
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-6 shadow-card">
-          <div className="flex items-center gap-4 mb-5">
-            {p.profile_image_url
-              ? <img src={p.profile_image_url} alt={p.display_name} className="w-20 h-20 rounded-full object-cover bg-white/5" />
-              : <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-ink/40 text-[28px] font-black">{p.display_name[0]}</div>}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-[24px] font-black leading-tight">{p.display_name}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <AvailabilityDot availability={p.availability} withLabel />
-              </div>
-              <div className="text-[12px] text-ink/65 mt-1">
-                {p.gender === 'woman' ? 'Wanita' : 'Pria'} · {p.years_experience} years experience
-              </div>
-            </div>
-          </div>
-
-          <p className="text-[14px] text-ink/85 whitespace-pre-wrap leading-relaxed mb-5">{p.bio}</p>
-
-          <div className="grid grid-cols-3 gap-2 mb-5">
-            <Tier min={60}  v={p.price_60min_idr} />
-            <Tier min={90}  v={p.price_90min_idr} />
-            <Tier min={120} v={p.price_120min_idr} />
-          </div>
-
-          {p.city && <Row k="City" v={p.city} />}
-          {p.service_area_notes && <Row k="Service area" v={p.service_area_notes} />}
-
-          <div className="mt-5 space-y-2">
-            <a
-              href={waUrl(p, partnerTag)}
-              target="_blank" rel="noopener noreferrer"
-              className="block w-full text-center rounded-full bg-brand text-bg px-6 py-3.5 text-[14px] font-extrabold uppercase tracking-wider hover:brightness-105"
-            >
-              Contact on WhatsApp →
-            </a>
-            <p className="text-[11px] text-ink/50 text-center">
-              Pay the therapist directly · platform takes 0%
-              {partnerTag && <span className="block mt-1 text-brand/80">Referred by partner: {partnerTag}</span>}
-            </p>
-          </div>
-        </section>
-      </div>
-    </Shell>
-  )
-}
-
-function waUrl(p: MassageProviderPublic, partnerTag: string | null) {
-  const digits = p.whatsapp_e164.replace(/[^0-9]/g, '')
-  const lines = [
+  const waText = [
     `Halo ${p.display_name}, saya menemukan profil Anda di City Riders.`,
     `Saya tertarik untuk booking sesi pijat.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
-  ].filter(Boolean)
-  return `https://wa.me/${digits}?text=${encodeURIComponent(lines.join('\n'))}`
-}
+  ].filter(Boolean).join('\n')
 
-function Tier({ min, v }: { min: number; v: number }) {
+  const massageTypeLabel = p.massage_type ? MASSAGE_TYPE_LABELS[p.massage_type] : null
+
   return (
-    <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-3 text-center">
-      <div className="text-[11px] text-ink/60 uppercase tracking-wider font-bold">{min} min</div>
-      <div className="text-[15px] font-black text-brand">Rp {v.toLocaleString('id-ID')}</div>
-    </div>
+    <Shell>
+      <ProfileHero
+        coverUrl={p.cover_image_url}
+        avatarUrl={p.profile_image_url}
+        name={p.display_name}
+        categoryLabel={p.gender === 'woman' ? 'Massage · Wanita' : 'Massage · Pria'}
+        rating={p.rating ?? null}
+        reviewCount={p.rating_count ?? null}
+        idVerified={true}
+        availability={p.availability}
+      />
+
+      <div className="px-4 pb-32 max-w-2xl mx-auto space-y-5 pt-4">
+        <Link href="/massage" className="text-[12px] text-ink/60 hover:text-ink inline-block">
+          ← Back to marketplace
+        </Link>
+
+        <TrustBadges
+          idVerified
+          memberSince={p.created_at}
+          lastActiveAt={p.last_active_at}
+        />
+
+        {massageTypeLabel && (
+          <div className="flex flex-wrap gap-1.5">
+            <span className="inline-flex items-center text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full"
+                  style={{ background: 'rgba(250,204,21,0.15)', color: '#FACC15', border: '1px solid rgba(250,204,21,0.35)' }}>
+              {massageTypeLabel}
+            </span>
+            <span className="inline-flex items-center text-[11px] font-bold text-ink/70 px-2.5 py-1 rounded-full bg-white/5 border border-white/10">
+              {p.years_experience} yrs experience
+            </span>
+          </div>
+        )}
+
+        <AboutSection
+          bio={p.bio}
+          city={p.city}
+          serviceArea={p.service_area_notes}
+          languages={p.languages}
+          certifications={p.certifications}
+        />
+
+        <PricingBlock
+          tiers={[
+            { label: '60 min',  amount: p.price_60min_idr },
+            { label: '90 min',  amount: p.price_90min_idr, featured: true },
+            { label: '120 min', amount: p.price_120min_idr },
+          ]}
+          footnote="Bayar langsung ke therapist · platform takes 0%."
+        />
+
+        <ProfileGallery photos={p.gallery_image_urls ?? []} />
+
+        <OperatingHoursCard hours={p.operating_hours ?? null} />
+
+        {(p.instagram_url || p.tiktok_url || p.facebook_url) && (
+          <section className="space-y-2">
+            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-ink/70">Follow</h2>
+            <div className="flex flex-wrap gap-2">
+              {p.instagram_url && <SocialChip href={p.instagram_url} label="Instagram" />}
+              {p.tiktok_url    && <SocialChip href={p.tiktok_url}    label="TikTok" />}
+              {p.facebook_url  && <SocialChip href={p.facebook_url}  label="Facebook" />}
+            </div>
+          </section>
+        )}
+
+        {partnerTag && (
+          <div className="rounded-xl bg-brand/10 border border-brand/30 px-3 py-2 text-[12px] text-brand">
+            Referred by partner: <span className="font-extrabold">{partnerTag}</span>
+          </div>
+        )}
+      </div>
+
+      <StickyContactBar
+        whatsappE164={p.whatsapp_e164}
+        prefillText={waText}
+        onShare={() => setShareOpen(true)}
+      />
+
+      <SocialShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={profileUrl}
+        prefillText={`Lihat profil ${p.display_name} di City Riders:`}
+        providerName={p.display_name}
+      />
+    </Shell>
   )
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function SocialChip({ href, label }: { href: string; label: string }) {
   return (
-    <div className="flex justify-between gap-3 py-2 border-t border-white/8 text-[13px]">
-      <span className="text-ink/60">{k}</span>
-      <span className="text-ink font-bold">{v}</span>
-    </div>
+    <a href={href} target="_blank" rel="noopener noreferrer"
+      className="inline-flex items-center text-[12px] font-extrabold px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-ink hover:bg-white/10 transition">
+      {label} →
+    </a>
   )
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/80" />
+    <main className="relative min-h-screen text-ink">
       <AppNav />
       {children}
     </main>

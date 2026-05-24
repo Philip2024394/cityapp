@@ -138,6 +138,21 @@ export type MassageProviderPublic = Pick<
   | 'profile_image_url'
   | 'availability'
 > & {
+  // mig 0072 — universal profile fields. All nullable; the public page
+  // gracefully hides sections when blank.
+  id?: string
+  cover_image_url?:    string | null
+  gallery_image_urls?: string[] | null
+  languages?:          string[] | null
+  instagram_url?:      string | null
+  tiktok_url?:         string | null
+  facebook_url?:       string | null
+  operating_hours?:    Record<string, string> | null
+  certifications?:     string[] | null
+  last_active_at?:     string | null
+  created_at?:         string | null
+  // Subscription state — used by the lapsed-redirect layout guard.
+  subscription_status?: MassageSubscriptionStatus | null
   // Returned by /api/massage/marketplace so cards can render mocks
   // differently (inert Book Now, "Sample listing" badge, etc.). Real
   // profiles always render before mocks (sorted server-side).
