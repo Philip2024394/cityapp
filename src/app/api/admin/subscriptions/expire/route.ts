@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import { SUBSCRIPTION_GRACE_MS } from '@/lib/pricing/grace'
 
 // ============================================================================
 // GET /api/admin/subscriptions/expire?secret=$CRON_SECRET
@@ -42,8 +43,13 @@ async function runExpiry() {
   }
 
   const now = new Date().toISOString()
+  // Grace cutoff — subscriptions get a 3-day cushion past paid_until /
+  // current_period_end before being flipped to past_due/expired. See
+  // src/lib/pricing/grace.ts for rationale.
+  const graceCutoff = new Date(Date.now() - SUBSCRIPTION_GRACE_MS).toISOString()
 
-  // Pass 1a: trial → past_due
+  // Pass 1a: trial → past_due (trial_ends_at is HARD — no grace; trial
+  // already includes 7 free days, no reason to extend further)
   const { data: trialsExpired, error: e1 } = await admin
     .from('subscriptions')
     .update({ status: 'past_due' })
@@ -54,12 +60,13 @@ async function runExpiry() {
     return NextResponse.json({ error: e1.message, step: 'trial' }, { status: 500 })
   }
 
-  // Pass 1b: active → past_due
+  // Pass 1b: active → past_due (grace applies — only flip after
+  // current_period_end + grace days have passed)
   const { data: activeExpired, error: e2 } = await admin
     .from('subscriptions')
     .update({ status: 'past_due' })
     .eq('status', 'active')
-    .lt('current_period_end', now)
+    .lt('current_period_end', graceCutoff)
     .select('driver_id')
   if (e2) {
     return NextResponse.json({ error: e2.message, step: 'active' }, { status: 500 })
@@ -119,12 +126,12 @@ async function runExpiry() {
       .or('paid_until.is.null,paid_until.lt.' + now)
       .select('id')
 
-    // 3b — paid window expired: subscription_status='expired'
+    // 3b — paid window expired + grace passed: subscription_status='expired'
     const { data: paidFlip } = await admin
       .from(table)
       .update({ subscription_status: 'expired' })
       .eq('subscription_status', 'active')
-      .lt('paid_until', now)
+      .lt('paid_until', graceCutoff)
       .select('id')
 
     // 3c — flip availability offline for any expired/cancelled rows

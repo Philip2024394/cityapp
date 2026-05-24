@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { CreditCard, AlertCircle } from 'lucide-react'
+import { SUBSCRIPTION_GRACE_DAYS, deactivatesAt } from '@/lib/pricing/grace'
 
 // ============================================================================
 // Provider subscription status banner — drops into every provider dashboard.
@@ -84,15 +85,35 @@ export default function ProviderRenewBanner({
         </Section>
       )
     }
-    // paidDays < 0 → treat as expired
+    // paidDays < 0 → overdue. Within grace window = yellow (still live),
+    // beyond grace = red (now deactivated).
+    const lateDays = Math.abs(paidDays)
+    const deactivateIso = deactivatesAt(provider.paid_until)
+    const deactivateDays = daysUntil(deactivateIso)
+    if (deactivateDays != null && deactivateDays > 0) {
+      // Still in grace period — listing visible, urgency yellow.
+      return (
+        <Section tone="yellow" icon={<AlertCircle className="w-4 h-4 shrink-0" strokeWidth={2.5} />}>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-extrabold leading-tight">
+              Telat {lateDays} hari · grace {deactivateDays}/{SUBSCRIPTION_GRACE_DAYS} hari
+            </div>
+            <div className="text-[12px] opacity-85 mt-0.5 leading-snug">
+              Listing masih tayang. Renew dalam {deactivateDays} hari atau akun di-pause otomatis.
+            </div>
+          </div>
+          <CTA href={upgradeHref} tone="yellow" />
+        </Section>
+      )
+    }
     return (
       <Section tone="red" icon={<AlertCircle className="w-4 h-4 shrink-0" strokeWidth={2.5} />}>
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-extrabold leading-tight">
-            Subscription telat {Math.abs(paidDays)} hari
+            Subscription telat {lateDays} hari
           </div>
           <div className="text-[12px] opacity-85 mt-0.5 leading-snug">
-            Listing akan disembunyikan dari marketplace. Renew untuk aktif kembali.
+            Listing disembunyikan dari marketplace. Renew untuk aktif kembali.
           </div>
         </div>
         <CTA href={upgradeHref} tone="red" />

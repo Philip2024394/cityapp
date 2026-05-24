@@ -8,6 +8,7 @@ import {
   Hourglass, CircleDot, Circle, AlertCircle as AlertIcon,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import DriverSubscriptionBanner from '@/components/upgrade/DriverSubscriptionBanner'
 import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
@@ -251,6 +252,7 @@ function FirstTimeDashboard({
       </PrimaryActionCard>
 
       {/* PRIMARY 4 — Subscription (compact) */}
+      <DriverSubscriptionBanner />
       <SubscriptionCard status={ME.subscriptionStatus} compact />
 
       {/* Collapsed: All other tools */}
@@ -430,6 +432,7 @@ function ActivatedDashboard({
           </>
         }
       />
+      <DriverSubscriptionBanner />
       <SubscriptionCard status={ME.subscriptionStatus} />
 
       <DeleteAccountSection />

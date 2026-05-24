@@ -6,6 +6,23 @@ import { createSnapTransaction } from '@/lib/midtrans/snap'
 // ============================================================================
 // POST /api/payments/snap/create
 // ----------------------------------------------------------------------------
+// DEPRECATED 2026-05 — superseded by the QR-receipt flow at
+// /api/me/receipts/upload (see mig 0038 + commit 84ff3a5). Migrated
+// because: (1) Midtrans Snap added a per-tx fee that ate into the
+// founder's already-thin Rp 38K margin, (2) Indonesian customers
+// strongly prefer QRIS bank-direct over redirect-to-Snap flows.
+//
+// This route is no longer linked from any client surface. The webhook
+// at /api/payments/snap/webhook still verifies + processes any
+// in-flight settlements from before the cutover, then forwards the
+// same extend_*_on_payment triggers — safe to leave running until
+// no pending Snap intents remain.
+//
+// DELETE TARGET: 2026-08 (60 days after no pending Snap intents
+// observed). Until then keep this route alive for the long-tail of
+// users who started Snap checkout before the QR flow shipped.
+// ----------------------------------------------------------------------------
+// Original behaviour (kept verbatim below for archeological reference):
 // Driver taps "Renew now" on their dashboard. We:
 //   1. Authenticate (drivers can only pay for themselves)
 //   2. Insert a `payment_intents` row with status='pending'

@@ -138,6 +138,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 })
   }
 
+  // F7 — wake admin up. Fires a low-severity health alert into the
+  // streetlocal admin dashboard so a human reviews the screenshot
+  // promptly. Silent failure — receipt is already saved, alert is best-effort.
+  try {
+    const { fireAlertServer } = await import('@/lib/ops/alert')
+    await fireAlertServer({
+      severity: 'info',
+      source: 'cityrider.receipts.upload',
+      title: `New payment receipt — ${product}`,
+      detail: `User ${user.email ?? user.id} uploaded Rp ${qr.amount_idr.toLocaleString('id-ID')} receipt for ${product}. Review in /admin/receipts.`,
+      meta: {
+        receipt_id: receiptRow?.id ?? null,
+        user_id:    user.id,
+        product,
+        amount_idr: qr.amount_idr,
+        payer_phone: payerPhone,
+      },
+    })
+  } catch { /* don't fail the upload because the alert failed */ }
+
   return NextResponse.json({
     ok: true,
     receipt_id: receiptRow?.id ?? null,
