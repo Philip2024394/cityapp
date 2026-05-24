@@ -599,9 +599,9 @@ function FeaturedDriverCard({
         >
           <FlipBtn onBack />
 
-          {/* TOP-RIGHT: brand + cc, opposite the flip button — same
-              visual rhythm as the front face's bike model corner. */}
-          <div className="absolute top-3 right-14 z-20 text-right max-w-[55%]">
+          {/* TOP-LEFT: brand + cc. Sits opposite the flip button so the
+              corner is balanced. */}
+          <div className="absolute top-3 left-4 z-20 max-w-[60%]">
             <div className="text-[15px] font-black text-black leading-tight truncate uppercase tracking-wide">
               {(rider.bike.make || '—')} {(rider.bike.model || '')}
             </div>
@@ -612,29 +612,26 @@ function FeaturedDriverCard({
             )}
           </div>
 
-          {/* Bike hero photo — fills the card body edge-to-edge so the
-              bike reads as the dominant visual. -m-5 cancels the panel
-              padding so it bleeds to the card border. */}
-          <div className="relative flex-1 -m-5 mt-12 mb-12 flex items-center justify-center overflow-hidden">
+          {/* Bike hero photo — max-size with top + bottom padding reserving
+              the caption rows. Centered, object-contain so the bike fits
+              without crop. */}
+          <div className="absolute inset-x-3 top-14 bottom-10 flex items-center justify-center pointer-events-none">
             <img
               src={bikePhotoUrl}
               alt={`${rider.bike.make || ''} ${rider.bike.model || ''}`.trim() || 'Bike'}
               loading="lazy"
-              className="w-full h-full object-contain pointer-events-none"
-              style={{ filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.35))' }}
+              className="max-w-full max-h-full w-auto h-auto object-contain"
+              style={{ filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.30))' }}
             />
           </div>
 
-          {/* BOTTOM strip — colour · transmission · year. All on one
-              line, separated by mid-dots. White text on black. */}
-          <div
-            className="absolute bottom-0 left-0 right-0 px-5 py-2.5 flex items-center justify-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-white"
-            style={{ background: '#0A0A0A' }}
-          >
+          {/* BOTTOM line — colour · manual/automatic · year, all black
+              text directly on the yellow back panel. No container. */}
+          <div className="absolute bottom-3 left-0 right-0 px-4 flex items-center justify-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-black">
             {rider.bike.color && <span className="truncate">{rider.bike.color}</span>}
-            {rider.bike.color && transmissionLabel && <span className="text-white/40">·</span>}
-            {transmissionLabel && <span className="text-brand whitespace-nowrap">{transmissionLabel}</span>}
-            {(rider.bike.color || transmissionLabel) && rider.bike.year && <span className="text-white/40">·</span>}
+            {rider.bike.color && transmissionLabel && <span className="text-black/40">·</span>}
+            {transmissionLabel && <span className="whitespace-nowrap">{transmissionLabel}</span>}
+            {(rider.bike.color || transmissionLabel) && rider.bike.year && <span className="text-black/40">·</span>}
             {rider.bike.year && <span className="whitespace-nowrap">{rider.bike.year}</span>}
           </div>
         </div>
