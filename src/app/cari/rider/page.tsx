@@ -623,7 +623,7 @@ function FeaturedDriverCard({
               className="max-w-full max-h-full w-auto h-auto object-contain"
               style={{
                 filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.30))',
-                transform: 'translateY(-8px) scale(1.8)',
+                transform: 'translateY(-16px) scale(1.8)',
                 transformOrigin: 'center',
               }}
             />
