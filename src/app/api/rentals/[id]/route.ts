@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
+import { validateUniversalProfile } from '@/lib/validation/universalProfile'
 
 // ============================================================================
 // PATCH /api/rentals/[id]
@@ -48,8 +49,6 @@ const EDITABLE_FIELDS = [
   'submitted_whatsapp',
 ] as const
 
-type EditableField = (typeof EDITABLE_FIELDS)[number]
-
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const supabase = await getServerSupabase()
   if (!supabase) return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
@@ -63,21 +62,32 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   try { body = (await req.json()) as Record<string, unknown> }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  const patch: Partial<Record<EditableField, unknown>> = {}
+  const update: Record<string, unknown> = {}
   for (const key of EDITABLE_FIELDS) {
-    if (key in body) patch[key] = body[key]
+    if (key in body) update[key] = body[key]
   }
-  if (Object.keys(patch).length === 0) {
+
+  // mig 0072 universal profile extras — validated centrally so every
+  // vertical applies the same URL / hours / certifications rules.
+  // bike_rentals NEVER accepts `gallery_image_urls` here: the existing
+  // `image_urls` column already owns the photo grid for this vertical.
+  const universal = validateUniversalProfile(body)
+  if (!universal.ok) return NextResponse.json({ error: universal.error }, { status: 400 })
+  const { gallery_image_urls: _ignore, ...universalFields } = universal.fields as Record<string, unknown>
+  void _ignore
+  Object.assign(update, universalFields)
+
+  if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'No editable fields supplied' }, { status: 400 })
   }
 
-  if (typeof patch.lat === 'number' && typeof patch.lng === 'number') {
-    ;(patch as Record<string, unknown>).location = `SRID=4326;POINT(${patch.lng} ${patch.lat})`
+  if (typeof update.lat === 'number' && typeof update.lng === 'number') {
+    update.location = `SRID=4326;POINT(${update.lng} ${update.lat})`
   }
 
   const { data, error } = await supabase
     .from('bike_rentals')
-    .update(patch)
+    .update(update)
     .eq('id', id)
     .select('id, status, updated_at')
     .maybeSingle()

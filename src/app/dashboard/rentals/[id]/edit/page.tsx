@@ -13,6 +13,7 @@ import {
   ABSOLUTE_DAILY_FLOOR_IDR,
 } from '@/data/bikeRentalDefaults'
 import BikeColorPicker from '@/components/rider/BikeColorPicker'
+import UniversalProfileExtrasEditor, { type UniversalProfileExtras } from '@/components/dashboard/UniversalProfileExtrasEditor'
 
 // Owner-facing edit page for bike_rentals. PATCHes /api/rentals/[id] which
 // runs through owner-scoped RLS (migration 0011). Status / paid_until /
@@ -52,6 +53,14 @@ type RentalRow = {
   owner_company: string | null
   owner_whatsapp_e164: string
   status: 'pending' | 'approved' | 'rejected' | 'suspended'
+  // mig 0072 universal profile extras — gallery deliberately omitted for
+  // bike_rentals (image_urls already covers that role on this vertical).
+  cover_image_url: string | null
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  operating_hours: Record<string, string> | null
+  certifications: string[] | null
 }
 
 function num(s: string): number {
@@ -112,6 +121,11 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
 
+  // mig 0072 universal profile extras — gallery deliberately excluded for
+  // bike_rentals (the existing `image_urls` array fills that slot).
+  const [universal, setUniversal] = useState<UniversalProfileExtras>({})
+  const [userId, setUserId] = useState<string | null>(null)
+
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -124,6 +138,7 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
         router.replace(`/login?next=/dashboard/rentals/${id}/edit`)
         return
       }
+      setUserId(user.id)
       const { data, error } = await supabase
         .from('bike_rentals')
         .select('*')
@@ -165,6 +180,14 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
       setOwnerCompany(r.owner_company ?? '')
       setWhatsApp(r.owner_whatsapp_e164 ?? '')
       setPhotos(r.image_urls ?? [])
+      setUniversal({
+        cover_image_url: r.cover_image_url ?? null,
+        instagram_url:   r.instagram_url   ?? null,
+        tiktok_url:      r.tiktok_url      ?? null,
+        facebook_url:    r.facebook_url    ?? null,
+        operating_hours: r.operating_hours ?? null,
+        certifications:  r.certifications  ?? [],
+      })
       setLoading(false)
     })()
     return () => { cancelled = true }
@@ -237,6 +260,13 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
           owner_name: ownerName.trim(),
           owner_company: ownerCompany.trim() || null,
           owner_whatsapp_e164: whatsapp ? normaliseWhatsApp(whatsapp) : '',
+          // mig 0072 universal extras — gallery never sent for bike_rentals.
+          cover_image_url: universal.cover_image_url ?? null,
+          instagram_url:   universal.instagram_url   ?? null,
+          tiktok_url:      universal.tiktok_url      ?? null,
+          facebook_url:    universal.facebook_url    ?? null,
+          operating_hours: universal.operating_hours ?? null,
+          certifications:  universal.certifications  ?? [],
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -638,6 +668,20 @@ export default function EditRentalPage({ params }: { params: Promise<{ id: strin
               <input className="input" value={address} onChange={(e) => setAddress(e.target.value)} />
             </div>
           </section>
+
+          {/* Universal profile extras (mig 0072) — cover photo, socials,
+              operating hours, certifications. Gallery is hidden because
+              bike_rentals already uses `image_urls` for its photo grid. */}
+          {userId && (
+            <section className="card p-4 space-y-3">
+              <UniversalProfileExtrasEditor
+                userId={userId}
+                value={universal}
+                onChange={(patch) => setUniversal((prev) => ({ ...prev, ...patch }))}
+                hideGallery
+              />
+            </section>
+          )}
 
           {error && (
             <div className="rounded-xl p-3 bg-red-900/30 border border-red-500/40 text-[13px] text-red-200 font-bold">{error}</div>

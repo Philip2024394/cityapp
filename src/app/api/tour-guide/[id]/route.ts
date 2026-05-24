@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { MAX_TOUR_SERVICES, TOUR_SERVICE_IDS } from '@/data/tourServices'
+import { validateUniversalProfile, type UniversalProfileBody } from '@/lib/validation/universalProfile'
 
 // ============================================================================
 // /api/tour-guide/[id]
@@ -29,8 +30,6 @@ const EDITABLE_FIELDS = [
   'available_now',
 ] as const
 
-type EditableField = (typeof EDITABLE_FIELDS)[number]
-
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const supabase = await getServerSupabase()
   if (!supabase) return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
@@ -44,30 +43,43 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   try { body = (await req.json()) as Record<string, unknown> }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  const patch: Partial<Record<EditableField, unknown>> = {}
+  const update: Record<string, unknown> = {}
   for (const key of EDITABLE_FIELDS) {
-    if (key in body) patch[key] = body[key]
-  }
-  if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: 'No editable fields supplied' }, { status: 400 })
+    if (key in body) update[key] = body[key]
   }
 
   // Validate services: cap to MAX, intersect with the canonical taxonomy.
-  if (Array.isArray(patch.services)) {
+  if (Array.isArray(update.services)) {
     const allowed = new Set(TOUR_SERVICE_IDS)
-    const clean = (patch.services as unknown[])
+    const clean = (update.services as unknown[])
       .filter((s): s is string => typeof s === 'string' && allowed.has(s as never))
       .slice(0, MAX_TOUR_SERVICES)
-    patch.services = clean
+    update.services = clean
   }
 
-  if (typeof patch.lat === 'number' && typeof patch.lng === 'number') {
-    ;(patch as Record<string, unknown>).location = `SRID=4326;POINT(${patch.lng} ${patch.lat})`
+  if (typeof update.lat === 'number' && typeof update.lng === 'number') {
+    update.location = `SRID=4326;POINT(${update.lng} ${update.lat})`
+  }
+
+  // mig 0072 universal profile extras — validate any that came in and
+  // merge into the update payload. Languages are intentionally NOT in the
+  // universal set for tour guides because the vertical owns its own
+  // TourLanguageCode list (handled above via EDITABLE_FIELDS.languages).
+  const universal = validateUniversalProfile(body as UniversalProfileBody)
+  if (!universal.ok) return NextResponse.json({ error: universal.error }, { status: 400 })
+  // Drop the validator's `languages` so it doesn't overwrite the vertical
+  // languages already added via EDITABLE_FIELDS above.
+  const { languages: _univLanguages, ...universalFields } = universal.fields as Record<string, unknown>
+  void _univLanguages
+  Object.assign(update, universalFields)
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: 'No editable fields supplied' }, { status: 400 })
   }
 
   const { data, error } = await supabase
     .from('tour_guide_listings')
-    .update(patch)
+    .update(update)
     .eq('id', id)
     .select('id, status, updated_at')
     .maybeSingle()

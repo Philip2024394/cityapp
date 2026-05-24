@@ -6,6 +6,7 @@ import AvailabilityDot from '@/components/massage/AvailabilityDot'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
+import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import {
   MASSAGE_TYPE_GROUPS,
   MASSAGE_TYPE_LABELS,
@@ -227,6 +228,14 @@ type Patch = Partial<{
   service_area_notes: string
   profile_image_url: string
   ktp_image_url: string
+  cover_image_url: string | null
+  gallery_image_urls: string[]
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  operating_hours: Record<string, string> | null
+  certifications: string[]
+  languages: string[]
 }>
 
 function EditForm({
@@ -237,7 +246,39 @@ function EditForm({
   savedFlash: boolean
   onSave: (patch: Patch) => void
 }) {
-  const [f, setF] = useState({
+  const p = provider as MassageProvider & {
+    cover_image_url?:    string | null
+    gallery_image_urls?: string[] | null
+    instagram_url?:      string | null
+    tiktok_url?:         string | null
+    facebook_url?:       string | null
+    operating_hours?:    Record<string, string> | null
+    certifications?:     string[] | null
+    languages?:          string[] | null
+  }
+  const [f, setF] = useState<{
+    display_name: string
+    gender: MassageGender
+    years_experience: number
+    bio: string
+    massage_type: MassageType
+    price_60min_idr: number
+    price_90min_idr: number
+    price_120min_idr: number
+    whatsapp_e164: string
+    city: string
+    service_area_notes: string
+    profile_image_url: string
+    ktp_image_url: string
+    cover_image_url:    string | null
+    gallery_image_urls: string[]
+    instagram_url:      string | null
+    tiktok_url:         string | null
+    facebook_url:       string | null
+    operating_hours:    Record<string, string> | null
+    certifications:     string[]
+    languages:          string[]
+  }>({
     display_name: provider.display_name,
     gender: provider.gender,
     years_experience: provider.years_experience,
@@ -251,6 +292,14 @@ function EditForm({
     service_area_notes: provider.service_area_notes ?? '',
     profile_image_url: provider.profile_image_url ?? '',
     ktp_image_url: provider.ktp_image_url ?? '',
+    cover_image_url:    p.cover_image_url ?? null,
+    gallery_image_urls: p.gallery_image_urls ?? [],
+    instagram_url:      p.instagram_url ?? null,
+    tiktok_url:         p.tiktok_url ?? null,
+    facebook_url:       p.facebook_url ?? null,
+    operating_hours:    p.operating_hours ?? null,
+    certifications:     p.certifications ?? [],
+    languages:          p.languages ?? [],
   })
 
   function upd<K extends keyof typeof f>(k: K, v: typeof f[K]) {
@@ -296,6 +345,22 @@ function EditForm({
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area notes" className={inputCls} />
       {provider.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={provider.user_id} />}
+      {provider.user_id && (
+        <UniversalProfileExtrasEditor
+          userId={provider.user_id}
+          value={{
+            cover_image_url:    f.cover_image_url,
+            gallery_image_urls: f.gallery_image_urls,
+            instagram_url:      f.instagram_url,
+            tiktok_url:         f.tiktok_url,
+            facebook_url:       f.facebook_url,
+            operating_hours:    f.operating_hours,
+            certifications:     f.certifications,
+            languages:          f.languages,
+          }}
+          onChange={(patch) => setF((prev) => ({ ...prev, ...patch }))}
+        />
+      )}
 
       {savedFlash && (
         <div className="rounded-lg border border-green-500/40 bg-green-500/10 text-green-200 text-[13px] px-3 py-2">

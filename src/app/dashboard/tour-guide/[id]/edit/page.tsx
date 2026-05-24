@@ -16,6 +16,15 @@ type Row = {
   languages: string[]
   day_rate_idr: number | null
   notes: string | null
+  // mig 0072 universal profile fields
+  cover_image_url: string | null
+  gallery_image_urls: string[] | null
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  operating_hours: Record<string, string> | null
+  certifications: string[] | null
+  user_id: string | null
 }
 
 export default async function TourGuideEditPage({
@@ -29,9 +38,11 @@ export default async function TourGuideEditPage({
   if (!user) redirect(`/login?next=/dashboard/tour-guide/${id}/edit`)
 
   // RLS scopes to owner — wrong id returns null.
+  // owner_user_id is aliased to user_id so the client form has a stable
+  // prop name matching the other dashboards' mental model.
   const { data } = await supabase
     .from('tour_guide_listings')
-    .select('id, name, whatsapp_e164, city, address, lat, lng, services, languages, day_rate_idr, notes')
+    .select('id, name, whatsapp_e164, city, address, lat, lng, services, languages, day_rate_idr, notes, cover_image_url, gallery_image_urls, instagram_url, tiktok_url, facebook_url, operating_hours, certifications, user_id:owner_user_id')
     .eq('id', id)
     .maybeSingle()
 

@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -12,6 +12,8 @@ import type { PlaceSuggestion } from '@/hooks/usePlaceSearch'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { TOUR_SERVICES, MAX_TOUR_SERVICES, type TourServiceId } from '@/data/tourServices'
 import { TOUR_LANGUAGES, MAIN_LANGUAGE_CODE, type TourLanguageCode } from '@/data/tourLanguages'
+import UniversalProfileExtrasEditor, { type UniversalProfileExtras } from '@/components/dashboard/UniversalProfileExtrasEditor'
+import { getBrowserSupabase } from '@/lib/supabase/client'
 
 // Same city list as the create form. Pre-fills from the existing city
 // value below; if the value isn't in the list (custom slug) we fall
@@ -51,6 +53,15 @@ type Row = {
   languages: string[]
   day_rate_idr: number | null
   notes: string | null
+  // mig 0072 universal profile fields
+  cover_image_url: string | null
+  gallery_image_urls: string[] | null
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  operating_hours: Record<string, string> | null
+  certifications: string[] | null
+  user_id: string | null
 }
 
 export default function TourGuideEditForm({ row }: { row: Row }) {
@@ -75,6 +86,34 @@ export default function TourGuideEditForm({ row }: { row: Row }) {
   const [address, setAddress]   = useState<string>(row.address ?? '')
   const [lat, setLat]           = useState<string>(row.lat != null ? String(row.lat) : '')
   const [lng, setLng]           = useState<string>(row.lng != null ? String(row.lng) : '')
+
+  // mig 0072 universal profile extras — shared editor for cover, gallery,
+  // socials, hours, certifications. Languages are tour-guide-specific
+  // (TourLanguageCode union) so we deliberately don't pass `languages` to
+  // the editor; it treats undefined as empty/no toggle.
+  const [extras, setExtras] = useState<UniversalProfileExtras>({
+    cover_image_url:    row.cover_image_url,
+    gallery_image_urls: row.gallery_image_urls ?? [],
+    instagram_url:      row.instagram_url,
+    tiktok_url:         row.tiktok_url,
+    facebook_url:       row.facebook_url,
+    operating_hours:    row.operating_hours,
+    certifications:     row.certifications ?? [],
+  })
+
+  // The owner's user id is needed by the gallery/cover uploaders so they can
+  // namespace storage paths. Prefer the row's owner_user_id (aliased as
+  // user_id by the server SELECT); fall back to auth.getUser() — RLS
+  // guarantees the signed-in user IS the owner anyway.
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(row.user_id)
+  useEffect(() => {
+    if (ownerUserId) return
+    const sb = getBrowserSupabase()
+    if (!sb) return
+    sb.auth.getUser().then(({ data }) => {
+      if (data.user?.id) setOwnerUserId(data.user.id)
+    }).catch(() => { /* offline */ })
+  }, [ownerUserId])
 
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -143,6 +182,17 @@ export default function TourGuideEditForm({ row }: { row: Row }) {
         body.lat = parseFloat(lat)
         body.lng = parseFloat(lng)
       }
+      // Merge mig 0072 universal extras. Server validates via
+      // validateUniversalProfile() and rejects malformed payloads with 400.
+      Object.assign(body, {
+        cover_image_url:    extras.cover_image_url ?? null,
+        gallery_image_urls: extras.gallery_image_urls ?? [],
+        instagram_url:      extras.instagram_url ?? null,
+        tiktok_url:         extras.tiktok_url ?? null,
+        facebook_url:       extras.facebook_url ?? null,
+        operating_hours:    extras.operating_hours ?? null,
+        certifications:     extras.certifications ?? [],
+      })
       const res = await fetch(`/api/tour-guide/${row.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -314,6 +364,16 @@ export default function TourGuideEditForm({ row }: { row: Row }) {
               </div>
             )}
           </SectionCard>
+
+          {ownerUserId && (
+            <section className="card p-4 space-y-3">
+              <UniversalProfileExtrasEditor
+                userId={ownerUserId}
+                value={extras}
+                onChange={(patch) => setExtras((prev) => ({ ...prev, ...patch }))}
+              />
+            </section>
+          )}
 
           {err && (
             <div className="rounded-xl p-3 bg-red-900/30 border border-red-500/40 text-[13px] text-red-200 font-bold">{err}</div>

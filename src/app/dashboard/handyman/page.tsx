@@ -5,6 +5,7 @@ import AppNav from '@/components/layout/AppNav'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
+import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import {
   ALL_SPECIALTIES, SPECIALTY_LABELS, MAX_HANDYMAN_SPECIALTIES,
   type HandymanProvider, type HandymanAvailability, type HandymanSpecialty,
@@ -148,7 +149,38 @@ function KV({ k, v, multiline = false }: { k: string; v: string; multiline?: boo
 }
 
 function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) {
-  const [f, setF] = useState({
+  const pe = p as HandymanProvider & {
+    cover_image_url?:    string | null
+    gallery_image_urls?: string[] | null
+    instagram_url?:      string | null
+    tiktok_url?:         string | null
+    facebook_url?:       string | null
+    operating_hours?:    Record<string, string> | null
+    certifications?:     string[] | null
+    languages?:          string[] | null
+  }
+  const [f, setF] = useState<{
+    display_name: string
+    years_experience: number
+    bio: string
+    specialties: HandymanSpecialty[]
+    hourly_rate: string
+    day_rate: string
+    has_own_tools: boolean
+    whatsapp_e164: string
+    city: string
+    service_area_notes: string
+    profile_image_url: string
+    ktp_image_url: string
+    cover_image_url:    string | null
+    gallery_image_urls: string[]
+    instagram_url:      string | null
+    tiktok_url:         string | null
+    facebook_url:       string | null
+    operating_hours:    Record<string, string> | null
+    certifications:     string[]
+    languages:          string[]
+  }>({
     display_name: p.display_name,
     years_experience: p.years_experience,
     bio: p.bio,
@@ -161,6 +193,14 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
     service_area_notes: p.service_area_notes ?? '',
     profile_image_url: p.profile_image_url ?? '',
     ktp_image_url: p.ktp_image_url ?? '',
+    cover_image_url:    pe.cover_image_url ?? null,
+    gallery_image_urls: pe.gallery_image_urls ?? [],
+    instagram_url:      pe.instagram_url ?? null,
+    tiktok_url:         pe.tiktok_url ?? null,
+    facebook_url:       pe.facebook_url ?? null,
+    operating_hours:    pe.operating_hours ?? null,
+    certifications:     pe.certifications ?? [],
+    languages:          pe.languages ?? [],
   })
   const [saving, setSaving] = useState(false)
   const [flash, setFlash] = useState(false)
@@ -193,6 +233,14 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
           ktp_image_url: f.ktp_image_url,
+          cover_image_url:    f.cover_image_url,
+          gallery_image_urls: f.gallery_image_urls,
+          instagram_url:      f.instagram_url,
+          tiktok_url:         f.tiktok_url,
+          facebook_url:       f.facebook_url,
+          operating_hours:    f.operating_hours,
+          certifications:     f.certifications,
+          languages:          f.languages,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -241,6 +289,22 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
       {p.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={p.user_id} />}
       {p.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={p.user_id} />}
+      {p.user_id && (
+        <UniversalProfileExtrasEditor
+          userId={p.user_id}
+          value={{
+            cover_image_url:    f.cover_image_url,
+            gallery_image_urls: f.gallery_image_urls,
+            instagram_url:      f.instagram_url,
+            tiktok_url:         f.tiktok_url,
+            facebook_url:       f.facebook_url,
+            operating_hours:    f.operating_hours,
+            certifications:     f.certifications,
+            languages:          f.languages,
+          }}
+          onChange={(patch) => setF((prev) => ({ ...prev, ...patch }))}
+        />
+      )}
       {flash && <div className="rounded-lg border border-green-500/40 bg-green-500/10 text-green-200 text-[13px] px-3 py-2">Saved.</div>}
       <button type="submit" disabled={saving} className="w-full rounded-full bg-brand text-bg px-6 py-3 text-[14px] font-extrabold uppercase tracking-wider disabled:opacity-60">
         {saving ? 'Saving…' : 'Save changes'}

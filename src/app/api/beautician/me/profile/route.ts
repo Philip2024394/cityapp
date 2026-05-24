@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
+import { validateUniversalProfile } from '@/lib/validation/universalProfile'
 
 export const runtime = 'nodejs'
 
@@ -18,6 +19,15 @@ type Body = {
   service_area_notes?: string
   profile_image_url?: string
   ktp_image_url?: string
+  // mig 0072 — universal profile extras
+  cover_image_url?:    string | null
+  gallery_image_urls?: string[]
+  instagram_url?:      string | null
+  tiktok_url?:         string | null
+  facebook_url?:       string | null
+  operating_hours?:    Record<string, string> | null
+  certifications?:     string[]
+  languages?:          string[]
 }
 
 function priceOrNull(v: unknown): number | null | undefined {
@@ -79,6 +89,10 @@ export async function POST(req: Request) {
     if (v && !isValidKtpRef(v, user.id)) return NextResponse.json({ error: 'invalid_ktp' }, { status: 400 })
     update.ktp_image_url = v
   }
+
+  const universal = validateUniversalProfile(body)
+  if (!universal.ok) return NextResponse.json({ error: universal.error }, { status: 400 })
+  Object.assign(update, universal.fields)
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 })

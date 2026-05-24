@@ -5,7 +5,22 @@ import AppNav from '@/components/layout/AppNav'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
+import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import type { BeauticianProvider, BeauticianAvailability } from '@/lib/beautician/types'
+
+// mig 0072 — universal extras live on the row but aren't in the
+// BeauticianProvider TS type (it predates the migration). Cast through this
+// shape when seeding the EditForm so the dashboard can read them safely.
+type UniversalExtras = {
+  cover_image_url?:    string | null
+  gallery_image_urls?: string[] | null
+  instagram_url?:      string | null
+  tiktok_url?:         string | null
+  facebook_url?:       string | null
+  operating_hours?:    Record<string, string> | null
+  certifications?:     string[] | null
+  languages?:          string[] | null
+}
 
 const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
@@ -166,7 +181,30 @@ function KV({ k, v, multiline = false }: { k: string; v: string; multiline?: boo
 }
 
 function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved: () => void }) {
-  const [f, setF] = useState({
+  const px = provider as BeauticianProvider & UniversalExtras
+  type FormState = {
+    display_name: string
+    gender: BeauticianProvider['gender']
+    years_experience: number
+    bio: string
+    price_makeup_idr: number | string
+    price_nail_idr:   number | string
+    price_hair_idr:   number | string
+    whatsapp_e164: string
+    city: string
+    service_area_notes: string
+    profile_image_url: string
+    ktp_image_url: string
+    cover_image_url:    string | null
+    gallery_image_urls: string[]
+    instagram_url:      string | null
+    tiktok_url:         string | null
+    facebook_url:       string | null
+    operating_hours:    Record<string, string> | null
+    certifications:     string[]
+    languages:          string[]
+  }
+  const [f, setF] = useState<FormState>({
     display_name: provider.display_name,
     gender: provider.gender,
     years_experience: provider.years_experience,
@@ -179,6 +217,15 @@ function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved
     service_area_notes: provider.service_area_notes ?? '',
     profile_image_url: provider.profile_image_url ?? '',
     ktp_image_url: provider.ktp_image_url ?? '',
+    // mig 0072 — universal profile extras
+    cover_image_url:    px.cover_image_url ?? '',
+    gallery_image_urls: px.gallery_image_urls ?? [],
+    instagram_url:      px.instagram_url ?? '',
+    tiktok_url:         px.tiktok_url ?? '',
+    facebook_url:       px.facebook_url ?? '',
+    operating_hours:    px.operating_hours ?? null,
+    certifications:     px.certifications ?? [],
+    languages:          px.languages ?? [],
   })
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
@@ -207,6 +254,14 @@ function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
           ktp_image_url: f.ktp_image_url,
+          cover_image_url:    f.cover_image_url,
+          gallery_image_urls: f.gallery_image_urls,
+          instagram_url:      f.instagram_url,
+          tiktok_url:         f.tiktok_url,
+          facebook_url:       f.facebook_url,
+          operating_hours:    f.operating_hours,
+          certifications:     f.certifications,
+          languages:          f.languages,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -248,6 +303,22 @@ function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
       {provider.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={provider.user_id} />}
+      {provider.user_id && (
+        <UniversalProfileExtrasEditor
+          userId={provider.user_id}
+          value={{
+            cover_image_url:    f.cover_image_url,
+            gallery_image_urls: f.gallery_image_urls,
+            instagram_url:      f.instagram_url,
+            tiktok_url:         f.tiktok_url,
+            facebook_url:       f.facebook_url,
+            operating_hours:    f.operating_hours,
+            certifications:     f.certifications,
+            languages:          f.languages,
+          }}
+          onChange={(patch) => setF((prev) => ({ ...prev, ...patch }))}
+        />
+      )}
       {savedFlash && <div className="rounded-lg border border-green-500/40 bg-green-500/10 text-green-200 text-[13px] px-3 py-2">Saved.</div>}
       <button type="submit" disabled={saving} className="w-full rounded-full bg-brand text-bg px-6 py-3 text-[14px] font-extrabold uppercase tracking-wider disabled:opacity-60">
         {saving ? 'Saving…' : 'Save changes'}
