@@ -12,7 +12,7 @@ import {
 // Background is intentionally solid black (no transparency) for an
 // unambiguous "black-tinted" panel against the landing's map background.
 
-type Variant = 'join' | 'signin'
+type Variant = 'join' | 'signin' | 'combined'
 
 type MenuItem = {
   label: string
@@ -62,7 +62,10 @@ export default function HeaderRoleMenu({
 }) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
-  const sections = variant === 'signin' ? SIGNIN_SECTIONS : JOIN_SECTIONS
+  const sections =
+    variant === 'signin' ? SIGNIN_SECTIONS :
+    variant === 'join'   ? JOIN_SECTIONS :
+    [...SIGNIN_SECTIONS, ...JOIN_SECTIONS]
 
   useEffect(() => {
     if (!open) return
@@ -94,9 +97,9 @@ export default function HeaderRoleMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         className={
-          variant === 'join'
-            ? 'inline-flex items-center gap-1 text-[13px] font-extrabold text-bg bg-brand hover:bg-brand2 px-3 py-1.5 rounded-lg transition min-h-[36px]'
-            : 'inline-flex items-center gap-1 text-[13px] font-bold text-muted hover:text-ink px-3 py-1.5 rounded-lg hover:bg-white/5 min-h-[36px]'
+          variant === 'signin'
+            ? 'inline-flex items-center gap-1 text-[13px] font-bold text-muted hover:text-ink px-3 py-1.5 rounded-lg hover:bg-white/5 min-h-[36px]'
+            : 'inline-flex items-center gap-1 text-[13px] font-extrabold text-bg bg-brand hover:bg-brand2 px-3 py-1.5 rounded-lg transition min-h-[36px]'
         }
       >
         {label}

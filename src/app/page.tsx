@@ -1,7 +1,6 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { ArrowRight } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import HeaderRoleMenu from '@/components/layout/HeaderRoleMenu'
 import { logNav } from '@/lib/perf/navTiming'
@@ -9,9 +8,12 @@ import { logNav } from '@/lib/perf/navTiming'
 // Service tiles — the primary CTA on landing. Routes:
 //   person / parcel / food → /cari?service=<id>
 //   rental                  → /rent (own marketplace, separate flow)
-//   massage                 → /massage (sister marketplace, separate flow)
-// Order: Ride → Parcel → Food → Rental → Massage.
-type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'massage'
+//   tour                    → /tour (tour-guide marketplace)
+//   massage                 → /massage (massage marketplace)
+// Order: Ride → Parcel → Food → Rental → Tour → Massage.
+// All labels keep the "Bike X" prefix per the brand convention — every
+// service is delivered by an independent motorbike-equipped operator.
+type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'tour' | 'massage'
 const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img: string; href: string }> = [
   { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
@@ -25,7 +27,10 @@ const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img
   { id: 'rental', label: 'Bike Rental', sub: 'Self-ride · With driver',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledwrrssswdqw-removebg-preview.png?updatedAt=1778253308442',
     href: '/rent' },
-  { id: 'massage', label: 'Massage',    sub: 'Home & Hotel · 60/90/120 min',
+  { id: 'tour', label: 'Bike Tour',     sub: 'Local guides · Day trips',
+    img: 'https://ik.imagekit.io/nepgaxllc/Untitledsssaaa-removebg-preview.png?updatedAt=1779390066960',
+    href: '/tour' },
+  { id: 'massage', label: 'Bike Massage', sub: 'Home & Hotel · 60/90/120 min',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledsssaaa-removebg-preview.png?updatedAt=1779390066960',
     href: '/massage' },
 ]
@@ -150,17 +155,12 @@ export default function LandingPage() {
             </div>
           </Link>
           <div className="flex items-center gap-1.5">
-            {/* Two dropdowns:
-                  • Sign in  → per-category dashboards + generic /login
-                  • Join     → per-category signups   + generic /signup
-                Both panels share styling — solid black, yellow border. */}
+            {/* Single combined dropdown — both Sign-in (per-category
+                dashboards) and Join (per-category signups) sections
+                live inside one yellow CTA so the header stays clean. */}
             <HeaderRoleMenu
-              label={locale === 'id' ? 'Masuk' : 'Sign in'}
-              variant="signin"
-            />
-            <HeaderRoleMenu
-              label={locale === 'id' ? 'Gabung' : 'Join'}
-              variant="join"
+              label={locale === 'id' ? 'Masuk / Gabung' : 'Sign in / Join'}
+              variant="combined"
             />
           </div>
         </div>
@@ -191,15 +191,10 @@ export default function LandingPage() {
           {/* PRIMARY CTA — 3 landscape service tiles. Tapping a tile
               routes straight to /cari?service=<id> so the customer never
               has to pick the service type twice. */}
-          <div className="pt-1 w-full max-w-sm mx-auto space-y-2">
+          <div className="pt-1 w-full max-w-sm mx-auto grid grid-cols-2 gap-2 mb-2">
             {SERVICE_TILES.map((tile, i) => (
-              // Converted from <button onClick={router.push}> to <Link prefetch>
-              // 2026-05 perf pass — buttons skip Next.js auto-prefetch, so
-              // every landing → /cari nav incurred a full client-side
-              // load+chunk-fetch delay (~150-400ms in dev). Link prefetches
-              // the destination on hover/in-view so the tap → paint gap is
-              // near-instant. logNav fires synchronously inside the click
-              // so we can measure tap-to-mount time in DevTools.
+              // 2 tiles per row — same Link prefetch + logNav timing
+              // so tap-to-paint stays near-instant.
               <Link
                 key={tile.id}
                 href={tile.href}
@@ -215,28 +210,30 @@ export default function LandingPage() {
                 >
                   <img src={tile.img} alt="" className="h-7 w-auto object-contain" loading="eager" />
                 </span>
-                <span className="flex-1 text-left">
-                  <span className="block font-extrabold text-[14px] leading-tight">{tile.label}</span>
-                  <span className="block text-[10px] font-bold opacity-75 leading-tight mt-0.5">{tile.sub}</span>
+                <span className="flex-1 text-left min-w-0">
+                  <span className="block font-extrabold text-[13px] leading-tight truncate">{tile.label}</span>
+                  <span className="block text-[10px] font-bold opacity-75 leading-tight mt-0.5 truncate">{tile.sub}</span>
                 </span>
-                <ArrowRight className="w-4 h-4 shrink-0 opacity-80" />
               </Link>
             ))}
 
-            {/* Language toggle — small, below the tiles. */}
-            <div className="flex items-center justify-center gap-1.5 pt-1 text-[11px] font-bold">
-              <button
-                onClick={() => setLocaleAndStore('id')}
-                className={`px-2.5 py-0.5 rounded-full transition ${locale === 'id' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
-                aria-pressed={locale === 'id'}
-              >ID</button>
-              <span className="text-line">·</span>
-              <button
-                onClick={() => setLocaleAndStore('en')}
-                className={`px-2.5 py-0.5 rounded-full transition ${locale === 'en' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
-                aria-pressed={locale === 'en'}
-              >EN</button>
-            </div>
+          </div>
+
+          {/* Language toggle — centered under the tile grid (was previously
+              nested inside the grid, which forced it into one of the
+              2-column cells). Sits on its own row below the tiles. */}
+          <div className="w-full flex items-center justify-center gap-1.5 pt-2 text-[11px] font-bold">
+            <button
+              onClick={() => setLocaleAndStore('id')}
+              className={`px-2.5 py-0.5 rounded-full transition ${locale === 'id' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
+              aria-pressed={locale === 'id'}
+            >ID</button>
+            <span className="text-line">·</span>
+            <button
+              onClick={() => setLocaleAndStore('en')}
+              className={`px-2.5 py-0.5 rounded-full transition ${locale === 'en' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
+              aria-pressed={locale === 'en'}
+            >EN</button>
           </div>
         </div>
       </section>
