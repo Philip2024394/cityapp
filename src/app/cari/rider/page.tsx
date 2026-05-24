@@ -599,41 +599,43 @@ function FeaturedDriverCard({
         >
           <FlipBtn onBack />
 
-          {/* Bike hero photo — fills most of the back face. Matched from
-              the gallery (data/bikeImages.ts) via the driver's make+model.
-              No surrounding chrome — just the photo on the brand yellow,
-              with model + cc as a clean overlay caption at the bottom. */}
-          <div className="relative flex-1 flex items-center justify-center -m-5 pt-4 px-4">
+          {/* TOP-RIGHT: brand + cc, opposite the flip button — same
+              visual rhythm as the front face's bike model corner. */}
+          <div className="absolute top-3 right-14 z-20 text-right max-w-[55%]">
+            <div className="text-[15px] font-black text-black leading-tight truncate uppercase tracking-wide">
+              {(rider.bike.make || '—')} {(rider.bike.model || '')}
+            </div>
+            {rider.bike.cc != null && (
+              <div className="text-[13px] font-extrabold text-black/80 leading-tight mt-0.5">
+                {rider.bike.cc} CC
+              </div>
+            )}
+          </div>
+
+          {/* Bike hero photo — fills the card body edge-to-edge so the
+              bike reads as the dominant visual. -m-5 cancels the panel
+              padding so it bleeds to the card border. */}
+          <div className="relative flex-1 -m-5 mt-12 mb-12 flex items-center justify-center overflow-hidden">
             <img
               src={bikePhotoUrl}
               alt={`${rider.bike.make || ''} ${rider.bike.model || ''}`.trim() || 'Bike'}
               loading="lazy"
-              className="max-w-full max-h-full object-contain pointer-events-none"
+              className="w-full h-full object-contain pointer-events-none"
               style={{ filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.35))' }}
             />
           </div>
 
-          {/* Minimal caption — model + cc on top row, colour + transmission
-              on a second row. Nothing else. */}
-          <div className="-mx-5 -mb-5 mt-3 px-5 py-3 space-y-1.5" style={{ background: '#0A0A0A' }}>
-            <div className="flex items-baseline justify-between gap-3">
-              <div className="text-[16px] font-black text-brand truncate">
-                {(rider.bike.make || '—')} {(rider.bike.model || '')}
-              </div>
-              {rider.bike.cc != null && (
-                <div className="text-[16px] font-black text-white whitespace-nowrap shrink-0">
-                  {rider.bike.cc}<span className="text-[12px] font-bold text-white/65 ml-0.5">CC</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-baseline justify-between gap-3 text-[12px] font-bold uppercase tracking-wider">
-              {rider.bike.color && (
-                <div className="text-white/80 truncate">{rider.bike.color}</div>
-              )}
-              {transmissionLabel && (
-                <div className="text-brand whitespace-nowrap shrink-0">{transmissionLabel}</div>
-              )}
-            </div>
+          {/* BOTTOM strip — colour · transmission · year. All on one
+              line, separated by mid-dots. White text on black. */}
+          <div
+            className="absolute bottom-0 left-0 right-0 px-5 py-2.5 flex items-center justify-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-white"
+            style={{ background: '#0A0A0A' }}
+          >
+            {rider.bike.color && <span className="truncate">{rider.bike.color}</span>}
+            {rider.bike.color && transmissionLabel && <span className="text-white/40">·</span>}
+            {transmissionLabel && <span className="text-brand whitespace-nowrap">{transmissionLabel}</span>}
+            {(rider.bike.color || transmissionLabel) && rider.bike.year && <span className="text-white/40">·</span>}
+            {rider.bike.year && <span className="whitespace-nowrap">{rider.bike.year}</span>}
           </div>
         </div>
 
