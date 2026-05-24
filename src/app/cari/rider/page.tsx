@@ -774,10 +774,12 @@ function FeaturedDriverCard({
             </span>
           )}
           {/* Min · km pill — gated on locationFresh so we don't quote
-              an ETA derived from a stale GPS snapshot. Matches the
-              bottom panel's "~X mins away" line which already hides
-              under the same condition. */}
-          {rider.locationFresh && (
+              an ETA derived from a stale GPS snapshot. Mocks bypass
+              the gate (their lat/lng is fixed at seed-time, so the
+              distance is exact-by-definition — no GPS staleness risk).
+              Matches the bottom panel's "~X mins away" line which
+              already hides for real drivers with stale GPS. */}
+          {(rider.isMock || rider.locationFresh) && (
             <span
               className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[12px] font-extrabold leading-none"
               style={{
