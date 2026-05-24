@@ -1,16 +1,25 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { useState } from 'react'
 import {
-  Bike, Handshake, Sparkles, ChevronDown,
+  Bike, Handshake, Sparkles, ChevronDown, X as XIcon,
   Compass, KeyRound, Palette, Shirt, Wrench, Brush,
 } from 'lucide-react'
 
-// Header role/category dropdown. Two variants:
-//   • variant='join'   — "Become a …" + generic create-account
-//   • variant='signin' — "Open dashboard" + generic sign-in
-// Background is intentionally solid black (no transparency) for an
-// unambiguous "black-tinted" panel against the landing's map background.
+// Header role/category picker.
+//
+// Two variants:
+//   • variant='join'   — "Become a …" → list of category signup pages
+//                        (each destination auth-gates → sign in or create account)
+//   • variant='signin' — "Open dashboard" → list of category dashboards
+//                        (each destination auth-gates → /login if signed out)
+//
+// UX shape: right-side slide-in drawer with brand-yellow tile buttons —
+// same shape as the in-app AppDrawer. Previously this was a 260px
+// dropdown panel that cropped on shorter viewports (Home Clean + Handyman
+// fell below the fold). Drawer eliminates the cropping entirely and
+// gives every category equal visual weight.
 
 type Variant = 'join' | 'signin' | 'combined'
 
@@ -22,11 +31,6 @@ type MenuItem = {
 
 type Section = { title: string; items: MenuItem[] }
 
-// Both dropdowns are category-only. Each destination page presents
-// the "Sign in OR Create account" choice — that auth gate is the right
-// place to show those two options, NOT the header dropdown.
-//   • Join   → category signup pages (each auth-gates → sign in or create account)
-//   • Sign in → category dashboards   (each auth-gates → /login if not signed in)
 const JOIN_SECTIONS: Section[] = [
   {
     title: 'Join as',
@@ -69,40 +73,32 @@ export default function HeaderRoleMenu({
   variant?: Variant
 }) {
   const [open, setOpen] = useState(false)
-  const wrapRef = useRef<HTMLDivElement>(null)
   const sections =
     variant === 'signin' ? SIGNIN_SECTIONS :
     variant === 'join'   ? JOIN_SECTIONS :
     [...SIGNIN_SECTIONS, ...JOIN_SECTIONS]
 
+  // Lock body scroll while drawer is open. Esc closes.
   useEffect(() => {
     if (!open) return
-    function onDown(e: MouseEvent) {
-      if (!wrapRef.current) return
-      if (!wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
     return () => {
-      document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
     }
   }, [open])
 
-  // Style choices — solid black panel, yellow accent border, drop shadow.
-  const panelStyle: React.CSSProperties = {
-    background: '#0A0A0A',
-    border: '1px solid rgba(250,204,21,0.25)',
-    boxShadow: '0 20px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.85)',
-  }
+  const titleText = variant === 'signin' ? 'Open your dashboard' : 'Join City Rider'
 
   return (
-    <div ref={wrapRef} className="relative">
+    <>
+      {/* Trigger pill (kept as-is so the header layout doesn't shift). */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
         aria-expanded={open}
         className={
           variant === 'signin'
@@ -114,36 +110,91 @@ export default function HeaderRoleMenu({
         <ChevronDown className={`w-3.5 h-3.5 transition ${open ? 'rotate-180' : ''}`} strokeWidth={2.5} />
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full mt-1 z-50 w-[260px] rounded-2xl p-2"
-          style={panelStyle}
-        >
+      {/* Scrim — click anywhere to close. */}
+      <div
+        onClick={() => setOpen(false)}
+        aria-hidden
+        className="fixed inset-0 z-[60] transition-opacity"
+        style={{
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(2px)',
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? 'auto' : 'none',
+        }}
+      />
+
+      {/* Right-side drawer panel — matches AppDrawer's geometry. */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={titleText}
+        className="fixed top-0 right-0 bottom-0 z-[70] w-[82%] max-w-[340px] flex flex-col transition-transform"
+        style={{
+          background: 'rgba(15,15,20,0.97)',
+          borderLeft: '1px solid rgba(255,255,255,0.10)',
+          boxShadow: '-20px 0 60px rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(12px)',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+        }}
+      >
+        {/* Header — title + close. */}
+        <div className="flex items-center justify-between gap-3 px-4 pt-safe h-14 shrink-0 border-b border-white/08">
+          <div className="text-[13px] uppercase tracking-wider font-extrabold text-brand">
+            {titleText}
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close menu"
+            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-muted hover:text-ink transition"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <XIcon className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {/* Yellow brand-tile items — same shape as AppDrawer entries. */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 pb-safe">
           {sections.map((s, si) => (
-            <div key={s.title} className={si > 0 ? 'mt-2 pt-2 border-t border-white/8' : ''}>
-              <div className="px-2 py-1 text-[10px] uppercase tracking-wider font-extrabold text-ink/45">
-                {s.title}
+            <div key={s.title} className={si > 0 ? 'mt-4' : ''}>
+              {sections.length > 1 && (
+                <div className="px-2 pb-2 text-[10px] uppercase tracking-wider font-extrabold text-ink/45">
+                  {s.title}
+                </div>
+              )}
+              <div className="space-y-1.5">
+                {s.items.map((it) => {
+                  const Icon = it.icon
+                  return (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 p-1 pr-2.5 rounded-lg transition active:scale-[0.99]"
+                      style={{
+                        background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
+                        color: '#0A0A0A',
+                        border: '1px solid rgba(0,0,0,0.20)',
+                        boxShadow: '0 2px 6px rgba(250,204,21,0.18)',
+                        minHeight: 44,
+                      }}
+                    >
+                      <span
+                        className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                        style={{ background: '#0A0A0A', boxShadow: '0 1px 4px rgba(0,0,0,0.30) inset' }}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2.25} />
+                      </span>
+                      <span className="text-[13px] font-extrabold flex-1 min-w-0 truncate">
+                        {it.label}
+                      </span>
+                    </Link>
+                  )
+                })}
               </div>
-              {s.items.map((it) => {
-                const Icon = it.icon
-                return (
-                  <Link
-                    key={it.href}
-                    href={it.href}
-                    role="menuitem"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-[13px] font-bold text-ink hover:bg-brand/15 hover:text-brand transition"
-                  >
-                    <Icon className="w-4 h-4 shrink-0" strokeWidth={2.25} />
-                    <span className="flex-1 truncate">{it.label}</span>
-                  </Link>
-                )
-              })}
             </div>
           ))}
-        </div>
-      )}
-    </div>
+        </nav>
+      </aside>
+    </>
   )
 }
