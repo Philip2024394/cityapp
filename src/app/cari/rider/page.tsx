@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Star, ArrowRight, RotateCw } from 'lucide-react'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
-import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { quoteBreakdown, rateFor, isOutOfZone } from '@/lib/pricing/quote'
@@ -156,7 +155,10 @@ function DriverResults() {
       const pricing = rateFor(r, filter)
       const outOfZone = isOutOfZone(tripKm, r.serviceZoneRadiusKm)
       const { final, minApplied, chargeableKm } = quoteBreakdown(tripKm, pricing, outOfZone)
-      const distanceToPickup = haversineKm(pickup, { lat: r.lat, lng: r.lng })
+      // Driver→pickup distance: instant road-corrected estimate (haversine ×
+      // 1.3, empirical urban-road ratio for Indonesia). Tier-2 useEffect
+      // below upgrades the top visible drivers to real OSRM road km.
+      const distanceToPickup = instantRoadDistance(pickup, { lat: r.lat, lng: r.lng }).km
       const hasOverrides = false
       const hasPitstop = !!pitstopNote
       const pitstopFee = hasPitstop ? (r.pitstopFee ?? 0) : 0
@@ -172,6 +174,32 @@ function DriverResults() {
     )
     return e
   }, [tripKm, sort, filter, pickup, pitstopNote, riders])
+
+  // Tier-2 async km upgrade — for the top 4 visible drivers, ask the
+  // OSRM proxy for real road distance and overlay it on top of the
+  // instant haversine×1.3 estimate. State keyed by driver id; the
+  // FeaturedDriverCard reads from this map first, falls back to
+  // item.distanceToPickup. Re-runs whenever the visible list changes.
+  const [accurateKmByDriver, setAccurateKmByDriver] = useState<Record<string, number>>({})
+  useEffect(() => {
+    if (!pickup) return
+    const top = enriched.slice(0, 4)
+    if (top.length === 0) return
+    let cancelled = false
+    Promise.all(top.map(async (item) => {
+      const r = item.rider
+      const res = await fetchRoadDistanceKm(pickup, { lat: r.lat, lng: r.lng })
+      return [r.id, res.km] as const
+    })).then((pairs) => {
+      if (cancelled) return
+      setAccurateKmByDriver((prev) => {
+        const next = { ...prev }
+        for (const [id, km] of pairs) next[id] = km
+        return next
+      })
+    }).catch(() => { /* network — leave the instant estimate in place */ })
+    return () => { cancelled = true }
+  }, [pickup, enriched])
 
   const cheapest = enriched[0]?.totalFare
   const mostExpensive = enriched.length > 0 ? Math.max(...enriched.map(x => x.totalFare)) : null
@@ -411,6 +439,7 @@ function DriverResults() {
                 item={item}
                 isCheapest={idx === 0 && sort === 'cheapest'}
                 tried={triedIds.has(item.rider.id)}
+                accurateKm={accurateKmByDriver[item.rider.id]}
                 onWhatsApp={() => onBookRider(item.rider, item.fare, item.perKm, item.pitstopFee)}
               />
             ))}
@@ -511,7 +540,7 @@ function DriverResults() {
 }
 
 function FeaturedDriverCard({
-  item, isCheapest, tried, onWhatsApp,
+  item, isCheapest, tried, accurateKm, onWhatsApp,
 }: {
   item: {
     rider: Rider
@@ -531,9 +560,14 @@ function FeaturedDriverCard({
    *  We show a discreet "Tried" pill so they don't re-contact by
    *  accident — the Book button still works for a deliberate retry. */
   tried: boolean
+  /** Real OSRM road km, overlaid on top of the instant haversine×1.3
+   *  estimate when the parent has fetched it. Undefined while in flight. */
+  accurateKm?: number
   onWhatsApp: () => void
 }) {
-  const { rider, fare, distanceToPickup, minApplied } = item
+  const { rider, fare, minApplied } = item
+  // Display km: prefer OSRM-accurate when available, else instant estimate.
+  const distanceToPickup = accurateKm ?? item.distanceToPickup
   const eta = etaMinutes(distanceToPickup)
   const [flipped, setFlipped] = useState(false)
 
