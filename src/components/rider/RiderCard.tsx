@@ -117,15 +117,21 @@ export default function RiderCard({ rider, distanceKm, estimatedFare, onWhatsApp
                   onWhatsApp()
                 }}
                 aria-disabled={rider.isMock}
-                className={`rounded-full px-3 py-1.5 flex items-center gap-1.5 text-[13px] font-extrabold shadow-[0_4px_12px_rgba(37,211,102,0.35)] transition ${
+                className={`rounded-full px-4 py-1.5 flex items-center gap-1.5 text-[13px] font-extrabold border transition ${
                   rider.isMock
-                    ? 'bg-[#25D366]/40 text-white/70 cursor-not-allowed'
-                    : 'bg-[#25D366] text-white hover:scale-[1.03]'
+                    ? 'opacity-60 cursor-not-allowed'
+                    : 'hover:brightness-110 hover:scale-[1.03]'
                 }`}
+                style={{
+                  background: '#0A0A0A',
+                  color: '#FFFFFF',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                }}
                 aria-label={`WhatsApp ${rider.name}`}
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                {rider.isMock ? 'Sample' : (hasQuote ? 'Book' : 'Chat')}
+                <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
+                {rider.isMock ? 'Sample' : (hasQuote ? 'Book' : 'Contact')}
               </button>
             )}
           </div>

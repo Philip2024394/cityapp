@@ -215,18 +215,18 @@ function ProviderCard({ provider: p, demo = false }: { provider: MassageProvider
             if (demo) e.preventDefault()
           }}
           className={`rounded-full px-3 py-1.5 flex items-center gap-1.5 text-[13px] font-extrabold border shrink-0 transition ${
-            demo ? 'opacity-60 cursor-not-allowed' : 'hover:brightness-105 hover:scale-[1.03]'
+            demo ? 'opacity-60 cursor-not-allowed' : 'hover:brightness-110 hover:scale-[1.03]'
           }`}
           style={{
-            background: '#FACC15',
-            color: '#0A0A0A',
-            borderColor: 'rgba(0,0,0,0.25)',
-            boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
+            background: '#0A0A0A',
+            color: '#FFFFFF',
+            borderColor: 'rgba(255,255,255,0.25)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
           }}
           aria-label={`WhatsApp ${p.display_name}`}
         >
-          <MessageCircle className="w-3.5 h-3.5" style={{ color: '#0A0A0A' }} />
-          {demo ? 'Sample' : 'Book Now'}
+          <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
+          {demo ? 'Sample' : 'Contact'}
         </a>
       </div>
     </div>

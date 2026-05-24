@@ -286,12 +286,18 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
               if (r.isMock) { e.preventDefault(); return }
               trackWaClick({ context: 'rental_card', targetPhone: r.ownerWhatsapp, meta: { rental_id: r.id, brand: r.brand, model: r.model } })
             }}
-            className={`shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[12px] font-extrabold uppercase tracking-wider text-bg bg-gradient-to-r from-brand to-brand2 border border-black/85 transition-all ${
-              r.isMock ? 'opacity-60 cursor-not-allowed' : 'active:scale-[0.99]'
+            className={`shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider border transition-all ${
+              r.isMock ? 'opacity-60 cursor-not-allowed' : 'active:scale-[0.99] hover:brightness-110'
             }`}
-            style={{ transform: 'translateY(-4px)' }}
+            style={{
+              background: '#0A0A0A',
+              color: '#FFFFFF',
+              borderColor: 'rgba(255,255,255,0.25)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+              transform: 'translateY(-4px)',
+            }}
           >
-            {r.isMock ? 'Sample' : 'Book Rental'}
+            {r.isMock ? 'Sample' : 'Contact'}
             <ArrowRight className="w-3 h-3" aria-hidden />
           </a>
         </div>
