@@ -52,7 +52,23 @@ export type LaundryProviderPublic = Pick<
   | 'whatsapp_e164'
   | 'profile_image_url'
   | 'availability'
-> & { is_mock?: boolean; rating?: number | null }
+> & {
+  id?: string
+  cover_image_url?:    string | null
+  gallery_image_urls?: string[] | null
+  languages?:          string[] | null
+  instagram_url?:      string | null
+  tiktok_url?:         string | null
+  facebook_url?:       string | null
+  operating_hours?:    Record<string, string> | null
+  certifications?:     string[] | null
+  last_active_at?:     string | null
+  created_at?:         string | null
+  subscription_status?: LaundrySubscriptionStatus | null
+  is_mock?: boolean
+  rating?: number | null
+  rating_count?: number | null
+}
 
 export const PACKAGE_LABELS = {
   wash:      'Wash',
