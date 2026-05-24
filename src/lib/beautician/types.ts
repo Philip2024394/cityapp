@@ -55,6 +55,19 @@ export type BeauticianProviderPublic = Pick<
   | 'profile_image_url'
   | 'availability'
 > & {
+  // mig 0072 — universal profile fields
+  id?: string
+  cover_image_url?:    string | null
+  gallery_image_urls?: string[] | null
+  languages?:          string[] | null
+  instagram_url?:      string | null
+  tiktok_url?:         string | null
+  facebook_url?:       string | null
+  operating_hours?:    Record<string, string> | null
+  certifications?:     string[] | null
+  last_active_at?:     string | null
+  created_at?:         string | null
+  subscription_status?: BeauticianSubscriptionStatus | null
   is_mock?: boolean
   rating?: number | null
   rating_count?: number | null

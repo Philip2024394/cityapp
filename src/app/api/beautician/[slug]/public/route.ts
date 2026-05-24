@@ -4,7 +4,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 export const runtime = 'nodejs'
 
 const PUBLIC_COLS = [
-  'slug','display_name',
+  'id','slug','display_name',
   'gender','years_experience','bio',
   'price_makeup_idr','price_nail_idr','price_hair_idr',
   'city','service_area_notes',
@@ -12,6 +12,12 @@ const PUBLIC_COLS = [
   'profile_image_url',
   'availability',
   'is_mock',
+  // mig 0072 universal profile fields
+  'cover_image_url','gallery_image_urls','languages',
+  'instagram_url','tiktok_url','facebook_url',
+  'operating_hours','certifications',
+  'last_active_at','created_at',
+  'subscription_status',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
