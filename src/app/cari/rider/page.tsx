@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Star, ArrowRight, RotateCw, Bike, Cog, Settings2, Palette, Hash, Package } from 'lucide-react'
+import { Star, ArrowRight, RotateCw } from 'lucide-react'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { haversineKm } from '@/lib/geo/haversine'
 import { etaMinutes } from '@/lib/geo/eta'
@@ -561,15 +561,15 @@ function FeaturedDriverCard({
     </button>
   )
 
-  const transmissionLabel =
-    rider.bike.type === 'matic'  ? 'Automatic' :
-    rider.bike.type === 'sport'  ? 'Sport / Manual' :
-    rider.bike.type === 'manual' ? 'Manual' : 'Unknown'
-
   // Bike gallery lookup — make+model → curated imagekit photo (catalog
   // first, then extension map, then a stable per-key recent variant,
   // finally generic silhouette). Never null.
   const bikePhotoUrl = getBikeImageUrl(rider.bike.make, rider.bike.model)
+
+  const transmissionLabel =
+    rider.bike.type === 'matic'  ? 'Automatic' :
+    rider.bike.type === 'sport'  ? 'Manual' :
+    rider.bike.type === 'manual' ? 'Manual' : null
 
   return (
     <div
@@ -599,44 +599,41 @@ function FeaturedDriverCard({
         >
           <FlipBtn onBack />
 
-          {/* Bike hero photo — looked up from the gallery via make+model
-              (data/bikeImages.ts). Sized to dominate the back face. */}
-          <div
-            className="relative -mx-5 -mt-5 mb-3 h-[140px] overflow-hidden"
-            style={{
-              background: 'linear-gradient(180deg, rgba(10,10,10,0.06), transparent 60%)',
-            }}
-          >
+          {/* Bike hero photo — fills most of the back face. Matched from
+              the gallery (data/bikeImages.ts) via the driver's make+model.
+              No surrounding chrome — just the photo on the brand yellow,
+              with model + cc as a clean overlay caption at the bottom. */}
+          <div className="relative flex-1 flex items-center justify-center -m-5 pt-4 px-4">
             <img
               src={bikePhotoUrl}
               alt={`${rider.bike.make || ''} ${rider.bike.model || ''}`.trim() || 'Bike'}
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-              style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.30))' }}
+              className="max-w-full max-h-full object-contain pointer-events-none"
+              style={{ filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.35))' }}
             />
           </div>
 
-          <div className="flex items-center gap-2 mb-3 pr-12">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: '#0A0A0A' }}
-            >
-              <Bike className="w-4 h-4 text-brand" strokeWidth={2.5} />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider font-extrabold text-black/65">Bike</div>
-              <div className="text-[16px] font-black text-black leading-tight truncate">
-                {rider.bike.make || '—'} {rider.bike.model || ''}
+          {/* Minimal caption — model + cc on top row, colour + transmission
+              on a second row. Nothing else. */}
+          <div className="-mx-5 -mb-5 mt-3 px-5 py-3 space-y-1.5" style={{ background: '#0A0A0A' }}>
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="text-[16px] font-black text-brand truncate">
+                {(rider.bike.make || '—')} {(rider.bike.model || '')}
               </div>
+              {rider.bike.cc != null && (
+                <div className="text-[16px] font-black text-white whitespace-nowrap shrink-0">
+                  {rider.bike.cc}<span className="text-[12px] font-bold text-white/65 ml-0.5">CC</span>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 flex-1 content-start">
-            <SpecTile icon={Cog}        label="Engine"       value={rider.bike.cc ? `${rider.bike.cc} cc` : '—'} />
-            <SpecTile icon={Settings2}  label="Transmission" value={transmissionLabel} />
-            <SpecTile icon={Palette}    label="Colour"       value={rider.bike.color || '—'} />
-            <SpecTile icon={Hash}       label="Plate"        value={rider.bike.plate || '—'} mono />
-            <SpecTile icon={Bike}       label="Year"         value={rider.bike.year ? String(rider.bike.year) : '—'} />
-            <SpecTile icon={Package}    label="Top box"      value={rider.bike.hasBox ? 'Yes' : 'No'} />
+            <div className="flex items-baseline justify-between gap-3 text-[12px] font-bold uppercase tracking-wider">
+              {rider.bike.color && (
+                <div className="text-white/80 truncate">{rider.bike.color}</div>
+              )}
+              {transmissionLabel && (
+                <div className="text-brand whitespace-nowrap shrink-0">{transmissionLabel}</div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -822,35 +819,6 @@ function FeaturedDriverCard({
   )
 }
 
-// Spec tile for the back-face bike sheet. Black-on-yellow chip.
-function SpecTile({
-  icon: Icon, label, value, mono = false,
-}: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
-  label: string
-  value: string
-  mono?: boolean
-}) {
-  return (
-    <div
-      className="rounded-xl px-3 py-2"
-      style={{
-        background: 'rgba(10,10,10,0.92)',
-        border: '1px solid rgba(0,0,0,0.85)',
-      }}
-    >
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-brand">
-        <Icon className="w-3 h-3" strokeWidth={2.5} />
-        {label}
-      </div>
-      <div
-        className={`text-[14px] font-extrabold text-white mt-0.5 truncate ${mono ? 'font-mono' : ''}`}
-      >
-        {value}
-      </div>
-    </div>
-  )
-}
 
 function Header() {
   // The header's "Edit trip" link was removed per design — the inline
