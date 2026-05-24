@@ -55,7 +55,7 @@ function resolveCardPhoto(r: BikeRental): string | null {
 // the rental surface feels native to the City Riders ecosystem.
 
 const RENTAL_BG_IMAGE =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2018,%202026,%2001_32_57%20AM.png?updatedAt=1779042794665'
+  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png?updatedAt=1779599833442'
 
 function transmissionLabel(t: BikeRental['transmission']): string {
   if (t === 'automatic') return 'Auto'
