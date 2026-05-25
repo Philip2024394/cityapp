@@ -12,6 +12,13 @@ const PUBLIC_COLS = [
   'profile_image_url',
   'availability',
   'is_mock',
+  // mig 0077 — category filter source
+  'marketplace_categories',
+  // mig 0072 — operating_hours drives the auto-busy-when-closed badge
+  'operating_hours',
+  // mig 0075/0076 — review aggregate columns drive rating badge + star meter
+  'rating',
+  'rating_count',
 ].join(', ')
 
 export async function GET(req: Request) {
@@ -21,7 +28,10 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const city   = searchParams.get('city')?.trim()
   const gender = searchParams.get('gender')
-  const service = searchParams.get('service') // makeup | nail | hair
+  // mig 0077 — `category` is the marketplace_categories filter (16-item
+  // allowlist). `service` (makeup | nail | hair) kept for legacy links.
+  const category = searchParams.get('category')
+  const service  = searchParams.get('service')
 
   let q = admin
     .from('beautician_providers')
@@ -40,6 +50,15 @@ export async function GET(req: Request) {
   if (service === 'makeup') q = q.not('price_makeup_idr', 'is', null)
   if (service === 'nail')   q = q.not('price_nail_idr',   'is', null)
   if (service === 'hair')   q = q.not('price_hair_idr',   'is', null)
+
+  const CATEGORY_ALLOWLIST = new Set([
+    'makeup','nails','hair','skin','lashes','brows',
+    'waxing','facial','massage','henna','bridal','spa',
+    'whitening','microblading','smoothing','permanent_makeup',
+  ])
+  if (category && CATEGORY_ALLOWLIST.has(category)) {
+    q = q.contains('marketplace_categories', [category])
+  }
 
   const { data, error } = await q
   if (error) return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })

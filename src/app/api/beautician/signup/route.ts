@@ -12,8 +12,9 @@ export const runtime = 'nodejs'
 
 type Body = {
   display_name?: string
-  gender?: string
-  years_experience?: number
+  /** mig 0080 — studio/salon brand name (separate from display_name).
+   *  Appears as the banner title on the public profile. */
+  business_name?: string
   bio?: string
   price_makeup_idr?: number | null
   price_nail_idr?:   number | null
@@ -23,7 +24,21 @@ type Body = {
   service_area_notes?: string
   profile_image_url?: string
   ktp_image_url?: string
+  /** mig 0079 — Visit Us opt-in driven by signup's "Service type"
+   *  picker (business or both → true; mobile-only → false). */
+  has_physical_location?: boolean
+  /** mig 0073 — services the beautician offers. Populated at signup
+   *  from the 8-tile main-services picker. */
+  services_offered?: string[]
+  /** mig 0077 — primary marketplace filter groups (max 3). */
+  marketplace_categories?: string[]
 }
+
+const SERVICE_ALLOWLIST = new Set([
+  'makeup','nails','hair','skin','lashes','brows',
+  'waxing','facial','massage','henna','bridal','spa',
+  'whitening','microblading','smoothing','permanent_makeup',
+])
 
 function numOrNull(v: number | null | undefined): number | null {
   if (v === null || v === undefined) return null
@@ -43,22 +58,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
 
-  const name   = (body.display_name || '').trim()
-  const bio    = (body.bio          || '').trim()
-  const gender = body.gender
-  const wa     = (body.whatsapp_e164 || '').trim()
+  const name = (body.display_name || '').trim()
+  const bio  = (body.bio          || '').trim()
+  const wa   = (body.whatsapp_e164 || '').trim()
 
   if (!name || name.length < 2)               return NextResponse.json({ error: 'name_required' }, { status: 400 })
-  if (gender !== 'woman' && gender !== 'man') return NextResponse.json({ error: 'gender_required' }, { status: 400 })
   if (!bio)                                   return NextResponse.json({ error: 'bio_required' }, { status: 400 })
   if (bio.length > 300)                       return NextResponse.json({ error: 'bio_too_long' }, { status: 400 })
   if (!wa || !/^\+?\d{8,15}$/.test(wa.replace(/\s|-/g, ''))) {
     return NextResponse.json({ error: 'whatsapp_required' }, { status: 400 })
-  }
-
-  const yrs = Number(body.years_experience ?? 0)
-  if (!Number.isFinite(yrs) || yrs < 0 || yrs > 60) {
-    return NextResponse.json({ error: 'invalid_years' }, { status: 400 })
   }
 
   const pMakeup = numOrNull(body.price_makeup_idr)
@@ -91,8 +99,12 @@ export async function POST(req: Request) {
       user_id: user.id,
       slug,
       display_name: name,
-      gender,
-      years_experience: yrs,
+      business_name: (body.business_name || '').trim() || null,
+      // gender + years_experience kept for legacy NOT NULL DB columns;
+      // no longer collected from the user — defaults preserve insert
+      // validity until a migration drops or relaxes the constraints.
+      gender: 'woman',
+      years_experience: 0,
       bio,
       price_makeup_idr: pMakeup,
       price_nail_idr:   pNail,
@@ -102,6 +114,20 @@ export async function POST(req: Request) {
       service_area_notes: (body.service_area_notes || '').trim() || null,
       profile_image_url:  (body.profile_image_url || '').trim() || null,
       ktp_image_url:      (body.ktp_image_url || '').trim() || null,
+      // mig 0079 — Visit Us opt-in from signup's service-type picker.
+      has_physical_location: body.has_physical_location === true,
+      // mig 0073 — services unlocked at signup from the 8-tile picker.
+      services_offered: Array.isArray(body.services_offered)
+        ? body.services_offered
+            .filter((s): s is string => typeof s === 'string' && SERVICE_ALLOWLIST.has(s))
+            .slice(0, 16)
+        : [],
+      // mig 0077 — same picker drives the marketplace_categories.
+      marketplace_categories: Array.isArray(body.marketplace_categories)
+        ? body.marketplace_categories
+            .filter((s): s is string => typeof s === 'string' && SERVICE_ALLOWLIST.has(s))
+            .slice(0, 3)
+        : [],
       availability: 'offline',
       status: 'pending',
     })

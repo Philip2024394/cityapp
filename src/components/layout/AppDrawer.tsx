@@ -9,7 +9,7 @@ import {
   Handshake, QrCode,
   Clock, AlertTriangle, CheckCircle2, ListChecks, Wallet,
   Sparkles, Store, UserCog,
-  Compass, Map, KeyRound, Palette, Shirt, Wrench, Brush,
+  Compass, Map, KeyRound, Palette, Shirt, Wrench, Brush, Pencil, Layers,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -62,9 +62,11 @@ const MASSAGE_NAV_ITEMS: ReadonlyArray<NavItem> = [
 ]
 
 const BEAUTICIAN_NAV_ITEMS: ReadonlyArray<NavItem> = [
-  { href: '/dashboard/beautician', label: 'Beautician dashboard', icon: UserCog },
-  { href: '/beautician',           label: 'Marketplace',          icon: Store },
-  { href: '/beautician/signup',    label: 'Register beautician',  icon: Palette },
+  { href: '/dashboard/beautician',          label: 'Beautician dashboard', icon: UserCog },
+  { href: '/dashboard/beautician/edit',     label: 'Live editor',          icon: Pencil },
+  { href: '/dashboard/beautician/services', label: 'Services (carousel)',  icon: Layers },
+  { href: '/beautician',                    label: 'Marketplace',          icon: Store },
+  { href: '/beautician/signup',             label: 'Register beautician',  icon: Palette },
 ]
 
 const LAUNDRY_NAV_ITEMS: ReadonlyArray<NavItem> = [

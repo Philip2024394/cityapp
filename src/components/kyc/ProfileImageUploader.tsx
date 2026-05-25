@@ -26,6 +26,7 @@ export default function ProfileImageUploader({
   userId,
   label = 'Foto profile',
   helpText = 'JPG / PNG / WEBP · max 5MB. Akan ditampilkan di marketplace.',
+  previewShape = 'square',
 }: {
   /** Current public URL (or null/empty for no photo). */
   value: string | null
@@ -33,6 +34,10 @@ export default function ProfileImageUploader({
   userId: string
   label?: string
   helpText?: string
+  /** Preview thumbnail shape. 'circle' mirrors the floating-card
+   *  avatar on the public profile page so beauticians see the exact
+   *  look their photo will have when published. */
+  previewShape?: 'square' | 'circle'
 }) {
   const [uploading, setUploading] = useState(false)
   const [err, setErr]             = useState<string | null>(null)
@@ -92,11 +97,20 @@ export default function ProfileImageUploader({
 
       {value ? (
         <div className="flex items-center gap-3 rounded-lg bg-green-500/10 border border-green-500/40 px-3 py-2.5">
-          <img
-            src={value}
-            alt=""
-            className="w-12 h-12 rounded-lg object-cover bg-black/30 shrink-0"
-          />
+          {previewShape === 'circle' ? (
+            <img
+              src={value}
+              alt=""
+              className="w-16 h-16 rounded-full object-cover shrink-0 border-2 border-white shadow"
+              style={{ background: '#0A0A0A' }}
+            />
+          ) : (
+            <img
+              src={value}
+              alt=""
+              className="w-12 h-12 rounded-lg object-cover bg-black/30 shrink-0"
+            />
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 text-green-300 text-[13px] font-bold">
               <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
