@@ -19,6 +19,10 @@ export type ProfileHeroProps = {
   phoneVerified?: boolean
   /** Online / busy / offline — shown as a pulse dot beside name. */
   availability?: 'online' | 'busy' | 'offline'
+  /** Optional absolutely-positioned overlay rendered in the top-left of
+   *  the cover. Lets a per-vertical page sit branded text (e.g.
+   *  "Professional Beautician") on the hero without touching the kit. */
+  overlayLeft?: React.ReactNode
 }
 
 const BRAND_GRADIENT = 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)'
@@ -27,6 +31,7 @@ export default function ProfileHero({
   coverUrl, avatarUrl, name,
   categoryLabel, rating, reviewCount,
   idVerified, phoneVerified, availability,
+  overlayLeft,
 }: ProfileHeroProps) {
   const initial = name?.charAt(0)?.toUpperCase() || '?'
   return (
@@ -51,6 +56,7 @@ export default function ProfileHero({
           className="absolute inset-x-0 bottom-0 h-32"
           style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65), transparent)' }}
         />
+        {overlayLeft}
       </div>
 
       {/* Avatar + identity overlap */}

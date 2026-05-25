@@ -6,7 +6,13 @@ import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
-import type { BeauticianProvider, BeauticianAvailability } from '@/lib/beautician/types'
+import BeauticianServicePhotosEditor from '@/components/dashboard/BeauticianServicePhotosEditor'
+import {
+  BEAUTICIAN_SERVICES_OFFERED,
+  type BeauticianProvider,
+  type BeauticianAvailability,
+  type BeauticianServiceOffered,
+} from '@/lib/beautician/types'
 
 // mig 0072 — universal extras live on the row but aren't in the
 // BeauticianProvider TS type (it predates the migration). Cast through this
@@ -20,6 +26,10 @@ type UniversalExtras = {
   operating_hours?:    Record<string, string> | null
   certifications?:     string[] | null
   languages?:          string[] | null
+  // mig 0073 services offered catalog
+  services_offered?:   BeauticianServiceOffered[] | null
+  // mig 0074 per-service photos
+  service_photos?:     Partial<Record<BeauticianServiceOffered, string[]>> | null
 }
 
 const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
@@ -203,6 +213,8 @@ function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved
     operating_hours:    Record<string, string> | null
     certifications:     string[]
     languages:          string[]
+    services_offered:   BeauticianServiceOffered[]
+    service_photos:     Partial<Record<BeauticianServiceOffered, string[]>>
   }
   const [f, setF] = useState<FormState>({
     display_name: provider.display_name,
@@ -226,6 +238,8 @@ function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved
     operating_hours:    px.operating_hours ?? null,
     certifications:     px.certifications ?? [],
     languages:          px.languages ?? [],
+    services_offered:   px.services_offered ?? [],
+    service_photos:     px.service_photos ?? {},
   })
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
@@ -262,6 +276,8 @@ function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved
           operating_hours:    f.operating_hours,
           certifications:     f.certifications,
           languages:          f.languages,
+          services_offered:   f.services_offered,
+          service_photos:     f.service_photos,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -301,6 +317,51 @@ function EditForm({ provider, onSaved }: { provider: BeauticianProvider; onSaved
       <input type="tel" value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
+      {/* Services Provided — multi-select. Mig 0073 DB CHECK
+          enforces the same allowlist, so the catalog is the single
+          source of truth. */}
+      <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-2">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+          Services Provided
+        </div>
+        <p className="text-[11px] text-ink/55 leading-snug">
+          Pilih layanan yang Anda tawarkan — muncul sebagai badge di profil publik.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {BEAUTICIAN_SERVICES_OFFERED.map((s) => {
+            const on = f.services_offered.includes(s.id)
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => upd(
+                  'services_offered',
+                  on ? f.services_offered.filter((x) => x !== s.id)
+                     : [...f.services_offered, s.id],
+                )}
+                className={`text-[12px] font-extrabold px-3 py-1.5 rounded-full border transition ${
+                  on
+                    ? 'bg-pink-500 text-white border-pink-500'
+                    : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                }`}
+              >
+                {s.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Per-service photo gallery — 4 slots per selected service. */}
+      {provider.user_id && (
+        <BeauticianServicePhotosEditor
+          userId={provider.user_id}
+          servicesOffered={f.services_offered}
+          value={f.service_photos}
+          onChange={(next) => upd('service_photos', next)}
+        />
+      )}
+
       {provider.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && (

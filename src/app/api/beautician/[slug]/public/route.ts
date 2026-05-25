@@ -18,6 +18,10 @@ const PUBLIC_COLS = [
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',
+  // mig 0073 services offered catalog
+  'services_offered',
+  // mig 0074 per-service photo gallery
+  'service_photos',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

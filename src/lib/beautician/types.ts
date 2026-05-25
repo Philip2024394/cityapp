@@ -71,6 +71,10 @@ export type BeauticianProviderPublic = Pick<
   is_mock?: boolean
   rating?: number | null
   rating_count?: number | null
+  // mig 0073 — Services Offered catalog (independent of pricing)
+  services_offered?: BeauticianServiceOffered[] | null
+  // mig 0074 — Per-service photo gallery (max 4 photos per service)
+  service_photos?: Partial<Record<BeauticianServiceOffered, string[]>> | null
 }
 
 export const SERVICE_LABELS = {
@@ -80,3 +84,31 @@ export const SERVICE_LABELS = {
 } as const
 
 export type BeauticianService = keyof typeof SERVICE_LABELS
+
+// ─────────────────────────────────────────────────────────────────────────
+// Services Offered catalog (mig 0073) — independent of pricing. Used on
+// the public profile page as "Services Provided" badges. DB CHECK
+// constraint mirrors this list, so adding here requires re-running 0073
+// with the new entry appended to the allowlist.
+// ─────────────────────────────────────────────────────────────────────────
+export const BEAUTICIAN_SERVICES_OFFERED = [
+  { id: 'makeup',  label: 'Make Up' },
+  { id: 'nails',   label: 'Nails'   },
+  { id: 'hair',    label: 'Hair'    },
+  { id: 'skin',    label: 'Skin'    },
+  { id: 'lashes',  label: 'Lashes'  },
+  { id: 'brows',   label: 'Brows'   },
+  { id: 'waxing',  label: 'Waxing'  },
+  { id: 'facial',  label: 'Facial'  },
+  { id: 'massage', label: 'Massage' },
+  { id: 'henna',   label: 'Henna'   },
+  { id: 'bridal',  label: 'Bridal'  },
+  { id: 'spa',     label: 'Spa'     },
+] as const
+
+export type BeauticianServiceOffered = typeof BEAUTICIAN_SERVICES_OFFERED[number]['id']
+
+export const SERVICE_OFFERED_LABELS: Record<BeauticianServiceOffered, string> =
+  Object.fromEntries(
+    BEAUTICIAN_SERVICES_OFFERED.map((s) => [s.id, s.label]),
+  ) as Record<BeauticianServiceOffered, string>

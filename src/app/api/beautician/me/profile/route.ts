@@ -28,7 +28,16 @@ type Body = {
   operating_hours?:    Record<string, string> | null
   certifications?:     string[]
   languages?:          string[]
+  // mig 0073 services offered catalog
+  services_offered?:   string[]
+  // mig 0074 per-service photo gallery
+  service_photos?:     Record<string, string[]>
 }
+
+const SERVICES_OFFERED_ALLOWLIST = new Set([
+  'makeup','nails','hair','skin','lashes','brows',
+  'waxing','facial','massage','henna','bridal','spa',
+])
 
 function priceOrNull(v: unknown): number | null | undefined {
   if (v === undefined) return undefined
@@ -93,6 +102,56 @@ export async function POST(req: Request) {
   const universal = validateUniversalProfile(body)
   if (!universal.ok) return NextResponse.json({ error: universal.error }, { status: 400 })
   Object.assign(update, universal.fields)
+
+  if (body.service_photos !== undefined) {
+    const sp = body.service_photos
+    if (sp === null || typeof sp !== 'object' || Array.isArray(sp)) {
+      return NextResponse.json({ error: 'invalid_service_photos' }, { status: 400 })
+    }
+    const cleaned: Record<string, string[]> = {}
+    for (const [k, v] of Object.entries(sp)) {
+      if (!SERVICES_OFFERED_ALLOWLIST.has(k)) {
+        return NextResponse.json({ error: 'invalid_service_photo_key' }, { status: 400 })
+      }
+      if (!Array.isArray(v)) {
+        return NextResponse.json({ error: 'invalid_service_photo_array' }, { status: 400 })
+      }
+      if (v.length > 4) {
+        return NextResponse.json({ error: 'too_many_photos_for_service' }, { status: 400 })
+      }
+      const urls: string[] = []
+      for (const u of v) {
+        if (typeof u !== 'string') {
+          return NextResponse.json({ error: 'invalid_service_photo_url' }, { status: 400 })
+        }
+        const trimmed = u.trim()
+        if (!trimmed) continue
+        if (!isAllowedImageUrl(trimmed)) {
+          return NextResponse.json({ error: 'invalid_service_photo_host' }, { status: 400 })
+        }
+        urls.push(trimmed)
+      }
+      if (urls.length > 0) cleaned[k] = urls
+    }
+    update.service_photos = cleaned
+  }
+
+  if (body.services_offered !== undefined) {
+    if (!Array.isArray(body.services_offered)) {
+      return NextResponse.json({ error: 'invalid_services_offered' }, { status: 400 })
+    }
+    if (body.services_offered.length > 12) {
+      return NextResponse.json({ error: 'too_many_services_offered' }, { status: 400 })
+    }
+    const cleaned: string[] = []
+    for (const s of body.services_offered) {
+      if (typeof s !== 'string' || !SERVICES_OFFERED_ALLOWLIST.has(s)) {
+        return NextResponse.json({ error: 'invalid_service_offered' }, { status: 400 })
+      }
+      if (!cleaned.includes(s)) cleaned.push(s)
+    }
+    update.services_offered = cleaned
+  }
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 })
