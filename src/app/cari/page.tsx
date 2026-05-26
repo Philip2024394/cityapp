@@ -2,7 +2,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase, Utensils, Car as CarIcon, Bus as BusIcon } from 'lucide-react'
+import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Car as CarIcon } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
@@ -329,23 +329,13 @@ function PlanTripPageInner() {
     if (!canSearch) return
     logNav('cari:view-drivers')
     haptic.impact()
-    // service → vehicleType + filter mapping. /cari/rider now filters
-    // its driver query by vehicleType (so Bike picks see only motorbike
-    // drivers, Car picks see only car drivers). The Passenger/Parcel
-    // toggle on /cari/rider then filters within that pool by the
-    // driver's services array.
-    const vehicleTypeForRider =
-      service === 'car' ? 'car'
-      : service === 'bus' ? 'minibus'
-      : 'bike'
-    // For the Bus tile, send the customer to the dedicated /bus
-    // marketplace — group / charter transport is best discovered as a
-    // browse experience (drivers describe daily charter rates in their
-    // bio), not the live ride-list flow.
-    if (service === 'bus') {
-      router.push('/bus')
-      return
-    }
+    // service → vehicleType mapping. /cari/rider filters its driver
+    // query by vehicleType (Bike picks → motorbike drivers; Car picks →
+    // car drivers). The Passenger/Parcel toggle on /cari/rider then
+    // filters within that pool by the driver's services array.
+    // Bus / minibus moved out of /cari entirely — those are browse
+    // flows on the landing page, not live ride-list bookings.
+    const vehicleTypeForRider = service === 'car' ? 'car' : 'bike'
     const params = new URLSearchParams({
       pLat: pickup!.lat.toString(),
       pLng: pickup!.lng.toString(),
@@ -425,50 +415,22 @@ function PlanTripPageInner() {
         />
       </div>
 
-      {/* FLOATING ACTION BUTTONS — vertically centred in the hero band
-          (between header and bottom-stack). pointer-events-none on the
-          wrapper so empty space falls through to the map for drop-off
-          tap; pointer-events-auto on the buttons themselves. z-20 sits
-          below the header (z-30) and bottom-sheet (z-40) chrome. */}
+      {/* FLOATING ACTION COLUMN — only PLACES remains. Rent (bike
+          rental) and B2B (contract-driver hire) both moved to the
+          landing page per founder direction: those are planning /
+          browse flows, not live-booking actions, so cluttering the
+          live booking widget with them was wrong. Places is the
+          genuine in-trip use case ("where do I want to drop off?")
+          and stays. pointer-events-none on the wrapper so empty
+          space still falls through to the map for drop-off tap. */}
       <div
         className="fixed right-3 z-20 flex flex-col items-end justify-center gap-3 pointer-events-none"
         style={{
-          // Track the map's new top inset (header + pickup bar + 12px
-          // gap) so Rent / B2B / Places stay vertically centred in the
-          // map card band rather than overlapping the pickup card.
           top: `${headerHeight + pickupBarHeight + 12}px`,
-          // Track the map's new bottom inset (+12px gap) so the Rent /
-          // B2B buttons stay vertically centred in the map card band.
           bottom: `${bottomHeight + keyboardOffset + 12}px`,
           transition: 'top 220ms ease, bottom 220ms ease',
         }}
       >
-        <Link
-          href="/rent"
-          onClick={() => haptic.tap()}
-          aria-label="Rent a motorbike"
-          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
-        >
-          <Bike className="w-6 h-6" strokeWidth={2.5} />
-          <span className="text-[11px] font-extrabold uppercase tracking-wider">Rent</span>
-        </Link>
-        {/* B2B — small businesses (Shopee/TikTok sellers, restaurants,
-            warungs) browse drivers for regular delivery contracts.
-            Matches the Rent button styling for visual consistency. */}
-        <Link
-          href="/business"
-          onClick={() => haptic.tap()}
-          aria-label="Business contracts — find a driver for regular deliveries"
-          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
-        >
-          <Briefcase className="w-6 h-6" strokeWidth={2.5} />
-          <span className="text-[12px] font-extrabold uppercase tracking-wider">B2B</span>
-        </Link>
-        {/* PLACES — browse the venues directory (restaurants, attractions,
-            shops). Moved here from the service-tab row so the bottom
-            sheet shows ONLY transport modes (bike / parcel / food).
-            Sits in the right floating column under B2B with matching
-            visual styling. */}
         <Link
           href="/places"
           prefetch
@@ -857,16 +819,20 @@ function PlanTripPageInner() {
                 + label (high contrast against the yellow dropoff tile).
                 Inactive tiles = translucent black so the eye reads them
                 as alternates to the current mode. */}
-            {/* Service squares — 3 surfaced vehicle selectors (Bike /
-                Car / Bus). The Passenger ↔ Parcel choice has moved
-                to a sub-toggle that appears on the driver-list page
-                (/cari/rider) AFTER the customer taps "View drivers",
-                since the same Bike rider — and the same Car driver —
-                can offer either service. Food and Parcel ServiceType
-                values still exist for backwards-compat deep-links:
+            {/* Service squares — only 2 vehicle selectors (Bike / Car)
+                for the live booking flow. Bus charter and Bike rental
+                are PLANNING flows (compare daily rates, browse ahead)
+                not live "I need transport now" — they live as entry
+                points on the landing page, not crammed into this
+                booking widget. Gojek + Grab do the same split.
+                The Passenger ↔ Parcel choice appears as a sub-toggle
+                on /cari/rider AFTER "View drivers", since the same
+                Bike rider / Car driver can offer either service.
+                Food and Parcel ServiceType values still exist for
+                backwards-compat deep-links:
                   /cari?service=parcel → Bike tile active, /cari/rider
                   toggle pre-selected to Parcel. */}
-            <div className="mt-2 grid grid-cols-3 gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               <ServiceSquare
                 href="/cari?service=person"
                 active={service === 'person' || service === 'parcel' || service === 'food'}
@@ -878,12 +844,6 @@ function PlanTripPageInner() {
                 active={service === 'car'}
                 icon={<CarIcon className="w-6 h-6" strokeWidth={2.5} />}
                 label="Car"
-              />
-              <ServiceSquare
-                href="/cari?service=bus"
-                active={service === 'bus'}
-                icon={<BusIcon className="w-6 h-6" strokeWidth={2.5} />}
-                label="Bus"
               />
             </div>
             {/* INLINE PRICE READOUT — reverted to directory-safe-harbour
