@@ -229,6 +229,7 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
       portfolioThumbs={portfolioThumbs}
       bottomItems={bottomItems}
       ctaLabel="Profile"
+      variant="light"
     />
   )
 }
@@ -243,7 +244,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // brand anchor on this surface.
   return (
     <main className="relative min-h-screen bg-white text-black">
-      <header className="px-4 pt-safe pt-3 pb-2 max-w-4xl mx-auto">
+      <header className="px-4 pt-safe pt-5 pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"

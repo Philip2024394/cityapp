@@ -93,9 +93,57 @@ export type UniversalProviderCardProps = {
   bottomItems?:       UniversalProviderCardBottomItem[]
   /** Optional CTA label override (default "Profile"). */
   ctaLabel?:          string
+  /** Surface variant. 'dark' (default) is the original dark-glass look
+   *  used across every marketplace; 'light' is for pages painting on a
+   *  white background — body becomes white with a subtle shadow + dark
+   *  ink text + light scrim + lighter thumbnail wells. */
+  variant?:           'dark' | 'light'
 }
 
 const BRAND_YELLOW = '#FACC15'
+
+// All the surface-specific colours collected here so the JSX below stays
+// readable. Switch the whole card between dark/light by changing one prop.
+const SURFACE = {
+  dark: {
+    bodyBg:           'rgba(15, 15, 18, 0.62)',
+    bodyBackdrop:     'blur(12px)',
+    bodyShadow:       (theme: string) => `0 6px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06), 0 0 0 0.5px ${theme}40`,
+    coverFadeTo:      'rgba(15,15,18,0.95)',
+    ratingChipBg:     'rgba(15, 15, 18, 0.78)',
+    ratingChipBorder: 'rgba(255,255,255,0.18)',
+    ratingChipText:   '#FFFFFF',
+    avatarFallback:   'bg-black/40 text-white',
+    avatarRingShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,15,18,0.8)',
+    statusDotBorder:  '#0F0F12',
+    nameText:         'text-white',
+    cityText:         'text-white/70',
+    sublineText:      'text-white/55',
+    bioText:          'text-white/70',
+    thumbBg:          'bg-black/40',
+    bottomItemsText:  'text-white/85',
+    bottomIconColor:  '#FFFFFF',
+  },
+  light: {
+    bodyBg:           '#FFFFFF',
+    bodyBackdrop:     'none',
+    bodyShadow:       (theme: string) => `0 6px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06), 0 0 0 0.5px ${theme}40`,
+    coverFadeTo:      'rgba(255,255,255,0.95)',
+    ratingChipBg:     'rgba(255, 255, 255, 0.92)',
+    ratingChipBorder: 'rgba(0,0,0,0.10)',
+    ratingChipText:   '#0A0A0A',
+    avatarFallback:   'bg-gray-100 text-gray-800',
+    avatarRingShadow: '0 2px 8px rgba(0,0,0,0.15), 0 0 0 2px #FFFFFF',
+    statusDotBorder:  '#FFFFFF',
+    nameText:         'text-black',
+    cityText:         'text-black/70',
+    sublineText:      'text-black/55',
+    bioText:          'text-black/70',
+    thumbBg:          'bg-gray-100',
+    bottomItemsText:  'text-black/80',
+    bottomIconColor:  '#1F2937',
+  },
+} as const
 
 export default function UniversalProviderCard({
   href,
@@ -112,8 +160,10 @@ export default function UniversalProviderCard({
   themeColor = BRAND_YELLOW,
   bottomItems,
   ctaLabel = 'Profile',
+  variant = 'dark',
 }: UniversalProviderCardProps) {
   const theme = themeColor
+  const s = SURFACE[variant]
   const initials = displayName.charAt(0).toUpperCase()
   const hasRating = typeof rating === 'number' && rating > 0
   const safeThumbs = (portfolioThumbs ?? []).filter(Boolean).slice(0, 3)
@@ -126,11 +176,11 @@ export default function UniversalProviderCard({
     <div
       className="relative overflow-hidden rounded-2xl transition hover:-translate-y-0.5 hover:shadow-2xl"
       style={{
-        background: 'rgba(15, 15, 18, 0.62)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: s.bodyBg,
+        backdropFilter: s.bodyBackdrop,
+        WebkitBackdropFilter: s.bodyBackdrop,
         borderLeft: `3px solid ${theme}`,
-        boxShadow: `0 6px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06), 0 0 0 0.5px ${theme}40`,
+        boxShadow: s.bodyShadow(theme),
       }}
     >
       {/* HERO STRIP — cover image (or themed gradient fallback) with
@@ -153,19 +203,22 @@ export default function UniversalProviderCard({
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(15,15,18,0) 45%, rgba(15,15,18,0.95) 100%)',
+              `linear-gradient(to bottom, rgba(255,255,255,0) 45%, ${s.coverFadeTo} 100%)`,
           }}
         />
         {hasRating && (
           <div
             className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full border shadow-md"
             style={{
-              background: 'rgba(15, 15, 18, 0.78)',
-              borderColor: 'rgba(255,255,255,0.18)',
+              background: s.ratingChipBg,
+              borderColor: s.ratingChipBorder,
             }}
           >
             <Star className="w-3.5 h-3.5" fill="#FACC15" stroke="none" />
-            <span className="text-[13px] font-extrabold text-white tabular-nums leading-none">
+            <span
+              className="text-[13px] font-extrabold tabular-nums leading-none"
+              style={{ color: s.ratingChipText }}
+            >
               {rating.toFixed(1)}
             </span>
           </div>
@@ -181,17 +234,17 @@ export default function UniversalProviderCard({
               ? <img
                   src={profileImageUrl}
                   alt={displayName}
-                  className="w-16 h-16 rounded-2xl object-cover bg-black/40"
+                  className={`w-16 h-16 rounded-2xl object-cover ${s.thumbBg}`}
                   style={{
                     border: `3px solid ${theme}`,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,15,18,0.8)',
+                    boxShadow: s.avatarRingShadow,
                   }}
                 />
               : <div
-                  className="w-16 h-16 rounded-2xl bg-black/40 flex items-center justify-center text-[22px] font-black text-white"
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center text-[22px] font-black ${s.avatarFallback}`}
                   style={{
                     border: `3px solid ${theme}`,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,15,18,0.8)',
+                    boxShadow: s.avatarRingShadow,
                   }}
                 >{initials}</div>}
             <span
@@ -217,7 +270,7 @@ export default function UniversalProviderCard({
                 className="absolute inset-0 rounded-full"
                 style={{
                   background: dotColor,
-                  border: '2px solid #0F0F12',
+                  border: `2px solid ${s.statusDotBorder}`,
                   boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
                 }}
               />
@@ -226,11 +279,11 @@ export default function UniversalProviderCard({
 
           {/* Name + city + subline */}
           <div className="min-w-0 flex-1 pb-1">
-            <div className="text-[17px] font-black text-white truncate leading-tight">
+            <div className={`text-[17px] font-black truncate leading-tight ${s.nameText}`}>
               {displayName}
             </div>
             {city && (
-              <div className="text-[12px] text-white/70 flex items-center gap-1 mt-0.5">
+              <div className={`text-[12px] flex items-center gap-1 mt-0.5 ${s.cityText}`}>
                 <span
                   className="inline-block w-1.5 h-1.5 rounded-full"
                   style={{ background: theme }}
@@ -239,7 +292,7 @@ export default function UniversalProviderCard({
               </div>
             )}
             {subline && (
-              <div className="text-[11px] text-white/55 truncate mt-0.5">
+              <div className={`text-[11px] truncate mt-0.5 ${s.sublineText}`}>
                 {subline}
               </div>
             )}
@@ -262,7 +315,7 @@ export default function UniversalProviderCard({
 
         {bio?.trim() && (
           <p
-            className="text-[12.5px] leading-snug text-white/70 mb-3"
+            className={`text-[12.5px] leading-snug mb-3 ${s.bioText}`}
             style={{
               display: '-webkit-box',
               WebkitLineClamp: 2,
@@ -279,7 +332,7 @@ export default function UniversalProviderCard({
             {safeThumbs.map((url, i) => (
               <div
                 key={url + i}
-                className="relative aspect-[4/3] rounded-lg overflow-hidden bg-black/40"
+                className={`relative aspect-[4/3] rounded-lg overflow-hidden ${s.thumbBg}`}
                 style={{ boxShadow: `inset 0 0 0 1px ${theme}40` }}
               >
                 <img
@@ -301,13 +354,13 @@ export default function UniversalProviderCard({
                 return (
                   <span
                     key={it.key}
-                    className="inline-flex items-center gap-1.5 text-[13px] font-bold text-white/85"
+                    className={`inline-flex items-center gap-1.5 text-[13px] font-bold ${s.bottomItemsText}`}
                   >
                     {Ico && (
                       <Ico
                         className="w-[16px] h-[16px]"
                         strokeWidth={2.25}
-                        style={{ color: '#FFFFFF' }}
+                        style={{ color: s.bottomIconColor }}
                       />
                     )}
                     {it.label}
