@@ -292,7 +292,7 @@ export default function UniversalProviderCard({
               </div>
             )}
             {subline && (
-              <div className={`text-[11px] truncate mt-0.5 ${s.sublineText}`}>
+              <div className={`text-[12px] truncate mt-0.5 ${s.sublineText}`}>
                 {subline}
               </div>
             )}
@@ -301,7 +301,7 @@ export default function UniversalProviderCard({
           {/* Themed specialty pill (top-right of name block) */}
           {specialtyLabel && (
             <div
-              className="shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider"
+              className="shrink-0 px-2.5 py-1 rounded-full text-[12px] font-black uppercase tracking-wider"
               style={{
                 background: `${theme}22`,
                 color: theme,

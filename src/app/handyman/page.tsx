@@ -91,13 +91,13 @@ function Inner() {
         {/* Search bar + burger button */}
         <div className="flex items-center gap-2 mb-3" ref={menuRef}>
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/40 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40 pointer-events-none" />
             <input
               type="search"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Cari tukang — nama, area, jenis layanan…"
-              className="w-full rounded-full bg-black/85 border border-white/15 pl-10 pr-3 py-2.5 text-[13px] text-ink placeholder:text-ink/45 focus:outline-none focus:border-brand"
+              className="w-full rounded-full bg-gray-100 border border-gray-200 pl-10 pr-3 py-2.5 text-[13px] text-black placeholder:text-black/45 focus:outline-none focus:border-brand"
             />
           </div>
           <div className="relative">
@@ -244,7 +244,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // brand anchor on this surface.
   return (
     <main className="relative min-h-screen bg-white text-black">
-      <header className="px-4 pt-safe pt-5 pb-2 max-w-4xl mx-auto">
+      <header className="px-4 pt-safe pt-7 pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
