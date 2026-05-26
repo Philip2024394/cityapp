@@ -43,12 +43,12 @@ export default function BeauticianInfoPage() {
   }, [])
   useEffect(() => { void reload() }, [reload])
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-white/70 text-[14px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/70 text-[14px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Sign in required</h1>
+          <h1 className="text-[20px] font-black text-black mb-2">Sign in required</h1>
           <Link href="/login?next=/dashboard/beautician/info" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
         </div>
       </Shell>
@@ -58,7 +58,7 @@ export default function BeauticianInfoPage() {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Not a beautician yet</h1>
+          <h1 className="text-[20px] font-black text-black mb-2">Not a beautician yet</h1>
           <Link href="/beautician/signup" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign up</Link>
         </div>
       </Shell>
@@ -69,8 +69,8 @@ export default function BeauticianInfoPage() {
     <Shell>
       <div className="px-4 pt-3 pb-28 max-w-lg mx-auto">
         <header className="mb-5">
-          <h1 className="text-[24px] font-black text-white leading-tight">Profile info</h1>
-          <p className="text-[13px] text-white/70 mt-1">What customers see first — name, photo, contact, and service area.</p>
+          <h1 className="text-[24px] font-black text-black leading-tight">Profile info</h1>
+          <p className="text-[13px] text-black/70 mt-1">What customers see first — name, photo, contact, and service area.</p>
         </header>
 
         <InfoForm provider={provider} onSaved={reload} />
@@ -228,7 +228,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
           <div className="relative">
             <span
               aria-hidden
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-extrabold text-white/55 pointer-events-none select-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-extrabold text-black/55 pointer-events-none select-none"
             >
               +62
             </span>
@@ -333,7 +333,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
                 className={`flex flex-col items-center justify-center gap-1 rounded-xl p-3 border transition min-h-[68px] ${
                   on
                     ? 'bg-yellow-400 border-yellow-300 text-yellow-900 shadow-md shadow-yellow-400/30'
-                    : 'bg-white/10 border-white/15 text-white/70 hover:bg-white/15'
+                    : 'bg-white/10 border-white/15 text-black/70 hover:bg-white/15'
                 }`}
               >
                 <span className="text-[13px] font-extrabold leading-none">{opt.label}</span>
@@ -400,7 +400,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
               countryCodes={['id']}
               placeholder="Type address or place name…"
               ariaLabel="Search location"
-              className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-pink-400"
+              className="w-full rounded-xl bg-gray-100 border border-gray-200 px-3 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-pink-400"
             />
             {f.latitude != null && f.longitude != null ? (
               <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-500/15 border border-emerald-400/40 px-3 py-2">
@@ -414,7 +414,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
                     upd('latitude', null)
                     upd('longitude', null)
                   }}
-                  className="text-[12px] font-bold text-white/70 hover:text-white"
+                  className="text-[12px] font-bold text-black/70 hover:text-white"
                 >
                   Change
                 </button>
@@ -466,7 +466,7 @@ function Card({ title, hint, icon, children }: {
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 p-5 shadow-lg shadow-black/20 space-y-3">
+    <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 shadow-lg shadow-black/20 space-y-3">
       <div className="flex items-start gap-3">
         {icon && (
           <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-yellow-400 text-yellow-900 shadow-md shadow-yellow-400/20">
@@ -474,8 +474,8 @@ function Card({ title, hint, icon, children }: {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h2 className="text-[15px] font-black text-white leading-tight">{title}</h2>
-          {hint && <p className="text-[12px] text-white/65 leading-snug mt-1">{hint}</p>}
+          <h2 className="text-[15px] font-black text-black leading-tight">{title}</h2>
+          {hint && <p className="text-[12px] text-black/65 leading-snug mt-1">{hint}</p>}
         </div>
       </div>
       {children}
@@ -488,22 +488,18 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     <label className="block space-y-1.5">
       <span className="text-[13px] font-bold text-white/85 block">{label}</span>
       {children}
-      {hint && <span className="text-[12px] text-white/55 leading-snug block">{hint}</span>}
+      {hint && <span className="text-[12px] text-black/55 leading-snug block">{hint}</span>}
     </label>
   )
 }
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-white overflow-hidden">
-      <div aria-hidden className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="fixed inset-0 -z-10 bg-black/55" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 min-h-[44px]'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 min-h-[44px]'

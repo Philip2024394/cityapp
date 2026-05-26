@@ -13,7 +13,6 @@ import { type BeauticianProvider } from '@/lib/beautician/types'
 // page reachable from the drawer (and from the hub) so the surface is
 // discoverable, not buried inside the live editor.
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 export default function BeauticianDomainPage() {
   const [provider, setProvider] = useState<BeauticianProvider | null>(null)
@@ -32,12 +31,12 @@ export default function BeauticianDomainPage() {
   }, [])
   useEffect(() => { void reload() }, [reload])
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-white/70 text-[14px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/70 text-[14px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Sign in required</h1>
+          <h1 className="text-[20px] font-black text-black mb-2">Sign in required</h1>
           <Link href="/login?next=/dashboard/beautician/domain" className="rounded-full bg-yellow-400 text-yellow-900 px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
         </div>
       </Shell>
@@ -52,8 +51,8 @@ export default function BeauticianDomainPage() {
             <Globe2 size={18} />
           </div>
           <div>
-            <h1 className="text-[24px] font-black text-white leading-tight">Buy a custom domain</h1>
-            <p className="text-[13px] text-white/70 mt-1">
+            <h1 className="text-[24px] font-black text-black leading-tight">Buy a custom domain</h1>
+            <p className="text-[13px] text-black/70 mt-1">
               We register a <span className="font-bold text-white">.my.id</span> domain for you and point it at your profile.
               {' '}<span className="font-bold text-yellow-300">Rp 150.000 / year.</span>
             </p>
@@ -124,7 +123,7 @@ function DomainForm({ provider }: { provider: BeauticianProvider | null }) {
             <Check className="w-7 h-7" strokeWidth={3} />
           </div>
           <h3 className="text-white text-[18px] font-extrabold">Request sent</h3>
-          <p className="text-white/70 text-[13px] mt-1.5 leading-snug max-w-sm mx-auto">
+          <p className="text-black/70 text-[13px] mt-1.5 leading-snug max-w-sm mx-auto">
             We&apos;ll message you on WhatsApp within 1 business day with availability and the payment link.
           </p>
         </div>
@@ -179,10 +178,10 @@ function DomainField({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-[13px] font-bold text-white/85 block">
+      <span className="text-[13px] font-bold text-black/85 block">
         {label}{required && <span className="text-yellow-300"> *</span>}
       </span>
-      <div className="flex items-stretch rounded-xl bg-white/10 border border-white/15 overflow-hidden focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-400/30">
+      <div className="flex items-stretch rounded-xl bg-gray-100 border border-gray-200 overflow-hidden focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-400/30">
         <input
           type="text"
           value={value}
@@ -211,13 +210,13 @@ function ContactField({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-[13px] font-bold text-white/85 block">{label}</span>
+      <span className="text-[13px] font-bold text-black/85 block">{label}</span>
       <input
         type="text"
         inputMode={inputMode}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/30 min-h-[44px]"
+        className="w-full rounded-xl bg-gray-100 border border-gray-200 px-4 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/30 min-h-[44px]"
       />
     </label>
   )
@@ -225,11 +224,11 @@ function ContactField({
 
 function Card({ title, hint, children }: { title?: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 p-5 shadow-lg shadow-black/20 space-y-3">
+    <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
       {title && (
         <div>
-          <h2 className="text-[15px] font-black text-white">{title}</h2>
-          {hint && <p className="text-[12px] text-white/65 leading-snug mt-1">{hint}</p>}
+          <h2 className="text-[15px] font-black text-black">{title}</h2>
+          {hint && <p className="text-[12px] text-black/65 leading-snug mt-1">{hint}</p>}
         </div>
       )}
       {children}
@@ -239,9 +238,7 @@ function Card({ title, hint, children }: { title?: string; hint?: string; childr
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-white overflow-hidden">
-      <div aria-hidden className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="fixed inset-0 -z-10 bg-black/55" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>

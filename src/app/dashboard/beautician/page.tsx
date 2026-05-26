@@ -73,12 +73,12 @@ export default function BeauticianDashboardPage() {
     }
   }
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-white/70 text-[14px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/70 text-[14px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[22px] font-black text-white mb-2">Sign in required</h1>
+          <h1 className="text-[22px] font-black text-black mb-2">Sign in required</h1>
           <Link href="/login?next=/dashboard/beautician" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
         </div>
       </Shell>
@@ -88,8 +88,8 @@ export default function BeauticianDashboardPage() {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[22px] font-black text-white mb-2">Not a beautician yet</h1>
-          <p className="text-[14px] text-white/70 mb-6">Register to start receiving WhatsApp bookings.</p>
+          <h1 className="text-[22px] font-black text-black mb-2">Not a beautician yet</h1>
+          <p className="text-[14px] text-black/70 mb-6">Register to start receiving WhatsApp bookings.</p>
           <Link href="/beautician/signup" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign up</Link>
         </div>
       </Shell>
@@ -130,14 +130,14 @@ export default function BeauticianDashboardPage() {
     <Shell>
       <div className="px-4 pt-4 pb-32 max-w-lg mx-auto space-y-4">
         {/* Greeting + progress */}
-        <section className="rounded-3xl bg-black/55 backdrop-blur-md border border-white/10 p-5 shadow-lg shadow-black/20">
+        <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             {provider.profile_image_url
               ? <img src={provider.profile_image_url} alt={provider.display_name} className="w-14 h-14 rounded-full object-cover bg-pink-500/20 ring-2 ring-pink-400/40" />
               : <div className="w-14 h-14 rounded-full bg-pink-500/25 flex items-center justify-center text-pink-200 text-[20px] font-black ring-2 ring-pink-400/40">{provider.display_name[0]?.toUpperCase()}</div>}
             <div className="min-w-0 flex-1">
-              <h1 className="text-[20px] font-black text-white truncate leading-tight">Hi, {firstName}! <span aria-hidden>👋</span></h1>
-              <p className="text-[13px] text-white/75 mt-0.5">
+              <h1 className="text-[20px] font-black text-black truncate leading-tight">Hi, {firstName}! <span aria-hidden>👋</span></h1>
+              <p className="text-[13px] text-black/75 mt-0.5">
                 {doneSteps === totalSteps
                   ? 'Your profile is complete — looking great!'
                   : `Your profile is ${doneSteps} of ${totalSteps} complete`}
@@ -151,10 +151,10 @@ export default function BeauticianDashboardPage() {
             />
           </div>
           <div className="flex items-center justify-between mt-1.5">
-            <p className="text-[11px] text-white/55 tabular-nums">
+            <p className="text-[11px] text-black/55 tabular-nums">
               {(provider.visitor_count ?? 0).toLocaleString()} profile {provider.visitor_count === 1 ? 'view' : 'views'}
             </p>
-            <p className="text-[11px] text-white/55 tabular-nums">{pct}%</p>
+            <p className="text-[11px] text-black/55 tabular-nums">{pct}%</p>
           </div>
         </section>
 
@@ -201,14 +201,14 @@ export default function BeauticianDashboardPage() {
         </div>
 
         {/* Share link */}
-        <section className="rounded-3xl bg-black/55 backdrop-blur-md border border-white/10 p-5 shadow-lg shadow-black/20 space-y-3">
+        <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-pink-500/25 text-pink-200 flex items-center justify-center"><Link2 size={18} /></div>
-            <h2 className="text-[15px] font-black text-white">Share your profile</h2>
+            <h2 className="text-[15px] font-black text-black">Share your profile</h2>
           </div>
-          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2.5">
-            <div className="text-[12px] text-white/55 uppercase tracking-wider font-bold mb-0.5">Public link</div>
-            <div className="text-[13px] font-mono text-white/90 truncate">{publicUrl}</div>
+          <div className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2.5">
+            <div className="text-[12px] text-black/55 uppercase tracking-wider font-bold mb-0.5">Public link</div>
+            <div className="text-[13px] font-mono text-black/90 truncate">{publicUrl}</div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -222,7 +222,7 @@ export default function BeauticianDashboardPage() {
               href={publicUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 text-white px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-100 border border-gray-200 hover:bg-gray-200 text-black px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
             >
               Open in new tab →
             </a>
@@ -230,9 +230,9 @@ export default function BeauticianDashboardPage() {
         </section>
 
         {/* Availability + trial — kept at the bottom as a small status strip */}
-        <section className="rounded-3xl bg-black/45 backdrop-blur-md border border-white/10 p-4 space-y-3">
+        <section className="rounded-3xl bg-white border border-gray-200 p-4 space-y-3">
           <div>
-            <div className="text-[12px] font-bold uppercase tracking-wider text-white/55 mb-2">My status</div>
+            <div className="text-[12px] font-bold uppercase tracking-wider text-black/55 mb-2">My status</div>
             <div className="grid grid-cols-3 gap-2">
               {(['online','busy','offline'] as const).map((a) => {
                 const active = provider.availability === a
@@ -241,7 +241,7 @@ export default function BeauticianDashboardPage() {
                   ? a === 'online' ? 'bg-emerald-500 text-white border-emerald-500'
                   : a === 'busy'   ? 'bg-amber-500   text-white border-amber-500'
                   :                  'bg-stone-500   text-white border-stone-500'
-                  : 'bg-white/10 text-white/80 border-white/15 hover:bg-white/15'
+                  : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
                 return (
                   <button
                     key={a}
@@ -274,7 +274,7 @@ function TaskCard({
   return (
     <Link
       href={href}
-      className="block rounded-3xl bg-black/55 backdrop-blur-md border border-white/10 p-4 shadow-lg shadow-black/20 hover:border-pink-400/60 hover:bg-black/65 transition group"
+      className="block rounded-3xl bg-white border border-gray-200 p-4 shadow-sm hover:border-pink-400/60 hover:bg-gray-50 transition group"
     >
       <div className="flex items-center gap-3">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
@@ -282,12 +282,12 @@ function TaskCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <h3 className="text-[15px] font-black text-white truncate">{title}</h3>
+            <h3 className="text-[15px] font-black text-black truncate">{title}</h3>
             <StatusPill status={status} />
           </div>
-          <p className="text-[12.5px] text-white/70 leading-snug line-clamp-2">{description}</p>
+          <p className="text-[12.5px] text-black/70 leading-snug line-clamp-2">{description}</p>
         </div>
-        <ChevronRight size={20} className="text-white/40 group-hover:text-pink-300 transition flex-shrink-0" />
+        <ChevronRight size={20} className="text-black/40 group-hover:text-pink-500 transition flex-shrink-0" />
       </div>
     </Link>
   )
@@ -309,7 +309,7 @@ function StatusPill({ status }: { status: 'done' | 'pending' | 'pending-review' 
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider text-white/55 bg-white/10 border border-white/15 rounded-full px-2 py-0.5">
+    <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider text-black/55 bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5">
       To do
     </span>
   )

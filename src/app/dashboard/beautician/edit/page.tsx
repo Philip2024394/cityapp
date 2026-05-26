@@ -392,7 +392,7 @@ function BannerInlineControls({
         <div className="grid grid-cols-2 gap-2">
           <Link
             href="/dashboard/beautician/services"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-gray-200 shadow-sm text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
           >
             Services (carousel)
           </Link>
@@ -400,7 +400,7 @@ function BannerInlineControls({
             href={`/beautician/${provider.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-gray-200 shadow-sm text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
           >
             View live profile →
           </a>
@@ -603,13 +603,9 @@ function FieldWithColor({
   )
 }
 
-const SHELL_BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
-      <div aria-hidden className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${SHELL_BG_URL})` }} />
-      <div aria-hidden className="fixed inset-0 -z-10 bg-black/55" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>

@@ -48,12 +48,12 @@ export default function BeauticianServicesPage() {
   }, [])
   useEffect(() => { void reload() }, [reload])
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-white/70 text-[14px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/70 text-[14px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Sign in required</h1>
+          <h1 className="text-[20px] font-black text-black mb-2">Sign in required</h1>
           <Link href="/login?next=/dashboard/beautician/services" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
         </div>
       </Shell>
@@ -63,7 +63,7 @@ export default function BeauticianServicesPage() {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Not a beautician yet</h1>
+          <h1 className="text-[20px] font-black text-black mb-2">Not a beautician yet</h1>
           <Link href="/beautician/signup" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign up</Link>
         </div>
       </Shell>
@@ -74,8 +74,8 @@ export default function BeauticianServicesPage() {
     <Shell>
       <div className="px-4 pt-3 pb-32 max-w-lg mx-auto">
         <header className="mb-5">
-          <h1 className="text-[24px] font-black text-white leading-tight">Services & prices</h1>
-          <p className="text-[13px] text-white/70 mt-1">Pick your services, set prices, and add portfolio photos.</p>
+          <h1 className="text-[24px] font-black text-black leading-tight">Services & prices</h1>
+          <p className="text-[13px] text-black/70 mt-1">Pick your services, set prices, and add portfolio photos.</p>
         </header>
 
         <ServicesForm provider={provider} onSaved={reload} />
@@ -208,7 +208,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                 : `Rp ${n}k`
             return (
               <label key={k} className="block">
-                <span className="text-[12px] font-bold text-white/70 mb-1 inline-block uppercase tracking-wide">{k}</span>
+                <span className="text-[12px] font-bold text-black/70 mb-1 inline-block uppercase tracking-wide">{k}</span>
                 <div className="relative">
                   <input
                     type="number" min={0} max={9999}
@@ -226,7 +226,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                     {suffix}
                   </span>
                 </div>
-                <div className="text-[10px] font-bold text-white/55 text-center mt-1 tabular-nums min-h-[14px]">
+                <div className="text-[10px] font-bold text-black/55 text-center mt-1 tabular-nums min-h-[14px]">
                   {preview ?? ' '}
                 </div>
               </label>
@@ -255,7 +255,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
             if (!photos || photos.length < 2) return null
             return (
               <div key={sid} className="space-y-2 pt-1 first:pt-0">
-                <div className="text-[13px] font-extrabold text-white/85">{SERVICE_OFFERED_LABELS[sid]}</div>
+                <div className="text-[13px] font-extrabold text-black/85">{SERVICE_OFFERED_LABELS[sid]}</div>
                 <div className="grid grid-cols-4 gap-2">
                   {photos.map((p, i) => {
                     const isMain = i === 0
@@ -344,27 +344,23 @@ function someHasMultiple(sp: Partial<Record<BeauticianServiceOffered, Beautician
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 p-5 shadow-lg shadow-black/20 space-y-3">
+    <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
       <div>
-        <h2 className="text-[15px] font-black text-white">{title}</h2>
-        {hint && <p className="text-[12px] text-white/65 leading-snug mt-1">{hint}</p>}
+        <h2 className="text-[15px] font-black text-black">{title}</h2>
+        {hint && <p className="text-[12px] text-black/65 leading-snug mt-1">{hint}</p>}
       </div>
       {children}
     </section>
   )
 }
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-white overflow-hidden">
-      <div aria-hidden className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="fixed inset-0 -z-10 bg-black/55" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 min-h-[44px]'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 min-h-[44px]'

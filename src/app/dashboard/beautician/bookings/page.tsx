@@ -12,7 +12,6 @@ import AppNav from '@/components/layout/AppNav'
 // booking rows are stored as ISO YYYY-MM-DD strings — no timezone math
 // when displaying.
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 type Booking = {
   id:                 string
@@ -98,12 +97,12 @@ export default function BeauticianBookingsPage() {
     } catch { await reload() }
   }
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-white/70 text-[14px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/70 text-[14px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Sign in required</h1>
+          <h1 className="text-[20px] font-black text-black mb-2">Sign in required</h1>
           <Link href="/login?next=/dashboard/beautician/bookings" className="rounded-full bg-yellow-400 text-yellow-900 px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
         </div>
       </Shell>
@@ -118,15 +117,15 @@ export default function BeauticianBookingsPage() {
             <CalIcon size={18} />
           </div>
           <div>
-            <h1 className="text-[24px] font-black text-white leading-tight">Bookings & calendar</h1>
-            <p className="text-[13px] text-white/70 mt-1">
+            <h1 className="text-[24px] font-black text-black leading-tight">Bookings & calendar</h1>
+            <p className="text-[13px] text-black/70 mt-1">
               Tap a date to see requests for that day, or to mark yourself busy.
             </p>
           </div>
         </header>
 
         {/* Calendar card */}
-        <section className="rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 p-4 shadow-lg shadow-black/20 space-y-3">
+        <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-4 shadow-lg shadow-black/20 space-y-3">
           <CalendarHeader
             viewMonth={viewMonth}
             onPrev={() => setViewMonth(addMonths(viewMonth, -1))}
@@ -163,7 +162,7 @@ export default function BeauticianBookingsPage() {
             <div className="text-[11px] uppercase tracking-wider font-bold text-red-50/85">
               {prettyDate(selected)}
             </div>
-            <div className="text-[14px] font-extrabold text-white">
+            <div className="text-[14px] font-extrabold text-black">
               {selectedBookings.length === 0
                 ? (isSelectedBusy ? 'You marked this day busy.' : 'No bookings for this day.')
                 : `${selectedBookings.length} booking${selectedBookings.length === 1 ? '' : 's'}`}
@@ -171,7 +170,7 @@ export default function BeauticianBookingsPage() {
           </div>
           <div className="bg-black/65 backdrop-blur-md p-3 space-y-2">
             {selectedBookings.length === 0 ? (
-              <p className="text-[13px] text-white/65 leading-snug px-1 py-3">
+              <p className="text-[13px] text-black/65 leading-snug px-1 py-3">
                 When a customer submits a booking from your public profile, their
                 name, WhatsApp number, and the service they want appear here so
                 you know who to expect.
@@ -206,16 +205,16 @@ function CalendarHeader({ viewMonth, onPrev, onNext }: {
         type="button"
         onClick={onPrev}
         aria-label="Previous month"
-        className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-white/85"
+        className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-black/85"
       >
         <ChevronLeft size={18} />
       </button>
-      <div className="text-[15px] font-black text-white">{label}</div>
+      <div className="text-[15px] font-black text-black">{label}</div>
       <button
         type="button"
         onClick={onNext}
         aria-label="Next month"
-        className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-white/85"
+        className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center text-black/85"
       >
         <ChevronRight size={18} />
       </button>
@@ -254,7 +253,7 @@ function CalendarGrid({
           const hasConfirm  = dayList.some((b) => b.status === 'confirmed')
 
           let bg = 'bg-transparent'
-          let text = inMonth ? 'text-white/85' : 'text-white/30'
+          let text = inMonth ? 'text-black/85' : 'text-white/30'
           let ring = ''
           if (isSel)       { bg = 'bg-yellow-400'; text = 'text-yellow-900' }
           else if (isBusy) { bg = 'bg-red-500/30'; text = 'text-red-100' }
@@ -287,7 +286,7 @@ function CalendarGrid({
 
 function Legend() {
   return (
-    <div className="flex items-center gap-3 text-[10px] text-white/55">
+    <div className="flex items-center gap-3 text-[10px] text-black/55">
       <span className="inline-flex items-center gap-1">
         <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> Pending
       </span>
@@ -313,11 +312,11 @@ function BookingRow({
 }) {
   const waLink = `https://wa.me/${booking.customer_whatsapp.replace(/[^\d]/g, '')}`
   return (
-    <div className="rounded-xl bg-white/10 border border-white/15 p-3 space-y-2">
+    <div className="rounded-xl bg-gray-100 border border-gray-200 p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <div className="text-[14px] font-black text-white truncate">{booking.customer_name}</div>
+            <div className="text-[14px] font-black text-black truncate">{booking.customer_name}</div>
             <StatusPill status={booking.status} />
           </div>
           <div className="text-[11px] text-white/60 mt-0.5 font-mono">
@@ -326,7 +325,7 @@ function BookingRow({
         </div>
       </div>
       {booking.notes && (
-        <p className="text-[12px] text-white/70 leading-snug whitespace-pre-wrap">
+        <p className="text-[12px] text-black/70 leading-snug whitespace-pre-wrap">
           {booking.notes}
         </p>
       )}
@@ -440,9 +439,7 @@ function buildMonthCells(viewMonth: string): Array<{ iso: string; day: number; i
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-white overflow-hidden">
-      <div aria-hidden className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="fixed inset-0 -z-10 bg-black/55" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
