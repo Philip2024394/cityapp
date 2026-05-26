@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { Plus, Compass, Star, MessageCircle, Fuel } from 'lucide-react'
+import { Plus, Compass, Fuel, Bike, Globe } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { TOUR_SERVICES } from '@/data/tourServices'
 import { getLanguageByCode } from '@/data/tourLanguages'
@@ -41,6 +42,11 @@ type Row = {
   availability: 'online' | 'busy' | 'offline'
   bike_brand: string | null
   is_mock?: boolean
+  // Universal card fields (mig 0072 + 0087).
+  cover_image_url?: string | null
+  theme_color?: string | null
+  gallery_image_urls?: string[] | null
+  operating_hours?: Record<string, string> | null
 }
 
 export default async function TourGuideFeedPage({
@@ -64,7 +70,7 @@ export default async function TourGuideFeedPage({
   // Real guides
   const { data: realRows } = await admin
     .from('tour_guide_listings')
-    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, review_count, image_urls, fuel_included, availability, bike_brand')
+    .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating, review_count, image_urls, fuel_included, availability, bike_brand, cover_image_url, theme_color, gallery_image_urls, operating_hours')
     .eq('status', 'approved')
     .order('rating', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -126,169 +132,69 @@ export default async function TourGuideFeedPage({
         ) : (
           <div className="space-y-3">
             {list.map((r) => {
-              // Server component — can't pass onClick to Link, so mocks
-              // render as a plain non-interactive <div> and reals as a
-              // navigable <Link>. Cleaner than a polymorphic wrapper.
-              const photo = (r.image_urls && r.image_urls.length > 0) ? r.image_urls[0] : null
-              // Card background = full-bleed image, no scrim, no opacity
-              // dim. backgroundColor 'transparent' overrides .card's
-              // rgba(0,0,0,0.55) so the photo shows at full clarity.
-              const cardStyle = {
-                backgroundImage: `url('${TOUR_CARD_BG}')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundColor: 'transparent',
-              } as const
+              // Cover priority: explicit cover_image_url > first photo
+              // from image_urls > the gallery (mig 0072). Without one
+              // the universal card paints a theme-tinted gradient.
+              const cover = r.cover_image_url
+                ?? (r.image_urls && r.image_urls.length > 0 ? r.image_urls[0] : null)
+                ?? (r.gallery_image_urls && r.gallery_image_urls.length > 0 ? r.gallery_image_urls[0] : null)
+
+              // Mini portfolio thumb row pulls from image_urls first
+              // (tour-guide's original storage), falls back to the
+              // universal gallery field.
+              const thumbs = (r.image_urls && r.image_urls.length > 0
+                ? r.image_urls
+                : r.gallery_image_urls ?? []).slice(0, 3)
+
+              // Primary service drives the specialty pill (e.g.
+              // "Cultural", "Hiking"). Falls back to bike brand when
+              // services is empty.
+              const primaryService = (r.services && r.services.length > 0) ? r.services[0] : null
+              const specialty = primaryService
+                ? primaryService.charAt(0).toUpperCase() + primaryService.slice(1)
+                : (r.bike_brand ? `${r.bike_brand} Bike` : null)
+
+              // Subline: top language + day rate so the credibility
+              // signal sits one line under the city.
+              const sublineBits: string[] = []
+              const topLang = (r.languages ?? [])
+                .map((code) => getLanguageByCode(code))
+                .find((l): l is NonNullable<typeof l> => l !== null)
+              if (topLang) sublineBits.push(`${topLang.flag} ${topLang.label}`)
+              if (r.day_rate_idr != null)
+                sublineBits.push(`Rp ${r.day_rate_idr.toLocaleString('id-ID')}/day`)
+
+              const bottomItems: UniversalProviderCardBottomItem[] = []
+              if (r.bike_brand)
+                bottomItems.push({ key: 'bike', icon: Bike, label: r.bike_brand })
+              bottomItems.push({
+                key: 'fuel',
+                icon: Fuel,
+                label: r.fuel_included ? 'Fuel inc.' : 'Fuel excl.',
+              })
+              // Languages count helps customers scan multilingual guides
+              // quickly without needing the full list.
+              const langCount = (r.languages ?? []).length
+              if (langCount > 1)
+                bottomItems.push({ key: 'lang', icon: Globe, label: `${langCount} langs` })
+
               return (
-                <div
+                <UniversalProviderCard
                   key={r.id}
-                  aria-disabled={r.is_mock}
-                  className="card p-4 relative overflow-hidden"
-                  style={cardStyle}
-                >
-                  {/* Star badge — top-right. */}
-                  {r.rating != null && (r.is_mock || r.review_count > 0) && (
-                    <div
-                      className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px]"
-                      style={{
-                        background: 'rgba(10,10,10,0.85)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        backdropFilter: 'blur(4px)',
-                        WebkitBackdropFilter: 'blur(4px)',
-                      }}
-                    >
-                      <Star className="w-3.5 h-3.5 fill-brand text-brand" strokeWidth={0} />
-                      <span className="font-extrabold text-white">{r.rating.toFixed(1)}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-start gap-3 mb-3">
-                    {/* Profile image + availability dot at bottom-right
-                        of the avatar. Green pulsing for online (uses the
-                        global `pulse-online` keyframes), solid orange
-                        otherwise. Same pattern as massage cards. */}
-                    <div className="relative shrink-0">
-                      {photo
-                        ? <img
-                            src={photo}
-                            alt={r.name}
-                            className="w-14 h-14 rounded-2xl object-cover bg-white/5"
-                            style={{
-                              border: '2px solid #FACC15',
-                              boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                            }}
-                          />
-                        : <div
-                            className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-[20px] font-black"
-                            style={{
-                              color: '#0A0A0A',
-                              border: '2px solid #FACC15',
-                              boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                            }}
-                          >{r.name[0]}</div>}
-                      <span
-                        aria-label={r.availability === 'online' ? 'Online — available' : 'Busy / offline'}
-                        className={`absolute -bottom-1 -right-1 rounded-full ${r.availability === 'online' ? 'animate-pulse-online' : ''}`}
-                        style={{
-                          width: 14,
-                          height: 14,
-                          background: r.availability === 'online' ? '#22C55E' : '#F97316',
-                          border: '2px solid #FFFFFF',
-                          boxShadow: r.availability === 'online' ? undefined : '0 1px 4px rgba(0,0,0,0.35)',
-                        }}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-extrabold leading-tight truncate" style={{ color: '#0A0A0A' }}>{r.name}</div>
-                      <div className="text-[12px] capitalize" style={{ color: '#374151' }}>{r.city.replace(/-/g, ' ')}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 text-[12px]">
-                    {/* Up to 2 languages stacked, all left-aligned.
-                        Fuel state moved to the action row (left of Contact). */}
-                    <div className="flex flex-col gap-1 min-w-0">
-                      {(r.languages ?? [])
-                        .map((code) => getLanguageByCode(code))
-                        .filter((l): l is NonNullable<typeof l> => l !== null)
-                        .slice(0, 2)
-                        .map((l) => (
-                          <div key={l.code} className="flex items-center gap-1.5 leading-none" style={{ color: '#374151' }}>
-                            <span aria-hidden className="text-[14px]">{l.flag}</span>
-                            <span className="font-bold truncate">{l.label}</span>
-                          </div>
-                        ))}
-                    </div>
-                    {r.day_rate_idr != null && (
-                      <div className="inline-flex flex-col items-center leading-none -my-2">
-                        {/* Brand — header-size text, centered above the
-                            logo + price. Tight leading + negative margin
-                            keep the column within the 32px logo height
-                            so card height doesn't grow. */}
-                        <span
-                          className="text-[15px] font-extrabold uppercase tracking-tight leading-none"
-                          style={{ color: '#0A0A0A', transform: 'translateY(-8px)' }}
-                        >
-                          {(r.bike_brand ?? 'Honda')} Bike
-                        </span>
-                        <div className="inline-flex items-center gap-1 mt-0.5">
-                          <img
-                            src="https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg-preview.png?updatedAt=1779107454479"
-                            alt=""
-                            aria-hidden
-                            className="h-6 w-auto"
-                            loading="lazy"
-                          />
-                          <span className="font-extrabold leading-none" style={{ color: '#0A0A0A' }}>
-                            Rp {r.day_rate_idr.toLocaleString('id-ID')} <span className="font-bold text-[11px]" style={{ color: '#4B5563' }}>/ hari</span>
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action row — Fuel state on the left, Contact on the
-                      right. View link removed per spec. Mocks get the
-                      Contact rendered as inert <span>. */}
-                  <div className="flex items-center justify-between gap-2 mt-3">
-                    <div
-                      className="flex items-center gap-1 leading-none font-extrabold text-[12px]"
-                      style={{ color: r.fuel_included ? '#15803D' : '#6B7280' }}
-                    >
-                      <Fuel className="w-4 h-4" strokeWidth={2.25} />
-                      <span className="truncate">{r.fuel_included ? 'Fuel Included' : 'Fuel Excluded'}</span>
-                    </div>
-                    {r.is_mock ? (
-                      <span
-                        aria-disabled
-                        className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 opacity-60 cursor-not-allowed"
-                        style={{
-                          background: '#0A0A0A',
-                          color: '#FFFFFF',
-                          border: 'none',
-                        }}
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
-                        Contact
-                      </span>
-                    ) : (
-                      <a
-                        href={tourWaHref(r)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider transition inline-flex items-center justify-center gap-1.5 hover:brightness-110"
-                        style={{
-                          background: '#0A0A0A',
-                          color: '#FFFFFF',
-                          border: 'none',
-                        }}
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
-                        Contact
-                      </a>
-                    )}
-                  </div>
-                </div>
+                  href={`/tour/${r.slug}`}
+                  displayName={r.name}
+                  city={r.city ? r.city.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : null}
+                  subline={sublineBits.length ? sublineBits.join(' · ') : null}
+                  bio={r.notes ?? null}
+                  coverImageUrl={cover}
+                  profileImageUrl={r.image_urls?.[0] ?? null}
+                  availabilityDot={r.availability}
+                  rating={(r.is_mock || r.review_count > 0) ? (r.rating ?? null) : null}
+                  specialtyLabel={specialty}
+                  portfolioThumbs={thumbs}
+                  bottomItems={bottomItems}
+                  ctaLabel="Profile"
+                />
               )
             })}
           </div>

@@ -2,9 +2,10 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { MessageCircle, Star } from 'lucide-react'
+import { Home, Hotel, Building2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import AvailabilityDot from '@/components/massage/AvailabilityDot'
+import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
 import { MASSAGE_TYPE_SHORT, type MassageProviderPublic } from '@/lib/massage/types'
 
 // Per-card background image — themed massage scene, layered behind a
@@ -119,138 +120,44 @@ function MarketplaceInner() {
   )
 }
 
-function ProviderCard({ provider: p, demo = false }: { provider: MassageProviderPublic; demo?: boolean }) {
-  const waHref = buildWaHref(p)
+function ProviderCard({ provider: p }: { provider: MassageProviderPublic; demo?: boolean }) {
+  // Specialty pill = massage type. Subline summarises duration tiers
+  // so customers can scan duration availability at a glance.
+  const specialtyLabel = MASSAGE_TYPE_SHORT[p.massage_type] ?? p.massage_type
+  const portfolioThumbs = (p.gallery_image_urls ?? []).slice(0, 3)
 
-  // Card background — full-bleed massage image, no scrim, no dim.
-  // backgroundColor: transparent overrides .card's rgba(0,0,0,0.55) so
-  // no shade sits behind/around the image. .card-interactive still
-  // supplies the rounded corners, border, and hover transform.
-  const body = (
-    <div
-      className="card card-interactive p-4 relative overflow-hidden"
-      style={{
-        backgroundImage: `url('${MASSAGE_CARD_BG}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundColor: 'transparent',
-      }}
-    >
-      {p.rating != null && (
-        <div
-          className="absolute top-3 right-3 flex items-center gap-1 text-[12px] z-10 rounded-full px-2 py-0.5"
-          style={{
-            background: 'rgba(10,10,10,0.85)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-          }}
-        >
-          <Star className="w-3.5 h-3.5 fill-brand text-brand" strokeWidth={0} />
-          <span className="font-extrabold" style={{ color: '#FFFFFF' }}>{p.rating.toFixed(1)}</span>
-        </div>
-      )}
-      <div className="flex items-center gap-3 mb-3">
-        {/* Avatar + overlay availability dot at bottom-right.
-            Wrapper is relative so the dot can absolutely position over
-            the image corner; bigger size (14px) and white ring keep it
-            readable against the photo. */}
-        <div className="relative shrink-0">
-          {p.profile_image_url
-            ? <img
-                src={p.profile_image_url}
-                alt={p.display_name}
-                className="w-14 h-14 rounded-2xl object-cover bg-white/5"
-                style={{
-                  border: '2px solid #FACC15',
-                  boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                }}
-              />
-            : <div
-                className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-[20px] font-black"
-                style={{
-                  color: '#0A0A0A',
-                  border: '2px solid #FACC15',
-                  boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                }}
-              >{p.display_name[0]}</div>}
-          <span
-            aria-label={p.availability === 'online' ? 'Online · available' : 'Busy / offline'}
-            className={`absolute -bottom-1 -right-1 rounded-full ${p.availability === 'online' ? 'animate-pulse-online' : ''}`}
-            style={{
-              width: 14,
-              height: 14,
-              background: p.availability === 'online' ? '#22C55E' : '#F97316',
-              border: '2px solid #FFFFFF',
-              boxShadow: p.availability === 'online' ? undefined : '0 1px 4px rgba(0,0,0,0.35)',
-            }}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-bold truncate" style={{ color: '#0A0A0A' }}>{p.display_name}</div>
-          {/* One specialty per therapist — replaces the old gender/years
-              meta. Gender + years still appear lower in the detail page. */}
-          <div className="text-[12px] font-bold truncate mt-0.5" style={{ color: '#0A0A0A' }}>
-            {MASSAGE_TYPE_SHORT[p.massage_type] ?? p.massage_type}
-          </div>
-        </div>
-      </div>
-      <p className="text-[12px] line-clamp-3 mb-3 whitespace-pre-wrap" style={{ color: '#4B5563' }}>{p.bio}</p>
-      <div className="grid grid-cols-3 gap-1.5 mb-3">
-        <Tier min={60}  v={p.price_60min_idr} />
-        <Tier min={90}  v={p.price_90min_idr} />
-        <Tier min={120} v={p.price_120min_idr} />
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] min-w-0 truncate" style={{ color: '#4B5563' }}>
-          {p.service_area_notes ?? 'Tap to view profile'}
-        </div>
-        <a
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-disabled={demo}
-          onClick={(e) => {
-            e.stopPropagation()
-            if (demo) e.preventDefault()
-          }}
-          className={`rounded-full px-3 py-1.5 flex items-center gap-1.5 text-[13px] font-extrabold border shrink-0 transition ${
-            demo ? 'opacity-60 cursor-not-allowed' : 'hover:brightness-110 hover:scale-[1.03]'
-          }`}
-          style={{
-            background: '#0A0A0A',
-            color: '#FFFFFF',
-            borderColor: 'rgba(255,255,255,0.25)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
-          }}
-          aria-label={`WhatsApp ${p.display_name}`}
-        >
-          <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
-          {demo ? 'Sample' : 'Contact'}
-        </a>
-      </div>
-    </div>
-  )
+  // Subline: gender + years experience + cheapest tier.
+  const sublineBits: string[] = []
+  if (p.gender === 'woman' || p.gender === 'man') sublineBits.push(p.gender === 'woman' ? 'Wanita' : 'Pria')
+  if (p.years_experience > 0) sublineBits.push(`${p.years_experience} yrs`)
+  const cheapest = [p.price_60min_idr, p.price_90min_idr, p.price_120min_idr]
+    .filter((n): n is number => typeof n === 'number' && n > 0)
+    .reduce((min, n) => Math.min(min, n), Number.POSITIVE_INFINITY)
+  if (Number.isFinite(cheapest)) sublineBits.push(`From Rp ${cheapest.toLocaleString('id-ID')}`)
 
-  if (demo) return body
-  return <Link href={`/massage/${p.slug}`} className="block">{body}</Link>
-}
+  // Home / Hotel / Villa icons same as beautician.
+  const locs = new Set(p.service_locations ?? [])
+  const bottomItems: UniversalProviderCardBottomItem[] = []
+  if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: Home,      label: 'Home' })
+  if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
+  if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: Building2, label: 'Villa' })
 
-function buildWaHref(p: MassageProviderPublic): string {
-  const digits = p.whatsapp_e164.replace(/[^0-9]/g, '')
-  const text = `Halo ${p.display_name}, saya menemukan profil Anda di City Riders. Apakah Anda available untuk sesi pijat?`
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
-}
-
-function Tier({ min, v }: { min: number; v: number }) {
   return (
-    <div
-      className="rounded-lg border border-white/20 px-2 py-1.5 text-center"
-      style={{ background: '#0A0A0A' }}
-    >
-      <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: '#9CA3AF' }}>{min}m</div>
-      <div className="text-[12px] font-black" style={{ color: '#FACC15' }}>{v.toLocaleString('id-ID')}</div>
-    </div>
+    <UniversalProviderCard
+      href={`/massage/${p.slug}`}
+      displayName={p.display_name}
+      city={p.city ?? null}
+      subline={sublineBits.length ? sublineBits.join(' · ') : null}
+      bio={p.bio?.replace(/\s*\n\s*/g, ' ') ?? null}
+      coverImageUrl={p.cover_image_url ?? null}
+      profileImageUrl={p.profile_image_url ?? null}
+      availabilityDot={(p.availability === 'busy' || p.availability === 'offline') ? p.availability : 'online'}
+      rating={p.rating ?? null}
+      specialtyLabel={specialtyLabel}
+      portfolioThumbs={portfolioThumbs}
+      bottomItems={bottomItems}
+      ctaLabel="Profile"
+    />
   )
 }
 

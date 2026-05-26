@@ -2,10 +2,11 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { MessageCircle, Star, Wrench, Search, Menu, X } from 'lucide-react'
+import { Wrench, Search, Menu, X, DollarSign, Clock } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
 import {
-  SPECIALTY_LABELS, SPECIALTY_SHORT, ALL_SPECIALTIES,
+  SPECIALTY_LABELS, ALL_SPECIALTIES,
   type HandymanProviderPublic, type HandymanSpecialty,
 } from '@/lib/handyman/types'
 
@@ -66,7 +67,7 @@ function Inner() {
         p.bio,
         p.city ?? '',
         p.service_area_notes ?? '',
-        ...p.specialties.map((s) => SPECIALTY_LABELS[s] + ' ' + SPECIALTY_SHORT[s]),
+        ...p.specialties.map((s) => SPECIALTY_LABELS[s]),
       ].join(' ').toLowerCase()
       return hay.includes(q)
     })
@@ -185,135 +186,51 @@ function Inner() {
   )
 }
 
-function ProviderCard({ provider: p, demo = false }: { provider: HandymanProviderPublic; demo?: boolean }) {
-  const waHref = buildWaHref(p)
-  const tiers = [
-    p.hourly_rate_idr != null ? { label: 'Hour',     v: p.hourly_rate_idr } : null,
-    p.day_rate_idr    != null ? { label: 'Day · 8h', v: p.day_rate_idr }    : null,
-  ].filter((t): t is { label: string; v: number } => t !== null)
+function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?: boolean }) {
+  // Adapter — folds the handyman shape into the shared
+  // UniversalProviderCard. Marketplace cards use the brand-yellow
+  // accent uniformly across verticals; per-provider theme_color
+  // lives on the public profile page only.
+  const primary = p.specialties?.[0] ?? null
+  const specialtyLabel = primary ? SPECIALTY_LABELS[primary] : null
+  const portfolioThumbs = (p.gallery_image_urls ?? []).slice(0, 3)
 
-  const body = (
-    <div
-      className="card card-interactive p-4 relative overflow-hidden"
-      style={{
-        backgroundImage: `url('${HANDYMAN_CARD_BG}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundColor: 'transparent',
-      }}
-    >
-      {/* Rate badge — top-right, hourly preferred (falls back to day · 8h).
-          Scannable price-first treatment for the tukang category. */}
-      <div className="absolute top-3 right-3 flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[12px] z-10"
-        style={{
-          background: 'rgba(10,10,10,0.9)',
-          border: '1px solid rgba(250,204,21,0.45)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-        }}>
-        {p.hourly_rate_idr != null ? (
-          <>
-            <span className="font-extrabold text-brand">Rp {p.hourly_rate_idr.toLocaleString('id-ID')}</span>
-            <span className="text-[10px] font-bold text-ink/55 ml-0.5">/h</span>
-          </>
-        ) : p.day_rate_idr != null ? (
-          <>
-            <span className="font-extrabold text-brand">Rp {p.day_rate_idr.toLocaleString('id-ID')}</span>
-            <span className="text-[10px] font-bold text-ink/55 ml-0.5">/day</span>
-          </>
-        ) : null}
-      </div>
+  // Subline summarises the credibility signals in one line — years
+  // of experience + city + "own tools" badge when applicable.
+  const sublineBits: string[] = []
+  if (p.years_experience > 0) sublineBits.push(`${p.years_experience} yrs`)
+  if (p.has_own_tools) sublineBits.push('Own tools')
 
-      {p.rating != null && (
-        <div className="absolute top-3 left-3 flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] z-10"
-          style={{ background: 'rgba(10,10,10,0.85)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
-          <Star className="w-3.5 h-3.5 fill-brand text-brand" strokeWidth={0} />
-          <span className="font-extrabold text-white">{p.rating.toFixed(1)}</span>
-        </div>
-      )}
+  const bottomItems: UniversalProviderCardBottomItem[] = []
+  if (p.hourly_rate_idr != null) {
+    bottomItems.push({
+      key: 'hour', icon: Clock,
+      label: `Rp ${p.hourly_rate_idr.toLocaleString('id-ID')}/h`,
+    })
+  }
+  if (p.day_rate_idr != null && bottomItems.length < 2) {
+    bottomItems.push({
+      key: 'day', icon: DollarSign,
+      label: `Rp ${p.day_rate_idr.toLocaleString('id-ID')}/day`,
+    })
+  }
 
-      <div className="flex items-start gap-3 mb-3">
-        <div className="relative shrink-0">
-          {p.profile_image_url
-            ? <img src={p.profile_image_url} alt={p.display_name} className="w-14 h-14 rounded-2xl object-cover bg-white/5"
-                style={{ border: '2px solid #FACC15', boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)' }} />
-            : <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-[20px] font-black"
-                style={{ color: '#0A0A0A', border: '2px solid #FACC15', boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)' }}>{p.display_name[0]}</div>}
-          <span
-            aria-label={p.availability === 'online' ? 'Online · available' : 'Busy / offline'}
-            className={`absolute -bottom-1 -right-1 rounded-full ${p.availability === 'online' ? 'animate-pulse-online' : ''}`}
-            style={{
-              width: 14, height: 14,
-              background: p.availability === 'online' ? '#22C55E' : '#F97316',
-              border: '2px solid #FFFFFF',
-              boxShadow: p.availability === 'online' ? undefined : '0 1px 4px rgba(0,0,0,0.35)',
-            }}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-bold truncate" style={{ color: '#0A0A0A' }}>{p.display_name}</div>
-          <div className="text-[12px] truncate mt-0.5" style={{ color: '#374151' }}>
-            {p.years_experience} yrs{p.city ? ` · ${p.city}` : ''}
-            {p.has_own_tools ? ' · own tools' : ''}
-          </div>
-        </div>
-      </div>
-
-      {/* Specialty chips — up to 3 (matches dashboard cap) */}
-      <div className="flex flex-wrap gap-1 mb-3">
-        {p.specialties.slice(0, 3).map((s) => (
-          <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider"
-            style={{ background: 'rgba(10,10,10,0.85)', color: '#FACC15', border: '1px solid rgba(250,204,21,0.30)' }}>
-            {SPECIALTY_SHORT[s]}
-          </span>
-        ))}
-      </div>
-
-      <p className="text-[12px] line-clamp-2 mb-3 whitespace-pre-wrap" style={{ color: '#4B5563' }}>{p.bio}</p>
-
-      <div className={`grid gap-1.5 mb-3 ${tiers.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-        {tiers.map((t) => <Tier key={t.label} label={t.label} v={t.v} />)}
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] min-w-0 truncate" style={{ color: '#4B5563' }}>
-          {p.service_area_notes ?? 'Tap to view profile'}
-        </div>
-        {demo ? (
-          <span aria-disabled className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 opacity-60 cursor-not-allowed"
-            style={{ background: '#0A0A0A', color: '#FFFFFF', border: 'none' }}>
-            <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
-            Contact
-          </span>
-        ) : (
-          <a href={waHref} target="_blank" rel="noopener noreferrer"
-            className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider transition inline-flex items-center justify-center gap-1.5 hover:brightness-110"
-            style={{ background: '#0A0A0A', color: '#FFFFFF', border: 'none' }}>
-            <MessageCircle className="w-3.5 h-3.5" style={{ color: '#FFFFFF' }} />
-            Contact
-          </a>
-        )}
-      </div>
-    </div>
-  )
-
-  if (demo) return body
-  return <Link href={`/handyman/${p.slug}`} className="block">{body}</Link>
-}
-
-function buildWaHref(p: HandymanProviderPublic): string {
-  const digits = p.whatsapp_e164.replace(/[^0-9]/g, '')
-  const trades = p.specialties.slice(0, 3).map((s) => SPECIALTY_LABELS[s]).join(', ')
-  const text = `Halo ${p.display_name}, saya menemukan profil Anda di City Riders. Saya butuh tukang ${trades.toLowerCase() || ''}. Bisa datang hari ini?`
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
-}
-
-function Tier({ label, v }: { label: string; v: number }) {
   return (
-    <div className="rounded-lg border border-white/20 px-2 py-1.5 text-center" style={{ background: '#0A0A0A' }}>
-      <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: '#9CA3AF' }}>{label}</div>
-      <div className="text-[12px] font-black" style={{ color: '#FACC15' }}>{v.toLocaleString('id-ID')}</div>
-    </div>
+    <UniversalProviderCard
+      href={`/handyman/${p.slug}`}
+      displayName={p.display_name}
+      city={p.city ?? null}
+      subline={sublineBits.length ? sublineBits.join(' · ') : null}
+      bio={p.bio?.replace(/\s*\n\s*/g, ' ') ?? null}
+      coverImageUrl={p.cover_image_url ?? null}
+      profileImageUrl={p.profile_image_url ?? null}
+      availabilityDot={(p.availability === 'busy' || p.availability === 'offline') ? p.availability : 'online'}
+      rating={p.rating ?? null}
+      specialtyLabel={specialtyLabel}
+      portfolioThumbs={portfolioThumbs}
+      bottomItems={bottomItems}
+      ctaLabel="Profile"
+    />
   )
 }
 

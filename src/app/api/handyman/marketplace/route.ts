@@ -8,6 +8,12 @@ const PUBLIC_COLS = [
   'specialties','hourly_rate_idr','day_rate_idr','has_own_tools',
   'city','service_area_notes',
   'whatsapp_e164','profile_image_url','availability','is_mock',
+  // Universal card needs: cover for hero strip, theme for accents,
+  // gallery for the 3-thumb portfolio preview, operating_hours so
+  // the card can compute the effective availability dot, rating for
+  // the top-right chip.
+  'cover_image_url','theme_color','gallery_image_urls',
+  'operating_hours','rating','rating_count',
 ].join(', ')
 
 export async function GET(req: Request) {

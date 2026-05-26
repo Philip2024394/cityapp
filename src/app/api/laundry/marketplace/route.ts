@@ -10,6 +10,9 @@ const PUBLIC_COLS = [
   'min_kg','turnaround_hours',
   'city','service_area_notes',
   'whatsapp_e164','profile_image_url','availability','is_mock',
+  // Universal card fields.
+  'cover_image_url','theme_color','gallery_image_urls',
+  'operating_hours','rating','rating_count',
 ].join(', ')
 
 export async function GET(req: Request) {

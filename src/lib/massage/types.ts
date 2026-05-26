@@ -159,6 +159,14 @@ export type MassageProviderPublic = Pick<
   is_mock?: boolean
   rating?: number | null
   rating_count?: number | null
+  // mig 0087 — per-provider accent for the public profile page.
+  theme_color?: string | null
+  // mig 0088 — locations the therapist accepts bookings at + optional
+  // physical studio coordinates.
+  service_locations?: Array<'home' | 'hotel' | 'villa'> | null
+  has_physical_location?: boolean | null
+  latitude?:  number | null
+  longitude?: number | null
 }
 
 export const AVAILABILITY_LABELS: Record<MassageAvailability, string> = {

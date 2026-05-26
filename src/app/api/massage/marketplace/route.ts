@@ -16,6 +16,10 @@ const PUBLIC_COLS = [
   'profile_image_url',
   'availability',
   'is_mock',
+  // Universal card fields (mig 0072 + 0076 + 0087 + 0088).
+  'cover_image_url','theme_color','gallery_image_urls',
+  'operating_hours','rating','rating_count',
+  'service_locations','has_physical_location','latitude','longitude',
 ].join(', ')
 
 export async function GET(req: Request) {

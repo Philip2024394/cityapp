@@ -150,4 +150,6 @@ export type HandymanProviderPublic = Pick<
   is_mock?: boolean
   rating?: number | null
   rating_count?: number | null
+  // mig 0087 — per-provider accent for the public profile page.
+  theme_color?: string | null
 }

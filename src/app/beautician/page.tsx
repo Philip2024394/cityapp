@@ -2,7 +2,8 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Menu, Plus, Star, User, Home, Hotel, Building2 } from 'lucide-react'
+import { Menu, Plus, Home, Hotel, Building2 } from 'lucide-react'
+import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
 import AppNav from '@/components/layout/AppNav'
 import {
   BEAUTICIAN_SERVICES_OFFERED,
@@ -226,11 +227,18 @@ function MarketplaceInner() {
 }
 
 function ProviderCard({ provider: p }: { provider: BeauticianProviderPublic }) {
-  // Marketplace cards use the CITY RIDERS brand yellow uniformly for
+  // Marketplace cards use the CityRiders brand yellow uniformly for
   // every beautician — keeps the listing grid coherent under the
   // platform brand. Each beautician's personal theme_color still
   // drives their own /beautician/[slug] profile page so individual
   // identity colors live there, not on the marketplace listing.
+  return <ProviderCardViaUniversal provider={p} />
+}
+
+// Adapter — folds the BeauticianProviderPublic shape into the generic
+// UniversalProviderCard props. Keeps the per-vertical data prep here
+// so the shared component stays "dumb" / vertical-agnostic.
+function ProviderCardViaUniversal({ provider: p }: { provider: BeauticianProviderPublic }) {
   const theme = '#FACC15'
 
   const cats: BeauticianServiceOffered[] = (() => {
@@ -282,194 +290,29 @@ function ProviderCard({ provider: p }: { provider: BeauticianProviderPublic }) {
   if (locs.has('villa')) locItems.push({ key: 'villa', icon: Building2, label: 'Villa' })
 
   const eff = effectiveAvailability(p)
+  const bottomItems: UniversalProviderCardBottomItem[] = locItems.map((li) => ({
+    key:   li.key,
+    icon:  li.icon,
+    label: li.label,
+  }))
 
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl transition hover:-translate-y-0.5 hover:shadow-2xl"
-      style={{
-        background: 'rgba(15, 15, 18, 0.62)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderLeft: `3px solid ${theme}`,
-        boxShadow: `0 6px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06), 0 0 0 0.5px ${theme}40`,
-      }}
-    >
-      {/* HERO STRIP — cover image with a smooth fade into the dark
-          glass body so the avatar/name area stays readable on any
-          backdrop. When no cover is set, the band is a soft
-          theme-tinted gradient instead of empty grey. */}
-      <div className="relative h-[110px]" style={{ background: `linear-gradient(135deg, ${theme}25, ${theme}08)` }}>
-        {p.cover_image_url && (
-          <img
-            src={p.cover_image_url}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-        <div
-          aria-hidden
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(15,15,18,0) 45%, rgba(15,15,18,0.95) 100%)',
-          }}
-        />
-        {/* Rating chip — top-right of the cover. */}
-        {p.rating != null && p.rating > 0 && (
-          <div
-            className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full border shadow-md"
-            style={{
-              background: 'rgba(15, 15, 18, 0.78)',
-              borderColor: 'rgba(255,255,255,0.18)',
-            }}
-          >
-            <Star className="w-3.5 h-3.5" fill="#FACC15" stroke="none" />
-            <span className="text-[13px] font-extrabold text-white tabular-nums leading-none">
-              {p.rating.toFixed(1)}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* BODY — pulled up so the avatar bridges cover + body in the
-          classic profile-card pattern. */}
-      <div className="px-4 pb-4 -mt-6 relative z-10">
-        <div className="flex items-end gap-3 mb-2">
-          <div className="relative shrink-0">
-            {p.profile_image_url
-              ? <img
-                  src={p.profile_image_url}
-                  alt={p.display_name}
-                  className="w-16 h-16 rounded-2xl object-cover bg-black/40"
-                  style={{
-                    border: `3px solid ${theme}`,
-                    boxShadow: `0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,15,18,0.8)`,
-                  }}
-                />
-              : <div
-                  className="w-16 h-16 rounded-2xl bg-black/40 flex items-center justify-center text-[22px] font-black text-white"
-                  style={{
-                    border: `3px solid ${theme}`,
-                    boxShadow: `0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,15,18,0.8)`,
-                  }}
-                >{p.display_name[0]}</div>}
-            <span
-              aria-label={eff === 'online' ? 'Online · available' : 'Busy / outside hours'}
-              className="absolute -bottom-1 -right-1"
-              style={{ width: 14, height: 14 }}
-            >
-              {eff === 'online' && (
-                <>
-                  <span aria-hidden className="absolute inset-0 rounded-full animate-ping"
-                    style={{ background: 'rgba(34,197,94,0.55)', animationDuration: '1.6s' }} />
-                  <span aria-hidden className="absolute inset-0 rounded-full animate-ping"
-                    style={{ background: 'rgba(34,197,94,0.75)', animationDuration: '1s' }} />
-                </>
-              )}
-              <span
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: eff === 'online' ? '#22C55E' : '#F97316',
-                  border: '2px solid #0F0F12',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
-                }}
-              />
-            </span>
-          </div>
-
-          <div className="min-w-0 flex-1 pb-1">
-            <div className="text-[17px] font-black text-white truncate leading-tight">{p.display_name}</div>
-            {p.city && (
-              <div className="text-[12px] text-white/70 flex items-center gap-1 mt-0.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: theme }} />
-                {p.city}
-              </div>
-            )}
-            <div className="text-[11px] text-white/55 truncate mt-0.5">
-              Time {todayHoursLabel(p.operating_hours) ?? 'By appointment'}
-            </div>
-          </div>
-
-          {mainLabel && (
-            <div
-              className="shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider"
-              style={{
-                background: `${theme}22`,
-                color: theme,
-                border: `1px solid ${theme}60`,
-              }}
-            >
-              {mainLabel}
-            </div>
-          )}
-        </div>
-
-        {p.bio?.trim() && (
-          <p
-            className="text-[12.5px] leading-snug text-white/70 mb-3"
-            style={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {p.bio.replace(/\s*\n\s*/g, ' ')}
-          </p>
-        )}
-
-        {portfolioThumbs.length > 0 && (
-          <div className="grid grid-cols-3 gap-1.5 mb-3">
-            {portfolioThumbs.map((url, i) => (
-              <div
-                key={url + i}
-                className="relative aspect-[4/3] rounded-lg overflow-hidden bg-black/40"
-                style={{ boxShadow: `inset 0 0 0 1px ${theme}40` }}
-              >
-                <img
-                  src={url}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-3">
-          {locItems.length > 0 ? (
-            <div className="flex items-center gap-2.5 min-w-0">
-              {locItems.map((it) => (
-                <span
-                  key={it.key}
-                  className="inline-flex items-center gap-1.5 text-[13px] font-bold text-white/85"
-                  title={`Travels to ${it.label}`}
-                >
-                  <it.icon className="w-[16px] h-[16px]" strokeWidth={2.25} style={{ color: '#FFFFFF' }} />
-                  {it.label}
-                </span>
-              ))}
-            </div>
-          ) : <span />}
-
-          <Link
-            href={`/beautician/${p.slug}`}
-            aria-label={`View profile of ${p.display_name}`}
-            className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shrink-0 hover:brightness-110 transition shadow-md"
-            style={{
-              background: theme,
-              color: '#0A0A0A',
-              boxShadow: `0 4px 14px ${theme}55`,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <User className="w-3.5 h-3.5" strokeWidth={2.5} />
-            Profile
-          </Link>
-        </div>
-      </div>
-    </div>
+    <UniversalProviderCard
+      href={`/beautician/${p.slug}`}
+      displayName={p.display_name}
+      city={p.city ?? null}
+      subline={`Time ${todayHoursLabel(p.operating_hours) ?? 'By appointment'}`}
+      bio={p.bio?.replace(/\s*\n\s*/g, ' ') ?? null}
+      coverImageUrl={p.cover_image_url ?? null}
+      profileImageUrl={p.profile_image_url ?? null}
+      availabilityDot={eff}
+      rating={p.rating ?? null}
+      specialtyLabel={mainLabel}
+      portfolioThumbs={portfolioThumbs}
+      themeColor={theme}
+      bottomItems={bottomItems}
+      ctaLabel="Profile"
+    />
   )
 }
 
