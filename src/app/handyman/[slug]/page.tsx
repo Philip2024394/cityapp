@@ -644,8 +644,11 @@ export default function HandymanProviderPage() {
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
-          top: '62%',
-          transform: 'translateY(calc(-50% - 25px))',
+          /* Anchored beside the About/bio block — keeps the button out
+             of the way of the Services chips + Portfolio carousel +
+             Contact CTA further down. */
+          top: '35%',
+          transform: 'translateY(-50%)',
           width: 34,
           height: 110,
           background: '#FACC15',

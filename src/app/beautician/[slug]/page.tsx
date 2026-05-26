@@ -747,8 +747,13 @@ export default function BeauticianProviderPage() {
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
-          top: '62%',
-          transform: 'translateY(calc(-50% - 25px))',
+          /* Anchored beside the About/bio block on first paint so the
+             button never covers the interactive surfaces lower on the
+             page (Services chips, Portfolio carousel, Contact CTA).
+             top 35% + translateY(-50%) puts the 110px button visually
+             at ~30-40% of the viewport — i.e. the bio band. */
+          top: '35%',
+          transform: 'translateY(-50%)',
           width: 34,
           height: 110,
           background: '#FACC15',
