@@ -144,8 +144,13 @@ function PlanTripPageInner() {
   // that clipped the route on small phones or when the pit-stop expanded.
   const bottomStackRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
+  // pickupBarRef wraps the pickup card that now lives BETWEEN the
+  // header and the map. Its measured height gets added to the map
+  // container's top inset so the map slides down out from under it.
+  const pickupBarRef = useRef<HTMLDivElement>(null)
   const [bottomHeight, setBottomHeight] = useState(380)
   const [headerHeight, setHeaderHeight] = useState(96)
+  const [pickupBarHeight, setPickupBarHeight] = useState(0)
   // Soft-keyboard inset (iOS/Android). When the keyboard opens, the visual
   // viewport shrinks — we add that delta to the bottom padding so the route
   // re-fits into the still-visible map area above the keyboard.
@@ -159,15 +164,18 @@ function PlanTripPageInner() {
   useEffect(() => {
     const stack = bottomStackRef.current
     const header = headerRef.current
+    const pickupBar = pickupBarRef.current
     if (!stack || !header) return
     const measure = () => {
       setBottomHeight(stack.offsetHeight)
       setHeaderHeight(header.offsetHeight)
+      setPickupBarHeight(pickupBar?.offsetHeight ?? 0)
     }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(stack)
     ro.observe(header)
+    if (pickupBar) ro.observe(pickupBar)
     window.addEventListener('orientationchange', measure)
     return () => {
       ro.disconnect()
@@ -349,7 +357,10 @@ function PlanTripPageInner() {
       <div
         className="fixed left-0 right-0 z-[1] px-3"
         style={{
-          top: `${headerHeight}px`,
+          // The pickup card now lives BETWEEN the header and the map,
+          // so the map starts BELOW header + pickupBar (plus a 12px
+          // breathing gap, matching the bottom-edge gap).
+          top: `${headerHeight + pickupBarHeight + 12}px`,
           // +12px adds breathing room between the map's bottom edge and
           // the top of the bottom sheet (service tabs). Keeps the map
           // floating as a card instead of butting against the sheet.
@@ -391,7 +402,10 @@ function PlanTripPageInner() {
       <div
         className="fixed right-3 z-20 flex flex-col items-end justify-center gap-3 pointer-events-none"
         style={{
-          top: `${headerHeight}px`,
+          // Track the map's new top inset (header + pickup bar + 12px
+          // gap) so Rent / B2B / Places stay vertically centred in the
+          // map card band rather than overlapping the pickup card.
+          top: `${headerHeight + pickupBarHeight + 12}px`,
           // Track the map's new bottom inset (+12px gap) so the Rent /
           // B2B buttons stay vertically centred in the map card band.
           bottom: `${bottomHeight + keyboardOffset + 12}px`,
@@ -527,36 +541,25 @@ function PlanTripPageInner() {
         </div>
       </header>
 
-      {/* BOTTOM SHEET — glass panel anchored to the bottom of the viewport.
-          Holds the entire trip-planning form + the Find driver CTA. The
-          map is interactive above it; user taps the visible map area to
-          set drop-off.
-
-          YELLOW ACCENT: 3px brand-yellow top border + brand-yellow glow
-          shadow above the sheet + brand-gradient drag handle. Carries
-          the landing's bold yellow energy into the booking page without
-          sacrificing form-input legibility (the sheet body stays dark
-          glass, the CTA keeps its primary-yellow standout). */}
-      {/* BOTTOM STACK — three separate brand-yellow tile cards (Pickup,
-          Pit stop, Drop off), styled like the landing's service tiles
-          so the booking page carries the same bold visual language.
-          The CTA flips to a DARK tile so it stands out as the action
-          terminus against the three yellow controls. */}
-      <div ref={bottomStackRef} className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
-        <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
-          {/* PICKUP TILE — dark-red round GPS button sits INSIDE the input
-              on the right, auto-sets the location to the customer's GPS
-              coords on tap. Replaces the previous "My location" text link. */}
+      {/* PICKUP BAR — moved out of the bottom sheet to sit directly
+          between the header and the map. Founder direction: pickup
+          deserves first-glance prominence since it's the trip's
+          starting point. The ResizeObserver up-top tracks this bar's
+          height so the map's top inset accommodates it dynamically
+          (e.g. when the recent-places chip row appears). z-20 keeps
+          it above the map tiles but under the bottom sheet (z-40)
+          and floating buttons (z-20 sibling). */}
+      <div
+        ref={pickupBarRef}
+        className="fixed left-0 right-0 z-20"
+        style={{ top: `${headerHeight}px` }}
+      >
+        <div className="mx-auto max-w-xl px-3 pt-2">
           <div
             className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
           >
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
-              {/* Saved-locations chip for the pickup tile. Replaces the old
-                  "Places" link to /places — the 4-tab service switcher
-                  above the bottom sheet now owns navigation to /places,
-                  so the pickup tile gets the more useful saved-places
-                  picker (one tap → fill pickup with Home/Office/etc). */}
               <SavedPlacesChip
                 kind="pickup"
                 currentLocation={pickup}
@@ -599,12 +602,6 @@ function PlanTripPageInner() {
                 </button>
               }
             />
-            {/* RECENT PLACES CHIPS — last 3 places the user has selected
-                anywhere on /cari (pickup OR dropoff), surfaced as one-tap
-                fill buttons inside the pickup tile. Only renders when no
-                pickup is set yet, so a settled pickup doesn't get
-                shadowed by alternates. Dark chips on the yellow tile so
-                they read as a secondary action. */}
             {!pickup && recents.length > 0 && (
               <div className="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar -mx-0.5 px-0.5">
                 {recents.slice(0, 3).map((r) => (
@@ -627,7 +624,26 @@ function PlanTripPageInner() {
               </div>
             )}
           </div>
+        </div>
+      </div>
 
+      {/* BOTTOM SHEET — glass panel anchored to the bottom of the viewport.
+          Holds the entire trip-planning form + the Find driver CTA. The
+          map is interactive above it; user taps the visible map area to
+          set drop-off.
+
+          YELLOW ACCENT: 3px brand-yellow top border + brand-yellow glow
+          shadow above the sheet + brand-gradient drag handle. Carries
+          the landing's bold yellow energy into the booking page without
+          sacrificing form-input legibility (the sheet body stays dark
+          glass, the CTA keeps its primary-yellow standout). */}
+      {/* BOTTOM STACK — three separate brand-yellow tile cards (Pickup,
+          Pit stop, Drop off), styled like the landing's service tiles
+          so the booking page carries the same bold visual language.
+          The CTA flips to a DARK tile so it stands out as the action
+          terminus against the three yellow controls. */}
+      <div ref={bottomStackRef} className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
+        <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
           {/* PIT STOP TILE — 3 states driven by (pitstopOpen, pitstopNote):
               1. collapsed + empty  → "+ Add a pit stop" CTA tile
               2. collapsed + text   → "✓ Pit stop set: …" compact tile (tap to edit)
