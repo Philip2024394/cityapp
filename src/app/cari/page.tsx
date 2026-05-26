@@ -925,14 +925,20 @@ function ServiceSquare({
       style={
         active
           ? {
-              background: '#0A0A0A',
-              color: '#FACC15',
-              boxShadow: '0 6px 18px rgba(0,0,0,0.45), 0 0 0 2px rgba(250,204,21,0.45) inset',
+              // Active tile: solid brand-yellow with dark text + dark
+              // ring so it pops against the surrounding yellow card.
+              background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
+              color: '#0A0A0A',
+              boxShadow:
+                '0 8px 22px rgba(0,0,0,0.35), 0 0 0 2px rgba(10,10,10,0.55) inset',
             }
           : {
-              background: 'rgba(10,10,10,0.18)',
-              color: '#0A0A0A',
-              border: '1px solid rgba(10,10,10,0.18)',
+              // Inactive tile: muted brand-yellow at lower opacity so it
+              // still reads as "yellow family" but obviously not the
+              // current selection.
+              background: 'rgba(250,204,21,0.55)',
+              color: 'rgba(10,10,10,0.75)',
+              border: '1px solid rgba(10,10,10,0.20)',
             }
       }
     >
