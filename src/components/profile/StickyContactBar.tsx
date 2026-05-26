@@ -13,12 +13,18 @@ export default function StickyContactBar({
   whatsappE164,
   prefillText,
   onShare,
+  onContact,
   contactLabel = 'Contact via WhatsApp',
   shareLabel   = 'Share',
 }: {
   whatsappE164: string | null | undefined
   prefillText: string
   onShare: () => void
+  /** When provided, the green primary button calls this instead of
+   *  opening WhatsApp directly. Used by profile pages that want a
+   *  ContactBookingPopup form in between (records the request, then
+   *  bounces to WhatsApp with structured data). */
+  onContact?: () => void
   contactLabel?: string
   shareLabel?: string
 }) {
@@ -36,7 +42,21 @@ export default function StickyContactBar({
       }}
     >
       <div className="max-w-2xl mx-auto px-3 py-2.5 flex items-center gap-2">
-        {waHref ? (
+        {onContact ? (
+          <button
+            type="button"
+            onClick={onContact}
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-[14px] font-extrabold uppercase tracking-wider text-white active:scale-[0.98] transition"
+            style={{
+              background: '#25D366',
+              boxShadow: '0 6px 16px rgba(37,211,102,0.35)',
+              minHeight: 48,
+            }}
+          >
+            <MessageCircle className="w-4 h-4" strokeWidth={2.75} />
+            {contactLabel}
+          </button>
+        ) : waHref ? (
           <a
             href={waHref}
             target="_blank"

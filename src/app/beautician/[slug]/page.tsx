@@ -14,6 +14,7 @@ import VisitUsPanel, {
   SocialTikTokIcon,
   SocialFacebookIcon,
 } from '@/components/profile/VisitUsPanel'
+import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { Sparkles } from 'lucide-react'
@@ -811,13 +812,17 @@ export default function BeauticianProviderPage() {
           message. Skips busy_dates the beautician has marked. */}
       {contactOpen && p.whatsapp_e164 && (
         <ContactBookingPopup
-          beauticianSlug={p.slug}
-          beauticianName={p.display_name}
+          providerSlug={p.slug}
+          providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
-          theme={theme}
-          servicesOffered={(p.services_offered ?? []) as BeauticianServiceOffered[]}
+          themeColor={theme}
+          serviceOptions={(p.services_offered ?? []).map((sid) => ({
+            value: SERVICE_OFFERED_LABELS[sid] ?? sid,
+            label: SERVICE_OFFERED_LABELS[sid] ?? sid,
+          }))}
           presetService={contactServiceName}
           busyDates={(p.busy_dates ?? []) as string[]}
+          bookEndpoint={`/api/beautician/${p.slug}/book`}
           onClose={() => setContactOpen(false)}
         />
       )}
@@ -829,239 +834,8 @@ export default function BeauticianProviderPage() {
 // @/components/profile/PortfolioCarousel.tsx and are imported at the
 // top of this file.
 
-// Customer-facing booking popup — date + time + service form that
-// records a booking_request server-side then bounces the customer to
-// WhatsApp with a pre-filled message containing the same details. The
-// WA chat stays Standard (not Business) since we never custody money.
-function ContactBookingPopup({
-  beauticianSlug, beauticianName, whatsapp, theme,
-  servicesOffered, presetService, busyDates, onClose,
-}: {
-  beauticianSlug:   string
-  beauticianName:   string
-  whatsapp:         string
-  theme:            string
-  servicesOffered:  BeauticianServiceOffered[]
-  presetService:    string
-  busyDates:        string[]
-  onClose:          () => void
-}) {
-  const [name,    setName]    = useState('')
-  const [wa,      setWa]      = useState('')
-  const [date,    setDate]    = useState('')
-  const [time,    setTime]    = useState('')
-  const [service, setService] = useState(presetService)
-  const [notes,   setNotes]   = useState('')
-  const [busy,    setBusy]    = useState(false)
-  const [err,     setErr]     = useState<string | null>(null)
-
-  const today    = useMemo(() => {
-    const d = new Date()
-    const pad = (n: number) => n.toString().padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-  }, [])
-  const busySet  = useMemo(() => new Set(busyDates), [busyDates])
-  const dateBusy = date.length === 10 && busySet.has(date)
-
-  const timeSuggestions = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30']
-
-  async function submit() {
-    setErr(null)
-    if (name.trim().length < 2) { setErr('Please add your name.'); return }
-    const waDigits = wa.replace(/[^\d]/g, '')
-    if (waDigits.length < 8 || waDigits.length > 15) {
-      setErr('Please add a valid WhatsApp number.')
-      return
-    }
-    if (!date)  { setErr('Pick a date.'); return }
-    if (dateBusy) { setErr('That date is unavailable — please pick another.'); return }
-    if (!time)  { setErr('Pick a time.'); return }
-
-    setBusy(true)
-    try {
-      const r = await fetch(`/api/beautician/${beauticianSlug}/book`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          customer_name:     name.trim(),
-          customer_whatsapp: wa.startsWith('+') ? wa.trim() : `+${waDigits}`,
-          service_name:      service.trim() || undefined,
-          requested_date:    date,
-          requested_time:    time,
-          notes:             notes.trim() || undefined,
-        }),
-      })
-      const j = await r.json().catch(() => ({}))
-      if (!r.ok || !j.ok) {
-        setErr(j.error === 'rate_limited'
-          ? 'Too many requests from this device. Try again tomorrow.'
-          : j.error === 'date_unavailable'
-            ? 'That date is unavailable — please pick another.'
-            : 'Could not submit. Please try again.')
-        return
-      }
-
-      const waMsg = [
-        `Hi ${beauticianName}, I'd like to book ${service.trim() || 'a service'} `,
-        `on ${date} at ${time}.`,
-        notes.trim() ? `\nNotes: ${notes.trim()}` : '',
-        `\n\n— Sent via cityriders.id`,
-      ].join('')
-      window.open(
-        `https://wa.me/${whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(waMsg)}`,
-        '_blank',
-      )
-      onClose()
-    } catch {
-      setErr('Network error. Please try again.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] overflow-y-auto"
-        style={{ borderTop: `4px solid ${theme}` }}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center z-10"
-        >
-          <X className="w-4 h-4" strokeWidth={2.5} />
-        </button>
-
-        <div className="px-5 pt-6 pb-6 space-y-3.5">
-          <div>
-            <h2 className="text-[20px] font-black text-black leading-tight">Book {beauticianName}</h2>
-            <p className="text-[12px] text-gray-500 mt-1 leading-snug">
-              Pick a date + time and we&apos;ll open WhatsApp with your request.
-            </p>
-          </div>
-
-          <label className="block space-y-1">
-            <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Your name</span>
-            <input
-              type="text"
-              maxLength={60}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Sarah"
-              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-400 min-h-[44px]"
-            />
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Your WhatsApp</span>
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={wa}
-              onChange={(e) => setWa(e.target.value)}
-              placeholder="+62 812 3456 7890"
-              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-400 min-h-[44px]"
-            />
-          </label>
-
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block space-y-1">
-              <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Date</span>
-              <input
-                type="date"
-                min={today}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className={`w-full rounded-xl border px-3 py-3 text-[14px] text-black focus:outline-none focus:border-gray-400 min-h-[44px] ${
-                  dateBusy ? 'border-red-400 bg-red-50' : 'border-gray-200'
-                }`}
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Time</span>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                list="cr-time-suggestions"
-                className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black focus:outline-none focus:border-gray-400 min-h-[44px]"
-              />
-              <datalist id="cr-time-suggestions">
-                {timeSuggestions.map((t) => <option key={t} value={t} />)}
-              </datalist>
-            </label>
-          </div>
-          {dateBusy && (
-            <p className="text-[12px] text-red-600 -mt-1">
-              {beauticianName} marked this day busy. Please pick another date.
-            </p>
-          )}
-
-          {servicesOffered.length > 0 && (
-            <label className="block space-y-1">
-              <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Service</span>
-              <select
-                value={service}
-                onChange={(e) => setService(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black bg-white focus:outline-none focus:border-gray-400 min-h-[44px]"
-              >
-                <option value="">Choose service…</option>
-                {servicesOffered.map((sid) => (
-                  <option key={sid} value={SERVICE_OFFERED_LABELS[sid] ?? sid}>
-                    {SERVICE_OFFERED_LABELS[sid] ?? sid}
-                  </option>
-                ))}
-                {presetService && !servicesOffered.some((sid) => (SERVICE_OFFERED_LABELS[sid] ?? sid) === presetService) && (
-                  <option value={presetService}>{presetService}</option>
-                )}
-              </select>
-            </label>
-          )}
-
-          <label className="block space-y-1">
-            <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Notes (optional)</span>
-            <textarea
-              maxLength={300}
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Anything she should know (e.g. bridal makeup for 5 people, hotel in Seminyak…)"
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-[13px] text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-400 resize-none"
-            />
-          </label>
-
-          {err && (
-            <div className="rounded-xl border border-red-300 bg-red-50 text-red-700 text-[13px] px-3 py-2">
-              {err}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={submit}
-            disabled={busy || dateBusy}
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-white font-extrabold text-[14px] shadow-md disabled:opacity-60 active:scale-[0.98] transition"
-            style={{ background: theme }}
-          >
-            <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-            {busy ? 'Sending…' : 'Send & open WhatsApp'}
-          </button>
-          <p className="text-[10px] text-gray-400 text-center leading-snug">
-            We&apos;ll log your request so {beauticianName} sees the time + service in her calendar.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
+// ContactBookingPopup now lives in @/components/profile/ContactBookingPopup.tsx
+// Inline copy removed in Phase 2-A4.
 
 // Carousel card — image up top, name + 2-line description + start
 // Portfolio carousel — auto-drifts left at a slow pace and pauses on

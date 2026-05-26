@@ -17,6 +17,7 @@ import PortfolioCarousel, {
   type PortfolioPhoto,
 } from '@/components/profile/PortfolioCarousel'
 import VisitUsPanel       from '@/components/profile/VisitUsPanel'
+import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { MessageCircle } from 'lucide-react'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
@@ -35,6 +36,8 @@ export default function HandymanProviderPage() {
   const [shareOpen, setShareOpen] = useState(false)
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
   const [showVisitUs, setShowVisitUs] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
+  const [contactPresetService, setContactPresetService] = useState<string>('')
 
   useEffect(() => { capturePartnerFromUrl(); setPartnerTag(getStoredPartnerSlug()) }, [])
   useEffect(() => {
@@ -223,9 +226,37 @@ export default function HandymanProviderPage() {
         )}
       </div>
 
-      <StickyContactBar whatsappE164={p.whatsapp_e164} prefillText={waText} onShare={() => setShareOpen(true)} />
+      <StickyContactBar
+        whatsappE164={p.whatsapp_e164}
+        prefillText={waText}
+        onShare={() => setShareOpen(true)}
+        onContact={() => { setContactPresetService(''); setContactOpen(true) }}
+      />
       <SocialShareSheet open={shareOpen} onClose={() => setShareOpen(false)} url={profileUrl}
         prefillText={`Lihat profil ${p.display_name} di City Riders:`} providerName={p.display_name} />
+
+      {contactOpen && p.whatsapp_e164 && (
+        <ContactBookingPopup
+          providerSlug={p.slug}
+          providerName={p.display_name}
+          whatsapp={p.whatsapp_e164}
+          themeColor={themeColor}
+          serviceOptions={(p.specialties || []).map((s) => ({
+            value: SPECIALTY_LABELS[s] ?? s,
+            label: SPECIALTY_LABELS[s] ?? s,
+          }))}
+          presetService={contactPresetService}
+          busyDates={(p.busy_dates ?? []) as string[]}
+          bookEndpoint={`/api/handyman/${p.slug}/book`}
+          copy={{
+            title: `Book ${p.display_name}`,
+            intro: "Pilih tanggal + jam dan kita buka WhatsApp dengan permintaan kamu.",
+            submitLabel: 'Kirim & buka WhatsApp',
+            successFooter: `Kita catat permintaan ini supaya ${p.display_name} bisa lihat jadwalnya.`,
+          }}
+          onClose={() => setContactOpen(false)}
+        />
+      )}
 
       {detailPhoto && (
         <PortfolioDetailPopup
