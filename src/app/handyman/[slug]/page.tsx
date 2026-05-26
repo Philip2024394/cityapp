@@ -16,6 +16,8 @@ import PortfolioCarousel, {
   PortfolioDetailPopup,
   type PortfolioPhoto,
 } from '@/components/profile/PortfolioCarousel'
+import VisitUsPanel       from '@/components/profile/VisitUsPanel'
+import { MessageCircle } from 'lucide-react'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { SPECIALTY_LABELS, type HandymanProviderPublic } from '@/lib/handyman/types'
@@ -32,6 +34,7 @@ export default function HandymanProviderPage() {
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  const [showVisitUs, setShowVisitUs] = useState(false)
 
   useEffect(() => { capturePartnerFromUrl(); setPartnerTag(getStoredPartnerSlug()) }, [])
   useEffect(() => {
@@ -135,6 +138,47 @@ export default function HandymanProviderPage() {
 
         <AboutSection bio={p.bio} city={p.city} serviceArea={p.service_area_notes}
           languages={p.languages} certifications={p.certifications} />
+
+        {/* Visit Us trigger — only shown when the tukang has pinned a
+            physical location (workshop / office). Tapping the link
+            reveals the full panel (map, hours, busy_dates calendar,
+            socials, Contact CTA). */}
+        {p.has_physical_location && (
+          showVisitUs ? (
+            <VisitUsPanel
+              displayName={p.display_name}
+              address={p.service_area_notes ?? p.city ?? null}
+              city={p.city ?? null}
+              lat={typeof p.latitude  === 'number' ? p.latitude  : null}
+              lng={typeof p.longitude === 'number' ? p.longitude : null}
+              hours={p.operating_hours ?? null}
+              instagramUrl={p.instagram_url ?? null}
+              tiktokUrl={p.tiktok_url ?? null}
+              facebookUrl={p.facebook_url ?? null}
+              busyDates={(p.busy_dates ?? []) as string[]}
+              themeColor={themeColor}
+              onClose={() => setShowVisitUs(false)}
+              noLocationCopy="Lokasi belum di-pin oleh tukang."
+              bottomCta={{
+                label: 'Contact via WhatsApp',
+                icon:  MessageCircle,
+                onClick: () => {
+                  const digits = p.whatsapp_e164.replace(/[^0-9]/g, '')
+                  window.open(`https://wa.me/${digits}?text=${encodeURIComponent(waText)}`, '_blank', 'noopener')
+                },
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowVisitUs(true)}
+              className="inline-flex items-center gap-1.5 text-[12px] font-extrabold underline underline-offset-4"
+              style={{ color: themeColor }}
+            >
+              Visit Us →
+            </button>
+          )
+        )}
 
         <PricingBlock
           title="Tarif"
