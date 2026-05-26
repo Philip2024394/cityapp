@@ -212,7 +212,7 @@ export default function LandingPage() {
               >
                 <span
                   className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: '#0F172A' }}
+                  style={{ background: '#172554' }}
                   aria-hidden
                 >
                   <img src={tile.img} alt="" className="h-7 w-auto object-contain" loading="eager" />
