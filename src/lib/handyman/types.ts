@@ -152,4 +152,18 @@ export type HandymanProviderPublic = Pick<
   rating_count?: number | null
   // mig 0087 — per-provider accent for the public profile page.
   theme_color?: string | null
+  // mig 0089 — profile-parity fields. All NULL-safe.
+  promo_text?:           string | null
+  service_photos?:       Array<{
+    url:               string
+    name?:             string
+    description?:      string
+    price_idr?:        number | null
+    before_image_url?: string | null
+    after_image_url?:  string | null
+  }> | null
+  busy_dates?:           string[] | null
+  has_physical_location?: boolean | null
+  latitude?:             number | null
+  longitude?:            number | null
 }

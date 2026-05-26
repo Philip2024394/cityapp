@@ -66,6 +66,13 @@ export default function HandymanProviderPage() {
   if (p.hourly_rate_idr) tiers.push({ label: 'Per jam',     amount: p.hourly_rate_idr, featured: true })
   if (p.day_rate_idr)    tiers.push({ label: 'Per hari · 8h', amount: p.day_rate_idr })
 
+  // Per-provider accent — fall back to brand yellow when blank.
+  const themeColor = p.theme_color || '#FACC15'
+  // Pre-compute the rgba variants the specialty chip uses so the inline
+  // style block stays readable.
+  const themeTintBg     = themeColor + '26' // ~15% opacity
+  const themeTintBorder = themeColor + '5A' // ~35% opacity
+
   return (
     <Shell>
       <ProfileHero
@@ -77,6 +84,7 @@ export default function HandymanProviderPage() {
         reviewCount={p.rating_count ?? null}
         idVerified={true}
         availability={p.availability}
+        themeColor={themeColor}
       />
 
       <div className="px-4 pb-32 max-w-2xl mx-auto space-y-5 pt-4">
@@ -91,7 +99,7 @@ export default function HandymanProviderPage() {
             <div className="flex flex-wrap gap-1.5">
               {(p.specialties || []).map((s) => (
                 <span key={s} className="inline-flex items-center text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full"
-                  style={{ background: 'rgba(250,204,21,0.15)', color: '#FACC15', border: '1px solid rgba(250,204,21,0.35)' }}>
+                  style={{ background: themeTintBg, color: themeColor, border: `1px solid ${themeTintBorder}` }}>
                   {SPECIALTY_LABELS[s]}
                 </span>
               ))}
@@ -117,6 +125,7 @@ export default function HandymanProviderPage() {
           title="Tarif"
           tiers={tiers}
           footnote="Day rate = 8 jam kerja. Material biasanya dibeli terpisah — diskusi di WhatsApp."
+          themeColor={themeColor}
         />
 
         <ProfileGallery photos={p.gallery_image_urls ?? []} title="Proof of work" />

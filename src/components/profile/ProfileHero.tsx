@@ -10,7 +10,7 @@ export type ProfileHeroProps = {
   coverUrl?:    string | null
   avatarUrl?:   string | null
   name:         string
-  /** Short category label rendered as a yellow pill above the name. */
+  /** Short category label rendered as a themed pill above the name. */
   categoryLabel?: string
   rating?:      number | null
   reviewCount?: number | null
@@ -23,17 +23,29 @@ export type ProfileHeroProps = {
    *  the cover. Lets a per-vertical page sit branded text (e.g.
    *  "Professional Beautician") on the hero without touching the kit. */
   overlayLeft?: React.ReactNode
+  /** Per-provider accent hex — drives the category-label pill, rating
+   *  star fill, and the cover gradient when no coverUrl is set.
+   *  Defaults to City Riders brand yellow. */
+  themeColor?: string
 }
 
-const BRAND_GRADIENT = 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)'
+const DEFAULT_THEME = '#FACC15'
+
+function gradientFor(hex: string): string {
+  // Lazy "lighter → darker" gradient — same hex twice with a brightness
+  // shift. Avoids pulling a colour library; visually fine for hero fallbacks.
+  return `linear-gradient(135deg, ${hex} 0%, ${hex}CC 100%)`
+}
 
 export default function ProfileHero({
   coverUrl, avatarUrl, name,
   categoryLabel, rating, reviewCount,
   idVerified, phoneVerified, availability,
   overlayLeft,
+  themeColor = DEFAULT_THEME,
 }: ProfileHeroProps) {
   const initial = name?.charAt(0)?.toUpperCase() || '?'
+  const themeGradient = gradientFor(themeColor)
   return (
     <div className="relative">
       {/* Cover */}
@@ -48,7 +60,7 @@ export default function ProfileHero({
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0" style={{ background: BRAND_GRADIENT }} />
+          <div className="absolute inset-0" style={{ background: themeGradient }} />
         )}
         {/* Bottom scrim so the avatar + name read against any photo */}
         <div
@@ -67,12 +79,19 @@ export default function ProfileHero({
               src={avatarUrl}
               alt={name}
               className="w-20 h-20 rounded-2xl object-cover bg-black"
-              style={{ border: '3px solid #0A0A0A', boxShadow: '0 8px 20px rgba(0,0,0,0.45)' }}
+              style={{
+                border: `3px solid ${themeColor}`,
+                boxShadow: `0 8px 20px rgba(0,0,0,0.45), 0 0 0 1.5px #0A0A0A inset`,
+              }}
             />
           ) : (
             <div
               className="w-20 h-20 rounded-2xl flex items-center justify-center text-[28px] font-black text-bg"
-              style={{ background: BRAND_GRADIENT, border: '3px solid #0A0A0A', boxShadow: '0 8px 20px rgba(0,0,0,0.45)' }}
+              style={{
+                background: themeGradient,
+                border: `3px solid ${themeColor}`,
+                boxShadow: '0 8px 20px rgba(0,0,0,0.45)',
+              }}
             >
               {initial}
             </div>
@@ -92,7 +111,10 @@ export default function ProfileHero({
         {/* Right-of-avatar text — pads to clear bottom scrim. */}
         <div className="pb-1 min-w-0 flex-1">
           {categoryLabel && (
-            <div className="inline-block bg-brand text-bg text-[10px] font-extrabold uppercase tracking-[0.15em] px-2 py-0.5 rounded mb-1">
+            <div
+              className="inline-block text-bg text-[10px] font-extrabold uppercase tracking-[0.15em] px-2 py-0.5 rounded mb-1"
+              style={{ background: themeColor }}
+            >
               {categoryLabel}
             </div>
           )}
@@ -102,7 +124,11 @@ export default function ProfileHero({
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             {rating != null && (
               <span className="inline-flex items-center gap-1 text-[12px] font-extrabold text-white">
-                <Star className="w-3.5 h-3.5 fill-brand text-brand" strokeWidth={0} />
+                <Star
+                  className="w-3.5 h-3.5"
+                  strokeWidth={0}
+                  style={{ fill: themeColor, color: themeColor }}
+                />
                 {rating.toFixed(1)}
                 {reviewCount ? <span className="text-white/65 font-bold">· {reviewCount}</span> : null}
               </span>

@@ -23,13 +23,20 @@ export default function PricingBlock({
   title = 'Pricing',
   tiers,
   footnote,
+  themeColor = '#FACC15',
 }: {
   title?: string
   tiers: PricingTier[]
   footnote?: string
+  /** Per-provider accent. Drives the featured-tier gradient + the
+   *  non-featured tier price colour. Falls back to brand yellow. */
+  themeColor?: string
 }) {
   const items = (tiers ?? []).filter((t) => t && Number.isFinite(t.amount))
   if (items.length === 0) return null
+
+  const featuredGradient = `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}CC 100%)`
+  const featuredShadow   = `0 8px 22px ${themeColor}4D` // ~30% opacity glow
 
   return (
     <section className="space-y-3">
@@ -41,10 +48,10 @@ export default function PricingBlock({
             className="rounded-2xl p-3 text-center"
             style={t.featured
               ? {
-                  background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
+                  background: featuredGradient,
                   color: '#0A0A0A',
                   border: '1px solid rgba(0,0,0,0.85)',
-                  boxShadow: '0 8px 22px rgba(250,204,21,0.30)',
+                  boxShadow: featuredShadow,
                 }
               : {
                   background: 'rgba(0,0,0,0.55)',
@@ -55,7 +62,10 @@ export default function PricingBlock({
             <div className={`text-[10px] uppercase tracking-wider font-extrabold ${t.featured ? 'text-black/70' : 'text-ink/55'}`}>
               {t.label}
             </div>
-            <div className={`text-[18px] sm:text-[20px] font-black mt-1 leading-none ${t.featured ? 'text-black' : 'text-brand'}`}>
+            <div
+              className="text-[18px] sm:text-[20px] font-black mt-1 leading-none"
+              style={{ color: t.featured ? '#000' : themeColor }}
+            >
               {idr(t.amount)}
             </div>
             {t.sub && (

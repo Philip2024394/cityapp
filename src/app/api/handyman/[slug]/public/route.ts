@@ -8,12 +8,18 @@ const PUBLIC_COLS = [
   'specialties','hourly_rate_idr','day_rate_idr','has_own_tools',
   'city','service_area_notes',
   'whatsapp_e164','profile_image_url','availability','is_mock',
+  'rating','rating_count',
   // mig 0072 universal profile fields
   'cover_image_url','gallery_image_urls','languages',
   'instagram_url','tiktok_url','facebook_url',
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',
+  // mig 0087 — per-provider accent
+  'theme_color',
+  // mig 0089 — profile parity fields
+  'promo_text','service_photos','busy_dates',
+  'has_physical_location','latitude','longitude',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
