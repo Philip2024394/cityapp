@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase, Utensils } from 'lucide-react'
@@ -35,6 +35,63 @@ function parseService(raw: string | null): ServiceType {
   return raw === 'person' || raw === 'food' ? raw : 'parcel'
 }
 
+// Recently-used places — localStorage-backed quick-fill suggestions.
+// Stored under a versioned key so a future schema change can ignore old
+// shapes without crashing. Cap at 10 entries; UI surfaces the top 3.
+// Deduped by lowercased label so the same place doesn't accumulate.
+const RECENT_PLACES_KEY = 'indocity:recent-places:v1'
+const RECENT_PLACES_CAP = 10
+
+type RecentPlace = { lat: number; lng: number; label: string; usedAt: number }
+
+function useRecentPlaces() {
+  const [recents, setRecents] = useState<RecentPlace[]>([])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_PLACES_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        // Defensive — drop entries that don't match the shape so a
+        // corrupted store can't crash render.
+        const safe = parsed.filter(
+          (p): p is RecentPlace =>
+            typeof p?.lat === 'number' &&
+            typeof p?.lng === 'number' &&
+            typeof p?.label === 'string' &&
+            typeof p?.usedAt === 'number',
+        )
+        setRecents(safe.slice(0, RECENT_PLACES_CAP))
+      }
+    } catch {
+      /* fail silent — recents are a nice-to-have, never a blocker */
+    }
+  }, [])
+
+  const addRecent = useCallback((place: { lat: number; lng: number; label: string }) => {
+    if (!place.label || !place.label.trim()) return
+    setRecents((prev) => {
+      const cleanedLabel = place.label.trim()
+      const filtered = prev.filter(
+        (p) => p.label.toLowerCase() !== cleanedLabel.toLowerCase(),
+      )
+      const next: RecentPlace[] = [
+        { lat: place.lat, lng: place.lng, label: cleanedLabel, usedAt: Date.now() },
+        ...filtered,
+      ].slice(0, RECENT_PLACES_CAP)
+      try {
+        localStorage.setItem(RECENT_PLACES_KEY, JSON.stringify(next))
+      } catch {
+        /* fail silent — quota exceeded or private mode */
+      }
+      return next
+    })
+  }, [])
+
+  return { recents, addRecent }
+}
+
 // Next 15 requires any component that calls useSearchParams() to live
 // under a <Suspense> boundary — otherwise the whole route bails out at
 // build time and the dev server errors out on refresh.
@@ -54,6 +111,7 @@ function PlanTripPageInner() {
   // blocking first paint for 2-5s while the permission dialog was open.
   const geo = useGeolocation(false)
   const haptic = useHaptic()
+  const { recents, addRecent } = useRecentPlaces()
 
   // Optional ?dLat=&dLng=&dName= handoff from /places — pre-fills the
   // destination so the customer only has to confirm/edit the pickup
@@ -265,11 +323,19 @@ function PlanTripPageInner() {
     <>
       {/* NAVY BACKDROP — /cari is map-first; the map needs dark surround
           so it pops visually and the yellow Rent / B2B / Contact CTAs
-          read with high contrast. Uses the brand navy (#172554) — same
-          hex as the landing-page tile icons + specialty chips, so the
-          accent thread carries through. White-on-other-pages remains
-          the rule everywhere else. */}
-      <div className="fixed inset-0 z-0" style={{ background: '#0F172A' }} />
+          read with high contrast. Replaced flat slate-900 with a soft
+          radial gradient (slate-800 highlight top-left → slate-900
+          deep-base bottom-right) so the page reads as a layered card
+          surface, not a flat wireframe. The highlight only adds ~5%
+          luminance — enough for depth, not enough to compete with the
+          yellow tiles. */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          background:
+            'radial-gradient(circle at 15% 0%, #1E293B 0%, #0F172A 55%, #0B1120 100%)',
+        }}
+      />
 
       {/* ACTIVE MAP — sized to EXACTLY the visible hero band between the
           header and the bottom stack. fitBounds now frames the route
@@ -513,6 +579,7 @@ function PlanTripPageInner() {
                 onSelect={(p) => {
                   setPickup({ lat: p.lat, lng: p.lng, accuracyM: 0 })
                   setPickupLabel(p.label)
+                  addRecent(p)
                   haptic.tap()
                 }}
               />
@@ -523,6 +590,7 @@ function PlanTripPageInner() {
               onSelect={(s) => {
                 setPickup({ lat: s.lat, lng: s.lng, accuracyM: 0 })
                 setPickupLabel(s.label)
+                addRecent({ lat: s.lat, lng: s.lng, label: s.label })
                 haptic.tap()
               }}
               placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
@@ -546,6 +614,33 @@ function PlanTripPageInner() {
                 </button>
               }
             />
+            {/* RECENT PLACES CHIPS — last 3 places the user has selected
+                anywhere on /cari (pickup OR dropoff), surfaced as one-tap
+                fill buttons inside the pickup tile. Only renders when no
+                pickup is set yet, so a settled pickup doesn't get
+                shadowed by alternates. Dark chips on the yellow tile so
+                they read as a secondary action. */}
+            {!pickup && recents.length > 0 && (
+              <div className="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar -mx-0.5 px-0.5">
+                {recents.slice(0, 3).map((r) => (
+                  <button
+                    key={r.usedAt}
+                    type="button"
+                    onClick={() => {
+                      setPickup({ lat: r.lat, lng: r.lng, accuracyM: 0 })
+                      setPickupLabel(r.label)
+                      addRecent(r)
+                      haptic.tap()
+                    }}
+                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold text-white active:scale-95 transition truncate max-w-[150px]"
+                    style={{ background: '#0A0A0A', border: '1px solid rgba(255,255,255,0.10)' }}
+                  >
+                    <MapPin className="w-3 h-3 shrink-0 text-brand" strokeWidth={2.5} />
+                    <span className="truncate">{r.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* PIT STOP TILE — 3 states driven by (pitstopOpen, pitstopNote):
@@ -558,13 +653,14 @@ function PlanTripPageInner() {
               return (
                 <button
                   onClick={() => { setPitstopOpen(true); haptic.tap() }}
-                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-white border border-white/10 shadow-[0_8px_22px_rgba(0,0,0,0.40)] hover:border-white/20 transition"
+                  style={{ background: '#0A0A0A' }}
                 >
                   <span
                     className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
-                    style={{ background: '#0A0A0A', boxShadow: '0 0 0 2px rgba(0,0,0,0.18) inset' }}
+                    style={{ background: '#FACC15', boxShadow: '0 0 0 2px rgba(0,0,0,0.18) inset' }}
                   >
-                    <Plus className="w-4 h-4 text-white" strokeWidth={3} />
+                    <Plus className="w-4 h-4 text-bg" strokeWidth={3} />
                   </span>
                   <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
                   <img
@@ -583,13 +679,14 @@ function PlanTripPageInner() {
                 <button
                   onClick={() => { setPitstopOpen(true); haptic.tap() }}
                   aria-label="Edit pit stop"
-                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] hover:from-brand2 hover:to-brand transition"
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-white border border-white/10 shadow-[0_8px_22px_rgba(0,0,0,0.40)] hover:border-white/20 transition"
+                  style={{ background: '#0A0A0A' }}
                 >
-                  <span className="shrink-0 w-7 h-7 rounded-full bg-bg flex items-center justify-center" style={{ boxShadow: '0 0 10px rgba(249,115,22,0.65)' }}>
+                  <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.18)', boxShadow: '0 0 10px rgba(249,115,22,0.55)' }}>
                     <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#F97316' }} />
                   </span>
                   <span className="flex-1 text-left min-w-0">
-                    <span className="block text-[10px] font-extrabold uppercase tracking-wider opacity-80">Pit stop set · tap to edit</span>
+                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-brand opacity-90">Pit stop set · tap to edit</span>
                     <span className="block text-[13px] font-extrabold truncate">{pitstopNote.trim()}</span>
                   </span>
                   <img
@@ -605,15 +702,18 @@ function PlanTripPageInner() {
             }
             // expanded
             return (
-              <div className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)] animate-[fadeUp_0.3s_ease-out_both] space-y-2">
+              <div
+                className="rounded-2xl p-2.5 text-white border border-white/10 shadow-[0_8px_22px_rgba(0,0,0,0.40)] animate-[fadeUp_0.3s_ease-out_both] space-y-2"
+                style={{ background: '#0A0A0A' }}
+              >
                 <div className="mb-1">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider">Pit stop</span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand">Pit stop</span>
                 </div>
                 <div className="relative">
                   <textarea
                     rows={2}
                     maxLength={140}
-                    className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-bg/90 transition resize-none"
+                    className="w-full bg-white/[0.06] border border-white/15 text-white placeholder:text-white/40 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-white/[0.10] focus:border-brand/50 transition resize-none"
                     placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
                     value={pitstopNote}
                     onChange={e => setPitstopNote(e.target.value)}
@@ -634,7 +734,7 @@ function PlanTripPageInner() {
                   <button
                     onClick={() => { setPitstopOpen(false); haptic.tap() }}
                     aria-label="Save pit stop"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-brand font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[12px] uppercase tracking-wider hover:from-brand2 hover:to-brand transition"
                   >
                     <Plus className="w-4 h-4" strokeWidth={2.5} />
                     Add pit stop
@@ -643,7 +743,7 @@ function PlanTripPageInner() {
                   <button
                     onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
                     aria-label="Close pit stop"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-bg text-ink font-extrabold text-[12px] uppercase tracking-wider hover:bg-black transition"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-white font-extrabold text-[12px] uppercase tracking-wider hover:bg-white/[0.10] transition"
                   >
                     <X className="w-4 h-4" strokeWidth={2.5} />
                     Close pit stop
@@ -669,6 +769,7 @@ function PlanTripPageInner() {
                 onSelect={(p) => {
                   setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
                   setDropoffLabel(p.label)
+                  addRecent(p)
                   haptic.tap()
                 }}
               />
@@ -679,6 +780,7 @@ function PlanTripPageInner() {
               onSelect={(s) => {
                 setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
                 setDropoffLabel(s.label)
+                addRecent({ lat: s.lat, lng: s.lng, label: s.label })
                 haptic.tap()
               }}
               placeholder={PLACEHOLDERS[service].dropoff}
@@ -688,6 +790,31 @@ function PlanTripPageInner() {
               ariaLabel="Drop off location"
               clearOnFocus
             />
+            {/* RECENT PLACES CHIPS — same hook as the pickup tile, shown
+                only when no dropoff is set yet. One tap fills the
+                destination + re-adds the place to recents (so re-use
+                bubbles it back to the top of the list). */}
+            {!dropoff && recents.length > 0 && (
+              <div className="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar -mx-0.5 px-0.5">
+                {recents.slice(0, 3).map((r) => (
+                  <button
+                    key={r.usedAt}
+                    type="button"
+                    onClick={() => {
+                      setDropoff({ lat: r.lat, lng: r.lng, accuracyM: 0 })
+                      setDropoffLabel(r.label)
+                      addRecent(r)
+                      haptic.tap()
+                    }}
+                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold text-white active:scale-95 transition truncate max-w-[150px]"
+                    style={{ background: '#0A0A0A', border: '1px solid rgba(255,255,255,0.10)' }}
+                  >
+                    <MapPin className="w-3 h-3 shrink-0 text-brand" strokeWidth={2.5} />
+                    <span className="truncate">{r.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {/* INLINE PRICE READOUT — ALWAYS rendered (so the customer
                 sees a price line even before they pick a destination).
                 Empty state reads "Total fare Rp 0.00"; once pickup +
@@ -710,7 +837,11 @@ function PlanTripPageInner() {
                 )}
                 {canSearch && tripKm != null && (
                   <span className="text-[11px] font-bold tracking-tight text-bg/80">
-                    {tripKm.toFixed(1)} km
+                    {/* ETA = distance / avg urban motorbike speed (~25 km/h
+                        — Yogya/Bali, traffic-adjusted). Floor at 2 min so
+                        short trips never read "0 min". This is a hint, not
+                        a contract — the driver agrees the actual ETA. */}
+                    {tripKm.toFixed(1)} km · ~{Math.max(2, Math.round((tripKm / 25) * 60))} min
                   </span>
                 )}
               </div>
@@ -732,6 +863,20 @@ function PlanTripPageInner() {
             className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Search className="w-4 h-4" />
+            {/* Driver count + price get prefixed to "View drivers" so the
+                CTA reads with the supply signal up-front. Layout:
+                  [12 drivers · from Rp 12,000]  View drivers  →
+                The count pill uses a small inline chip so it stays
+                glanceable even with the trip-price prefix. Empty state
+                still reads plain "View drivers". */}
+            {canSearch && nearbyCount != null && nearbyCount > 0 && (
+              <span
+                className="text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
+                style={{ background: 'rgba(250,204,21,0.18)', color: '#FACC15' }}
+              >
+                {nearbyCount}
+              </span>
+            )}
             <span>View drivers</span>
             {canSearch && lowestFareIdr != null && (
               <span className="text-[12px] font-bold text-dim ml-1">

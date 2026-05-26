@@ -486,3 +486,9 @@
 /* Safe-area helpers */
 .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Hide horizontal scrollbar on overflow-x scroll containers (recent-place
+   chip rows on /cari, future filter rails). Keeps the swipe affordance
+   without the visual gutter. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
