@@ -1,22 +1,23 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Shield, Users, History, MapPin, Bike, UserPlus, QrCode, Receipt, Handshake, Megaphone, Activity, Wallet, MessageCircle } from 'lucide-react'
+import { Shield, Users, History, MapPin, Bike, UserPlus, QrCode, Receipt, Handshake, Megaphone, Activity, Wallet, MessageCircle, CreditCard } from 'lucide-react'
 
 const TABS = [
-  { href: '/admin',           label: 'Overview',  icon: Shield        },
-  { href: '/admin/outreach',  label: 'Outreach',  icon: Megaphone     },
-  { href: '/admin/providers', label: 'Providers', icon: Handshake     },
-  { href: '/admin/members',   label: 'Members',   icon: UserPlus      },
-  { href: '/admin/receipts',  label: 'Receipts',  icon: Receipt       },
-  { href: '/admin/wa-queue',  label: 'WA Queue',  icon: MessageCircle },
-  { href: '/admin/qr-codes',  label: 'QR',        icon: QrCode        },
-  { href: '/admin/drivers',   label: 'Riders',    icon: Users         },
-  { href: '/admin/places',    label: 'Places',    icon: MapPin        },
-  { href: '/admin/rentals',   label: 'Rentals',   icon: Bike          },
-  { href: '/admin/payouts',   label: 'Payouts',   icon: Wallet        },
-  { href: '/admin/health',    label: 'Health',    icon: Activity      },
-  { href: '/admin/audit',     label: 'Audit',     icon: History       },
+  { href: '/admin',              label: 'Overview',  icon: Shield        },
+  { href: '/admin/outreach',     label: 'Outreach',  icon: Megaphone     },
+  { href: '/admin/providers',    label: 'Providers', icon: Handshake     },
+  { href: '/admin/members',      label: 'Members',   icon: UserPlus      },
+  { href: '/admin/receipts',     label: 'Receipts',  icon: Receipt       },
+  { href: '/admin/subscriptions',label: 'Subs',      icon: CreditCard    },
+  { href: '/admin/wa-queue',     label: 'WA Queue',  icon: MessageCircle },
+  { href: '/admin/qr-codes',     label: 'QR',        icon: QrCode        },
+  { href: '/admin/drivers',      label: 'Riders',    icon: Users         },
+  { href: '/admin/places',       label: 'Places',    icon: MapPin        },
+  { href: '/admin/rentals',      label: 'Rentals',   icon: Bike          },
+  { href: '/admin/payouts',      label: 'Payouts',   icon: Wallet        },
+  { href: '/admin/health',       label: 'Health',    icon: Activity      },
+  { href: '/admin/audit',        label: 'Audit',     icon: History       },
 ] as const
 
 export default function AdminNav({ adminName }: { adminName: string }) {

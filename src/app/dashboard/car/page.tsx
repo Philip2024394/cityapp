@@ -15,6 +15,7 @@
 // ============================================================================
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Loader2, X, Upload, CheckCircle2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -26,6 +27,9 @@ const ADMIN_WHATSAPP_E164  = '6285183600015' // streetlocallive admin line
 const ADMIN_WA_RENEW = `https://wa.me/${ADMIN_WHATSAPP_E164}?text=${encodeURIComponent(
   'Halo admin, saya mau bayar/renew langganan dashboard Car driver IndoCity (Rp 38.000/bulan).',
 )}`
+// Founder will swap this to the real merchant QRIS image when ready. Swap
+// this single constant — no other code changes needed.
+const QRIS_IMAGE_URL = 'https://ik.imagekit.io/nepgaxllc/qris-placeholder.png'
 
 // Row shape used by this page. The drivers table is untyped at the Supabase
 // client level (see lib/supabase/client.ts) so we validate the shape here.
@@ -217,14 +221,42 @@ export default function CarDriverDashboardPage() {
 
 // ============================================================================
 // Dashboard — only mounts when we have a valid car-type drivers row
+// ----------------------------------------------------------------------------
+// QRIS modal lives at this level so that on a successful upload we can
+// optimistically override paid_until — the banner flips to green
+// immediately, before the (slower) full row reload completes.
 // ============================================================================
 function Dashboard({ row, onReload }: { row: CarDriverRow; onReload: () => void }) {
-  const sub = classifySubscription(row.paid_until)
+  // Optimistic override — replaces row.paid_until until the next reload.
+  const [paidUntilOverride, setPaidUntilOverride] = useState<string | null>(null)
+  const [payOpen, setPayOpen]   = useState(false)
+  const [paidToast, setPaidToast] = useState<string | null>(null)
+  const effectivePaidUntil = paidUntilOverride ?? row.paid_until
+  const sub = classifySubscription(effectivePaidUntil)
+
+  function handlePaymentSubmitted(activeUntil: string) {
+    setPaidUntilOverride(activeUntil)
+    setPayOpen(false)
+    setPaidToast('Payment submitted! Your listing is active.')
+    setTimeout(() => setPaidToast(null), 4200)
+    // Refresh so the row is hydrated from the DB (drops the override).
+    onReload()
+  }
 
   return (
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
-        <SubscriptionBanner sub={sub} />
+        {paidToast && (
+          <div
+            className="rounded-xl border border-green-300 bg-green-50 text-green-800 text-[13px] px-4 py-3 flex items-center gap-2 shadow-sm"
+            role="status"
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden />
+            <span className="font-bold">{paidToast}</span>
+          </div>
+        )}
+
+        <SubscriptionBanner sub={sub} onPay={() => setPayOpen(true)} />
 
         <header className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{row.business_name || 'Car driver'}</h1>
@@ -240,6 +272,12 @@ function Dashboard({ row, onReload }: { row: CarDriverRow; onReload: () => void 
         <PaymentMethodsSection row={row} onSaved={onReload} />
         <BusinessProfileSection row={row} onSaved={onReload} />
       </div>
+
+      <QrisPaymentModal
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        onSubmitted={handlePaymentSubmitted}
+      />
     </Shell>
   )
 }
@@ -251,7 +289,7 @@ function Dashboard({ row, onReload }: { row: CarDriverRow; onReload: () => void 
 // "expired" — yellow CTA banner with expiry date.
 // "active" — small green pill at top of page.
 // ============================================================================
-function SubscriptionBanner({ sub }: { sub: SubStatus }) {
+function SubscriptionBanner({ sub, onPay }: { sub: SubStatus; onPay: () => void }) {
   if (sub.kind === 'active') {
     return (
       <div className="flex items-center justify-between rounded-xl bg-green-50 border border-green-200 px-4 py-2">
@@ -286,16 +324,25 @@ function SubscriptionBanner({ sub }: { sub: SubStatus }) {
           <h2 className="text-[15px] font-black text-yellow-900 leading-snug">{heading}</h2>
           <p className="text-[13px] text-yellow-900/85 leading-relaxed mt-1">{body}</p>
           <p className="text-[13px] text-yellow-900/85 leading-relaxed mt-1">
-            Your dashboard subscription is Rp {SUBSCRIPTION_IDR.toLocaleString('id-ID')}/month. Pay via WhatsApp transfer.
+            Pay Rp {SUBSCRIPTION_IDR.toLocaleString('id-ID')}/month via QRIS — your listing activates immediately.
           </p>
-          <a
-            href={ADMIN_WA_RENEW}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={onPay}
             className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 text-yellow-950 px-5 py-3 text-[13px] font-extrabold min-h-[44px] active:scale-[0.99]"
           >
-            Contact admin on WhatsApp →
-          </a>
+            Pay via QRIS →
+          </button>
+          <div className="mt-2">
+            <a
+              href={ADMIN_WA_RENEW}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[12px] font-bold text-yellow-900/70 hover:text-yellow-900 hover:underline"
+            >
+              Need help paying? WhatsApp admin
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -767,6 +814,258 @@ function BusinessProfileSection({ row, onSaved }: { row: CarDriverRow; onSaved: 
         </div>
       </form>
     </SectionCard>
+  )
+}
+
+// ============================================================================
+// QRIS payment modal
+// ----------------------------------------------------------------------------
+// Driver scans the QR in their bank/wallet app, pays externally, then
+// uploads a screenshot. The /api/dashboard/subscription-payment endpoint
+// records the proof and bumps drivers.paid_until = max(paid_until, today)
+// + 30 days, so the listing flips active OPTIMISTICALLY. Admin verifies
+// (or reverts) later via /admin/subscriptions.
+//
+// COMPLIANCE: IndoCity never custodies funds. The QR shown is the
+// founder's merchant QRIS — payment is between the driver's bank and the
+// founder's bank, not through IndoCity rails.
+// ============================================================================
+function QrisPaymentModal({
+  open, onClose, onSubmitted,
+}: {
+  open: boolean
+  onClose: () => void
+  onSubmitted: (activeUntil: string) => void
+}) {
+  const [file,         setFile]         = useState<File | null>(null)
+  const [filePreview,  setFilePreview]  = useState<string | null>(null)
+  const [uploading,    setUploading]    = useState(false)
+  const [uploadError,  setUploadError]  = useState<string | null>(null)
+
+  // Reset state every time the modal reopens — stale errors / files
+  // shouldn't bleed between attempts.
+  useEffect(() => {
+    if (open) {
+      setFile(null)
+      setFilePreview(null)
+      setUploading(false)
+      setUploadError(null)
+    }
+  }, [open])
+
+  // Manage the object URL lifecycle for the screenshot preview so we
+  // don't leak blobs across selections.
+  useEffect(() => {
+    if (!file) { setFilePreview(null); return }
+    const url = URL.createObjectURL(file)
+    setFilePreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  // Close on Escape — small affordance that costs nothing.
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !uploading) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, uploading, onClose])
+
+  if (!open) return null
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null
+    if (f && !f.type.startsWith('image/')) {
+      setUploadError('Please choose an image file (PNG / JPG).')
+      return
+    }
+    setUploadError(null)
+    setFile(f)
+  }
+
+  async function submit() {
+    if (!file || uploading) return
+    setUploadError(null)
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('screenshot', file)
+      fd.append('vehicleType', 'car')
+      const r = await fetch('/api/dashboard/subscription-payment', {
+        method: 'POST',
+        body: fd,
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok || !j?.ok) {
+        setUploadError(j?.error || 'Upload failed. Please try again.')
+        setUploading(false)
+        return
+      }
+      // Bubble the active-until back so the parent can flip the banner
+      // green immediately. The parent also calls onClose + toast.
+      onSubmitted(j.activeUntil as string)
+    } catch {
+      setUploadError('Network error. Please try again.')
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+      onClick={() => { if (!uploading) onClose() }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="qris-modal-title"
+    >
+      <div
+        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white text-[#0F172A] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={uploading}
+          aria-label="Close"
+          className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center disabled:opacity-50"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="px-5 pt-6 pb-5">
+          <h2 id="qris-modal-title" className="text-[18px] font-black leading-tight pr-10">
+            Pay subscription via QRIS
+          </h2>
+          <p className="text-[13px] text-black/65 mt-1 leading-snug">
+            Pay Rp {SUBSCRIPTION_IDR.toLocaleString('id-ID')} to keep your car listing live for 30 days.
+          </p>
+
+          {/* Amount pill */}
+          <div className="mt-4 rounded-xl bg-[#FACC15]/15 border border-[#FACC15] px-4 py-3 flex items-center justify-between">
+            <span className="text-[13px] font-bold text-[#0F172A]/80">Amount</span>
+            <span className="text-[15px] font-black text-[#0F172A]">
+              Rp {SUBSCRIPTION_IDR.toLocaleString('id-ID')} <span className="font-bold text-[13px] text-[#0F172A]/70">/ 1 month</span>
+            </span>
+          </div>
+
+          {/* QR display — white card with padding so it's scannable even
+              over the dark backdrop showing through any transparency. */}
+          <div className="mt-4 flex justify-center">
+            <div className="bg-white rounded-xl p-2 border border-gray-200 shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={QRIS_IMAGE_URL}
+                alt="IndoCity QRIS payment code"
+                width={200}
+                height={200}
+                className="w-[200px] h-[200px] object-contain block"
+              />
+            </div>
+          </div>
+
+          {/* Steps */}
+          <ol className="mt-5 space-y-2 text-[13px] text-black/80">
+            <Step n={1}>
+              Buka aplikasi banking / dompet digital
+              <span className="block text-black/55 text-[12px]">(BCA, Mandiri, GoPay, OVO, Dana, ShopeePay, etc.)</span>
+            </Step>
+            <Step n={2}>Scan QRIS di atas / Scan the QR above</Step>
+            <Step n={3}>Bayar <span className="font-black">Rp {SUBSCRIPTION_IDR.toLocaleString('id-ID')}</span> / Pay the amount</Step>
+            <Step n={4}>Screenshot bukti pembayaran / Screenshot the receipt</Step>
+            <Step n={5}>Upload screenshot di bawah — listing aktif segera</Step>
+          </ol>
+
+          {/* Upload zone */}
+          <div className="mt-5">
+            <label
+              htmlFor="qris-screenshot-input"
+              className="block w-full rounded-2xl border-2 border-dashed border-gray-300 hover:border-[#FACC15] bg-gray-50 hover:bg-[#FACC15]/5 transition cursor-pointer"
+            >
+              <input
+                id="qris-screenshot-input"
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={onPick}
+                disabled={uploading}
+              />
+              {filePreview ? (
+                <div className="p-3 flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={filePreview}
+                    alt="Screenshot preview"
+                    className="w-16 h-16 rounded-xl object-cover border border-gray-200 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-bold truncate">{file?.name}</div>
+                    <div className="text-[12px] text-black/55">Tap to choose a different screenshot</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-5 flex flex-col items-center justify-center text-center min-h-[88px]">
+                  <Upload className="w-5 h-5 text-black/50 mb-1" aria-hidden />
+                  <div className="text-[13px] font-extrabold text-[#0F172A]">Choose screenshot</div>
+                  <div className="text-[12px] text-black/55 mt-0.5">PNG or JPG of your payment receipt</div>
+                </div>
+              )}
+            </label>
+          </div>
+
+          {uploadError && (
+            <div className="mt-3 rounded-xl border border-red-300 bg-red-50 text-red-800 text-[13px] px-3 py-2">
+              {uploadError}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!file || uploading}
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#FACC15] text-[#0F172A] px-5 py-3 text-[13px] font-extrabold min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                Uploading…
+              </>
+            ) : (
+              <>Submit payment proof</>
+            )}
+          </button>
+
+          <p className="mt-3 text-[12px] text-black/55 leading-snug">
+            Payment is between you and your bank/wallet. IndoCity is a software directory — we do not custody or process funds.
+          </p>
+
+          <div className="mt-3 text-center">
+            <a
+              href={ADMIN_WA_RENEW}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[12px] font-bold text-black/60 hover:text-black hover:underline"
+            >
+              Need help paying? WhatsApp admin
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Step({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2.5">
+      <span
+        aria-hidden
+        className="shrink-0 w-6 h-6 rounded-full bg-[#0F172A] text-white text-[12px] font-black flex items-center justify-center mt-[1px]"
+      >
+        {n}
+      </span>
+      <span className="leading-snug">{children}</span>
+    </li>
   )
 }
 
