@@ -180,7 +180,7 @@ export default function LandingPage() {
             <span className="gradient-text">{t.h1Line2}</span>
           </h1>
 
-          <p className="text-muted text-[15px] leading-relaxed max-w-md mx-auto">
+          <p className="text-black text-[15px] font-bold leading-relaxed max-w-md mx-auto">
             {t.lede}
           </p>
 
