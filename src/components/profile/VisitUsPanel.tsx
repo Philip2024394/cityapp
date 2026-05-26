@@ -243,11 +243,35 @@ export function AvailabilityCalendarPopup({
         >
           <X className="w-4 h-4" strokeWidth={2.5} />
         </button>
-        <div className="px-5 pt-6 pb-5">
-          <h2 className="text-[18px] font-black text-black leading-tight">
-            {displayName}&apos;s availability
-          </h2>
-          <p className="text-[12px] text-gray-500 mt-1">
+        {/* Header strip — themed Calendar icon + label above the heading
+            so the popup reads as a clear booking-calendar surface. */}
+        <div
+          className="flex items-center gap-3 px-5 pt-6 pb-4 border-b border-gray-100"
+        >
+          <div
+            className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
+            style={{
+              background: `${themeColor}18`,
+              border: `1.5px solid ${themeColor}40`,
+            }}
+          >
+            <Calendar className="w-6 h-6" strokeWidth={2.25} style={{ color: themeColor }} />
+          </div>
+          <div className="min-w-0">
+            <div
+              className="text-[10.5px] font-extrabold uppercase tracking-[0.15em]"
+              style={{ color: themeColor }}
+            >
+              Booking Calendar
+            </div>
+            <div className="text-[16px] font-black text-black leading-tight mt-0.5 truncate">
+              {displayName}&apos;s availability
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 pt-4 pb-5">
+          <p className="text-[12px] text-gray-500">
             Red dates are unavailable. Use the Contact button to book any other day.
           </p>
 
