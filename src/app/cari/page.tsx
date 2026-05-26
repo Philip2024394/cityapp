@@ -417,6 +417,21 @@ function PlanTripPageInner() {
           <Briefcase className="w-6 h-6" strokeWidth={2.5} />
           <span className="text-[12px] font-extrabold uppercase tracking-wider">B2B</span>
         </Link>
+        {/* PLACES — browse the venues directory (restaurants, attractions,
+            shops). Moved here from the service-tab row so the bottom
+            sheet shows ONLY transport modes (bike / parcel / food).
+            Sits in the right floating column under B2B with matching
+            visual styling. */}
+        <Link
+          href="/places"
+          prefetch
+          onClick={() => haptic.tap()}
+          aria-label="Browse nearby places"
+          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
+        >
+          <Landmark className="w-6 h-6" strokeWidth={2.5} />
+          <span className="text-[11px] font-extrabold uppercase tracking-wider">Places</span>
+        </Link>
       </div>
 
       {/* HEADER — transparent, sits over the map. Logo + brand on the
@@ -527,35 +542,30 @@ function PlanTripPageInner() {
           terminus against the three yellow controls. */}
       <div ref={bottomStackRef} className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
         <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
-          {/* SERVICE SWITCHER — 4 quick tabs that sit directly under the
-              map. Bike / Parcel / Food flip the ?service= URL param so
-              the form copy (placeholders, CTA) re-renders for that mode.
-              Places navigates to /places (the venues directory) — it is
-              not a transport service so it is never the "active" tab. */}
-          <div className="grid grid-cols-4 gap-2">
+          {/* SERVICE SWITCHER — 3 slim pill tabs (Bike / Parcel / Food)
+              that flip the ?service= URL param. Places moved to the
+              floating right column under B2B so this row is dedicated
+              to transport-mode selection only. Slimmer than the prior
+              4-tab grid: icon + label sit side-by-side on a single
+              line, ~36px tall instead of the previous ~50px. */}
+          <div className="grid grid-cols-3 gap-2">
             <ServiceTab
               href="/cari?service=person"
               active={service === 'person'}
-              icon={<Bike className="w-[18px] h-[18px]" strokeWidth={2.5} />}
+              icon={<Bike className="w-4 h-4" strokeWidth={2.5} />}
               label="Bike"
             />
             <ServiceTab
               href="/cari?service=parcel"
               active={service === 'parcel'}
-              icon={<Briefcase className="w-[18px] h-[18px]" strokeWidth={2.5} />}
+              icon={<Briefcase className="w-4 h-4" strokeWidth={2.5} />}
               label="Parcel"
             />
             <ServiceTab
               href="/cari?service=food"
               active={service === 'food'}
-              icon={<Utensils className="w-[18px] h-[18px]" strokeWidth={2.5} />}
+              icon={<Utensils className="w-4 h-4" strokeWidth={2.5} />}
               label="Food"
-            />
-            <ServiceTab
-              href="/places"
-              active={false}
-              icon={<Landmark className="w-[18px] h-[18px]" strokeWidth={2.5} />}
-              label="Places"
             />
           </div>
 
@@ -914,15 +924,15 @@ function ServiceTab({
       prefetch
       aria-current={active ? 'page' : undefined}
       className={
-        'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 text-[11px] font-extrabold uppercase tracking-wider transition active:scale-95 ' +
+        'flex flex-row items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-extrabold uppercase tracking-wider transition active:scale-95 ' +
         (active
-          ? 'text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_6px_18px_rgba(250,204,21,0.32)]'
+          ? 'text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_4px_14px_rgba(250,204,21,0.30)]'
           : 'text-white border border-white/[0.10] hover:bg-white/[0.06]')
       }
       style={
         active
           ? undefined
-          : { background: '#0A0A0A', boxShadow: '0 4px 14px rgba(0,0,0,0.40)' }
+          : { background: '#0A0A0A', boxShadow: '0 3px 10px rgba(0,0,0,0.35)' }
       }
     >
       {icon}
