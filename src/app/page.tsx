@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Truck } from 'lucide-react'
+import { Truck, Bus, Briefcase } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { logNav } from '@/lib/perf/navTiming'
 
@@ -229,10 +229,13 @@ export default function LandingPage() {
 
           </div>
 
-          {/* Rentals hub CTA — distinct from the photo-tile grid above.
-              Routes to /rentals (Bike · Car · Bus · Truck by-day hire).
-              Framed as a directory browse, never as an IndoCity rental. */}
-          <div className="w-full max-w-sm mx-auto">
+          {/* Browse-flow CTAs — three navy+yellow cards that house the
+              non-live-booking flows (Rentals / Bus charter / B2B
+              contract hire). All previously lived as floating FABs on
+              /cari; moved here because they're planning / browse
+              flows, not "I need transport NOW" actions. Framed as
+              directory browses, never as IndoCity-owned products. */}
+          <div className="w-full max-w-sm mx-auto space-y-2">
             <Link
               href="/rentals"
               prefetch
@@ -252,6 +255,61 @@ export default function LandingPage() {
                 </span>
                 <span className="block text-[11px] font-bold opacity-80 leading-tight mt-0.5">
                   Browse driver-published listings — from Rp 250K/day
+                </span>
+              </span>
+              <span className="shrink-0 text-brand font-black text-[16px]" aria-hidden>→</span>
+            </Link>
+
+            {/* Bus / Minibus charter — Hiace, Innova, Avanza for group
+                transport, tourism, airport pickups. Always with-driver,
+                priced per-trip or per-day. Routes to the /bus
+                marketplace which already lists 3 Yogya mocks. */}
+            <Link
+              href="/bus"
+              prefetch
+              onClick={() => logNav('landing-cta:bus')}
+              aria-label="Browse minibus charter listings"
+              className="w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#172554] text-white border-2 border-brand hover:bg-[#1e3a8a] active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(23,37,84,0.30)]"
+            >
+              <span
+                className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-brand"
+                aria-hidden
+              >
+                <Bus className="w-5 h-5 text-[#172554]" strokeWidth={2.5} />
+              </span>
+              <span className="flex-1 text-left min-w-0">
+                <span className="block font-extrabold text-[13px] leading-tight">
+                  Minibus charter · Hiace, Innova, Avanza
+                </span>
+                <span className="block text-[11px] font-bold opacity-80 leading-tight mt-0.5">
+                  Group transport · tourism · airport — with driver
+                </span>
+              </span>
+              <span className="shrink-0 text-brand font-black text-[16px]" aria-hidden>→</span>
+            </Link>
+
+            {/* B2B contract hire — Shopee/TikTok sellers, restaurants,
+                warungs find drivers for regular deliveries. Routes to
+                the existing /business directory. */}
+            <Link
+              href="/business"
+              prefetch
+              onClick={() => logNav('landing-cta:business')}
+              aria-label="Business contracts — find a driver for regular deliveries"
+              className="w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#172554] text-white border-2 border-brand hover:bg-[#1e3a8a] active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(23,37,84,0.30)]"
+            >
+              <span
+                className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-brand"
+                aria-hidden
+              >
+                <Briefcase className="w-5 h-5 text-[#172554]" strokeWidth={2.5} />
+              </span>
+              <span className="flex-1 text-left min-w-0">
+                <span className="block font-extrabold text-[13px] leading-tight">
+                  Business contracts · Regular delivery drivers
+                </span>
+                <span className="block text-[11px] font-bold opacity-80 leading-tight mt-0.5">
+                  Shopee / TikTok / restaurants — recurring courier hire
                 </span>
               </span>
               <span className="shrink-0 text-brand font-black text-[16px]" aria-hidden>→</span>
