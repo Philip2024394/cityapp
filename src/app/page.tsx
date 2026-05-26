@@ -143,10 +143,20 @@ export default function LandingPage() {
 
   return (
     <main className="h-[100dvh] relative flex flex-col overflow-hidden">
-      {/* Background map + readability overlay are mounted globally in the
-          root layout (<MapBackground />). The hero just sits on top.
-          Fixed viewport height + overflow-hidden so the landing never
-          scrolls — the hero section flex-shrinks to fit. */}
+      {/* Landing-only background image. Sits above the global solid-white
+          PageBackground (later in DOM at the same -z-10) so only this
+          page picks up the scene. Fixed-attachment so it doesn't shift
+          when the page flex-shrinks. */}
+      <div
+        aria-hidden
+        className="fixed inset-0 -z-10 pointer-events-none"
+        style={{
+          backgroundImage: `url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2001_41_12%20AM.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
 
       {/* Header intentionally minimal per founder request — no logo,
           no brand text, no sign-in/join CTAs. The "Join today" footer
