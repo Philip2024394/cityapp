@@ -17,6 +17,8 @@ const SERVICE_IMAGES: Record<ServiceType, string> = {
   person: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
   parcel: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
   food:   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
+  // TODO: replace with dedicated car-service hero art once founder provides one.
+  car:    'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
 }
 import { legalMinPerKm, legalMinFare, SERVICE_REGULATION, suggestedPerKm, suggestedMinFee } from '@/lib/tariffs/zones'
 

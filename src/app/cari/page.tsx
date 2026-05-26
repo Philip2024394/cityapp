@@ -2,7 +2,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase, Utensils } from 'lucide-react'
+import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase, Utensils, Car as CarIcon } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
@@ -22,6 +22,7 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
   person: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
   parcel: { pickup: 'Where to pick up the package?',      dropoff: 'Destination address' },
   food:   { pickup: 'Restaurant or warung name',           dropoff: 'Drop-off address' },
+  car:    { pickup: 'Where do you want to be picked up?',  dropoff: 'Where do you want to go?' },
 }
 
 // Nearby-rider scatter has been removed (audit 2026-05). The previous
@@ -32,9 +33,10 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
 //     (the live marketplace on /cari/rider, not the trip-planner map)
 
 function parseService(raw: string | null): ServiceType {
-  // Default service is now 'person' (Bike) — landing without a
-  // ?service= param resolves to Bike first per founder direction.
-  return raw === 'parcel' || raw === 'food' ? raw : 'person'
+  // Default service is 'person' (Bike) — landing without a ?service=
+  // param resolves to Bike first per founder direction.
+  if (raw === 'parcel' || raw === 'food' || raw === 'car') return raw
+  return 'person'
 }
 
 // Recently-used places — localStorage-backed quick-fill suggestions.
@@ -824,12 +826,18 @@ function PlanTripPageInner() {
                 + label (high contrast against the yellow dropoff tile).
                 Inactive tiles = translucent black so the eye reads them
                 as alternates to the current mode. */}
-            <div className="mt-2 grid grid-cols-3 gap-2">
+            <div className="mt-2 grid grid-cols-4 gap-2">
               <ServiceSquare
                 href="/cari?service=person"
                 active={service === 'person'}
                 icon={<Bike className="w-6 h-6" strokeWidth={2.5} />}
                 label="Bike"
+              />
+              <ServiceSquare
+                href="/cari?service=car"
+                active={service === 'car'}
+                icon={<CarIcon className="w-6 h-6" strokeWidth={2.5} />}
+                label="Car"
               />
               <ServiceSquare
                 href="/cari?service=parcel"

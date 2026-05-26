@@ -36,6 +36,9 @@ const SERVICE_TILE_IMAGES: Record<ServiceType, string> = {
   person: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
   parcel: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
   food:   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
+  // Car drivers don't render on the bike driver-storefront /r/[slug]
+  // page today — placeholder kept for type completeness only.
+  car:    'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
 }
 const PLACES_TILE_IMAGE =
   'https://ik.imagekit.io/nepgaxllc/Untitledwrr-removebg-preview.png?updatedAt=1778253100200'

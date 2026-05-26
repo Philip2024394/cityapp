@@ -1,30 +1,38 @@
-// Three customer-facing service categories. Riders pick which they offer
-// + optionally set per-service pricing overrides (otherwise their base
-// rate applies to all enabled services).
-export type ServiceType = 'person' | 'parcel' | 'food'
+// Customer-facing service categories. Each maps onto one row in the
+// vehicle / dashboard discriminator (`drivers.vehicle_type`):
+//   'person' / 'parcel' / 'food' → vehicle_type = 'bike'
+//   'car'                         → vehicle_type = 'car'
+// As we add Truck / Minibus / Premium Car the matching service entries
+// will be added here so the /cari tab selector stays the single source
+// of truth for what the customer is browsing.
+export type ServiceType = 'person' | 'parcel' | 'food' | 'car'
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {
   person: 'Bike Ride',
   parcel: 'Bike Parcel',
   food:   'Bike Food',
+  car:    'Car Ride',
 }
 
 export const SERVICE_SHORT: Record<ServiceType, string> = {
   person: 'Ride',
   parcel: 'Parcel',
   food:   'Food',
+  car:    'Car',
 }
 
 export const SERVICE_ICONS: Record<ServiceType, string> = {
   person: '🧍',
   parcel: '📦',
   food:   '🍔',
+  car:    '🚗',
 }
 
 export const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
   person: 'Daily rides, school/office pickup, event rides',
   parcel: 'Parcels, documents, out-of-town courier — platform focus',
   food:   'Food delivery from restaurants / warungs, COD groceries',
+  car:    'Airport runs, family rides, rain rides, longer trips',
 }
 
 export type Bike = {

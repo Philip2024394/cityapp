@@ -344,6 +344,14 @@ export const SERVICE_REGULATION: Record<ServiceType, {
     regulated: false,
     basis: 'Tidak diatur pemerintah (Permenkominfo 1/2012 — operator menetapkan)',
   },
+  car: {
+    // Car passenger fares ARE government-regulated (taxi konvensional
+    // floor under PM 108/2017 + GoCar/GrabCar floor under KP 667/2022
+    // angkutan-sewa-khusus). Driver sets above the floor; IndoCity is a
+    // software directory and does not compute fares.
+    regulated: true,
+    basis: 'Diatur KP 667/2022 (taksi online) + PM 108/2017 (taksi konvensional)',
+  },
 }
 
 // ─────────────────────────────────────────────────────────────────────
