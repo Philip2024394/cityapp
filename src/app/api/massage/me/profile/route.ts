@@ -34,6 +34,11 @@ type Body = {
   operating_hours?:    Record<string, string> | null
   certifications?:     string[]
   languages?:          string[]
+  // mig 0088 — service modes
+  service_locations?:     Array<'home' | 'hotel' | 'villa'>
+  has_physical_location?: boolean
+  latitude?:              number | null
+  longitude?:             number | null
 }
 
 const ALLOWED_MASSAGE_TYPES = [
@@ -112,6 +117,45 @@ export async function POST(req: Request) {
   const universal = validateUniversalProfile(body)
   if (!universal.ok) return NextResponse.json({ error: universal.error }, { status: 400 })
   Object.assign(update, universal.fields)
+
+  // Service modes (mig 0088) — service_locations array + spa toggle + lat/lng.
+  if (body.service_locations !== undefined) {
+    if (!Array.isArray(body.service_locations)) {
+      return NextResponse.json({ error: 'invalid_service_locations' }, { status: 400 })
+    }
+    const allowed = new Set(['home','hotel','villa'])
+    const cleaned: string[] = []
+    for (const v of body.service_locations) {
+      if (typeof v !== 'string' || !allowed.has(v)) {
+        return NextResponse.json({ error: 'invalid_service_location_entry' }, { status: 400 })
+      }
+      if (!cleaned.includes(v)) cleaned.push(v)
+    }
+    update.service_locations = cleaned
+  }
+  if (typeof body.has_physical_location === 'boolean') {
+    update.has_physical_location = body.has_physical_location
+  }
+  if (body.latitude !== undefined) {
+    if (body.latitude === null) update.latitude = null
+    else {
+      const n = typeof body.latitude === 'number' ? body.latitude : Number(body.latitude)
+      if (!Number.isFinite(n) || n < -90 || n > 90) {
+        return NextResponse.json({ error: 'invalid_latitude' }, { status: 400 })
+      }
+      update.latitude = n
+    }
+  }
+  if (body.longitude !== undefined) {
+    if (body.longitude === null) update.longitude = null
+    else {
+      const n = typeof body.longitude === 'number' ? body.longitude : Number(body.longitude)
+      if (!Number.isFinite(n) || n < -180 || n > 180) {
+        return NextResponse.json({ error: 'invalid_longitude' }, { status: 400 })
+      }
+      update.longitude = n
+    }
+  }
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 })

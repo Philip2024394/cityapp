@@ -235,6 +235,10 @@ type Patch = Partial<{
   operating_hours: Record<string, string> | null
   certifications: string[]
   languages: string[]
+  service_locations:     Array<'home' | 'hotel' | 'villa'>
+  has_physical_location: boolean
+  latitude:              number | null
+  longitude:             number | null
 }>
 
 function EditForm({
@@ -254,6 +258,11 @@ function EditForm({
     operating_hours?:    Record<string, string> | null
     certifications?:     string[] | null
     languages?:          string[] | null
+    // mig 0088
+    service_locations?:     Array<'home' | 'hotel' | 'villa'> | null
+    has_physical_location?: boolean | null
+    latitude?:              number | null
+    longitude?:             number | null
   }
   const [f, setF] = useState<{
     display_name: string
@@ -277,6 +286,10 @@ function EditForm({
     operating_hours:    Record<string, string> | null
     certifications:     string[]
     languages:          string[]
+    service_locations:     Array<'home' | 'hotel' | 'villa'>
+    has_physical_location: boolean
+    latitude:              number | null
+    longitude:             number | null
   }>({
     display_name: provider.display_name,
     gender: provider.gender,
@@ -299,6 +312,10 @@ function EditForm({
     operating_hours:    p.operating_hours ?? null,
     certifications:     p.certifications ?? [],
     languages:          p.languages ?? [],
+    service_locations:     (p.service_locations ?? ['home','hotel','villa']) as Array<'home'|'hotel'|'villa'>,
+    has_physical_location: Boolean(p.has_physical_location),
+    latitude:              p.latitude ?? null,
+    longitude:             p.longitude ?? null,
   })
 
   function upd<K extends keyof typeof f>(k: K, v: typeof f[K]) {
@@ -342,6 +359,60 @@ function EditForm({
       <input type="tel" value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} placeholder="+62 812 …" className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area notes" className={inputCls} />
+
+      {/* Service modes — four independent toggles. Mirrors the
+          beautician /info screen. spa → has_physical_location,
+          others → service_locations[]. */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-2">
+        <div className="text-[13px] font-extrabold text-black">Service modes — where customers meet you</div>
+        <p className="text-[11px] text-black/60 leading-snug">Tick every mode you offer. Unticked modes are hidden from your marketplace card + profile.</p>
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          {([
+            { id: 'spa',   label: 'Therapist Spa Place', hint: 'Customers visit my spa' },
+            { id: 'home',  label: 'Home service',        hint: 'I visit customer homes' },
+            { id: 'hotel', label: 'Hotel service',       hint: 'I visit hotels' },
+            { id: 'villa', label: 'Villa service',       hint: 'I visit villas' },
+          ] as const).map((opt) => {
+            const on = opt.id === 'spa'
+              ? f.has_physical_location
+              : f.service_locations.includes(opt.id as 'home' | 'hotel' | 'villa')
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  if (opt.id === 'spa') {
+                    upd('has_physical_location', !on)
+                  } else {
+                    const lid = opt.id as 'home' | 'hotel' | 'villa'
+                    upd(
+                      'service_locations',
+                      on ? f.service_locations.filter((x) => x !== lid)
+                         : [...f.service_locations, lid],
+                    )
+                  }
+                }}
+                aria-pressed={on}
+                className={`flex flex-col items-start justify-center gap-1 rounded-xl p-3 border transition min-h-[68px] text-left ${
+                  on
+                    ? 'bg-yellow-400 border-yellow-300 text-yellow-900 shadow-md shadow-yellow-400/30'
+                    : 'bg-gray-100 border-gray-200 text-black/80 hover:bg-gray-200'
+                }`}
+              >
+                <span className="text-[13px] font-extrabold leading-tight">{opt.label}</span>
+                <span className={`text-[10.5px] leading-tight ${on ? 'text-yellow-900/70' : 'text-black/55'}`}>
+                  {opt.hint}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        {!f.has_physical_location && f.service_locations.length === 0 && (
+          <p className="text-[11px] text-amber-700 leading-snug pt-1">
+            ⚠ With none selected, your card and profile won&apos;t show any service icons.
+          </p>
+        )}
+      </div>
       {provider.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && (
