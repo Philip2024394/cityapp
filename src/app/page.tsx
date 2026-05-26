@@ -211,7 +211,8 @@ export default function LandingPage() {
                 aria-label={`Enter — ${tile.label}`}
               >
                 <span
-                  className="shrink-0 w-9 h-9 rounded-xl bg-bg/15 flex items-center justify-center"
+                  className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: '#1E3A8A' }}
                   aria-hidden
                 >
                   <img src={tile.img} alt="" className="h-7 w-auto object-contain" loading="eager" />
