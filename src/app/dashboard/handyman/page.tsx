@@ -101,6 +101,20 @@ export default function HandymanDashboardPage() {
           {!editing ? <ReadOnly p={p} /> : <EditForm p={p} onSaved={reload} />}
         </section>
 
+        {/* Quick-link to the dedicated Services & photos editor. */}
+        <Link
+          href="/dashboard/handyman/services"
+          className="block rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card hover:border-brand/40 transition active:scale-[0.995]"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[14px] font-extrabold uppercase tracking-wider text-brand">Services &amp; photos →</div>
+              <div className="text-[13px] text-ink mt-1">Pick trades, set hourly/day rates, and upload portfolio photos that drive the carousel.</div>
+            </div>
+            <span className="text-brand text-[22px]">→</span>
+          </div>
+        </Link>
+
         <p className="text-[12px] text-ink/60 text-center">
           Public profile: <a href={`/handyman/${p.slug}`} target="_blank" rel="noopener" className="text-brand hover:underline">/handyman/{p.slug}</a>
         </p>
