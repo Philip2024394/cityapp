@@ -369,6 +369,10 @@ function PlanTripPageInner() {
               alt="IndoCity"
               className="h-8 sm:h-10 w-auto"
               loading="eager"
+              /* Invert the dark PNG so the IndoCity wordmark renders
+                 white on the slate-900 backdrop. brightness(1.15) lifts
+                 the result to pure-ish white instead of pale grey. */
+              style={{ filter: 'invert(1) brightness(1.15)' }}
             />
           </Link>
 
