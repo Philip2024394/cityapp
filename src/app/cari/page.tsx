@@ -264,10 +264,13 @@ function PlanTripPageInner() {
 
   return (
     <>
-      {/* WHITE BACKDROP — every other page in the app is on white, so
-          /cari now matches. The map sits in the middle band; this
-          fills the gaps above and below. */}
-      <div className="fixed inset-0 z-0" style={{ background: '#FFFFFF' }} />
+      {/* NAVY BACKDROP — /cari is map-first; the map needs dark surround
+          so it pops visually and the yellow Rent / B2B / Contact CTAs
+          read with high contrast. Uses the brand navy (#172554) — same
+          hex as the landing-page tile icons + specialty chips, so the
+          accent thread carries through. White-on-other-pages remains
+          the rule everywhere else. */}
+      <div className="fixed inset-0 z-0" style={{ background: '#172554' }} />
 
       {/* ACTIVE MAP — sized to EXACTLY the visible hero band between the
           header and the bottom stack. fitBounds now frames the route
@@ -347,11 +350,19 @@ function PlanTripPageInner() {
           the brand legible over any map content underneath. */}
       <header ref={headerRef} className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="IndoCity home">
+          <Link
+            href="/"
+            className="inline-flex items-center hover:opacity-85 transition rounded-xl px-3 py-1.5"
+            aria-label="IndoCity home"
+            style={{
+              background: 'rgba(255,255,255,0.92)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+            }}
+          >
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
               alt="IndoCity"
-              className="h-8 sm:h-10 w-auto"
+              className="h-7 sm:h-8 w-auto"
               loading="eager"
             />
           </Link>
