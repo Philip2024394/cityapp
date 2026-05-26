@@ -12,6 +12,10 @@ import TrustBadges        from '@/components/profile/TrustBadges'
 import AboutSection       from '@/components/profile/AboutSection'
 import OperatingHoursCard from '@/components/profile/OperatingHoursCard'
 import RunningMarquee     from '@/components/profile/RunningMarquee'
+import PortfolioCarousel, {
+  PortfolioDetailPopup,
+  type PortfolioPhoto,
+} from '@/components/profile/PortfolioCarousel'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { SPECIALTY_LABELS, type HandymanProviderPublic } from '@/lib/handyman/types'
@@ -27,6 +31,7 @@ export default function HandymanProviderPage() {
   const [notFound, setNotFound] = useState(false)
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
 
   useEffect(() => { capturePartnerFromUrl(); setPartnerTag(getStoredPartnerSlug()) }, [])
   useEffect(() => {
@@ -138,6 +143,20 @@ export default function HandymanProviderPage() {
           themeColor={themeColor}
         />
 
+        {/* Portfolio carousel — shows project photos with name, price,
+            description, and an optional before/after pair. Only renders
+            when the tukang has uploaded entries to service_photos (mig 0089). */}
+        {(p.service_photos ?? []).length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-ink/70">Portfolio</h2>
+            <PortfolioCarousel
+              photos={(p.service_photos ?? []) as PortfolioPhoto[]}
+              themeColor={themeColor}
+              onViewDetails={setDetailPhoto}
+            />
+          </section>
+        )}
+
         <ProfileGallery photos={p.gallery_image_urls ?? []} title="Proof of work" />
 
         <OperatingHoursCard hours={p.operating_hours ?? null} />
@@ -163,6 +182,22 @@ export default function HandymanProviderPage() {
       <StickyContactBar whatsappE164={p.whatsapp_e164} prefillText={waText} onShare={() => setShareOpen(true)} />
       <SocialShareSheet open={shareOpen} onClose={() => setShareOpen(false)} url={profileUrl}
         prefillText={`Lihat profil ${p.display_name} di City Riders:`} providerName={p.display_name} />
+
+      {detailPhoto && (
+        <PortfolioDetailPopup
+          photo={detailPhoto}
+          themeColor={themeColor}
+          canContact={Boolean(p.whatsapp_e164)}
+          onClose={() => setDetailPhoto(null)}
+          onContact={() => {
+            // Closes popup + opens WhatsApp with a project-specific prefill.
+            const wa = waText + (detailPhoto.name ? `\nProject: ${detailPhoto.name}` : '')
+            const digits = p.whatsapp_e164.replace(/[^0-9]/g, '')
+            window.open(`https://wa.me/${digits}?text=${encodeURIComponent(wa)}`, '_blank', 'noopener')
+            setDetailPhoto(null)
+          }}
+        />
+      )}
     </Shell>
   )
 }
