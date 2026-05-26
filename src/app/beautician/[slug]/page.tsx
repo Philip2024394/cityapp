@@ -9,6 +9,7 @@ import PortfolioCarousel, {
   PortfolioDetailPopup,
   type PortfolioPhoto,
 } from '@/components/profile/PortfolioCarousel'
+import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
 import VisitUsPanel, {
   SocialInstagramIcon,
   SocialTikTokIcon,
@@ -69,6 +70,8 @@ export default function BeauticianProviderPage() {
   const [activeService, setActiveService] = useState<BeauticianServiceOffered | null>(null)
   // Selected carousel card — opens the View Details popup when set.
   const [detailPhoto, setDetailPhoto] = useState<BeauticianServicePhoto | null>(null)
+  // Portfolio layout — flip between auto-drifting carousel + 2-col grid.
+  const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
   // Reviews view — replaces everything below the floating info-card.
   const [showReviews, setShowReviews] = useState(false)
   // Visit Us view — also replaces content area when active (only
@@ -548,24 +551,26 @@ export default function BeauticianProviderPage() {
           if (photos.length === 0) return null
           return (
             <section className="space-y-2">
-              <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                {activeService
-                  ? `${SERVICE_OFFERED_LABELS[activeService]} — Portfolio`
-                  : 'Portfolio'}
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                  {activeService
+                    ? `${SERVICE_OFFERED_LABELS[activeService]} — Portfolio`
+                    : 'Portfolio'}
+                </h2>
+                <PortfolioViewToggle
+                  view={portfolioView}
+                  onChange={setPortfolioView}
+                  themeColor={theme}
+                />
+              </div>
               <p className="text-[11px] text-gray-500 italic -mt-1">
                 Please contact for additional services not listed
               </p>
-              {/* Auto-drifting portfolio that the user can swipe/drag.
-                  rAF loop in PortfolioCarousel nudges scrollLeft by a
-                  fraction every frame. Pointerdown / touchstart / wheel
-                  pauses the drift for 2.5s so users can manually scroll
-                  without fighting the animation. Cards are duplicated
-                  so the seam at the loop boundary is invisible. */}
               <PortfolioCarousel
                 photos={photos as PortfolioPhoto[]}
                 onViewDetails={(ph) => setDetailPhoto(ph as BeauticianServicePhoto)}
                 themeColor={theme}
+                view={portfolioView}
               />
             </section>
           )

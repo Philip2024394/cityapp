@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import AppNav from '@/components/layout/AppNav'
 import ProfileHero        from '@/components/profile/ProfileHero'
 import ProfileGallery     from '@/components/profile/ProfileGallery'
+import { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
 import PricingBlock, { type PricingTier } from '@/components/profile/PricingBlock'
 import StickyContactBar   from '@/components/profile/StickyContactBar'
 import SocialShareSheet   from '@/components/profile/SocialShareSheet'
@@ -24,6 +25,7 @@ export default function LaundryProviderPage() {
   const [notFound, setNotFound] = useState(false)
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [galleryView, setGalleryView] = useState<PortfolioView>('grid')
 
   useEffect(() => { capturePartnerFromUrl(); setPartnerTag(getStoredPartnerSlug()) }, [])
   useEffect(() => {
@@ -116,7 +118,12 @@ export default function LaundryProviderPage() {
           footnote={footnote}
         />
 
-        <ProfileGallery photos={p.gallery_image_urls ?? []} title="Foto" />
+        <ProfileGallery
+          photos={p.gallery_image_urls ?? []}
+          title="Foto"
+          view={galleryView}
+          onViewChange={setGalleryView}
+        />
 
         <OperatingHoursCard hours={p.operating_hours ?? null} />
 

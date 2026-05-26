@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import AppNav from '@/components/layout/AppNav'
 import ProfileHero        from '@/components/profile/ProfileHero'
 import ProfileGallery     from '@/components/profile/ProfileGallery'
+import { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
 import PricingBlock       from '@/components/profile/PricingBlock'
 import StickyContactBar   from '@/components/profile/StickyContactBar'
 import SocialShareSheet   from '@/components/profile/SocialShareSheet'
@@ -29,6 +30,7 @@ export default function MassageProviderPage() {
   const [notFound, setNotFound] = useState(false)
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [galleryView, setGalleryView] = useState<PortfolioView>('grid')
 
   // Capture ?partner= attribution + read stored slug (hotel-QR → /massage/x).
   useEffect(() => {
@@ -128,7 +130,11 @@ export default function MassageProviderPage() {
           footnote="Bayar langsung ke therapist · platform takes 0%."
         />
 
-        <ProfileGallery photos={p.gallery_image_urls ?? []} />
+        <ProfileGallery
+          photos={p.gallery_image_urls ?? []}
+          view={galleryView}
+          onViewChange={setGalleryView}
+        />
 
         <OperatingHoursCard hours={p.operating_hours ?? null} />
 

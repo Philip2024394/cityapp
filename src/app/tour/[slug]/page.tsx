@@ -205,7 +205,7 @@ export default async function TourGuideDetailPage({
         )}
 
         {/* GALLERY — mig 0072 universal field, capped at 12 by DB CHECK */}
-        <ProfileGallery photos={r.gallery_image_urls ?? []} title="Foto" />
+        <ProfileGallery photos={r.gallery_image_urls ?? []} title="Foto" enableToggle />
 
         {/* Client island — view tracker, social chips, operating hours,
             share-sheet trigger. Renders nothing for fields not set. */}

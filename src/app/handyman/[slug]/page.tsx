@@ -11,6 +11,7 @@ import PortfolioCarousel, {
   PortfolioDetailPopup,
   type PortfolioPhoto,
 } from '@/components/profile/PortfolioCarousel'
+import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
 import VisitUsPanel, {
   SocialInstagramIcon,
   SocialTikTokIcon,
@@ -50,6 +51,7 @@ export default function HandymanProviderPage() {
   const [showMoreServices, setShowMoreServices] = useState(false)
   const [activeService, setActiveService] = useState<HandymanSpecialty | null>(null)
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
   const [showReviews, setShowReviews] = useState(false)
   const [showVisitUs, setShowVisitUs] = useState(false)
   const [reviews, setReviews] = useState<ReviewRow[] | null>(null)
@@ -459,11 +461,18 @@ export default function HandymanProviderPage() {
               if (photos.length === 0) return null
               return (
                 <section className="space-y-2">
-                  <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                    {activeService
-                      ? `${SPECIALTY_LABELS[activeService]} — Portfolio`
-                      : 'Portfolio'}
-                  </h2>
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                      {activeService
+                        ? `${SPECIALTY_LABELS[activeService]} — Portfolio`
+                        : 'Portfolio'}
+                    </h2>
+                    <PortfolioViewToggle
+                      view={portfolioView}
+                      onChange={setPortfolioView}
+                      themeColor={theme}
+                    />
+                  </div>
                   <p className="text-[11px] text-gray-500 italic -mt-1">
                     Please contact for additional services not listed
                   </p>
@@ -471,6 +480,7 @@ export default function HandymanProviderPage() {
                     photos={photos}
                     onViewDetails={(ph) => setDetailPhoto(ph)}
                     themeColor={theme}
+                    view={portfolioView}
                   />
                 </section>
               )

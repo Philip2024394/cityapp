@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import PortfolioViewToggle, { type PortfolioView } from './PortfolioViewToggle'
 
 // Photo gallery with a fullscreen lightbox on tap.
 //   variant='grid' (default) — responsive 3-col grid
@@ -8,29 +9,64 @@ import { X } from 'lucide-react'
 //                              snaps per item, scrollbar hidden.
 // Renders nothing when there are no photos — caller doesn't need to gate.
 // Caps at 12 photos in the DB (mig 0072 CHECK); component slices to be safe.
+//
+// When both `view` AND `onViewChange` are supplied, the variant is
+// driven by the controlled prop and a small grid/carousel toggle
+// button renders next to the heading.
 
 export default function ProfileGallery({
   photos,
   title = 'Gallery',
   variant = 'grid',
   titleClassName,
+  view,
+  onViewChange,
+  enableToggle = false,
+  toggleThemeColor,
 }: {
   photos: string[] | null | undefined
   title?: string
   variant?: 'grid' | 'carousel'
   /** Override the heading classes — e.g. light pages want dark text. */
   titleClassName?: string
+  /** Controlled layout — overrides `variant` and the internal toggle
+   *  state when supplied. Pair with `onViewChange` for full control. */
+  view?: PortfolioView
+  /** Pair with `view` for controlled mode. Without it (and with
+   *  `enableToggle`), the component manages its own toggle state. */
+  onViewChange?: (next: PortfolioView) => void
+  /** Show the grid/carousel toggle button with internal state.
+   *  Ignored when `view` + `onViewChange` are supplied (controlled mode). */
+  enableToggle?: boolean
+  /** Theme accent for the toggle button. */
+  toggleThemeColor?: string
 }) {
   const items = (photos ?? []).slice(0, 12).filter(Boolean)
   const [openIdx, setOpenIdx] = useState<number | null>(null)
+  // Internal toggle state — used only when the caller asks for the
+  // toggle but doesn't pass a controlled `view`. Initialised from the
+  // `variant` prop so the first render matches the caller's intent.
+  const [internalView, setInternalView] = useState<PortfolioView>(variant)
   if (items.length === 0) return null
 
   const heading = titleClassName ?? 'text-[13px] font-extrabold uppercase tracking-wider text-ink/70'
+  const controlled = view !== undefined && onViewChange !== undefined
+  const effectiveVariant: PortfolioView = controlled ? view : (enableToggle ? internalView : variant)
+  const showToggle = controlled || enableToggle
 
   return (
     <section className="space-y-3">
-      <h2 className={heading}>{title}</h2>
-      {variant === 'carousel' ? (
+      <div className="flex items-center justify-between gap-2">
+        <h2 className={heading}>{title}</h2>
+        {showToggle && (
+          <PortfolioViewToggle
+            view={effectiveVariant}
+            onChange={controlled ? onViewChange! : setInternalView}
+            themeColor={toggleThemeColor}
+          />
+        )}
+      </div>
+      {effectiveVariant === 'carousel' ? (
         <div
           className="-mx-4 px-4 flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: 'none' }}

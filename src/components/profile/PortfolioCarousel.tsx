@@ -33,11 +33,15 @@ function priceLabel(amount: number | null | undefined): string | null {
 }
 
 export default function PortfolioCarousel({
-  photos, themeColor, onViewDetails,
+  photos, themeColor, onViewDetails, view = 'carousel',
 }: {
   photos: PortfolioPhoto[]
   themeColor: string
   onViewDetails: (photo: PortfolioPhoto) => void
+  /** Layout mode. 'carousel' = auto-drifting horizontal strip (default).
+   *  'grid' = static 2-col responsive grid. Same PortfolioCard items in
+   *  both modes — toggled from outside via PortfolioViewToggle. */
+  view?: 'carousel' | 'grid'
 }) {
   const scrollerRef   = useRef<HTMLDivElement | null>(null)
   const lastInteract  = useRef<number>(0)
@@ -94,6 +98,25 @@ export default function PortfolioCarousel({
   }, [photos.length])
 
   if (photos.length === 0) return null
+
+  // Grid branch — same PortfolioCard items, 2/3-col responsive grid.
+  // Sits below the same heading row in the caller, just a different
+  // layout. Auto-drift hooks above stay mounted but the rAF loop is
+  // harmless when the scroller ref isn't rendered (el will be null).
+  if (view === 'grid') {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        {photos.map((photo, i) => (
+          <PortfolioCard
+            key={photo.url + i}
+            photo={photo}
+            onViewDetails={() => onViewDetails(photo)}
+            themeColor={themeColor}
+          />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div
