@@ -117,9 +117,9 @@ function Inner() {
                 role="menu"
                 className="absolute right-0 top-full mt-2 z-50 w-[280px] max-h-[70vh] overflow-y-auto rounded-2xl p-2"
                 style={{
-                  background: '#0A0A0A',
-                  border: '1px solid rgba(250,204,21,0.25)',
-                  boxShadow: '0 20px 48px rgba(0,0,0,0.6)',
+                  background: '#1E3A8A',                       // navy — matches specialty pill + CTA
+                  border: '1px solid rgba(250,204,21,0.45)',
+                  boxShadow: '0 20px 48px rgba(0,0,0,0.35)',
                 }}
               >
                 <div className="flex items-center justify-between px-2 py-1 mb-1">
@@ -163,7 +163,13 @@ function Inner() {
             {[0,1,2,3].map((i) => <div key={i} className="h-40 bg-white/5 rounded-2xl animate-pulse" />)}
           </div>
         ) : visible.length === 0 ? (
-          <div className="rounded-2xl bg-black/85 border border-white/10 p-8 text-center text-ink/65 text-[13px]">
+          <div
+            className="rounded-2xl p-8 text-center text-white/85 text-[13px]"
+            style={{
+              background: '#1E3A8A',                       // navy — matches the rest of the page
+              border: '1px solid rgba(250,204,21,0.45)',
+            }}
+          >
             {searchText ? `No tukang match "${searchText}".` : 'No tukang listed in this trade yet.'}
           </div>
         ) : (
