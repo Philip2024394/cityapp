@@ -282,7 +282,10 @@ function PlanTripPageInner() {
         className="fixed left-0 right-0 z-[1] px-3"
         style={{
           top: `${headerHeight}px`,
-          bottom: `${bottomHeight + keyboardOffset}px`,
+          // +12px adds breathing room between the map's bottom edge and
+          // the top of the bottom sheet (service tabs). Keeps the map
+          // floating as a card instead of butting against the sheet.
+          bottom: `${bottomHeight + keyboardOffset + 12}px`,
           transition: 'top 220ms ease, bottom 220ms ease',
         }}
       >
@@ -321,7 +324,9 @@ function PlanTripPageInner() {
         className="fixed right-3 z-20 flex flex-col items-end justify-center gap-3 pointer-events-none"
         style={{
           top: `${headerHeight}px`,
-          bottom: `${bottomHeight + keyboardOffset}px`,
+          // Track the map's new bottom inset (+12px gap) so the Rent /
+          // B2B buttons stay vertically centred in the map card band.
+          bottom: `${bottomHeight + keyboardOffset + 12}px`,
           transition: 'top 220ms ease, bottom 220ms ease',
         }}
       >
