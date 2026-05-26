@@ -55,12 +55,39 @@ export default async function TourGuideDetailPage({
   const admin = getAdminSupabase()
   if (!admin) return <p className="p-6 text-muted">Server not configured.</p>
 
-  const { data: row } = await admin
+  const { data: realRow } = await admin
     .from('tour_guide_listings')
     .select('id, slug, name, whatsapp_e164, city, address, services, languages, day_rate_idr, notes, rating, review_count, cover_image_url, gallery_image_urls, instagram_url, tiktok_url, facebook_url, operating_hours')
     .eq('slug', slug)
     .eq('status', 'approved')
     .maybeSingle()
+
+  // Fall back to mock_tour_guide_listings — those rows appear on the
+  // marketplace alongside real guides, so the detail page must serve
+  // their slugs too. Mock table has no address / review_count / mig 0072
+  // universal fields; we coerce to the same Row shape with nulls.
+  let row = realRow
+  if (!row) {
+    const { data: mockRow } = await admin
+      .from('mock_tour_guide_listings')
+      .select('id, slug, name, whatsapp_e164, city, services, languages, day_rate_idr, notes, rating')
+      .eq('slug', slug)
+      .is('mock_hidden_at', null)
+      .maybeSingle()
+    if (mockRow) {
+      row = {
+        ...mockRow,
+        address:            null,
+        review_count:       0,
+        cover_image_url:    null,
+        gallery_image_urls: null,
+        instagram_url:      null,
+        tiktok_url:         null,
+        facebook_url:       null,
+        operating_hours:    null,
+      }
+    }
+  }
 
   if (!row) notFound()
   const r = row as Row
