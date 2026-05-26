@@ -194,8 +194,14 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-[36px] sm:text-[48px] md:text-[56px] font-extrabold leading-[1.05] tracking-tight">
-            {t.h1Line1}
-            <br />
+            {/* Founder-supplied wordmark replaces the motorbike-community
+                heading text. Locale-agnostic; the image sits where
+                t.h1Line1 used to render. */}
+            <img
+              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+              alt={t.h1Line1}
+              className="block mx-auto h-12 sm:h-16 md:h-20 w-auto"
+            />
             <span className="gradient-text">{t.h1Line2}</span>
           </h1>
 
