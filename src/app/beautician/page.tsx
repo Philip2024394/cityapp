@@ -122,7 +122,7 @@ function MarketplaceInner() {
 
   return (
     <Shell>
-      <div className="px-4 pt-4 pb-24 max-w-4xl mx-auto">
+      <div className="px-4 pt-4 pb-6 max-w-4xl mx-auto w-full flex-1">
         <div className="mb-3 text-center relative">
           {/* + List CTA — routes beauticians to signup (existing route
               decides between create-account vs sign-in flows). */}
@@ -223,18 +223,19 @@ function MarketplaceInner() {
         {/* "Are you a beautician?" CTA panel removed per founder request —
             providers now use the landing-page "Join today indoscity.id"
             footer link to reach /join. */}
-
-        {/* Founder-supplied footer image — full-width banner that ends
-            the scrolled content. */}
-        <div className="mt-8 -mx-4">
-          <img
-            src="https://ik.imagekit.io/nepgaxllc/sdfsdfasdfasdfasdfasdasda.png"
-            alt=""
-            aria-hidden
-            className="block w-full h-auto"
-          />
-        </div>
       </div>
+
+      {/* Footer banner — sits OUTSIDE the constrained max-w-4xl
+          container so it spans edge-to-edge. The parent <main> is
+          flex flex-col with the inner div flex-1, so this image
+          gets pinned to the viewport bottom when content is short
+          and naturally flows to the bottom of the scroll when long. */}
+      <img
+        src="https://ik.imagekit.io/nepgaxllc/sdfsdfasdfasdfasdfasdasda.png"
+        alt=""
+        aria-hidden
+        className="block w-full h-auto"
+      />
     </Shell>
   )
 }
@@ -326,11 +327,12 @@ function ProviderCardViaUniversal({ provider: p }: { provider: BeauticianProvide
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  // Solid white surface. Footer image lives inside the page below
-  // the cards (see MarketplaceInner) so it sits at the natural end
-  // of the scrolled content rather than as a fixed-attachment bg.
+  // Solid white surface laid out as a flex column so the footer
+  // image inside MarketplaceInner can sit pinned at the bottom of
+  // the viewport (flex-1 spacer above pushes it down when content
+  // is short; long content still scrolls naturally past it).
   return (
-    <main className="relative min-h-screen bg-white text-black">
+    <main className="relative min-h-screen bg-white text-black flex flex-col">
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
