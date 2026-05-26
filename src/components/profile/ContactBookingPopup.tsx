@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { MessageCircle, X } from 'lucide-react'
+import { MessageCircle, X, Calendar } from 'lucide-react'
 
 // Customer-facing booking popup — date + time + service form that
 // records a booking_request server-side then bounces the customer to
@@ -155,10 +155,31 @@ export default function ContactBookingPopup({
         </button>
 
         <div className="px-5 pt-6 pb-6 space-y-3.5">
-          <div>
-            <h2 className="text-[20px] font-black text-black leading-tight">{title}</h2>
-            <p className="text-[12px] text-gray-500 mt-1 leading-snug">{intro}</p>
+          {/* Themed Calendar icon + label header so the booking
+              surface reads as a calendar surface at a glance. */}
+          <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+            <div
+              className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
+              style={{
+                background: `${themeColor}18`,
+                border: `1.5px solid ${themeColor}40`,
+              }}
+            >
+              <Calendar className="w-6 h-6" strokeWidth={2.25} style={{ color: themeColor }} />
+            </div>
+            <div className="min-w-0">
+              <div
+                className="text-[10.5px] font-extrabold uppercase tracking-[0.15em]"
+                style={{ color: themeColor }}
+              >
+                Booking
+              </div>
+              <h2 className="text-[18px] font-black text-black leading-tight mt-0.5 truncate">
+                {title}
+              </h2>
+            </div>
           </div>
+          <p className="text-[12px] text-gray-500 leading-snug">{intro}</p>
 
           <label className="block space-y-1">
             <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Your name</span>
