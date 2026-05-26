@@ -279,32 +279,37 @@ function PlanTripPageInner() {
           when the bottom sheet expands (pit-stop) or the keyboard opens
           so the route smoothly re-fits into the new band. */}
       <div
-        className="fixed left-0 right-0 z-[1]"
+        className="fixed left-0 right-0 z-[1] px-3"
         style={{
           top: `${headerHeight}px`,
           bottom: `${bottomHeight + keyboardOffset}px`,
           transition: 'top 220ms ease, bottom 220ms ease',
         }}
       >
-        <RiderMap
-          center={mapCenter}
-          zoom={14}
-          riders={nearbyRiders}
-          markerStyle="ping"
-          pickup={pickup}
-          dropoff={dropoff}
-          showRoute={canSearch}
-          pitStop={canSearch && pitstopNote.trim().length > 0}
-          onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-          height="100%"
-          // pitch flattens to 0 once a route is set so fitBounds can
-          // place the line cleanly in the hero band. Before route: a
-          // gentle 25° tilt for visual interest.
-          pitch={canSearch ? 0 : 25}
-          // Container IS the visible band — padding is just edge
-          // clearance so markers aren't flush against the boundary.
-          viewportPadding={{ top: 24, bottom: 24, left: 32, right: 32 }}
-        />
+        {/* Inner wrapper rounds the map corners now that there is
+            breathing room on the left + right (px-3 above). overflow
+            hidden so the map tiles get clipped by the rounded mask. */}
+        <div className="w-full h-full rounded-2xl overflow-hidden shadow-[0_8px_28px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
+          <RiderMap
+            center={mapCenter}
+            zoom={14}
+            riders={nearbyRiders}
+            markerStyle="ping"
+            pickup={pickup}
+            dropoff={dropoff}
+            showRoute={canSearch}
+            pitStop={canSearch && pitstopNote.trim().length > 0}
+            onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
+            height="100%"
+            // pitch flattens to 0 once a route is set so fitBounds can
+            // place the line cleanly in the hero band. Before route: a
+            // gentle 25° tilt for visual interest.
+            pitch={canSearch ? 0 : 25}
+            // Container IS the visible band — padding is just edge
+            // clearance so markers aren't flush against the boundary.
+            viewportPadding={{ top: 24, bottom: 24, left: 32, right: 32 }}
+          />
+        </div>
       </div>
 
       {/* FLOATING ACTION BUTTONS — vertically centred in the hero band
@@ -359,10 +364,15 @@ function PlanTripPageInner() {
               alt="IndoCity"
               className="h-8 sm:h-10 w-auto"
               loading="eager"
-              /* Invert colors so the wordmark (dark on transparent)
-                 renders white on the navy backdrop. Drops the white
-                 pill background per founder request. */
-              style={{ filter: 'invert(1) brightness(1.15)' }}
+              /* Colorize the dark wordmark to brand yellow (#FACC15)
+                 via a tested filter chain. brightness(0) flattens any
+                 non-transparent pixel to black; the invert/sepia/
+                 hue-rotate sequence then re-tints those pixels to the
+                 brand yellow without needing a separate asset. */
+              style={{
+                filter:
+                  'brightness(0) saturate(100%) invert(82%) sepia(73%) saturate(637%) hue-rotate(359deg) brightness(101%) contrast(101%)',
+              }}
             />
           </Link>
 
@@ -653,34 +663,36 @@ function PlanTripPageInner() {
               ariaLabel="Drop off location"
               clearOnFocus
             />
-            {/* INLINE PRICE READOUT — surfaces the lowest published driver
-                fare + distance once both pickup and dropoff are set. Lives
-                inside the dropoff tile (not its own ribbon above pickup)
-                so the customer sees price the moment they finish the
-                destination field — same container, same visual block.
-                Copy is compliance-safe (PM 12/2019 directory safe-harbour):
-                "Starting from" — never "Trip price" / "Total fare". */}
-            {canSearch && tripKm != null && (
-              <div className="mt-2 pt-2 border-t border-bg/25">
-                <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  {lowestFareIdr != null ? (
-                    <span className="text-[13px] font-extrabold tracking-tight text-bg">
-                      Starting from Rp {lowestFareIdr.toLocaleString('en-US')}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-bold tracking-tight text-bg/70">
-                      No driver price yet
-                    </span>
-                  )}
+            {/* INLINE PRICE READOUT — ALWAYS rendered (so the customer
+                sees a price line even before they pick a destination).
+                Empty state reads "Total fare Rp 0.00"; once pickup +
+                dropoff are both set, it switches to the lowest published
+                driver fare ("Lowest Trip Price Rp 12,000").
+                COMPLIANCE NOTE: the founder chose this copy explicitly
+                — see the chat. "Total fare" / "Trip Price" wording was
+                previously avoided per PM 12/2019 directory safe-harbour.
+                Revisit if regulator pushback occurs. */}
+            <div className="mt-2 pt-2 border-t border-bg/25">
+              <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                {canSearch && tripKm != null && lowestFareIdr != null ? (
+                  <span className="text-[13px] font-extrabold tracking-tight text-bg">
+                    Lowest Trip Price Rp {lowestFareIdr.toLocaleString('en-US')}
+                  </span>
+                ) : (
+                  <span className="text-[13px] font-extrabold tracking-tight text-bg/85">
+                    Total fare Rp 0.00
+                  </span>
+                )}
+                {canSearch && tripKm != null && (
                   <span className="text-[11px] font-bold tracking-tight text-bg/80">
                     {tripKm.toFixed(1)} km
                   </span>
-                </div>
-                <div className="text-[9px] uppercase tracking-wider text-bg/55 mt-0.5">
-                  Estimate · agreed with driver
-                </div>
+                )}
               </div>
-            )}
+              <div className="text-[9px] uppercase tracking-wider text-bg/55 mt-0.5">
+                Estimate · agreed with driver
+              </div>
+            </div>
           </div>
 
           {/* CTA TILE — black infill with brand-yellow edge line. Under
