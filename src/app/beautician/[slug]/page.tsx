@@ -595,6 +595,7 @@ export default function BeauticianProviderPage() {
               Bagikan profil {p.display_name} ke teman atau klien.
             </p>
             <div className="space-y-2">
+              {/* Copy link — single-tap; status flips to "Copied!" for 1.8s. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -602,9 +603,11 @@ export default function BeauticianProviderPage() {
                   setShareCopied(true)
                   setTimeout(() => setShareCopied(false), 1800)
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-pink-50 hover:bg-pink-100 transition border border-pink-200 active:scale-[0.99]"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition border border-gray-200 active:scale-[0.99]"
               >
-                <Link2 className="w-5 h-5 shrink-0" style={{ color: theme }} strokeWidth={2.5} />
+                <span className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+                  <Link2 className="w-4 h-4" strokeWidth={2.5} />
+                </span>
                 <div className="flex-1 text-left min-w-0">
                   <div className="text-[13px] font-extrabold text-black">
                     {shareCopied ? 'Copied!' : 'Copy link'}
@@ -612,19 +615,83 @@ export default function BeauticianProviderPage() {
                   <div className="text-[11px] text-gray-500 truncate">{profileUrl}</div>
                 </div>
               </button>
+
+              {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di City Riders: ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
-                style={{ background: theme }}
+                style={{ background: '#25D366' }}
               >
-                <MessageCircle className="w-5 h-5 shrink-0" strokeWidth={2.5} />
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+                </span>
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-extrabold">Share via WhatsApp</div>
-                  <div className="text-[11px] text-white/85">Kirim link ke kontak</div>
+                  <div className="text-[13px] font-extrabold">WhatsApp</div>
+                  <div className="text-[11px] text-white/85">Send link to a contact</div>
                 </div>
               </a>
+
+              {/* Facebook — accepts URL share via sharer.php. */}
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
+                style={{ background: '#1877F2' }}
+              >
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <SocialFacebookIcon />
+                </span>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-extrabold">Facebook</div>
+                  <div className="text-[11px] text-white/85">Share to your timeline</div>
+                </div>
+              </a>
+
+              {/* Instagram — IG doesn't accept arbitrary URL share. We
+                  copy the link to the clipboard and open IG so the user
+                  can paste into a DM / Story / bio. */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(profileUrl) } catch { /* ignore */ }
+                  setShareCopied(true)
+                  setTimeout(() => setShareCopied(false), 1800)
+                  window.open('https://www.instagram.com/', '_blank')
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
+                style={{ background: 'linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4)' }}
+              >
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <SocialInstagramIcon />
+                </span>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-extrabold">Instagram</div>
+                  <div className="text-[11px] text-white/85">Link copied — paste to DM / Story</div>
+                </div>
+              </button>
+
+              {/* TikTok — same pattern: copy link, open app. */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(profileUrl) } catch { /* ignore */ }
+                  setShareCopied(true)
+                  setTimeout(() => setShareCopied(false), 1800)
+                  window.open('https://www.tiktok.com/', '_blank')
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition bg-black"
+              >
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <SocialTikTokIcon />
+                </span>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-extrabold">TikTok</div>
+                  <div className="text-[11px] text-white/85">Link copied — paste to bio / DM</div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -637,7 +704,7 @@ export default function BeauticianProviderPage() {
       <a
         href="/beautician"
         aria-label="Back to City Riders beauticians"
-        className="fixed z-30 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
+        className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
           top: '62%',
@@ -2032,19 +2099,10 @@ function HeroIcon({
 
 
 function Shell({ children }: { children: React.ReactNode }) {
-  // Lock body scroll while this page is mounted — the public profile
-  // is designed as a one-screen snapshot, not a scrollable feed.
-  // Restored on unmount.
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
   // Solid white paints over the global PageBackground (which sits at
-  // -z-10) so the courier scene doesn't show through here. Uses
-  // min-h-screen (not h-screen) so long profiles can scroll naturally
-  // and reach the powered-by footer + accent strip; overflow-hidden
-  // was previously clamping content to a single viewport.
+  // -z-10) so the courier scene doesn't show through here. min-h-screen
+  // lets the page scroll naturally so panels like Visit Us / Reviews
+  // can extend past the initial viewport.
   return (
     <main className="relative min-h-screen bg-white text-ink">
       {/* Hide the floating dev-toolbar wrench on this page only — the
