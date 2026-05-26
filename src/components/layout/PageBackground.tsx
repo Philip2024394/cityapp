@@ -11,7 +11,7 @@
 // ============================================================================
 
 const BG_URL =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2026,%202026,%2002_50_48%20PM.png?updatedAt=1779781869703'
 
 export default function PageBackground() {
   return (
