@@ -2,7 +2,6 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
-import HeaderRoleMenu from '@/components/layout/HeaderRoleMenu'
 import { logNav } from '@/lib/perf/navTiming'
 
 // Service tiles — the primary CTA on landing. Routes:
@@ -149,34 +148,9 @@ export default function LandingPage() {
           Fixed viewport height + overflow-hidden so the landing never
           scrolls — the hero section flex-shrinks to fit. */}
 
-      {/* Top mini nav — z-50 so the Join dropdown stacks above the
-          hero (which is z-20). Without this, the dropdown opens but
-          sits BEHIND the service tiles because tiles render later in
-          the DOM at the same z-level. */}
-      <header className="relative z-50 pt-safe shrink-0">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
-            <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
-              alt=""
-              className="h-11 w-auto"
-              loading="eager"
-            />
-            <div className="font-extrabold tracking-tight text-[16px]">
-              City <span className="gradient-text">Rider</span>
-            </div>
-          </Link>
-          <div className="flex items-center gap-1.5">
-            {/* Single combined dropdown — both Sign-in (per-category
-                dashboards) and Join (per-category signups) sections
-                live inside one yellow CTA so the header stays clean. */}
-            <HeaderRoleMenu
-              label={locale === 'id' ? 'Masuk / Gabung' : 'Sign in / Join'}
-              variant="combined"
-            />
-          </div>
-        </div>
-      </header>
+      {/* Header intentionally minimal per founder request — no logo,
+          no brand text, no sign-in/join CTAs. The "Join today" footer
+          link at the bottom of the page replaces the header join menu. */}
 
       {/* Hero — flex-1 so it fills the viewport between header and the
           bottom edge. Content anchored to the TOP of the section
@@ -259,6 +233,18 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Footer join CTA — replaces the removed header sign-in/join.
+          Routes to /join where the user picks which directory category
+          to list under, then through to that vertical's signup. */}
+      <div className="relative z-30 shrink-0 px-4 pb-3 text-center">
+        <Link
+          href="/join"
+          className="inline-block text-[13px] sm:text-[14px] font-extrabold text-brand hover:underline"
+        >
+          Join today <span className="text-ink">indoscity.id →</span>
+        </Link>
+      </div>
 
       <PlatformDisclaimer variant="links" />
     </main>
