@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Sparkles, Check } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import AppNav from '@/components/layout/AppNav'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
 import ThemeColorPicker from '@/components/dashboard/ThemeColorPicker'
 import DomainRequestModal from '@/components/dashboard/DomainRequestModal'
@@ -105,11 +106,7 @@ export default function BeauticianEditPage() {
     <Shell>
       <div className="max-w-2xl mx-auto pt-3 pb-32 px-4">
         {/* Top bar */}
-        <div className="flex items-center justify-between mb-3">
-          <Link href="/dashboard/beautician" className="inline-flex items-center gap-1 text-[12px] font-bold text-ink/70 hover:text-ink">
-            <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
-            Dashboard
-          </Link>
+        <div className="flex items-center justify-end mb-3">
           <div className="text-[11px] font-extrabold uppercase tracking-wider text-ink/55">
             Live editor
           </div>
@@ -389,7 +386,7 @@ function BannerInlineControls({
         <div className="grid grid-cols-2 gap-2">
           <Link
             href="/dashboard/beautician/services"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white/10 border border-white/15 text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-white/15"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
           >
             Services (carousel)
           </Link>
@@ -397,7 +394,7 @@ function BannerInlineControls({
             href={`/beautician/${provider.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white/5 border border-white/15 text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-white/10"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
           >
             View live profile →
           </a>
@@ -578,9 +575,14 @@ function FieldWithColor({
   )
 }
 
+const SHELL_BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink bg-bg">
+    <main className="relative min-h-screen text-ink overflow-hidden">
+      <div aria-hidden className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${SHELL_BG_URL})` }} />
+      <div aria-hidden className="fixed inset-0 -z-10 bg-black/55" />
+      <AppNav />
       {children}
     </main>
   )

@@ -1,8 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ChevronLeft, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import BeauticianServicePhotosEditor from '@/components/dashboard/BeauticianServicePhotosEditor'
 import {
@@ -33,7 +32,6 @@ type Extras = {
 type FullProvider = BeauticianProvider & Extras
 
 export default function BeauticianServicesPage() {
-  const router = useRouter()
   const [provider, setProvider] = useState<FullProvider | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [err,      setErr]      = useState<string | null>(null)
@@ -75,13 +73,6 @@ export default function BeauticianServicesPage() {
   return (
     <Shell>
       <div className="px-4 pt-3 pb-32 max-w-lg mx-auto">
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard/beautician')}
-          className="inline-flex items-center gap-1 text-white/70 hover:text-white text-[13px] font-bold mb-3"
-        >
-          <ChevronLeft size={16} /> Back
-        </button>
         <header className="mb-5">
           <h1 className="text-[24px] font-black text-white leading-tight">Services & prices</h1>
           <p className="text-[13px] text-white/70 mt-1">Pick your services, set prices, and add portfolio photos.</p>
@@ -203,28 +194,44 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
       </Card>
 
       {/* 2. Base prices (legacy 3) */}
-      <Card title="Base prices" hint="Shown on the public profile. Type thousands (k) — max 9999 — e.g. 235 = Rp 235k, 1200 = Rp 1.2jt.">
+      <Card title="Base prices" hint="Shown on the public profile. Type thousands — e.g. 235 = Rp 235k, 1200 = Rp 1.2jt (max 9999).">
         <div className="grid grid-cols-3 gap-2">
-          {(['makeup','nail','hair'] as const).map((k) => (
-            <label key={k} className="block">
-              <span className="text-[12px] font-bold text-white/70 mb-1 inline-block uppercase tracking-wide">{k}</span>
-              <div className="relative">
-                <input
-                  type="number" min={0} max={9999}
-                  value={f[`price_${k}_idr` as const] as string | number}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    if (v === '') { upd(`price_${k}_idr` as const, ''); return }
-                    const n = Number(v)
-                    if (Number.isFinite(n) && n <= 9999) upd(`price_${k}_idr` as const, v)
-                  }}
-                  placeholder="—"
-                  className={inputCls + ' pr-7 text-center font-bold'}
-                />
-                <span aria-hidden className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-white/50 pointer-events-none select-none">k</span>
-              </div>
-            </label>
-          ))}
+          {(['makeup','nail','hair'] as const).map((k) => {
+            const raw = f[`price_${k}_idr` as const]
+            const n   = raw === '' ? null : Number(raw)
+            const isJt = n !== null && Number.isFinite(n) && n >= 1000
+            const suffix = isJt ? 'jt' : 'k'
+            const preview =
+              n === null || !Number.isFinite(n) || n <= 0 ? null
+              : isJt
+                ? `Rp ${(n / 1000) % 1 === 0 ? (n / 1000).toFixed(0) : (n / 1000).toFixed(1)}jt`
+                : `Rp ${n}k`
+            return (
+              <label key={k} className="block">
+                <span className="text-[12px] font-bold text-white/70 mb-1 inline-block uppercase tracking-wide">{k}</span>
+                <div className="relative">
+                  <input
+                    type="number" min={0} max={9999}
+                    value={raw as string | number}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (v === '') { upd(`price_${k}_idr` as const, ''); return }
+                      const next = Number(v)
+                      if (Number.isFinite(next) && next <= 9999) upd(`price_${k}_idr` as const, v)
+                    }}
+                    placeholder="—"
+                    className={inputCls + ' pr-9 text-center font-bold'}
+                  />
+                  <span aria-hidden className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-yellow-300 pointer-events-none select-none">
+                    {suffix}
+                  </span>
+                </div>
+                <div className="text-[10px] font-bold text-white/55 text-center mt-1 tabular-nums min-h-[14px]">
+                  {preview ?? ' '}
+                </div>
+              </label>
+            )
+          })}
         </div>
       </Card>
 

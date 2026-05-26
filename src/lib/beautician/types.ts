@@ -114,6 +114,11 @@ export type BeauticianServicePhoto = {
   name?:        string         // header — e.g. "Nail Art"
   description?: string         // ≤500 chars including spaces
   price_idr?:   number | null  // start price, IDR
+  /** CSS object-position override for the carousel card crop. Use
+   *  values like "center", "bottom", "top", "50% 75%". Useful when
+   *  a portrait photo's subject sits below center and the default
+   *  center-crop hides it. */
+  object_position?: string
 }
 
 export const SERVICE_LABELS = {
@@ -244,6 +249,77 @@ export const BANNER_LIBRARY: Record<string, Partial<Record<BeauticianServiceOffe
   '#B91C1C': {},
   '#9333EA': {},
   '#0D9488': {},
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// "About" decorative image — auto-picked from the beautician's theme
+// color. Each entry is the same illustration recoloured per palette
+// family. When the theme hex falls outside the supported families
+// (e.g. an unusual custom hex), aboutImageForTheme falls back to
+// the gray variant so the section never renders empty.
+// ─────────────────────────────────────────────────────────────────────────
+export const ABOUT_IMAGE_BY_FAMILY = {
+  red:    'https://ik.imagekit.io/nepgaxllc/red.png',
+  orange: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdaaaa.png',
+  yellow: 'https://ik.imagekit.io/nepgaxllc/Untitleddddas.png',
+  green:  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdaaaa.png',
+  blue:   'https://ik.imagekit.io/nepgaxllc/Untitledccccc.png',
+  purple: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadaaa.png',
+  pink:   'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasdasdasdasdas.png',
+  cream:  'https://ik.imagekit.io/nepgaxllc/da.png',
+  gray:   'https://ik.imagekit.io/nepgaxllc/Untitleddasdaaaaaa.png',
+} as const
+
+/** Classify a hex into the broadest color family using HSL. Tuned so
+ *  the entire Tailwind-style palette (Pink/Rose/Fuchsia/Purple/Violet/
+ *  Blue/Sky/Cyan/Teal/Emerald/Green/Lime/Yellow/Amber/Orange/Red, plus
+ *  Stone/Gray neutrals) lands on a sensible family. Returns null only
+ *  when the hex string is malformed. */
+export function classifyColorFamily(hex: string | null | undefined):
+  keyof typeof ABOUT_IMAGE_BY_FAMILY | null {
+  if (typeof hex !== 'string') return null
+  const m = /^#([0-9A-Fa-f]{6})$/.exec(hex.trim())
+  if (!m) return null
+  const r = parseInt(m[1].slice(0, 2), 16) / 255
+  const g = parseInt(m[1].slice(2, 4), 16) / 255
+  const b = parseInt(m[1].slice(4, 6), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  const d = max - min
+  let h = 0
+  let s = 0
+  if (d !== 0) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) * 60; break
+      case g: h = ((b - r) / d + 2) * 60; break
+      case b: h = ((r - g) / d + 4) * 60; break
+    }
+  }
+  // Neutrals first — desaturated colors don't read as any hue.
+  if (s < 0.10) return 'gray'
+  // Cream — warm pastel beige (high lightness, low-to-mid saturation,
+  // hue in the orange/yellow band).
+  if (l >= 0.82 && s <= 0.45 && h >= 20 && h <= 60) return 'cream'
+  // Hue-based families. Pink is split off red so light-rose tones land
+  // on the pink illustration instead of the red one.
+  if (h >= 305 && h <= 345) return 'pink'
+  if (h >= 260 && h <  305) return 'purple'
+  if (h >= 170 && h <  260) return 'blue'
+  if (h >=  72 && h <  170) return 'green'
+  if (h >=  45 && h <   72) return 'yellow'
+  if (h >=  18 && h <   45) return 'orange'
+  // Red zone wraps around 0°. Light-end goes to pink, dark/strong to red.
+  return l > 0.70 ? 'pink' : 'red'
+}
+
+/** Pick the About-section decorative image for a given theme hex.
+ *  Falls back to the gray variant whenever the hex is missing or
+ *  classifies outside the supported families. */
+export function aboutImageForTheme(hex: string | null | undefined): string {
+  const fam = classifyColorFamily(hex)
+  if (!fam) return ABOUT_IMAGE_BY_FAMILY.gray
+  return ABOUT_IMAGE_BY_FAMILY[fam]
 }
 
 /** Stable per-URL number 1–9999 (djb2 hash). Same URL always returns the

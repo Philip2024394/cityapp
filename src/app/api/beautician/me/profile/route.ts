@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       for (const raw of v) {
         // String shape (legacy): just the URL.
         // Object shape (new):    { url, name?, description?, price_idr? }
-        let url: string, name: string | undefined, description: string | undefined, price: number | null | undefined
+        let url: string, name: string | undefined, description: string | undefined, price: number | null | undefined, objectPosition: string | undefined
         if (typeof raw === 'string') {
           url = raw.trim()
         } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -181,6 +181,20 @@ export async function POST(req: Request) {
           } else if (o.price_idr === null) {
             price = null
           }
+          // object_position — short CSS object-position string used to
+          // shift the carousel crop when the subject sits off-center
+          // in the source image. Accept up to 40 chars, alnum + space
+          // + % so we don't open the field to arbitrary CSS injection.
+          if (o.object_position !== undefined) {
+            if (typeof o.object_position !== 'string') {
+              return NextResponse.json({ error: 'invalid_object_position' }, { status: 400 })
+            }
+            const op = o.object_position.trim()
+            if (op.length > 40 || !/^[a-zA-Z0-9 %.-]*$/.test(op)) {
+              return NextResponse.json({ error: 'invalid_object_position' }, { status: 400 })
+            }
+            objectPosition = op || undefined
+          }
         } else {
           return NextResponse.json({ error: 'invalid_service_photo_entry' }, { status: 400 })
         }
@@ -189,9 +203,10 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: 'invalid_service_photo_host' }, { status: 400 })
         }
         const entry: Record<string, unknown> = { url }
-        if (name)        entry.name = name
-        if (description) entry.description = description
+        if (name)           entry.name = name
+        if (description)    entry.description = description
         if (price !== undefined) entry.price_idr = price
+        if (objectPosition) entry.object_position = objectPosition
         entries.push(entry)
       }
       if (entries.length > 0) cleaned[k] = entries

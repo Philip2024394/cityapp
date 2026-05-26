@@ -1,19 +1,22 @@
--- Bring Mira / Ayu / Rina to full parity with Dewi:
---   • Same services_offered (6 services)
---   • Same marketplace_categories (3 primary_cats)
---   • Same service_photos shape (4 photos per service, rich object form)
+-- Bring Mira / Ayu / Rina to full parity with Dewi BUT differentiated:
+--   • Each gets a DIFFERENT theme color (yellow / orange / dark red)
+--   • Each gets a DIFFERENT banner pulled from the Dewi pink library
+--     (set as cover_image_url so the marketplace cards don't look identical)
+--   • Each gets a DIFFERENT services_offered profile + marketplace_categories
+--     so they show up under separate filter groups in the marketplace
+--   • Same service_photos pack across all (founder will swap per-vendor
+--     photos later — visual variety comes from the unique cover banner)
 --   • Full bios (240-280 chars, Indonesian, beautician-flavored)
 --   • Operating hours
---   • Distinct theme colors per founder spec (yellow / orange / dark red)
 --
--- Reuses the same 4 ImageKit URLs across all beauticians (we don't have
--- per-beautician photos yet — visual parity is the goal).
+-- Banner pool (from BANNER_LIBRARY['#EC4899']):
+--   • Mira  (yellow, bridal/makeup) → makeup banner #5920 (ChatGPT May 25 03:13:30)
+--   • Ayu   (orange, nails/lashes)  → nails banner  #2761 (ChatGPT May 25 03:48:55)
+--   • Rina  (dark red, skin)        → whitening banner #7494 (Untitleddasda…dasd)
+-- These are the same URLs the library shows so any image-host caching
+-- still works.
 
-with shared_services as (
-  select array['makeup','nails','hair','skin','lashes','brows']::text[] as svcs,
-         array['makeup','nails','hair']::text[] as primary_cats
-),
-photo_pack as (
+with photo_pack as (
   -- Same JSONB shape Dewi has, just parameterised by reviewer-tone bio.
   select jsonb_build_object(
     'makeup', jsonb_build_array(
@@ -50,10 +53,20 @@ photo_pack as (
 )
 
 update public.beautician_providers
-   set services_offered       = (select svcs from shared_services),
-       marketplace_categories = (select primary_cats from shared_services),
-       service_photos         = (select photos from photo_pack),
-       operating_hours        = '{"mon":"10:00-19:00","tue":"10:00-19:00","wed":"10:00-19:00","thu":"10:00-19:00","fri":"10:00-19:00","sat":"10:00-17:00"}'::jsonb,
+   set services_offered = case slug
+         when 'demo-bp-mira' then array['makeup','hair','brows','bridal','lashes']::text[]
+         when 'demo-bp-ayu'  then array['nails','lashes','brows','waxing','facial']::text[]
+         when 'demo-bp-rina' then array['skin','facial','whitening','makeup','hair']::text[]
+         else services_offered
+       end,
+       marketplace_categories = case slug
+         when 'demo-bp-mira' then array['bridal','makeup','hair']::text[]
+         when 'demo-bp-ayu'  then array['nails','lashes','brows']::text[]
+         when 'demo-bp-rina' then array['skin','whitening','facial']::text[]
+         else marketplace_categories
+       end,
+       service_photos = (select photos from photo_pack),
+       operating_hours = '{"mon":"10:00-19:00","tue":"10:00-19:00","wed":"10:00-19:00","thu":"10:00-19:00","fri":"10:00-19:00","sat":"10:00-17:00"}'::jsonb,
        bio = case slug
          when 'demo-bp-mira' then E'Beautician profesional 7+ tahun di Yogyakarta, spesialis bridal & soft glam makeup.\nMobile service ke hotel/villa area Yogya, Bantul, Sleman.\nPeralatan profesional, sterilisasi lengkap, hasil tahan seharian.\nBooking via WhatsApp — respons cepat & jadwal fleksibel weekend.'
          when 'demo-bp-ayu'  then E'Beautician dengan pengalaman 9 tahun, spesialis nail art & lash extension.\nMobile service ke seluruh area Yogyakarta dan sekitarnya.\nPeralatan profesional, gel polish premium, hasil tahan minimal 3 minggu.\nBooking via WhatsApp — respons cepat & ramah konsultasi.'
@@ -62,8 +75,53 @@ update public.beautician_providers
        end,
        theme_color = case slug
          when 'demo-bp-mira' then '#FACC15'  -- yellow
-         when 'demo-bp-ayu'  then '#F97316'  -- orange (already orange)
+         when 'demo-bp-ayu'  then '#F97316'  -- orange
          when 'demo-bp-rina' then '#B91C1C'  -- dark red
          else theme_color
+       end,
+       -- Distinct cover banners pulled from the existing pink library.
+       -- Each mock gets a banner that matches their category specialty,
+       -- regardless of theme_color, so the marketplace cards visually
+       -- differ at a glance.
+       cover_image_url = case slug
+         when 'demo-bp-mira' then 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2003_13_30%20PM.png?updatedAt=1779696825678'
+         when 'demo-bp-ayu'  then 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2003_48_55%20PM.png?updatedAt=1779698955570'
+         when 'demo-bp-rina' then 'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasdasdasdsdadsdddsasddsdassddasdaddsdsdasd.png'
+         else cover_image_url
+       end,
+       -- Hero text overlay on the banner — each mock pitches a
+       -- different specialty so the public profile reads as a
+       -- distinct positioning. line2 (the bold word) is tinted with
+       -- the mock's theme_color; line1 + tagline stay neutral so they
+       -- stay readable on any cover image.
+       hero_text = case slug
+         when 'demo-bp-mira' then jsonb_build_object(
+           'line1',         'Bridal',
+           'line2',         'Glow',
+           'tagline',       'Soft glam makeup & hair for your big day',
+           'color',         '#FACC15',
+           'line1_color',   '#000000',
+           'tagline_color', '#000000',
+           'effect',        'shimmer'
+         )
+         when 'demo-bp-ayu' then jsonb_build_object(
+           'line1',         'Nail Art',
+           'line2',         'Studio',
+           'tagline',       'Gel polish, lash extensions, brow shaping',
+           'color',         '#F97316',
+           'line1_color',   '#000000',
+           'tagline_color', '#000000',
+           'effect',        'underline'
+         )
+         when 'demo-bp-rina' then jsonb_build_object(
+           'line1',         'Skin',
+           'line2',         'Therapy',
+           'tagline',       'Whitening, facial, glow — medical-grade products',
+           'color',         '#B91C1C',
+           'line1_color',   '#000000',
+           'tagline_color', '#000000',
+           'effect',        'none'
+         )
+         else hero_text
        end
  where slug in ('demo-bp-mira','demo-bp-ayu','demo-bp-rina');

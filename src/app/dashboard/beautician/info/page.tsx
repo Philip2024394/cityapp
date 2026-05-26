@@ -1,8 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ChevronLeft, Locate, Camera, User, Phone, MapPin, ShieldCheck } from 'lucide-react'
+import { Locate, Camera, User, Phone, MapPin, ShieldCheck } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
@@ -24,7 +23,6 @@ type Extras = {
 type FullProvider = BeauticianProvider & Extras
 
 export default function BeauticianInfoPage() {
-  const router = useRouter()
   const [provider, setProvider] = useState<FullProvider | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [err,      setErr]      = useState<string | null>(null)
@@ -66,13 +64,6 @@ export default function BeauticianInfoPage() {
   return (
     <Shell>
       <div className="px-4 pt-3 pb-28 max-w-lg mx-auto">
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard/beautician')}
-          className="inline-flex items-center gap-1 text-white/70 hover:text-white text-[13px] font-bold mb-3"
-        >
-          <ChevronLeft size={16} /> Back
-        </button>
         <header className="mb-5">
           <h1 className="text-[24px] font-black text-white leading-tight">Profile info</h1>
           <p className="text-[13px] text-white/70 mt-1">What customers see first — name, photo, contact, and service area.</p>

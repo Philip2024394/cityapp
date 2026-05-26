@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Star, Award, Menu, Home, Hotel, Building2, Share2, Link2, MessageCircle, X, ChevronLeft, BadgeCheck, MapPin, Bike, type LucideIcon } from 'lucide-react'
@@ -11,6 +11,7 @@ import { Sparkles } from 'lucide-react'
 import {
   BEAUTICIAN_SERVICES_OFFERED,
   SERVICE_OFFERED_LABELS,
+  aboutImageForTheme,
   type BeauticianProviderPublic,
   type BeauticianServiceOffered,
   type BeauticianServicePhoto,
@@ -299,8 +300,8 @@ export default function BeauticianProviderPage() {
               <div className="flex items-center gap-1 mt-1">
                 <Star
                   className="w-3.5 h-3.5 shrink-0"
-                  style={{ color: '#EC4899' }}
-                  fill="#EC4899"
+                  style={{ color: '#FACC15' }}
+                  fill="#FACC15"
                   strokeWidth={0}
                 />
                 <span className="text-[12px] font-extrabold text-black">
@@ -312,13 +313,16 @@ export default function BeauticianProviderPage() {
               </div>
             </div>
 
-            {/* Top Rated Seller badge */}
+            {/* Top Rated Seller badge — neutral gray pill so the chip
+                stays unchanged across profiles; only the Award icon +
+                text tint the active profile theme color so Mira/Ayu/
+                Rina/Dewi each show their own accent. */}
             <div
               className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
               style={{ background: '#F3F4F6' }}
             >
-              <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: '#EC4899' }} />
-              <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: '#EC4899' }}>
+              <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: theme }} />
+              <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
                 Top Rated Seller
               </span>
             </div>
@@ -386,18 +390,33 @@ export default function BeauticianProviderPage() {
               <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
             )}
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitleddsafasdfasd-removebg-preview.png"
+              src={aboutImageForTheme(theme)}
               alt=""
-              className="w-12 h-12 object-contain shrink-0"
+              className="w-[58px] h-[58px] object-contain shrink-0"
             />
           </div>
         </section>
 
-        {/* Services Provided — 3 visible chips + pink burger toggle on
-            the same line. Each chip is a filter: tap to scope the
-            portfolio carousel to that service's photos. */}
-        {(p.services_offered ?? []).length > 0 && (() => {
-          const all     = (p.services_offered ?? []) as BeauticianServiceOffered[]
+        {/* Services Provided — only renders services that actually have
+            at least one "live" carousel entry (image + description).
+            Empty placeholder services don't deserve a public badge. */}
+        {(() => {
+          const offered = (p.services_offered ?? []) as BeauticianServiceOffered[]
+          if (offered.length === 0) return null
+          const sp = p.service_photos ?? {}
+          const live = offered.filter((sid) => {
+            const arr = sp[sid]
+            if (!Array.isArray(arr)) return false
+            return arr.some((item) =>
+              item && typeof item === 'object'
+              && typeof (item as { url?: unknown }).url === 'string'
+              && (item as { url: string }).url.trim().length > 0
+              && typeof (item as { description?: unknown }).description === 'string'
+              && (item as { description: string }).description.trim().length > 0
+            )
+          })
+          if (live.length === 0) return null
+          const all     = live
           const visible = all.slice(0, 3)
           const hidden  = all.slice(3)
           const hasMore = hidden.length > 0
@@ -407,6 +426,23 @@ export default function BeauticianProviderPage() {
                 Services Provided
               </h2>
               <div className="flex flex-wrap items-center gap-1.5">
+                {/* "All" reset chip — clears any active service filter
+                    so the portfolio carousel shows photos from every
+                    category again. Highlighted with the theme when no
+                    filter is active. */}
+                <button
+                  type="button"
+                  onClick={() => setActiveService(null)}
+                  aria-pressed={activeService === null}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
+                  style={
+                    activeService === null
+                      ? { background: theme, color: '#FFFFFF' }
+                      : { background: '#F3F4F6', color: '#374151' }
+                  }
+                >
+                  All
+                </button>
                 {visible.map((sid) => (
                   <ServiceFilterBadge
                     key={sid} sid={sid}
@@ -440,15 +476,6 @@ export default function BeauticianProviderPage() {
                   ))}
                 </div>
               )}
-              {activeService && (
-                <button
-                  type="button"
-                  onClick={() => setActiveService(null)}
-                  className="text-[11px] font-bold text-gray-500 hover:text-black underline"
-                >
-                  Showing only {SERVICE_OFFERED_LABELS[activeService]} — show all
-                </button>
-              )}
             </section>
           )
         })()}
@@ -468,33 +495,17 @@ export default function BeauticianProviderPage() {
               <p className="text-[11px] text-gray-500 italic -mt-1">
                 Please contact for additional services not listed
               </p>
-              {/* Auto-scrolling portfolio — slow left-drift marquee.
-                  Cards are duplicated so the loop seams invisibly.
-                  Hover/touch pauses so users can read & tap. */}
-              <div className="-mx-4 px-4 overflow-hidden">
-                <style>{`@keyframes cr-portfolio-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}.cr-portfolio-track:hover,.cr-portfolio-track:focus-within{animation-play-state:paused}`}</style>
-                <div
-                  className="flex gap-2.5 w-max cr-portfolio-track"
-                  style={{ animation: `cr-portfolio-marquee ${Math.max(20, photos.length * 6)}s linear infinite` }}
-                >
-                  {photos.map((photo, i) => (
-                    <PortfolioCard
-                      key={photo.url + i}
-                      photo={photo}
-                      onViewDetails={() => setDetailPhoto(photo)}
-                      theme={theme}
-                    />
-                  ))}
-                  {photos.map((photo, i) => (
-                    <PortfolioCard
-                      key={`d-${photo.url}-${i}`}
-                      photo={photo}
-                      onViewDetails={() => setDetailPhoto(photo)}
-                      theme={theme}
-                    />
-                  ))}
-                </div>
-              </div>
+              {/* Auto-drifting portfolio that the user can swipe/drag.
+                  rAF loop in PortfolioCarousel nudges scrollLeft by a
+                  fraction every frame. Pointerdown / touchstart / wheel
+                  pauses the drift for 2.5s so users can manually scroll
+                  without fighting the animation. Cards are duplicated
+                  so the seam at the loop boundary is invisible. */}
+              <PortfolioCarousel
+                photos={photos}
+                onViewDetails={setDetailPhoto}
+                theme={theme}
+              />
             </section>
           )
         })()}
@@ -515,8 +526,7 @@ export default function BeauticianProviderPage() {
               <span
                 key={k}
                 aria-hidden={k === 1 ? true : undefined}
-                className="px-8 text-[11px] font-extrabold tracking-wide"
-                style={{ color: theme }}
+                className="px-8 text-[16px] tracking-wide text-gray-500"
               >
                 {p.promo_text || 'Message me this week — exclusive promo on professional beauty service delivered straight to your home, hotel or villa, in the comfort of your stay.'} ✦
               </span>
@@ -650,8 +660,10 @@ export default function BeauticianProviderPage() {
       </a>
 
       {/* Footer Leave Review button — only renders when the Reviews
-          panel is active. Hidden on the main profile view. */}
-      {showReviews && (
+          panel is active AND the inline form isn't already open.
+          Hidden while the user is filling the form so it doesn't
+          obscure the Submit button. */}
+      {showReviews && !reviewFormOpen && (
         <button
           type="button"
           onClick={() => setReviewFormOpen(true)}
@@ -662,6 +674,18 @@ export default function BeauticianProviderPage() {
           Leave Review
         </button>
       )}
+
+      {/* Powered-by credit — sits just above the accent strip so it
+          shows on every public profile without intruding on the main
+          content. Small + low-contrast so it doesn't compete with
+          the beautician's branding. */}
+      <a
+        href="/"
+        className="fixed left-0 right-0 z-10 text-center text-[10px] font-bold tracking-wider uppercase text-gray-400 hover:text-gray-600 transition"
+        style={{ bottom: 8 }}
+      >
+        Powered by <span style={{ color: theme }}>cityriders.id</span>
+      </a>
 
       {/* Bottom accent bar — fixed to visible viewport edge. */}
       <div
@@ -694,6 +718,7 @@ export default function BeauticianProviderPage() {
               src={detailPhoto.url}
               alt={detailPhoto.name || ''}
               className="w-full aspect-square object-cover"
+              style={{ objectPosition: detailPhoto.object_position || 'center' }}
             />
             <div className="p-4 space-y-3">
               {detailPhoto.name && (
@@ -737,6 +762,108 @@ export default function BeauticianProviderPage() {
 }
 
 // Carousel card — image up top, name + 2-line description + start
+// Portfolio carousel — auto-drifts left at a slow pace and pauses on
+// user interaction so swipe/drag/wheel still works. Cards are
+// duplicated so the loop seam (when scrollLeft passes half-width and
+// wraps back to 0) is invisible.
+function PortfolioCarousel({
+  photos, onViewDetails, theme,
+}: {
+  photos: BeauticianServicePhoto[]
+  onViewDetails: (p: BeauticianServicePhoto) => void
+  theme: string
+}) {
+  const scrollerRef   = useRef<HTMLDivElement | null>(null)
+  const lastInteract  = useRef<number>(0)
+  // Detect user-initiated scroll (drag of native scrollbar) by
+  // comparing the scrollLeft right before vs after our own programmatic
+  // tick. If the value moved by more than the drift step, a human did
+  // it — pause the drift for a moment.
+  const lastAutoLeft  = useRef<number>(0)
+
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    // scrollLeft is rounded to integer pixels in most browsers, so we
+    // track the precise position in `pos` and only write the new
+    // scrollLeft when a full pixel has accumulated. Each write is also
+    // bracketed with scroll-behavior:auto inline so any inherited
+    // `scroll-behavior: smooth` won't add easing between frames (the
+    // easing makes the drift look like it's "jumping").
+    const SPEED_PX_PER_SEC = 22   // smooth slow drift
+    const PAUSE_MS         = 2500 // ignore drift this long after input
+
+    let rafId = 0
+    let lastT = performance.now()
+    let pos   = el.scrollLeft
+
+    function tick(now: number) {
+      if (!el) { rafId = requestAnimationFrame(tick); return }
+      const dt = (now - lastT) / 1000
+      lastT = now
+
+      const wallNow  = Date.now()
+      const drifting = wallNow - lastInteract.current > PAUSE_MS
+      const dragJump = Math.abs(el.scrollLeft - lastAutoLeft.current) > 3
+      if (dragJump) {
+        lastInteract.current = wallNow
+        pos = el.scrollLeft
+      } else if (drifting) {
+        pos += SPEED_PX_PER_SEC * dt
+        const halfWidth = el.scrollWidth / 2
+        if (halfWidth > 0 && pos >= halfWidth) pos -= halfWidth
+        const target = Math.round(pos)
+        if (target !== el.scrollLeft) el.scrollLeft = target
+      }
+      lastAutoLeft.current = el.scrollLeft
+      rafId = requestAnimationFrame(tick)
+    }
+    // Defeat any inherited smooth-scroll behavior — easing between our
+    // per-frame writes turns the drift into a stuttery slide.
+    el.style.scrollBehavior = 'auto'
+    rafId = requestAnimationFrame(tick)
+
+    function mark() { lastInteract.current = Date.now() }
+    el.addEventListener('pointerdown', mark)
+    el.addEventListener('touchstart',  mark, { passive: true })
+    el.addEventListener('wheel',       mark, { passive: true })
+    return () => {
+      cancelAnimationFrame(rafId)
+      el.removeEventListener('pointerdown', mark)
+      el.removeEventListener('touchstart',  mark)
+      el.removeEventListener('wheel',       mark)
+    }
+  }, [photos.length])
+
+  return (
+    <div
+      ref={scrollerRef}
+      className="-mx-4 px-4 overflow-x-auto overflow-y-hidden cr-portfolio-scroll"
+      style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+    >
+      <style>{`.cr-portfolio-scroll::-webkit-scrollbar{display:none}`}</style>
+      <div className="flex gap-2.5 w-max">
+        {photos.map((photo, i) => (
+          <PortfolioCard
+            key={photo.url + i}
+            photo={photo}
+            onViewDetails={() => onViewDetails(photo)}
+            theme={theme}
+          />
+        ))}
+        {photos.map((photo, i) => (
+          <PortfolioCard
+            key={`d-${photo.url}-${i}`}
+            photo={photo}
+            onViewDetails={() => onViewDetails(photo)}
+            theme={theme}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // price + "View Details" button below. ~180px wide so 2-line clamp
 // reads naturally on phones.
 function PortfolioCard({
@@ -756,6 +883,7 @@ function PortfolioCard({
         alt={photo.name || ''}
         loading="lazy"
         className="w-full h-[70px] object-cover bg-gray-100"
+        style={{ objectPosition: photo.object_position || 'center' }}
       />
       <div className="p-2 flex flex-col gap-1">
         <div className="text-[12px] font-black text-black leading-tight truncate">
@@ -860,12 +988,19 @@ function buildPortfolioPhotos(
   active: BeauticianServiceOffered | null,
 ): BeauticianServicePhoto[] {
   const sp = p.service_photos ?? {}
+  // Only show photos for categories the beautician actually offers.
+  // Old rows can carry leftover keys (e.g. shared seed packs put
+  // makeup/hair photos on a nails-only profile); those should not
+  // surface in the public carousel.
+  const offered = new Set<BeauticianServiceOffered>(p.services_offered ?? [])
   if (active) {
+    if (offered.size > 0 && !offered.has(active)) return []
     const arr = sp[active] ?? []
     return arr.map(normalisePhoto).filter((x): x is BeauticianServicePhoto => x !== null)
   }
   const ordered: BeauticianServicePhoto[] = []
   for (const cat of BEAUTICIAN_SERVICES_OFFERED) {
+    if (offered.size > 0 && !offered.has(cat.id)) continue
     const arr = sp[cat.id]
     if (!Array.isArray(arr)) continue
     for (const raw of arr) {
@@ -1040,23 +1175,26 @@ function ReviewsPanel({
   }
 
   return (
-    <section className="space-y-2" style={{ marginTop: -50 }}>
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-          Reviews
-        </h2>
-        <div className="text-[12px] font-bold text-gray-500">
-          <span className="text-black font-black text-[14px]">{avg > 0 ? avg.toFixed(1) : '—'}</span>
-          {' · '}{visible.length} {visible.length === 1 ? 'review' : 'reviews'}
+    <section className="space-y-2" style={{ marginTop: 24 }}>
+      {!formOpen && (
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+            Reviews
+          </h2>
+          <div className="text-[12px] font-bold text-gray-500">
+            <span className="text-black font-black text-[14px]">{avg > 0 ? avg.toFixed(1) : '—'}</span>
+            {' · '}{visible.length} {visible.length === 1 ? 'review' : 'reviews'}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Inline review form — triggered by the footer "Leave Review"
-          button. Renders only when formOpen is true. */}
+          button. Renders directly on the page background (no card
+          wrapper) so it doesn't feel like a nested popup. */}
       {formOpen && (
-        <div className="rounded-xl bg-white border border-pink-200 p-3 space-y-2.5 shadow-sm" style={{ borderTop: `3px solid ${theme}` }}>
+        <div className="space-y-2.5 px-1 pt-1">
           <div className="flex items-center justify-between">
-            <div className="text-[12px] font-extrabold text-black">Leave a review</div>
+            <div className="text-[13px] font-extrabold text-black">Leave a review</div>
             <button
               type="button"
               onClick={() => { setFormOpen(false); setErr(null) }}
@@ -1068,8 +1206,8 @@ function ReviewsPanel({
             </button>
           </div>
 
-          {/* 5-star picker — unselected stars show a light pink tint
-              so the affordance is obvious; selected stars go solid pink. */}
+          {/* 5-star picker — unselected stars are gray; selected stars
+              turn solid yellow so the chosen rating is unambiguous. */}
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => {
               const filled = i < stars
@@ -1082,10 +1220,10 @@ function ReviewsPanel({
                   className="p-1 active:scale-[0.9] transition"
                 >
                   <Star
-                    className="w-6 h-6 transition-colors"
+                    className="w-7 h-7 transition-colors"
                     strokeWidth={1.5}
-                    fill={filled ? theme : '#FCE7F3'}
-                    style={{ color: filled ? theme : '#F9A8D4' }}
+                    fill={filled ? '#FACC15' : '#D1D5DB'}
+                    style={{ color: filled ? '#FACC15' : '#9CA3AF' }}
                   />
                 </button>
               )
@@ -1098,14 +1236,14 @@ function ReviewsPanel({
             maxLength={60}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nama Anda"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] focus:outline-none focus:border-pink-500"
+            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none focus:border-pink-500"
           />
           <input
             type="tel"
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
             placeholder="WhatsApp (opsional, +62…)"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] focus:outline-none focus:border-pink-500"
+            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none focus:border-pink-500"
           />
           <div className="space-y-1">
             <textarea
@@ -1114,13 +1252,13 @@ function ReviewsPanel({
               rows={3}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Tulis pengalaman Anda (max 250 huruf)"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] resize-none focus:outline-none focus:border-pink-500"
+              className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-pink-500"
             />
-            <div className="text-[10px] text-gray-400 text-right">{comment.length}/250</div>
+            <div className="text-[10px] text-gray-500 text-right">{comment.length}/250</div>
           </div>
 
           {err && (
-            <div className="rounded-md border border-red-300 bg-red-50 text-red-700 text-[11px] px-2 py-1.5">
+            <div className="rounded-md border border-red-300 bg-red-50 text-red-700 text-[12px] px-2 py-1.5">
               {err}
             </div>
           )}
@@ -1129,18 +1267,18 @@ function ReviewsPanel({
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full text-white text-[12px] font-extrabold disabled:opacity-60 active:scale-[0.98] transition"
+            className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full text-white text-[13px] font-extrabold disabled:opacity-60 active:scale-[0.98] transition"
             style={{ background: theme }}
           >
             {submitting ? 'Submitting…' : 'Submit review'}
           </button>
-          <p className="text-[10px] text-gray-400 leading-snug">
-            Anti-spam: max 5 reviews / hour / network. WhatsApp tidak ditampilkan publik.
-          </p>
         </div>
       )}
 
-      {/* List */}
+      {/* List — hidden while the inline review form is open so the
+          user can focus on writing without the existing reviews + the
+          empty-state placeholder taking up screen space below. */}
+      {!formOpen && (
       <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
         {loading && visible.length === 0 && (
           <div className="text-[12px] text-gray-500 italic">Loading reviews…</div>
@@ -1183,6 +1321,7 @@ function ReviewsPanel({
           </div>
         ))}
       </div>
+      )}
     </section>
   )
 }
