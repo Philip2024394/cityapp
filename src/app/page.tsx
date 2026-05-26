@@ -163,20 +163,11 @@ export default function LandingPage() {
           link at the bottom of the page replaces the header join menu. */}
 
       {/* Hero — flex-1 so it fills the viewport between header and the
-          bottom edge. Content anchored to the TOP of the section
-          (items-start + pt-4) so the headline + lede stay in the hero
-          band on phones instead of being pushed off-screen by the 10
-          tile buttons below. Tight paddings + min-h-0 so flex can
-          shrink the section if content overflows. */}
-      <section className="relative z-20 px-4 pt-4 pb-3 flex-1 flex items-start min-h-0 overflow-hidden">
-        <div className="max-w-xl mx-auto text-center space-y-3 w-full">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/25">
-            <span className="dot-online !w-2 !h-2" />
-            <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider">
-              {t.pill}
-            </span>
-          </div>
-
+          bottom edge. Content anchored near the TOP with a generous
+          pt-8 push so the wordmark sits visually centred between the
+          (now-empty) header band and the tile grid below. */}
+      <section className="relative z-20 px-4 pt-8 pb-3 flex-1 flex items-start min-h-0 overflow-hidden">
+        <div className="max-w-xl mx-auto text-center space-y-4 w-full">
           <h1 className="text-[36px] sm:text-[48px] md:text-[56px] font-extrabold leading-[1.05] tracking-tight">
             {/* Founder-supplied wordmark replaces the motorbike-community
                 heading text. Locale-agnostic; the image sits where
