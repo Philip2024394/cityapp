@@ -32,7 +32,9 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
 //     (the live marketplace on /cari/rider, not the trip-planner map)
 
 function parseService(raw: string | null): ServiceType {
-  return raw === 'person' || raw === 'food' ? raw : 'parcel'
+  // Default service is now 'person' (Bike) — landing without a
+  // ?service= param resolves to Bike first per founder direction.
+  return raw === 'parcel' || raw === 'food' ? raw : 'person'
 }
 
 // Recently-used places — localStorage-backed quick-fill suggestions.
@@ -922,25 +924,17 @@ function ServiceSquare({
       prefetch
       aria-current={active ? 'page' : undefined}
       className="aspect-square flex flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition active:scale-95"
-      style={
-        active
-          ? {
-              // Active tile: solid brand-yellow with dark text + dark
-              // ring so it pops against the surrounding yellow card.
-              background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
-              color: '#0A0A0A',
-              boxShadow:
-                '0 8px 22px rgba(0,0,0,0.35), 0 0 0 2px rgba(10,10,10,0.55) inset',
-            }
-          : {
-              // Inactive tile: muted brand-yellow at lower opacity so it
-              // still reads as "yellow family" but obviously not the
-              // current selection.
-              background: 'rgba(250,204,21,0.55)',
-              color: 'rgba(10,10,10,0.75)',
-              border: '1px solid rgba(10,10,10,0.20)',
-            }
-      }
+      style={{
+        // Both states share the slate-900 page-background blue so the
+        // tiles read as inset chips against the yellow dropoff card.
+        // The only difference between active and inactive is the
+        // icon + label color: white for inactive, brand yellow for
+        // selected — same brand colour pair used everywhere else on
+        // the page.
+        background: '#0F172A',
+        color: active ? '#FACC15' : '#FFFFFF',
+        boxShadow: '0 6px 18px rgba(0,0,0,0.30)',
+      }}
     >
       {icon}
       {label}
