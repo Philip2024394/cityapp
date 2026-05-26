@@ -123,7 +123,15 @@ export default function AppNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 glass-strong pt-safe">
+      <header
+        className="sticky top-0 z-40 pt-safe"
+        style={{
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+        }}
+      >
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           {/* Brand block (logo + "City Rider" text) removed per founder
               request. The header bar stays so the right action (drawer
@@ -137,7 +145,7 @@ export default function AppNav() {
             <Link
               href="/"
               aria-label="Home"
-              className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-ink hover:bg-white/5 active:scale-95 transition"
+              className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-black hover:bg-gray-100 active:scale-95 transition"
             >
               <Home className="w-5 h-5" strokeWidth={2.5} />
             </Link>
