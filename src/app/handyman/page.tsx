@@ -174,8 +174,14 @@ function Inner() {
           </div>
         )}
 
-        <div className="mt-10 rounded-2xl bg-black/85 border border-white/10 p-5 text-center">
-          <div className="text-[13px] font-bold text-ink/80 mb-3">Are you a tukang?</div>
+        <div
+          className="mt-10 rounded-2xl p-5 text-center"
+          style={{
+            background: '#1E3A8A',                       // same navy as the specialty pill
+            border: '1px solid rgba(250,204,21,0.45)',   // soft yellow border
+          }}
+        >
+          <div className="text-[13px] font-bold text-white/85 mb-3">Are you a tukang?</div>
           <Link href="/handyman/signup" className="inline-flex items-center gap-2 rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider hover:brightness-105">
             List your profile · Rp 38.000/month
           </Link>
@@ -193,14 +199,6 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
   const primary = p.specialties?.[0] ?? null
   const specialtyLabel = primary ? SPECIALTY_LABELS[primary] : null
   const portfolioThumbs = (p.gallery_image_urls ?? []).slice(0, 3)
-
-  // Per-trade pill hue overrides. Yellow stays the brand default for
-  // most trades; specific specialties get their own colour so the chip
-  // reads as a quick visual cue. Add more entries here as needed.
-  const SPECIALTY_PILL_COLOR: Partial<Record<string, string>> = {
-    carpentry: '#1E40AF',  // dark blue for Tukang Kayu
-  }
-  const specialtyColor = primary ? SPECIALTY_PILL_COLOR[primary] ?? null : null
 
   // Subline summarises the credibility signals in one line — years
   // of experience + city + "own tools" badge when applicable.
@@ -240,7 +238,6 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
       bottomItems={bottomItems}
       ctaLabel="Profile"
       variant="light"
-      specialtyColor={specialtyColor}
     />
   )
 }

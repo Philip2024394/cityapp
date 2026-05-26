@@ -79,13 +79,9 @@ export type UniversalProviderCardProps = {
   /** Pre-computed dot state. Caller folds operating_hours into this. */
   availabilityDot:    'online' | 'busy' | 'offline'
   rating?:            number | null
-  /** Theme-tinted pill text — typically the primary service category. */
+  /** Specialty / primary service label. Rendered as a uniform navy +
+   *  yellow pill regardless of vertical or trade. */
   specialtyLabel?:    string | null
-  /** Optional override for the specialty pill colour. Defaults to the
-   *  card's themeColor — useful when a particular trade reads better
-   *  in a different hue (e.g. carpentry → dark blue). Only the pill
-   *  changes; the rest of the card keeps themeColor. */
-  specialtyColor?:    string | null
   /** Up to 3 image URLs for the mini portfolio strip. Caller may pass
    *  fewer; rows simply collapse. */
   portfolioThumbs?:   string[]
@@ -166,10 +162,8 @@ export default function UniversalProviderCard({
   bottomItems,
   ctaLabel = 'Profile',
   variant = 'dark',
-  specialtyColor,
 }: UniversalProviderCardProps) {
   const theme    = themeColor
-  const pillHue  = specialtyColor || themeColor
   const s = SURFACE[variant]
   const initials = displayName.charAt(0).toUpperCase()
   const hasRating = typeof rating === 'number' && rating > 0
@@ -307,14 +301,15 @@ export default function UniversalProviderCard({
             )}
           </div>
 
-          {/* Themed specialty pill (top-right of name block) */}
+          {/* Specialty pill — dark navy chip with brand-yellow text.
+              Uniform across every trade / vertical for visual consistency. */}
           {specialtyLabel && (
             <div
               className="shrink-0 px-2.5 py-1 rounded-full text-[12px] font-black uppercase tracking-wider"
               style={{
-                background: `${pillHue}22`,
-                color: pillHue,
-                border: `1px solid ${pillHue}60`,
+                background: '#1E3A8A',                  // navy (blue-900)
+                color:      '#FACC15',                  // brand yellow
+                border:     '1px solid rgba(250,204,21,0.45)',
               }}
             >
               {specialtyLabel}
