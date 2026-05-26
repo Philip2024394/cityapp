@@ -361,23 +361,26 @@ function PlanTripPageInner() {
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center hover:opacity-85 transition"
+            className="inline-flex items-baseline hover:opacity-85 transition"
             aria-label="IndoCity home"
           >
-            <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
-              alt="IndoCity"
-              className="h-8 sm:h-10 w-auto"
-              loading="eager"
-              /* Colorize the dark wordmark to brand yellow (#FACC15)
-                 via a tested filter chain. The white "Indo" portion in
-                 the source PNG passes through visually as the lighter
-                 highlight inside the yellow result. */
-              style={{
-                filter:
-                  'brightness(0) saturate(100%) invert(82%) sepia(73%) saturate(637%) hue-rotate(359deg) brightness(101%) contrast(101%)',
-              }}
-            />
+            {/* Two-tone wordmark rendered as text: "Indo" white,
+                "City" brand-yellow. A single PNG cannot be partially
+                recolored with CSS filters, so the wordmark is drawn
+                here directly. Swap back to an <img> once a pre-colored
+                two-tone asset is hosted. */}
+            <span
+              className="font-black tracking-tight text-[26px] sm:text-[32px] leading-none"
+              style={{ color: '#FFFFFF', letterSpacing: '-0.02em' }}
+            >
+              Indo
+            </span>
+            <span
+              className="font-black tracking-tight text-[26px] sm:text-[32px] leading-none"
+              style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
+            >
+              City
+            </span>
           </Link>
 
           {/* RIDERS-NEARBY BADGE — solid black pill, brand-yellow text,
