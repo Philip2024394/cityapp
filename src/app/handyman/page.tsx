@@ -3,7 +3,6 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Wrench, Search, Menu, X, DollarSign, Clock } from 'lucide-react'
-import AppNav from '@/components/layout/AppNav'
 import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
 import {
   SPECIALTY_LABELS, ALL_SPECIALTIES,
@@ -237,10 +236,11 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
 function Shell({ children }: { children: React.ReactNode }) {
   // Paint over the global PageBackground with solid white so the
   // marketplace reads as a clean directory page. Text colour switches
-  // to dark inks (ink → black via the surface).
+  // to dark inks (ink → black via the surface). AppNav (the dark
+  // sticky glass header) is intentionally omitted here per founder
+  // request — the rest of the app still gets it.
   return (
     <main className="relative min-h-screen bg-white text-black">
-      <AppNav />
       {children}
     </main>
   )
