@@ -207,7 +207,7 @@ export default function FavouritesPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-24">
+      <main className="min-h-[100dvh] pb-24">
         <div className="max-w-3xl mx-auto px-4 pt-3 space-y-5">
           <Link
             href="/dashboard"

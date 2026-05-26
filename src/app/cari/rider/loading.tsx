@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <main className="min-h-screen px-4 pt-6" style={{ background: '#0A0A0A' }}>
+    <main className="min-h-[100dvh] px-4 pt-6" style={{ background: '#0A0A0A' }}>
       <div className="max-w-xl mx-auto space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div

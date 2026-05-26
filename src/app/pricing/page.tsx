@@ -104,7 +104,7 @@ export default function PricingPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-32">
+      <main className="min-h-[100dvh] pb-32">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
           <div>
             <h1 className="text-2xl font-extrabold">Your pricing</h1>

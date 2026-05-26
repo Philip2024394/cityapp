@@ -439,7 +439,7 @@ function buildMonthCells(viewMonth: string): Array<{ iso: string; day: number; i
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen bg-white text-black">
+    <main className="relative min-h-[100dvh] bg-white text-black">
       <AppNav />
       {children}
     </main>

@@ -209,7 +209,7 @@ export default function DashboardLegalPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-32">
+      <main className="min-h-[100dvh] pb-32">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
           <Link href="/dashboard" className="text-[13px] text-muted hover:text-ink font-bold flex items-center gap-1">
             <ChevronLeft className="w-4 h-4" />

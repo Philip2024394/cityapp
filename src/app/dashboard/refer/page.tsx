@@ -105,7 +105,7 @@ ${shareUrl}`
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-28">
+      <main className="min-h-[100dvh] pb-28">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
           {/* Back nav */}
           <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink">

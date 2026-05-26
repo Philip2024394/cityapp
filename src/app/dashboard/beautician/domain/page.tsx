@@ -238,7 +238,7 @@ function Card({ title, hint, children }: { title?: string; hint?: string; childr
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen bg-white text-black">
+    <main className="relative min-h-[100dvh] bg-white text-black">
       <AppNav />
       {children}
     </main>

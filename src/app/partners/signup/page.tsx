@@ -194,7 +194,7 @@ export default function PartnerSignupPage() {
 // Shared shell — applies the partner background image to every state.
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
+    <main className="relative min-h-[100dvh] text-ink overflow-hidden">
       <div
         aria-hidden
         className="absolute inset-0 -z-10 bg-cover bg-center"
@@ -236,7 +236,7 @@ type T = typeof STRINGS[Locale]
 
 function AuthGate({ t, locale, setLocale }: { t: T; locale: Locale; setLocale: (l: Locale) => void }) {
   return (
-    <div className="flex items-center justify-center min-h-screen p-6">
+    <div className="flex items-center justify-center min-h-[100dvh] p-6">
       <div className="max-w-md w-full">
         <div className="flex justify-end mb-4"><LocaleToggle locale={locale} setLocale={setLocale} /></div>
         <div className="text-center mb-8">
@@ -277,7 +277,7 @@ function AuthGate({ t, locale, setLocale }: { t: T; locale: Locale; setLocale: (
 
 function Loading() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-[100dvh]">
       <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
     </div>
   )
@@ -285,7 +285,7 @@ function Loading() {
 
 function AlreadyPartner({ t }: { t: T }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] p-6 text-center">
       <div className="w-14 h-14 rounded-full bg-brand flex items-center justify-center mb-4">
         <svg className="w-7 h-7 text-bg" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -344,7 +344,7 @@ function RegistrationForm({
 
   if (done) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-6">
+      <div className="flex items-center justify-center min-h-[100dvh] p-6">
         <div className="max-w-md w-full text-center">
           <div className="w-16 h-16 mx-auto rounded-full bg-brand flex items-center justify-center mb-5">
             <svg className="w-8 h-8 text-bg" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">

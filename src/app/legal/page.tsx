@@ -14,7 +14,7 @@ export default function LegalIndexPage() {
   const entity = getLegalEntity()
   const hasEntity = !!(entity.name || entity.npwp || entity.address || entity.pseNumber)
   return (
-    <main className="min-h-screen pb-16">
+    <main className="min-h-[100dvh] pb-16">
       <header className="sticky top-0 z-40 glass-strong pt-safe">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center">
           <Link href="/" className="text-[13px] font-bold text-muted hover:text-ink flex items-center gap-1.5">

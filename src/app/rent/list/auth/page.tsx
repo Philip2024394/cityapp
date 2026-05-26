@@ -23,7 +23,7 @@ export default async function RentListAuthGatePage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-16">
+      <main className="min-h-[100dvh] pb-16">
         <div className="max-w-md mx-auto px-4 pt-6 pb-24 space-y-6">
           <header className="text-center space-y-2">
             <div

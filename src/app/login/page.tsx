@@ -104,7 +104,7 @@ function LoginInner() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen flex items-start justify-center pt-12 px-4 grid-bg">
+      <main className="min-h-[100dvh] flex items-start justify-center pt-12 px-4 grid-bg">
         <div className="w-full max-w-md card-dark p-6 space-y-5 mt-4">
           <div>
             <img

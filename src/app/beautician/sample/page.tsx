@@ -29,7 +29,7 @@ export default function SampleCardPage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-stone-100 text-stone-900">
+    <main className="min-h-[100dvh] bg-stone-100 text-stone-900">
       <header className="max-w-3xl mx-auto px-4 pt-8 pb-4">
         <Link href="/beautician" className="text-[12px] text-stone-500 hover:text-stone-900">
           ← back to live marketplace

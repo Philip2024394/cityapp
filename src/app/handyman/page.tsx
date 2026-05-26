@@ -254,7 +254,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // readable regardless of where the image's tonal values land.
   return (
     <main
-      className="relative min-h-screen text-black"
+      className="relative min-h-[100dvh] text-black"
       style={{
         backgroundImage: `linear-gradient(rgba(255,255,255,0.78), rgba(255,255,255,0.78)), url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2001_17_23%20AM.png')`,
         backgroundSize: 'cover',

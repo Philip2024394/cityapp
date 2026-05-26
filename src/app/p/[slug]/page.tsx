@@ -48,7 +48,7 @@ export default function PartnerLandingPage() {
 
   if (notFound) {
     return (
-      <main className="min-h-screen bg-bg text-ink flex flex-col items-center justify-center p-8 text-center">
+      <main className="min-h-[100dvh] bg-bg text-ink flex flex-col items-center justify-center p-8 text-center">
         <p className="text-[14px] font-bold mb-2">Mitra tidak ditemukan</p>
         <p className="text-[12px] text-ink/60 mb-6">Link ini tidak terdaftar atau sudah tidak aktif.</p>
         <button
@@ -62,7 +62,7 @@ export default function PartnerLandingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg text-ink flex flex-col items-center justify-center p-8 text-center">
+    <main className="min-h-[100dvh] bg-bg text-ink flex flex-col items-center justify-center p-8 text-center">
       <div className="w-16 h-16 rounded-full bg-brand flex items-center justify-center mb-6 animate-pulse">
         <svg className="w-8 h-8 text-bg" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

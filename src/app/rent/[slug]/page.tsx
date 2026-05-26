@@ -88,7 +88,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-16">
+      <main className="min-h-[100dvh] pb-16">
         <div className="max-w-2xl mx-auto px-4 pt-3">
           <Link href="/rent" className="inline-flex items-center gap-1.5 text-[13px] font-bold text-muted hover:text-ink mb-4">
             <ChevronLeft className="w-4 h-4" />

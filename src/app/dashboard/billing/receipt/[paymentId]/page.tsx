@@ -48,7 +48,7 @@ export default async function ReceiptPage({ params }: PageProps) {
   if (payment.status !== 'paid') {
     // Only generate kuitansi for successfully-paid transactions.
     return (
-      <main className="min-h-screen flex items-center justify-center p-6">
+      <main className="min-h-[100dvh] flex items-center justify-center p-6">
         <div className="card p-6 max-w-sm text-center space-y-3">
           <p className="text-[14px] text-muted">
             This transaction is not paid yet. Receipt is only available after payment confirmation.
@@ -78,7 +78,7 @@ export default async function ReceiptPage({ params }: PageProps) {
     : 'IndoCity — Tour Verified (1 bulan)'
 
   return (
-    <main className="min-h-screen pb-16">
+    <main className="min-h-[100dvh] pb-16">
       {/* Top nav — hidden when printing */}
       <header className="sticky top-0 z-40 glass-strong pt-safe print:hidden">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">

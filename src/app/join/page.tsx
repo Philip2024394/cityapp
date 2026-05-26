@@ -38,7 +38,7 @@ const CATEGORIES: ReadonlyArray<Tile> = [
 
 export default function JoinPage() {
   return (
-    <main className="relative min-h-screen bg-white text-black">
+    <main className="relative min-h-[100dvh] bg-white text-black">
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img

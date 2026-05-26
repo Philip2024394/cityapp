@@ -345,7 +345,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // the viewport (flex-1 spacer above pushes it down when content
   // is short; long content still scrolls naturally past it).
   return (
-    <main className="relative min-h-screen bg-white text-black flex flex-col">
+    <main className="relative min-h-[100dvh] bg-white text-black flex flex-col">
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img

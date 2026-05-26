@@ -7,7 +7,7 @@ export default function ForgotPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen flex items-start justify-center pt-12 px-4 grid-bg">
+      <main className="min-h-[100dvh] flex items-start justify-center pt-12 px-4 grid-bg">
         <div className="w-full max-w-md card p-6 space-y-5 mt-4">
           <Link href="/login" className="text-muted text-[13px] flex items-center gap-1 -mt-2 -ml-1 font-bold">
             <ChevronLeft className="w-4 h-4" />

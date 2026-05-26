@@ -441,7 +441,7 @@ function computeChecklist(p: FullProvider): Array<{
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink">
+    <main className="relative min-h-[100dvh] text-ink">
       <AppNav />
       {children}
     </main>

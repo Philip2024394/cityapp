@@ -103,7 +103,7 @@ export default function DashboardPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-28">
+      <main className="min-h-[100dvh] pb-28">
         <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
           <Greeting ME={ME} onShare={shareProfile} />
 

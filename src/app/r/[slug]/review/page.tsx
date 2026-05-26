@@ -94,7 +94,7 @@ export default function ReviewPage({ params }: { params: Promise<{ slug: string 
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-12">
+      <main className="min-h-[100dvh] pb-12">
         <div className="max-w-md mx-auto px-4 pt-3 space-y-4">
           <Link
             href={`/r/${slug}`}

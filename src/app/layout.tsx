@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import PageBackground from '@/components/layout/PageBackground'
 import RegisterServiceWorker from '@/components/pwa/RegisterServiceWorker'
+import InstallPrompt from '@/components/pwa/InstallPrompt'
 import PreloadTiles from '@/components/pwa/PreloadTiles'
 import CapacitorBoot from '@/components/pwa/CapacitorBoot'
 import DevToolbar from '@/components/dev/DevToolbar'
@@ -55,10 +56,14 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0A0A0A',
+  // White matches the new app surface (every page paints white). This
+  // colour also drives the mobile browser chrome tint + the PWA splash
+  // / status-bar background in standalone mode.
+  themeColor: '#FFFFFF',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // maximumScale removed — pinch-zoom is a baseline accessibility
+  // requirement; locking it down hurts low-vision users.
   viewportFit: 'cover',
 }
 
@@ -87,6 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PreloadTiles />
         <CapacitorBoot />
         {children}
+        <InstallPrompt />
         <DevToolbar />
       </body>
     </html>

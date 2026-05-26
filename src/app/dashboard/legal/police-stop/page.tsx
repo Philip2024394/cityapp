@@ -22,7 +22,7 @@ export default function PoliceStopPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-24">
+      <main className="min-h-[100dvh] pb-24">
         <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
           <Link
             href="/dashboard/legal"

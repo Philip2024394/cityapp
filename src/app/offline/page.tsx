@@ -18,7 +18,7 @@ export const metadata = {
 
 export default function OfflinePage() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: '#0A0A0A' }}>
+    <main className="min-h-[100dvh] flex items-center justify-center px-4 py-12" style={{ background: '#0A0A0A' }}>
       <div className="w-full max-w-sm text-center space-y-5">
         <div
           className="mx-auto w-20 h-20 rounded-full flex items-center justify-center"

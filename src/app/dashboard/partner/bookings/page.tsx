@@ -154,7 +154,7 @@ function PartnerBookingsInner() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
+    <main className="relative min-h-[100dvh] text-ink overflow-hidden">
       <div
         aria-hidden
         className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed"

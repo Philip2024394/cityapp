@@ -42,7 +42,7 @@ export default function RentalCompanyUpgradePage() {
 
   if (!authChecked) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
+      <main className="min-h-[100dvh] flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-brand" />
       </main>
     )
@@ -51,7 +51,7 @@ export default function RentalCompanyUpgradePage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-16">
+      <main className="min-h-[100dvh] pb-16">
         <div className="max-w-md mx-auto px-4 pt-4 pb-24 space-y-5">
           <Link href="/rent/list/new" className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-ink">
             <ChevronLeft className="w-4 h-4" /> Kembali

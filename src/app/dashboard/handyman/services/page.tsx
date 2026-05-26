@@ -260,7 +260,7 @@ const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-white overflow-hidden">
+    <main className="relative min-h-[100dvh] text-white overflow-hidden">
       <div aria-hidden className="fixed inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
       <div aria-hidden className="fixed inset-0 -z-10 bg-black/55" />
       <AppNav />

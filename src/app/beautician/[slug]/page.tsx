@@ -1234,11 +1234,11 @@ function HeroIcon({
 
 function Shell({ children }: { children: React.ReactNode }) {
   // Solid white paints over the global PageBackground (which sits at
-  // -z-10) so the courier scene doesn't show through here. min-h-screen
+  // -z-10) so the courier scene doesn't show through here. min-h-[100dvh]
   // lets the page scroll naturally so panels like Visit Us / Reviews
   // can extend past the initial viewport.
   return (
-    <main className="relative min-h-screen bg-white text-ink">
+    <main className="relative min-h-[100dvh] bg-white text-ink">
       {/* Hide the floating dev-toolbar wrench on this page only — the
           page is meant to read as a polished customer-facing profile
           and the spanner clutters the corner. Scoped to mount lifetime. */}

@@ -184,7 +184,7 @@ function SocialChip({ href, label }: { href: string; label: string }) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink">
+    <main className="relative min-h-[100dvh] text-ink">
       <AppNav />
       {children}
     </main>

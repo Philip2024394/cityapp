@@ -396,7 +396,7 @@ export default function PendingBookingPage() {
 
   if (!hydrated || !booking) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-6">
+      <main className="min-h-[100dvh] flex items-center justify-center p-6">
         <p className="text-[14px] text-muted">Loading…</p>
       </main>
     )
@@ -425,7 +425,7 @@ export default function PendingBookingPage() {
   const driverSession = sessionLengthLabel(booking.driverSessionStartedAt)
 
   return (
-    <main className="min-h-screen pb-32">
+    <main className="min-h-[100dvh] pb-32">
       {/* Header */}
       <header className="pt-safe">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">

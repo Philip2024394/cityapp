@@ -39,7 +39,7 @@ export default async function DashboardPlacesPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen pb-16">
+      <main className="min-h-[100dvh] pb-16">
         <AppNav />
         <div className="max-w-2xl mx-auto px-4 pt-6">
           <p className="text-red-400">{error.message}</p>
@@ -54,7 +54,7 @@ export default async function DashboardPlacesPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-16">
+      <main className="min-h-[100dvh] pb-16">
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-24 space-y-5">
           <header className="flex items-end justify-between gap-3">
             <div>

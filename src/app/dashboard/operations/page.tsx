@@ -340,7 +340,7 @@ export default function OperationsPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-24">
+      <main className="min-h-[100dvh] pb-24">
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-5">
           <Link
             href="/dashboard"

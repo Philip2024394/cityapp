@@ -180,5 +180,5 @@ function PartnerBalanceRow({ balance: b }: { balance: Balance }) {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="min-h-screen bg-bg text-ink">{children}</main>
+  return <main className="min-h-[100dvh] bg-bg text-ink">{children}</main>
 }

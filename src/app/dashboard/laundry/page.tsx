@@ -282,7 +282,7 @@ function PriceInput({ label, v, onChange }: { label: string; v: string | number;
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen bg-white text-black">
+    <main className="relative min-h-[100dvh] bg-white text-black">
       <AppNav />
       {children}
     </main>

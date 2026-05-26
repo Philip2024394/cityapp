@@ -124,7 +124,7 @@ export default function BusinessDirectoryPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-20">
+      <main className="min-h-[100dvh] pb-20">
         <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
 
           {/* Hero — frames the value clearly for a business owner */}

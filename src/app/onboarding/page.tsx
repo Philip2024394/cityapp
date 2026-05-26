@@ -372,7 +372,7 @@ function OnboardingInner() {
     return (
       <>
         <AppNav />
-        <main className="min-h-screen flex items-center justify-center text-muted">
+        <main className="min-h-[100dvh] flex items-center justify-center text-muted">
           <Loader2 className="w-5 h-5 animate-spin" />
         </main>
       </>
@@ -382,7 +382,7 @@ function OnboardingInner() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pt-6 pb-20 px-4 grid-bg">
+      <main className="min-h-[100dvh] pt-6 pb-20 px-4 grid-bg">
         <div className="w-full max-w-md mx-auto space-y-4">
           {isEditMode && (
             <div

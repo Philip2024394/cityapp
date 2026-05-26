@@ -1042,7 +1042,7 @@ function formatReviewWhen(iso: string): string {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen bg-white text-ink">
+    <main className="relative min-h-[100dvh] bg-white text-ink">
       <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
       {children}
     </main>

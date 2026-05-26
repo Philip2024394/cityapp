@@ -386,7 +386,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     const reason: 'busy' | 'offline' | 'lapsed' =
       subLapsed ? 'lapsed' : isBusy ? 'busy' : 'offline'
     return (
-      <main className="min-h-screen pb-16">
+      <main className="min-h-[100dvh] pb-16">
         <PageBackground />
         <BackNav />
         <div className="max-w-2xl mx-auto px-4 pt-2">
@@ -410,7 +410,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
   // ONLINE view
   return (
-    <main className="min-h-screen pb-6">
+    <main className="min-h-[100dvh] pb-6">
       <PageBackground />
       <BackNav />
       <div className="max-w-2xl mx-auto px-4 pt-2 space-y-4">

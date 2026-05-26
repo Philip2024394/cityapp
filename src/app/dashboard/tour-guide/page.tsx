@@ -47,7 +47,7 @@ export default async function DashboardTourGuidePage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-16 bg-white text-black">
+      <main className="min-h-[100dvh] pb-16 bg-white text-black">
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-24 space-y-5">
           <TourGuideSubscriptionBanner />
           <header className="flex items-end justify-between gap-3">

@@ -26,7 +26,7 @@ export default function DashboardError({
   }, [error])
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0A0A0A' }}>
+    <main className="min-h-[100dvh] flex items-center justify-center px-4" style={{ background: '#0A0A0A' }}>
       <div className="w-full max-w-sm text-center space-y-4">
         <div
           className="mx-auto w-16 h-16 rounded-full flex items-center justify-center"

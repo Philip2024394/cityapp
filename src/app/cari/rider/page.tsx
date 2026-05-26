@@ -131,7 +131,7 @@ function DriverResults() {
   // If trip missing, bounce to /cari
   if (!pickup || !dropoff) {
     return (
-      <main className="min-h-screen p-6 flex items-center justify-center">
+      <main className="min-h-[100dvh] p-6 flex items-center justify-center">
         <div className="card p-6 text-center max-w-sm">
           <p className="text-[14px] text-muted">Trip not set.</p>
           <Link href="/cari" className="btn-primary mt-4 w-full">Plan a trip first</Link>
@@ -288,7 +288,7 @@ function DriverResults() {
     <>
       <Header />
 
-      <main className="min-h-screen pb-16">
+      <main className="min-h-[100dvh] pb-16">
         <div className="max-w-xl mx-auto px-4 pt-3 space-y-4">
           {/* Trip summary — boarding-pass. Black body (left) + brand-yellow
               stub (right), with punched cut-outs at the colour seam. */}
@@ -927,7 +927,7 @@ function Header() {
 
 function LoadingShell() {
   return (
-    <main className="min-h-screen p-4 space-y-3">
+    <main className="min-h-[100dvh] p-4 space-y-3">
       <div className="card h-24 shimmer" />
       <div className="card h-32 shimmer" />
       <div className="card h-32 shimmer" />

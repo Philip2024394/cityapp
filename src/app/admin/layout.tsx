@@ -6,7 +6,7 @@ import AdminNav from './AdminNav'
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireAdmin()
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       <AdminNav adminName={profile.full_name || profile.phone} />
       <main className="max-w-5xl mx-auto px-4 pt-4 pb-16">
         {children}
