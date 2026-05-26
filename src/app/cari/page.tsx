@@ -2,7 +2,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase, Utensils, Car as CarIcon } from 'lucide-react'
+import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase, Utensils, Car as CarIcon, Bus as BusIcon } from 'lucide-react'
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
@@ -23,6 +23,7 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
   parcel: { pickup: 'Where to pick up the package?',      dropoff: 'Destination address' },
   food:   { pickup: 'Restaurant or warung name',           dropoff: 'Drop-off address' },
   car:    { pickup: 'Where do you want to be picked up?',  dropoff: 'Where do you want to go?' },
+  bus:    { pickup: 'Group pickup location',               dropoff: 'Destination or tour itinerary' },
 }
 
 // Nearby-rider scatter has been removed (audit 2026-05). The previous
@@ -35,7 +36,7 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
 function parseService(raw: string | null): ServiceType {
   // Default service is 'person' (Bike) — landing without a ?service=
   // param resolves to Bike first per founder direction.
-  if (raw === 'parcel' || raw === 'food' || raw === 'car') return raw
+  if (raw === 'parcel' || raw === 'food' || raw === 'car' || raw === 'bus') return raw
   return 'person'
 }
 
@@ -271,11 +272,16 @@ function PlanTripPageInner() {
     if (queryLat == null || queryLng == null) return
     const ctrl = new AbortController()
     // vehicleType maps from the customer-facing service tab:
-    //   service='car'                            → vehicle_type='car'
-    //   service='person'|'parcel'|'food'         → vehicle_type='bike'
+    //   service='car' → vehicle_type='car'
+    //   service='bus' → vehicle_type='minibus'  (Hiace / Avanza / Innova)
+    //   service='person'|'parcel'|'food' → vehicle_type='bike'
     // Bike is the default for the three motorbike-based services
-    // (person ride, parcel courier, food delivery).
-    const vehicleType = service === 'car' ? 'car' : 'bike'
+    // (person ride, parcel courier, food delivery — bike riders pick up
+    // food too, so a separate Food tile would be redundant).
+    const vehicleType =
+      service === 'car' ? 'car'
+      : service === 'bus' ? 'minibus'
+      : 'bike'
     const params = new URLSearchParams({
       lat: queryLat.toFixed(4),
       lng: queryLng.toFixed(4),
@@ -833,10 +839,20 @@ function PlanTripPageInner() {
                 + label (high contrast against the yellow dropoff tile).
                 Inactive tiles = translucent black so the eye reads them
                 as alternates to the current mode. */}
+            {/* Service squares — 4 surfaced selectors:
+                Bike (person rides + food delivery implicitly), Car,
+                Parcel, Bus (group transport via minibus — Hiace /
+                Avanza / Innova for Yogya/Bali tourism). Food was
+                dropped because a bike rider will collect food
+                anyway (founder direction).
+                The 'food' ServiceType still exists in the type system
+                and accepts deep links (/cari?service=food) for backwards
+                compat with old landing-page tiles, drivers' services
+                arrays, and external bookmarks. */}
             <div className="mt-2 grid grid-cols-4 gap-2">
               <ServiceSquare
                 href="/cari?service=person"
-                active={service === 'person'}
+                active={service === 'person' || service === 'food'}
                 icon={<Bike className="w-6 h-6" strokeWidth={2.5} />}
                 label="Bike"
               />
@@ -853,10 +869,10 @@ function PlanTripPageInner() {
                 label="Parcel"
               />
               <ServiceSquare
-                href="/cari?service=food"
-                active={service === 'food'}
-                icon={<Utensils className="w-6 h-6" strokeWidth={2.5} />}
-                label="Food"
+                href="/cari?service=bus"
+                active={service === 'bus'}
+                icon={<BusIcon className="w-6 h-6" strokeWidth={2.5} />}
+                label="Bus"
               />
             </div>
             {/* INLINE PRICE READOUT — reverted to directory-safe-harbour

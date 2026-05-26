@@ -352,6 +352,14 @@ export const SERVICE_REGULATION: Record<ServiceType, {
     regulated: true,
     basis: 'Diatur KP 667/2022 (taksi online) + PM 108/2017 (taksi konvensional)',
   },
+  bus: {
+    // Bus / minibus group transport for tourism + charter (Hiace, Avanza,
+    // Innova) — falls under angkutan sewa-pariwisata (PM 117/2018 + local
+    // dishub registration). Drivers self-publish charter rates; IndoCity
+    // surfaces them as a directory only.
+    regulated: true,
+    basis: 'Diatur PM 117/2018 (angkutan pariwisata) + registrasi Dishub setempat',
+  },
 }
 
 // ─────────────────────────────────────────────────────────────────────

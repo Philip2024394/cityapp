@@ -2,16 +2,18 @@
 // vehicle / dashboard discriminator (`drivers.vehicle_type`):
 //   'person' / 'parcel' / 'food' → vehicle_type = 'bike'
 //   'car'                         → vehicle_type = 'car'
-// As we add Truck / Minibus / Premium Car the matching service entries
-// will be added here so the /cari tab selector stays the single source
-// of truth for what the customer is browsing.
-export type ServiceType = 'person' | 'parcel' | 'food' | 'car'
+//   'bus'                         → vehicle_type = 'minibus'
+// As we add Truck / Premium Car the matching service entries will be
+// added here so the /cari tab selector stays the single source of
+// truth for what the customer is browsing.
+export type ServiceType = 'person' | 'parcel' | 'food' | 'car' | 'bus'
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {
   person: 'Bike Ride',
   parcel: 'Bike Parcel',
   food:   'Bike Food',
   car:    'Car Ride',
+  bus:    'Bus / Minibus',
 }
 
 export const SERVICE_SHORT: Record<ServiceType, string> = {
@@ -19,6 +21,7 @@ export const SERVICE_SHORT: Record<ServiceType, string> = {
   parcel: 'Parcel',
   food:   'Food',
   car:    'Car',
+  bus:    'Bus',
 }
 
 export const SERVICE_ICONS: Record<ServiceType, string> = {
@@ -26,6 +29,7 @@ export const SERVICE_ICONS: Record<ServiceType, string> = {
   parcel: '📦',
   food:   '🍔',
   car:    '🚗',
+  bus:    '🚐',
 }
 
 export const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
@@ -33,6 +37,7 @@ export const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
   parcel: 'Parcels, documents, out-of-town courier — platform focus',
   food:   'Food delivery from restaurants / warungs, COD groceries',
   car:    'Airport runs, family rides, rain rides, longer trips',
+  bus:    'Group transport — Hiace, Avanza, Innova for tours + airports',
 }
 
 export type Bike = {

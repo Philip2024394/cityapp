@@ -39,6 +39,9 @@ const SERVICE_TILE_IMAGES: Record<ServiceType, string> = {
   // Car drivers don't render on the bike driver-storefront /r/[slug]
   // page today — placeholder kept for type completeness only.
   car:    'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
+  // Bus / minibus drivers ditto — separate /bus/[slug] surface will be
+  // built when the Bus marketplace ships.
+  bus:    'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
 }
 const PLACES_TILE_IMAGE =
   'https://ik.imagekit.io/nepgaxllc/Untitledwrr-removebg-preview.png?updatedAt=1778253100200'
