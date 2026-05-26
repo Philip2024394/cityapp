@@ -76,13 +76,13 @@ function Inner() {
     <Shell>
       <div className="px-4 pt-4 pb-24 max-w-4xl mx-auto">
         <div className="mb-3 text-center">
-          <div className="text-[11px] uppercase tracking-[0.18em] font-extrabold text-ink/55">
+          <div className="text-[11px] uppercase tracking-[0.18em] font-extrabold text-black/55">
             Tukang in
           </div>
-          <div className="text-[20px] font-black text-ink mt-0.5">
+          <div className="text-[20px] font-black text-black mt-0.5">
             {cityLabel} City
           </div>
-          <div className="inline-flex items-center gap-1 text-[12px] text-ink/70 mt-1">
+          <div className="inline-flex items-center gap-1 text-[12px] text-black/70 mt-1">
             <Wrench className="w-3.5 h-3.5" />
             Listrik · Plumbing · AC · Tukang · 20+ trades
           </div>
