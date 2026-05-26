@@ -9,6 +9,8 @@ import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
 import ThemeColorPicker from '@/components/dashboard/ThemeColorPicker'
 import DomainRequestModal from '@/components/dashboard/DomainRequestModal'
 import {
+  BANNER_LIBRARY,
+  BEAUTICIAN_SERVICES_OFFERED,
   type BeauticianProvider,
   type BeauticianServiceOffered,
   type BeauticianServicePhoto,
@@ -312,10 +314,14 @@ function BannerInlineControls({
       <Section title="Banner image">
         <BannerLibraryPicker
           themeHex={provider.theme_color ?? null}
-          servicesOffered={(provider.services_offered ?? []) as BeauticianServiceOffered[]}
           selected={provider.cover_image_url ?? null}
           onChange={(url) => onSave({ cover_image_url: url })}
           userId={provider.user_id ?? null}
+          library={BANNER_LIBRARY}
+          categories={BEAUTICIAN_SERVICES_OFFERED.map((s) => ({ id: s.id, label: s.label }))}
+          defaultThemeHex="#EC4899"
+          purchaseEndpoint="/api/beautician/me/buy-banner"
+          selectedAccentHex="#EC4899"
         />
       </Section>
 

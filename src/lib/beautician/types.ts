@@ -197,13 +197,13 @@ export const SERVICE_OFFERED_LABELS: Record<BeauticianServiceOffered, string> =
 //   #0D9488 → Teal     (preset, no demo)
 // Banner library entry. String shape is legacy / free banners; the
 // object shape adds the premium flag + price for paid exclusivity.
-export type BannerLibraryEntry = string | { url: string; premium?: boolean; price_idr?: number }
-
-/** Resolve any entry to its canonical { url, premium, price_idr } object. */
-export function resolveBanner(entry: BannerLibraryEntry): { url: string; premium: boolean; price_idr: number } {
-  if (typeof entry === 'string') return { url: entry, premium: false, price_idr: 0 }
-  return { url: entry.url, premium: !!entry.premium, price_idr: entry.price_idr ?? 100000 }
-}
+// Type + resolver live in src/lib/banners/library.ts so handyman / other
+// verticals can share the same banner-picker UI. We import locally AND
+// re-export so existing `import ... from '@/lib/beautician/types'` callers
+// keep working.
+import type { BannerLibraryEntry } from '@/lib/banners/library'
+export type { BannerLibraryEntry }
+export { resolveBanner, bannerNumber } from '@/lib/banners/library'
 
 export const BANNER_LIBRARY: Record<string, Partial<Record<BeauticianServiceOffered, BannerLibraryEntry[]>>> = {
   '#EC4899': {
@@ -333,17 +333,6 @@ export function aboutImageForTheme(hex: string | null | undefined): string {
   const fam = classifyColorFamily(hex)
   if (!fam) return ABOUT_IMAGE_BY_FAMILY.gray
   return ABOUT_IMAGE_BY_FAMILY[fam]
-}
-
-/** Stable per-URL number 1–9999 (djb2 hash). Same URL always returns the
- *  same number, so the admin can tell us "make #452 premium" and we can
- *  find the exact entry by hashing each URL until the match. */
-export function bannerNumber(url: string): number {
-  let h = 5381
-  for (let i = 0; i < url.length; i++) {
-    h = ((h << 5) + h + url.charCodeAt(i)) | 0
-  }
-  return (Math.abs(h) % 9999) + 1
 }
 
 /** All banners across categories for a theme color hex (case-insensitive). */

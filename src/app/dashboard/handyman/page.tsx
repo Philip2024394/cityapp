@@ -6,10 +6,15 @@ import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
+import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
 import {
   ALL_SPECIALTIES, SPECIALTY_LABELS, MAX_HANDYMAN_SPECIALTIES,
   type HandymanProvider, type HandymanAvailability, type HandymanSpecialty,
 } from '@/lib/handyman/types'
+import {
+  HANDYMAN_BANNER_LIBRARY,
+  HANDYMAN_BANNER_CATEGORIES,
+} from '@/lib/handyman/banners'
 
 const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
@@ -290,8 +295,21 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
       {p.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={p.user_id} />}
       {p.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={p.user_id} />}
       {p.user_id && (
+        <BannerLibraryPicker
+          themeHex={'#FACC15'}
+          selected={f.cover_image_url}
+          onChange={(url) => upd('cover_image_url', url)}
+          userId={p.user_id}
+          library={HANDYMAN_BANNER_LIBRARY}
+          categories={HANDYMAN_BANNER_CATEGORIES}
+          defaultThemeHex="#FACC15"
+          selectedAccentHex="#FACC15"
+        />
+      )}
+      {p.user_id && (
         <UniversalProfileExtrasEditor
           userId={p.user_id}
+          hideCover
           value={{
             cover_image_url:    f.cover_image_url,
             gallery_image_urls: f.gallery_image_urls,

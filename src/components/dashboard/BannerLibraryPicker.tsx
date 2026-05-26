@@ -2,72 +2,81 @@
 import { useRef, useState } from 'react'
 import { Upload, ChevronDown, Lock, X, Check } from 'lucide-react'
 import {
-  BANNER_LIBRARY,
-  BEAUTICIAN_SERVICES_OFFERED,
-  SERVICE_OFFERED_LABELS,
   bannerNumber,
   resolveBanner,
+  type BannerCategory,
+  type BannerLibrary,
   type BannerLibraryEntry,
-  type BeauticianServiceOffered,
-} from '@/lib/beautician/types'
+} from '@/lib/banners/library'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
 // QRIS placeholder — replace with the founder's actual static QRIS
 // image URL when supplied. Stored centrally so swapping it is a
 // one-line change.
 const QRIS_IMAGE_URL = 'https://ik.imagekit.io/nepgaxllc/Untitleddaaaaad-removebg-preview.png?updatedAt=1779107454479'
-const PREMIUM_BANNER_PRICE_IDR = 100_000
 
-const DEFAULT_THEME_FOR_LIBRARY = '#EC4899' // Pink default when no theme picked yet.
-
-// Theme-aware banner picker for the beautician dashboard.
+// Vertical-agnostic banner picker.
 //
-// Shows curated hero banners from BANNER_LIBRARY[theme] grouped by
-// service category. The beautician taps a thumbnail to set their
-// cover_image_url to that URL. They can still upload a custom banner
-// via CoverImageUploader (inside UniversalProfileExtrasEditor) below.
+// Renders the curated banner library for whichever vertical passes its
+// own data in (beautician, handyman, …). Provider taps a thumbnail to
+// set their cover_image_url to that URL; can also upload a custom
+// banner via the "Upload my own" tile.
 //
-// The picker filters to categories the beautician actually offers
-// (their services_offered list) so the grid stays relevant.
+// Premium banners require a `purchaseEndpoint` (per-vertical API path)
+// to be configured — if omitted, premium banners render as locked but
+// cannot be purchased.
 
 export default function BannerLibraryPicker({
   themeHex,
-  servicesOffered,
   selected,
   onChange,
   userId,
+  library,
+  categories,
+  defaultThemeHex,
+  purchaseEndpoint,
+  selectedAccentHex = '#EC4899',
 }: {
   themeHex: string | null
-  servicesOffered: BeauticianServiceOffered[]
   selected: string | null
   onChange: (url: string | null) => void
   /** If supplied, the picker renders an "Upload my own" tile that uploads
    *  to Supabase Storage and calls onChange with the public URL. */
   userId?: string | null
+  /** Theme-hex → category-id → ordered banner entries. */
+  library: BannerLibrary
+  /** Ordered list of category definitions for label display + iteration. */
+  categories: BannerCategory[]
+  /** Theme used as fallback when the provider hasn't picked one yet. */
+  defaultThemeHex: string
+  /** Per-vertical premium-purchase API path, e.g. `/api/beautician/me/buy-banner`.
+   *  When omitted the premium purchase modal is suppressed. */
+  purchaseEndpoint?: string
+  /** Selected-thumbnail border + check-circle background. Defaults to pink
+   *  (beautician brand); handyman should pass `#FACC15`. */
+  selectedAccentHex?: string
 }) {
-  // Fall back to pink so the library always has something visible.
-  // Note: BANNER_LIBRARY entries for empty themes are `{}` (truthy),
-  // so `??` doesn't fall back automatically — we explicitly check
-  // for an empty category map and use the pink default in that case.
-  const key = ((themeHex || DEFAULT_THEME_FOR_LIBRARY)).toUpperCase()
-  const themeLib  = BANNER_LIBRARY[key] ?? {}
+  // Fall back to the default theme so the library always has something visible.
+  // Note: library entries for empty themes are `{}` (truthy), so `??` doesn't
+  // fall back automatically — we explicitly check for an empty category map.
+  const key = ((themeHex || defaultThemeHex)).toUpperCase()
+  const themeLib  = library[key] ?? {}
   const themeHasBanners = Object.values(themeLib).some((arr) => Array.isArray(arr) && arr.length > 0)
-  const lib = themeHasBanners ? themeLib : (BANNER_LIBRARY[DEFAULT_THEME_FOR_LIBRARY] ?? {})
+  const lib = themeHasBanners ? themeLib : (library[defaultThemeHex] ?? {})
 
-  // Show every category that has banners — don't gate on services_offered
-  // anymore (the founder said they want all banners visible so users can
-  // discover ones outside their current category picks).
-  const visibleCategories = BEAUTICIAN_SERVICES_OFFERED
-    .map((s) => s.id)
-    .filter((sid) => (lib[sid] ?? []).length > 0)
+  // Show every category that has banners — don't gate on services_offered;
+  // founder asked for all banners to be visible so users can discover ones
+  // outside their current category picks.
+  const visibleCategories = categories
+    .map((c) => c.id)
+    .filter((cid) => (lib[cid] ?? []).length > 0)
 
   const totalBanners = visibleCategories.reduce(
-    (sum, sid) => sum + (lib[sid] ?? []).length, 0,
+    (sum, cid) => sum + (lib[cid] ?? []).length, 0,
   )
 
-  // Suppress lint warning for now — picker uses servicesOffered later when
-  // we re-introduce per-category recommendations.
-  void servicesOffered
+  const labelFor = (cid: string): string =>
+    categories.find((c) => c.id === cid)?.label ?? cid
 
   // Accordion state — only one category fully expanded at a time so the
   // picker stays scannable. Each category collapsed shows first 2 banners.
@@ -118,7 +127,7 @@ export default function BannerLibraryPicker({
           <div key={sid} className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="text-[11px] font-extrabold uppercase tracking-wider text-ink/70">
-                {SERVICE_OFFERED_LABELS[sid]}
+                {labelFor(sid)}
               </div>
               <div className="text-[10px] text-ink/45">{urls.length} banner{urls.length === 1 ? '' : 's'}</div>
             </div>
@@ -132,19 +141,21 @@ export default function BannerLibraryPicker({
                     type="button"
                     onClick={() => {
                       if (b.premium && !on) {
-                        // Premium banners open the purchase popup instead
-                        // of auto-applying. Already-owned premium (already
-                        // selected) just stays selected.
-                        setPremiumModal({ url: b.url })
+                        // Premium banners open the purchase popup instead of
+                        // auto-applying. Without a configured purchase
+                        // endpoint we treat them as locked: skip the modal
+                        // so the user isn't sent into a broken flow.
+                        if (purchaseEndpoint) setPremiumModal({ url: b.url })
                       } else {
                         onChange(on ? null : b.url)
                       }
                     }}
                     aria-pressed={on}
-                    className={`relative rounded-lg overflow-hidden border-2 transition active:scale-[0.98] ${
-                      on ? 'border-pink-500' : 'border-white/10 hover:border-white/30'
-                    }`}
-                    style={{ aspectRatio: '16 / 9' }}
+                    className="relative rounded-lg overflow-hidden border-2 transition active:scale-[0.98]"
+                    style={{
+                      aspectRatio: '16 / 9',
+                      borderColor: on ? selectedAccentHex : 'rgba(255,255,255,0.1)',
+                    }}
                   >
                     <img
                       src={b.url}
@@ -163,7 +174,7 @@ export default function BannerLibraryPicker({
                     {on && (
                       <div
                         className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-[12px] font-black"
-                        style={{ background: '#EC4899' }}
+                        style={{ background: selectedAccentHex }}
                         aria-hidden
                       >
                         ✓
@@ -214,11 +225,13 @@ export default function BannerLibraryPicker({
       )}
 
       {/* Premium banner purchase popup — opens when a Premium-tagged
-          banner is tapped. 2-step: preview & price → QRIS + upload. */}
-      {premiumModal && userId && (
+          banner is tapped. 2-step: preview & price → QRIS + upload.
+          Only mounted when the vertical configured a purchaseEndpoint. */}
+      {premiumModal && userId && purchaseEndpoint && (
         <PremiumBannerModal
           bannerUrl={premiumModal.url}
           userId={userId}
+          purchaseEndpoint={purchaseEndpoint}
           onClose={() => setPremiumModal(null)}
           onPurchased={(url) => {
             // Provisional activation: API also writes cover_image_url
@@ -321,7 +334,7 @@ function UploadOwnButton({
 }
 
 /** True when `url` is one of the curated entries in the active theme/category map. */
-function isLibraryUrl(url: string, lib: Partial<Record<BeauticianServiceOffered, BannerLibraryEntry[]>>): boolean {
+function isLibraryUrl(url: string, lib: Record<string, BannerLibraryEntry[]>): boolean {
   for (const arr of Object.values(lib)) {
     if (!Array.isArray(arr)) continue
     for (const entry of arr) {
@@ -334,10 +347,11 @@ function isLibraryUrl(url: string, lib: Partial<Record<BeauticianServiceOffered,
 
 
 function PremiumBannerModal({
-  bannerUrl, userId, onClose, onPurchased,
+  bannerUrl, userId, purchaseEndpoint, onClose, onPurchased,
 }: {
   bannerUrl: string
   userId:    string
+  purchaseEndpoint: string
   onClose:   () => void
   onPurchased: (url: string) => void
 }) {
@@ -376,8 +390,9 @@ function PremiumBannerModal({
       if (!proofUrl) { setErr("Could not derive proof URL."); return }
 
       // 2. POST to API — creates pending purchase + provisionally
-      //    activates the banner as cover_image_url.
-      const r = await fetch("/api/beautician/me/buy-banner", {
+      //    activates the banner as cover_image_url. Endpoint is
+      //    vertical-specific (passed in as `purchaseEndpoint` prop).
+      const r = await fetch(purchaseEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ banner_url: bannerUrl, payment_proof_url: proofUrl }),

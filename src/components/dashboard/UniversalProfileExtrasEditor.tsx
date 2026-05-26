@@ -55,7 +55,7 @@ export type UniversalProfileExtras = {
 }
 
 export default function UniversalProfileExtrasEditor({
-  userId, value, onChange, hideGallery = false,
+  userId, value, onChange, hideGallery = false, hideCover = false,
 }: {
   userId: string
   value: UniversalProfileExtras
@@ -64,6 +64,11 @@ export default function UniversalProfileExtrasEditor({
   // gallery block would collide with it. Setting hideGallery suppresses
   // ONLY the gallery UI; the API also drops gallery_image_urls server-side.
   hideGallery?: boolean
+  // When the dashboard renders its own banner picker (e.g. handyman's
+  // BannerLibraryPicker), set hideCover so the cover uploader inside
+  // this editor doesn't duplicate the control. cover_image_url is still
+  // pulled from `value` and saved by the dashboard — only the UI is hidden.
+  hideCover?: boolean
 }) {
   // Local-shape projections — store hours as a flat object the UI can mutate.
   const hours = value.operating_hours || {}
@@ -104,11 +109,13 @@ export default function UniversalProfileExtrasEditor({
         Universal profile extras
       </div>
 
-      <CoverImageUploader
-        userId={userId}
-        value={value.cover_image_url ?? null}
-        onChange={(v) => onChange({ ...value, cover_image_url: v })}
-      />
+      {!hideCover && (
+        <CoverImageUploader
+          userId={userId}
+          value={value.cover_image_url ?? null}
+          onChange={(v) => onChange({ ...value, cover_image_url: v })}
+        />
+      )}
 
       {!hideGallery && (
         <GalleryUploader

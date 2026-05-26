@@ -11,10 +11,12 @@ import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import CoverImageUploader from '@/components/kyc/CoverImageUploader'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
-import type {
-  BeauticianProvider,
-  BeauticianServiceOffered,
-  BeauticianServicePhoto,
+import {
+  BANNER_LIBRARY,
+  BEAUTICIAN_SERVICES_OFFERED,
+  type BeauticianProvider,
+  type BeauticianServiceOffered,
+  type BeauticianServicePhoto,
 } from '@/lib/beautician/types'
 
 // Post-signup completion screen. Shows the beautician's public shareable
@@ -290,10 +292,14 @@ export default function BeauticianWelcomePage() {
                       {bannerMode === 'library' ? (
                         <BannerLibraryPicker
                           themeHex={provider.theme_color ?? null}
-                          servicesOffered={(provider.services_offered ?? []) as BeauticianServiceOffered[]}
                           selected={provider.cover_image_url ?? null}
                           onChange={(url) => saveField('cover_image_url', url, 'banner')}
                           userId={provider.user_id ?? null}
+                          library={BANNER_LIBRARY}
+                          categories={BEAUTICIAN_SERVICES_OFFERED.map((s) => ({ id: s.id, label: s.label }))}
+                          defaultThemeHex="#EC4899"
+                          purchaseEndpoint="/api/beautician/me/buy-banner"
+                          selectedAccentHex="#EC4899"
                         />
                       ) : (
                         provider.user_id && (
