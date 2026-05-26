@@ -844,38 +844,37 @@ function PlanTripPageInner() {
                 label="Food"
               />
             </div>
-            {/* INLINE PRICE READOUT — ALWAYS rendered (so the customer
-                sees a price line even before they pick a destination).
-                Empty state reads "Total fare Rp 0.00"; once pickup +
-                dropoff are both set, it switches to the lowest published
-                driver fare ("Lowest Trip Price Rp 12,000").
-                COMPLIANCE NOTE: the founder chose this copy explicitly
-                — see the chat. "Total fare" / "Trip Price" wording was
-                previously avoided per PM 12/2019 directory safe-harbour.
-                Revisit if regulator pushback occurs. */}
+            {/* INLINE PRICE READOUT — reverted to directory-safe-harbour
+                copy. IndoCity is a software directory, NOT a transport
+                operator (PM 12/2019). We can only surface a driver's
+                OWN published minimum fare — never "trip price" or
+                "total fare" wording that would imply we set or
+                calculate the price. Customers SELECT drivers; we
+                never appoint or match orders. */}
             <div className="mt-2 pt-2 border-t border-bg/25">
               <div className="flex items-baseline justify-between gap-2 flex-wrap">
                 {canSearch && tripKm != null && lowestFareIdr != null ? (
                   <span className="text-[13px] font-extrabold tracking-tight text-bg">
-                    Lowest Trip Price Rp {lowestFareIdr.toLocaleString('en-US')}
+                    From Rp {lowestFareIdr.toLocaleString('en-US')}
                   </span>
                 ) : (
                   <span className="text-[13px] font-extrabold tracking-tight text-bg/85">
-                    Total fare Rp 0.00
+                    Set destination to see published rates
                   </span>
                 )}
                 {canSearch && tripKm != null && (
                   <span className="text-[11px] font-bold tracking-tight text-bg/80">
-                    {/* ETA = distance / avg urban motorbike speed (~25 km/h
-                        — Yogya/Bali, traffic-adjusted). Floor at 2 min so
-                        short trips never read "0 min". This is a hint, not
-                        a contract — the driver agrees the actual ETA. */}
+                    {/* ETA hint = distance / avg urban motorbike speed
+                        (~25 km/h — Yogya/Bali, traffic-adjusted).
+                        Floor at 2 min so short trips never read "0 min".
+                        Labelled as an ESTIMATE only — the driver agrees
+                        the actual time, IndoCity does not compute it. */}
                     {tripKm.toFixed(1)} km · ~{Math.max(2, Math.round((tripKm / 25) * 60))} min
                   </span>
                 )}
               </div>
               <div className="text-[9px] uppercase tracking-wider text-bg/55 mt-0.5">
-                Estimate · agreed with driver
+                Published by driver · you agree the fare directly
               </div>
             </div>
           </div>
