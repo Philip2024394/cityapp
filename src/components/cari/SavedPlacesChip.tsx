@@ -35,15 +35,25 @@ type SavedPlace = {
 }
 
 type Props = {
-  /** Current drop-off location (if set via map tap or search) — used
-   *  as the location source for the "Add new place" flow. */
-  currentDropoff?: { lat: number; lng: number } | null
-  currentDropoffLabel?: string
-  /** Called when the user picks a saved place — parent fills drop-off. */
+  /** Current location (pickup or drop-off, depending on `kind`) — used
+   *  as the source coords + label for the "Add new place" flow. */
+  currentLocation?: { lat: number; lng: number } | null
+  currentLocationLabel?: string
+  /** Which tile this chip is attached to. Drives the modal copy ("set
+   *  a pick-up location" vs "set a drop-off location"). Defaults to
+   *  'dropoff' so the existing dropoff call sites keep behaving as
+   *  before with no prop changes there. */
+  kind?: 'pickup' | 'dropoff'
+  /** Called when the user picks a saved place — parent fills the tile. */
   onSelect: (place: { lat: number; lng: number; label: string }) => void
 }
 
-export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, onSelect }: Props) {
+export default function SavedPlacesChip({
+  currentLocation,
+  currentLocationLabel,
+  kind = 'dropoff',
+  onSelect,
+}: Props) {
   const router = useRouter()
   const haptic = useHaptic()
   const [open, setOpen] = useState(false)
@@ -113,9 +123,11 @@ export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, o
     }
   }
 
+  const kindLabel = kind === 'pickup' ? 'pick-up' : 'drop-off'
+
   async function saveNewPlace() {
-    if (!currentDropoff) {
-      setError('Tap the map (or search) to set a drop-off location first, then save it.')
+    if (!currentLocation) {
+      setError(`Tap the map (or search) to set a ${kindLabel} location first, then save it.`)
       return
     }
     const cleanName = newName.trim()
@@ -132,9 +144,9 @@ export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, o
         body: JSON.stringify({
           name: cleanName,
           emoji: newEmoji,
-          lat: currentDropoff.lat,
-          lng: currentDropoff.lng,
-          label: currentDropoffLabel || cleanName,
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          label: currentLocationLabel || cleanName,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -165,7 +177,7 @@ export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, o
       <button
         type="button"
         onClick={openModal}
-        aria-label="Saved drop-off places"
+        aria-label={`Saved ${kindLabel} places`}
         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
         style={{
           background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
@@ -268,7 +280,7 @@ export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, o
               <div className="space-y-2">
                 {places.length === 0 && (
                   <p className="text-[13px] text-muted leading-relaxed py-2">
-                    No saved places yet. Tap a spot on the map (or search), then come back here to save it.
+                    No saved places yet. Set a {kindLabel} (map tap or search), then come back here to save it.
                   </p>
                 )}
                 {places.map((p) => (
@@ -321,25 +333,25 @@ export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, o
             {/* ─── Signed-in: add mode ───────────────────────────────── */}
             {authState === 'signed-in' && addMode && (
               <div className="space-y-3">
-                {!currentDropoff && (
+                {!currentLocation && (
                   <div
                     className="rounded-xl p-3 flex items-start gap-2 text-[12px] leading-relaxed"
                     style={{ background: 'rgba(96,165,250,0.10)', border: '1px solid rgba(96,165,250,0.30)' }}
                   >
                     <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#60A5FA' }} />
                     <span className="text-ink/90">
-                      Tap the map (or search) on /cari first to set a drop-off location, then come back to save it.
+                      Tap the map (or search) on /cari first to set a {kindLabel} location, then come back to save it.
                     </span>
                   </div>
                 )}
-                {currentDropoff && (
+                {currentLocation && (
                   <div
                     className="rounded-xl p-3 flex items-start gap-2 text-[12px] leading-relaxed"
                     style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.30)' }}
                   >
                     <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#22C55E' }} />
                     <span className="text-ink/90">
-                      Saving: <strong className="text-ink">{currentDropoffLabel || 'Selected location'}</strong>
+                      Saving: <strong className="text-ink">{currentLocationLabel || 'Selected location'}</strong>
                     </span>
                   </div>
                 )}
@@ -407,7 +419,7 @@ export default function SavedPlacesChip({ currentDropoff, currentDropoffLabel, o
                   <button
                     type="button"
                     onClick={saveNewPlace}
-                    disabled={submitting || !currentDropoff || newName.trim().length < 1}
+                    disabled={submitting || !currentLocation || newName.trim().length < 1}
                     className="flex-1 rounded-xl py-2.5 text-[13px] font-extrabold transition active:scale-[0.99] disabled:opacity-30 inline-flex items-center justify-center gap-2 text-bg bg-gradient-to-r from-brand to-brand2"
                     style={{ minHeight: 44 }}
                   >

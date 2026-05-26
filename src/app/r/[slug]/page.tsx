@@ -702,8 +702,9 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
                 <SavedPlacesChip
-                  currentDropoff={dropoff}
-                  currentDropoffLabel={dropoffLabel}
+                  kind="dropoff"
+                  currentLocation={dropoff}
+                  currentLocationLabel={dropoffLabel}
                   onSelect={(s) => {
                     setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
                     setDropoffLabel(s.label)

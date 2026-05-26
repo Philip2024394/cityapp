@@ -466,25 +466,21 @@ function PlanTripPageInner() {
           >
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
-              {/* Converted from <button onClick={router.push}> to <Link prefetch>
-                  2026-05 perf pass — gives Next.js an opportunity to
-                  prefetch /places so the tap-to-paint gap is near-instant.
-                  haptic.tap() still fires synchronously on click. */}
-              <Link
-                href="/places"
-                prefetch
-                onClick={() => haptic.tap()}
-                aria-label="Browse nearby places"
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-white text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
-                style={{
-                  background: '#0A0A0A',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  minHeight: 24,
+              {/* Saved-locations chip for the pickup tile. Replaces the old
+                  "Places" link to /places — the 4-tab service switcher
+                  above the bottom sheet now owns navigation to /places,
+                  so the pickup tile gets the more useful saved-places
+                  picker (one tap → fill pickup with Home/Office/etc). */}
+              <SavedPlacesChip
+                kind="pickup"
+                currentLocation={pickup}
+                currentLocationLabel={pickupLabel}
+                onSelect={(p) => {
+                  setPickup({ lat: p.lat, lng: p.lng, accuracyM: 0 })
+                  setPickupLabel(p.label)
+                  haptic.tap()
                 }}
-              >
-                <Landmark className="w-3 h-3" strokeWidth={2.5} />
-                Places
-              </Link>
+              />
             </div>
             <PlaceAutocomplete
               value={pickupLabel}
@@ -632,8 +628,9 @@ function PlanTripPageInner() {
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
               <SavedPlacesChip
-                currentDropoff={dropoff}
-                currentDropoffLabel={dropoffLabel}
+                kind="dropoff"
+                currentLocation={dropoff}
+                currentLocationLabel={dropoffLabel}
                 onSelect={(p) => {
                   setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
                   setDropoffLabel(p.label)
