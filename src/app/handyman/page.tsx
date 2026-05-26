@@ -208,8 +208,10 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
     })
   }
   if (p.day_rate_idr != null && bottomItems.length < 2) {
+    // No icon — the "Rp X/day" label is self-explanatory and the
+    // DollarSign icon read as a USD symbol on an IDR card.
     bottomItems.push({
-      key: 'day', icon: 'dollar',
+      key: 'day',
       label: `Rp ${p.day_rate_idr.toLocaleString('id-ID')}/day`,
     })
   }

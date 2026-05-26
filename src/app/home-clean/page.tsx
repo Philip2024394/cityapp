@@ -94,8 +94,10 @@ function ProviderCard({ provider: p }: { provider: HomeCleanProviderPublic; demo
     })
   }
   if (p.day_rate_idr != null && bottomItems.length < 2) {
+    // No icon — DollarSign read as USD on an IDR card; the "Rp …/day"
+    // label is enough.
     bottomItems.push({
-      key: 'day', icon: 'dollar',
+      key: 'day',
       label: `Rp ${p.day_rate_idr.toLocaleString('id-ID')}/day`,
     })
   }
