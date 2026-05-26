@@ -121,10 +121,10 @@ function ProviderCard({ provider: p }: { provider: LaundryProviderPublic; demo?:
   // matter much more than the location icons beautician shows.
   const bottomItems: UniversalProviderCardBottomItem[] = []
   if (p.turnaround_hours)
-    bottomItems.push({ key: 'turn', icon: Clock, label: `${p.turnaround_hours}h turnaround` })
+    bottomItems.push({ key: 'turn', icon: 'clock', label: `${p.turnaround_hours}h turnaround` })
   if (p.min_kg)
-    bottomItems.push({ key: 'min', icon: Scale, label: `Min ${p.min_kg}kg` })
-  bottomItems.push({ key: 'pickup', icon: Truck, label: 'Pickup & dropoff' })
+    bottomItems.push({ key: 'min', icon: 'scale', label: `Min ${p.min_kg}kg` })
+  bottomItems.push({ key: 'pickup', icon: 'truck', label: 'Pickup & dropoff' })
 
   return (
     <UniversalProviderCard

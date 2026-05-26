@@ -204,13 +204,13 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
   const bottomItems: UniversalProviderCardBottomItem[] = []
   if (p.hourly_rate_idr != null) {
     bottomItems.push({
-      key: 'hour', icon: Clock,
+      key: 'hour', icon: 'clock',
       label: `Rp ${p.hourly_rate_idr.toLocaleString('id-ID')}/h`,
     })
   }
   if (p.day_rate_idr != null && bottomItems.length < 2) {
     bottomItems.push({
-      key: 'day', icon: DollarSign,
+      key: 'day', icon: 'dollar',
       label: `Rp ${p.day_rate_idr.toLocaleString('id-ID')}/day`,
     })
   }

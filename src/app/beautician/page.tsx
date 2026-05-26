@@ -284,17 +284,12 @@ function ProviderCardViaUniversal({ provider: p }: { provider: BeauticianProvide
 
   // Location icons — same filter rule as the profile hero.
   const locs = new Set(p.service_locations ?? [])
-  const locItems: Array<{ key: string; icon: typeof Home; label: string }> = []
-  if (locs.has('home'))  locItems.push({ key: 'home',  icon: Home,      label: 'Home' })
-  if (locs.has('hotel')) locItems.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
-  if (locs.has('villa')) locItems.push({ key: 'villa', icon: Building2, label: 'Villa' })
+  const bottomItems: UniversalProviderCardBottomItem[] = []
+  if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: 'home',  label: 'Home' })
+  if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: 'hotel', label: 'Hotel' })
+  if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: 'villa', label: 'Villa' })
 
   const eff = effectiveAvailability(p)
-  const bottomItems: UniversalProviderCardBottomItem[] = locItems.map((li) => ({
-    key:   li.key,
-    icon:  li.icon,
-    label: li.label,
-  }))
 
   return (
     <UniversalProviderCard

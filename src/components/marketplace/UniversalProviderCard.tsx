@@ -1,6 +1,30 @@
 'use client'
 import Link from 'next/link'
-import { Star, User, type LucideIcon } from 'lucide-react'
+import {
+  Star, User,
+  Home, Hotel, Building2,
+  Clock, DollarSign, Scale, Truck, Sparkles,
+  Bike, Fuel, Globe,
+  type LucideIcon,
+} from 'lucide-react'
+
+// String → lucide-component map. Callers pass an icon KEY (serializable
+// across the server→client boundary), the card resolves it locally.
+// Add a new entry here when a vertical needs an icon not yet listed.
+const BOTTOM_ICON_MAP: Record<string, LucideIcon> = {
+  home:        Home,
+  hotel:       Hotel,
+  villa:       Building2,
+  clock:       Clock,
+  dollar:      DollarSign,
+  scale:       Scale,
+  truck:       Truck,
+  sparkles:    Sparkles,
+  bike:        Bike,
+  fuel:        Fuel,
+  globe:       Globe,
+}
+export type BottomIconKey = keyof typeof BOTTOM_ICON_MAP
 
 // UniversalProviderCard — the polished dark-glass card extracted from
 // beautician's marketplace. Generic data shape lets every vertical
@@ -31,7 +55,10 @@ import { Star, User, type LucideIcon } from 'lucide-react'
 
 export type UniversalProviderCardBottomItem = {
   key:    string
-  icon?:  LucideIcon
+  /** Serializable icon key. Resolved to a lucide component inside the
+   *  card so server components can pass these props without a
+   *  server→client serialization error. See BOTTOM_ICON_MAP above. */
+  icon?:  BottomIconKey
   label:  string
 }
 
@@ -269,21 +296,24 @@ export default function UniversalProviderCard({
         <div className="flex items-center justify-between gap-3">
           {items.length > 0 ? (
             <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
-              {items.map((it) => (
-                <span
-                  key={it.key}
-                  className="inline-flex items-center gap-1.5 text-[13px] font-bold text-white/85"
-                >
-                  {it.icon && (
-                    <it.icon
-                      className="w-[16px] h-[16px]"
-                      strokeWidth={2.25}
-                      style={{ color: '#FFFFFF' }}
-                    />
-                  )}
-                  {it.label}
-                </span>
-              ))}
+              {items.map((it) => {
+                const Ico = it.icon ? BOTTOM_ICON_MAP[it.icon] : null
+                return (
+                  <span
+                    key={it.key}
+                    className="inline-flex items-center gap-1.5 text-[13px] font-bold text-white/85"
+                  >
+                    {Ico && (
+                      <Ico
+                        className="w-[16px] h-[16px]"
+                        strokeWidth={2.25}
+                        style={{ color: '#FFFFFF' }}
+                      />
+                    )}
+                    {it.label}
+                  </span>
+                )
+              })}
             </div>
           ) : <span />}
 

@@ -166,17 +166,17 @@ export default async function TourGuideFeedPage({
 
               const bottomItems: UniversalProviderCardBottomItem[] = []
               if (r.bike_brand)
-                bottomItems.push({ key: 'bike', icon: Bike, label: r.bike_brand })
+                bottomItems.push({ key: 'bike', icon: 'bike', label: r.bike_brand })
               bottomItems.push({
                 key: 'fuel',
-                icon: Fuel,
+                icon: 'fuel',
                 label: r.fuel_included ? 'Fuel inc.' : 'Fuel excl.',
               })
               // Languages count helps customers scan multilingual guides
               // quickly without needing the full list.
               const langCount = (r.languages ?? []).length
               if (langCount > 1)
-                bottomItems.push({ key: 'lang', icon: Globe, label: `${langCount} langs` })
+                bottomItems.push({ key: 'lang', icon: 'globe', label: `${langCount} langs` })
 
               return (
                 <UniversalProviderCard

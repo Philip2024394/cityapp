@@ -138,9 +138,9 @@ function ProviderCard({ provider: p }: { provider: MassageProviderPublic; demo?:
   // Home / Hotel / Villa icons same as beautician.
   const locs = new Set(p.service_locations ?? [])
   const bottomItems: UniversalProviderCardBottomItem[] = []
-  if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: Home,      label: 'Home' })
-  if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
-  if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: Building2, label: 'Villa' })
+  if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: 'home',  label: 'Home' })
+  if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: 'hotel', label: 'Hotel' })
+  if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: 'villa', label: 'Villa' })
 
   return (
     <UniversalProviderCard
