@@ -277,9 +277,11 @@ export default function UniversalProviderCard({
             </span>
           </div>
 
-          {/* Name + city + subline */}
-          <div className="min-w-0 flex-1 pb-1">
-            <div className={`text-[17px] font-black truncate leading-tight ${s.nameText}`}>
+          {/* Name + city + subline — pb-3 lifts the visible text block
+              up off the flex bottom edge so the name sits higher next
+              to the avatar (cleaner alignment with the cover seam). */}
+          <div className="min-w-0 flex-1 pb-3">
+            <div className={`text-[20px] font-black truncate leading-tight ${s.nameText}`}>
               {displayName}
             </div>
             {city && (
