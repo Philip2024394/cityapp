@@ -206,7 +206,18 @@ export default function LandingPage() {
                   style={{ background: '#172554' }}
                   aria-hidden
                 >
-                  <img src={tile.img} alt="" className="h-7 w-auto object-contain" loading="eager" />
+                  {/* First 4 tiles (above the fold on most phones)
+                      stay eager; the rest defer to lazy so the
+                      tile-image bytes don't compete with the LCP. */}
+                  <img
+                    src={tile.img}
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="h-7 w-auto object-contain"
+                    loading={i < 4 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
                 </span>
                 <span className="flex-1 text-left min-w-0">
                   <span className="block font-extrabold text-[13px] leading-tight truncate">{tile.label}</span>
