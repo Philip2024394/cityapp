@@ -3,7 +3,6 @@ import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Truck, Clock, Scale } from 'lucide-react'
-import AppNav from '@/components/layout/AppNav'
 import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
 import type { LaundryProviderPublic } from '@/lib/laundry/types'
 
@@ -11,7 +10,7 @@ const LAUNDRY_CARD_BG = 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.p
 
 export default function LaundryMarketplacePage() {
   return (
-    <Suspense fallback={<Shell><div className="px-4 pt-6 text-ink/50 text-[13px]">Loading…</div></Shell>}>
+    <Suspense fallback={<Shell><div className="px-4 pt-6 text-black/50 text-[13px]">Loading…</div></Shell>}>
       <Inner />
     </Suspense>
   )
@@ -39,13 +38,13 @@ function Inner() {
     <Shell>
       <div className="px-4 pt-4 pb-24 max-w-4xl mx-auto">
         <div className="mb-3 text-center">
-          <div className="text-[11px] uppercase tracking-[0.18em] font-extrabold text-ink/55">
+          <div className="text-[11px] uppercase tracking-[0.18em] font-extrabold text-black/55">
             Laundry shops in
           </div>
-          <div className="text-[20px] font-black text-ink mt-0.5">
+          <div className="text-[20px] font-black text-black mt-0.5">
             {cityLabel} City
           </div>
-          <div className="inline-flex items-center gap-1 text-[12px] text-ink/70 mt-1 leading-snug">
+          <div className="inline-flex items-center gap-1 text-[12px] text-black/70 mt-1 leading-snug">
             <Truck className="w-3.5 h-3.5" />
             Pickup &amp; dropoff included · per-kg pricing
           </div>
@@ -65,7 +64,7 @@ function Inner() {
               className={`px-4 py-2 rounded-full text-[12px] font-extrabold uppercase tracking-wider border transition shrink-0 ${
                 pkg === opt.v
                   ? 'bg-brand text-bg border-brand'
-                  : 'bg-black/60 text-ink/80 border-white/15 hover:bg-white/5'
+                  : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
               }`}
             >
               {opt.label}
@@ -75,10 +74,16 @@ function Inner() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[0,1,2,3].map((i) => <div key={i} className="h-40 bg-white/5 rounded-2xl animate-pulse" />)}
+            {[0,1,2,3].map((i) => <div key={i} className="h-40 bg-gray-100 rounded-2xl animate-pulse" />)}
           </div>
         ) : providers.length === 0 ? (
-          <div className="rounded-2xl bg-black/85 border border-white/10 p-8 text-center text-ink/65 text-[13px]">
+          <div
+            className="rounded-2xl p-8 text-center text-white/85 text-[13px]"
+            style={{
+              background: '#1E3A8A',
+              border: '1px solid rgba(250,204,21,0.45)',
+            }}
+          >
             No laundry shops listed in this category yet.
           </div>
         ) : (
@@ -89,8 +94,14 @@ function Inner() {
           </div>
         )}
 
-        <div className="mt-10 rounded-2xl bg-black/85 border border-white/10 p-5 text-center">
-          <div className="text-[13px] font-bold text-ink/80 mb-3">Are you a laundry shop?</div>
+        <div
+          className="mt-10 rounded-2xl p-5 text-center"
+          style={{
+            background: '#1E3A8A',
+            border: '1px solid rgba(250,204,21,0.45)',
+          }}
+        >
+          <div className="text-[13px] font-bold text-white/85 mb-3">Are you a laundry shop?</div>
           <Link href="/laundry/signup" className="inline-flex items-center gap-2 rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider hover:brightness-105">
             List your shop · Rp 38.000/month
           </Link>
@@ -141,14 +152,23 @@ function ProviderCard({ provider: p }: { provider: LaundryProviderPublic; demo?:
       portfolioThumbs={portfolioThumbs}
       bottomItems={bottomItems}
       ctaLabel="Profile"
+      variant="light"
     />
   )
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink">
-      <AppNav />
+    <main className="relative min-h-screen bg-white text-black">
+      <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
+        <Link href="/" aria-label="Home" className="inline-block">
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+            alt="City Riders"
+            className="h-8 sm:h-10 w-auto"
+          />
+        </Link>
+      </header>
       {children}
     </main>
   )

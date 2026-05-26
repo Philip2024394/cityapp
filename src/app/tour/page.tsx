@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Plus, Compass, Fuel, Bike, Globe } from 'lucide-react'
-import AppNav from '@/components/layout/AppNav'
 import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { TOUR_SERVICES } from '@/data/tourServices'
@@ -99,9 +98,17 @@ export default async function TourGuideFeedPage({
   })
 
   return (
-    <>
-      <AppNav />
-      <main className="max-w-3xl mx-auto px-4 pt-3 pb-24">
+    <main className="relative min-h-screen bg-white text-black">
+      <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
+        <Link href="/" aria-label="Home" className="inline-block">
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+            alt="City Riders"
+            className="h-8 sm:h-10 w-auto"
+          />
+        </Link>
+      </header>
+      <div className="max-w-3xl mx-auto px-4 pt-3 pb-24">
         <header className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-[24px] sm:text-[28px] font-extrabold tracking-tight leading-tight">
@@ -126,7 +133,7 @@ export default async function TourGuideFeedPage({
             <div className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)', border: '1px solid rgba(0,0,0,0.85)' }}>
               <Compass className="w-6 h-6 text-bg" strokeWidth={2.5} />
             </div>
-            <div className="text-[14px] font-extrabold text-ink">Belum ada tour guide terdaftar</div>
+            <div className="text-[14px] font-extrabold text-black">Belum ada tour guide terdaftar</div>
             <p className="text-[12px] text-muted">Jadi yang pertama — tap "List" di kanan atas.</p>
           </div>
         ) : (
@@ -194,6 +201,7 @@ export default async function TourGuideFeedPage({
                   portfolioThumbs={thumbs}
                   bottomItems={bottomItems}
                   ctaLabel="Profile"
+                  variant="light"
                 />
               )
             })}
@@ -202,7 +210,7 @@ export default async function TourGuideFeedPage({
 
         {/* Why also feed: TOUR_SERVICES referenced statically so build doesn't tree-shake the import. */}
         <div className="hidden">{TOUR_SERVICES.length}</div>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }
