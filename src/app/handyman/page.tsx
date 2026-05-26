@@ -194,6 +194,14 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
   const specialtyLabel = primary ? SPECIALTY_LABELS[primary] : null
   const portfolioThumbs = (p.gallery_image_urls ?? []).slice(0, 3)
 
+  // Per-trade pill hue overrides. Yellow stays the brand default for
+  // most trades; specific specialties get their own colour so the chip
+  // reads as a quick visual cue. Add more entries here as needed.
+  const SPECIALTY_PILL_COLOR: Partial<Record<string, string>> = {
+    carpentry: '#1E40AF',  // dark blue for Tukang Kayu
+  }
+  const specialtyColor = primary ? SPECIALTY_PILL_COLOR[primary] ?? null : null
+
   // Subline summarises the credibility signals in one line — years
   // of experience + city + "own tools" badge when applicable.
   const sublineBits: string[] = []
@@ -232,6 +240,7 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
       bottomItems={bottomItems}
       ctaLabel="Profile"
       variant="light"
+      specialtyColor={specialtyColor}
     />
   )
 }

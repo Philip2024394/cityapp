@@ -81,6 +81,11 @@ export type UniversalProviderCardProps = {
   rating?:            number | null
   /** Theme-tinted pill text — typically the primary service category. */
   specialtyLabel?:    string | null
+  /** Optional override for the specialty pill colour. Defaults to the
+   *  card's themeColor — useful when a particular trade reads better
+   *  in a different hue (e.g. carpentry → dark blue). Only the pill
+   *  changes; the rest of the card keeps themeColor. */
+  specialtyColor?:    string | null
   /** Up to 3 image URLs for the mini portfolio strip. Caller may pass
    *  fewer; rows simply collapse. */
   portfolioThumbs?:   string[]
@@ -161,8 +166,10 @@ export default function UniversalProviderCard({
   bottomItems,
   ctaLabel = 'Profile',
   variant = 'dark',
+  specialtyColor,
 }: UniversalProviderCardProps) {
-  const theme = themeColor
+  const theme    = themeColor
+  const pillHue  = specialtyColor || themeColor
   const s = SURFACE[variant]
   const initials = displayName.charAt(0).toUpperCase()
   const hasRating = typeof rating === 'number' && rating > 0
@@ -305,9 +312,9 @@ export default function UniversalProviderCard({
             <div
               className="shrink-0 px-2.5 py-1 rounded-full text-[12px] font-black uppercase tracking-wider"
               style={{
-                background: `${theme}22`,
-                color: theme,
-                border: `1px solid ${theme}60`,
+                background: `${pillHue}22`,
+                color: pillHue,
+                border: `1px solid ${pillHue}60`,
               }}
             >
               {specialtyLabel}
