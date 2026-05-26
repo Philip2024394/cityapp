@@ -361,20 +361,27 @@ function PlanTripPageInner() {
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-baseline hover:opacity-85 transition"
+            className="inline-flex items-center hover:opacity-85 transition"
             aria-label="IndoCity home"
           >
-            {/* Two-tone wordmark rendered as text: "Indo" white,
-                "City" brand-yellow. A single PNG cannot be partially
-                recolored with CSS filters, so the wordmark is drawn
-                here directly. Swap back to an <img> once a pre-colored
-                two-tone asset is hosted. */}
+            {/* Two-tone wordmark: "Ind" white + map-pin icon as the
+                "O" of Indo + "City" brand-yellow. The MapPin substitutes
+                visually for the O so the wordmark reads "Ind📍 City".
+                Single PNG cannot deliver this layout, so the wordmark
+                is composed inline here. */}
             <span
               className="font-black tracking-tight text-[26px] sm:text-[32px] leading-none"
               style={{ color: '#FFFFFF', letterSpacing: '-0.02em' }}
             >
-              Indo
+              Ind
             </span>
+            <MapPin
+              aria-hidden
+              className="w-[22px] h-[22px] sm:w-[28px] sm:h-[28px] mx-[1px] -translate-y-[1px]"
+              strokeWidth={2.6}
+              style={{ color: '#FACC15' }}
+              fill="#FACC15"
+            />
             <span
               className="font-black tracking-tight text-[26px] sm:text-[32px] leading-none"
               style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
