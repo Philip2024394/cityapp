@@ -585,6 +585,10 @@ function PlanTripPageInner() {
               countryCodes={countryCodes}
               ariaLabel="Pick up location"
               clearOnFocus
+              // Pickup now sits near the top of the page, so the
+              // suggestions drop DOWN. Dropoff stays default ('up'),
+              // since it's still in the bottom sheet.
+              dropdownDirection="down"
               leftSlot={
                 <button
                   onClick={handleUseLocation}

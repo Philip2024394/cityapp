@@ -268,10 +268,24 @@ export default function RiderMap({
   }, [center.lat, center.lng, zoom])
 
   // Apply viewport padding to the map's default camera. Updates when
-  // the caller changes padding (e.g. sheet expand/collapse).
+  // the caller changes padding (e.g. sheet expand/collapse). When
+  // there is no active route, we also re-fly to the current centre so
+  // the visible pin lands in the unobstructed band even if the chrome
+  // height was still settling at the moment of the initial flyTo
+  // (e.g. pickup card measured AFTER first paint). With an active
+  // route, the route effect owns the camera — skip the re-fly to
+  // avoid camera fights.
   useEffect(() => {
     if (!mapRef.current) return
     mapRef.current.setPadding(padding)
+    if (!(showRoute && pickup && dropoff)) {
+      mapRef.current.flyTo({
+        center: [center.lng, center.lat],
+        zoom,
+        duration: 350,
+        padding,
+      })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [padding.top, padding.bottom, padding.left, padding.right])
 
@@ -653,8 +667,7 @@ export default function RiderMap({
 
   return (
     <div
-      style={{ height, width: '100%', borderRadius: 20, overflow: 'hidden', position: 'relative' }}
-      className="border border-line"
+      style={{ height, width: '100%', overflow: 'hidden', position: 'relative' }}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       <AttributionPill />

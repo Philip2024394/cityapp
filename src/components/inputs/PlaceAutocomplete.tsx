@@ -29,6 +29,11 @@ type Props = {
    *  blinks). Default false preserves the select-all-on-focus behaviour
    *  that lets form-edit surfaces tweak an existing value. */
   clearOnFocus?: boolean
+  /** Which way the suggestions dropdown opens. Default 'up' — for the
+   *  bottom-sheet location where opening down would clip below the
+   *  viewport. Pass 'down' when the input sits NEAR THE TOP of the
+   *  page (e.g. the new pickup card above the map on /cari). */
+  dropdownDirection?: 'up' | 'down'
 }
 
 // Free-text input with debounced Nominatim place-search suggestions.
@@ -37,6 +42,7 @@ type Props = {
 // input (the input lives in the bottom sheet so down would clip).
 export default function PlaceAutocomplete({
   value, onChange, onSelect, placeholder, className, leftSlot, rightSlot, near, countryCodes, ariaLabel, maxResults, clearOnFocus,
+  dropdownDirection = 'up',
 }: Props) {
   const [focused, setFocused] = useState(false)
   const { suggestions: rawSuggestions, loading } = usePlaceSearch(value, { near, countryCodes })
@@ -87,11 +93,17 @@ export default function PlaceAutocomplete({
 
       {showDropdown && (
         <div
-          className="absolute left-0 right-0 bottom-full mb-1.5 rounded-xl overflow-hidden z-50"
+          className={
+            'absolute left-0 right-0 rounded-xl overflow-hidden z-50 ' +
+            (dropdownDirection === 'down' ? 'top-full mt-1.5' : 'bottom-full mb-1.5')
+          }
           style={{
             background: 'rgba(10,10,12,0.96)',
             border: '1px solid rgba(250,204,21,0.25)',
-            boxShadow: '0 -14px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
+            boxShadow:
+              dropdownDirection === 'down'
+                ? '0 14px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)'
+                : '0 -14px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
             backdropFilter: 'blur(18px) saturate(1.3)',
             WebkitBackdropFilter: 'blur(18px) saturate(1.3)',
           }}
