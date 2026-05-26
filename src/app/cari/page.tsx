@@ -270,7 +270,7 @@ function PlanTripPageInner() {
           hex as the landing-page tile icons + specialty chips, so the
           accent thread carries through. White-on-other-pages remains
           the rule everywhere else. */}
-      <div className="fixed inset-0 z-0" style={{ background: '#172554' }} />
+      <div className="fixed inset-0 z-0" style={{ background: '#0F172A' }} />
 
       {/* ACTIVE MAP — sized to EXACTLY the visible hero band between the
           header and the bottom stack. fitBounds now frames the route
