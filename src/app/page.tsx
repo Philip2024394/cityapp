@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { Truck } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { logNav } from '@/lib/perf/navTiming'
 
@@ -226,6 +227,35 @@ export default function LandingPage() {
               </Link>
             ))}
 
+          </div>
+
+          {/* Rentals hub CTA — distinct from the photo-tile grid above.
+              Routes to /rentals (Bike · Car · Bus · Truck by-day hire).
+              Framed as a directory browse, never as an IndoCity rental. */}
+          <div className="w-full max-w-sm mx-auto">
+            <Link
+              href="/rentals"
+              prefetch
+              onClick={() => logNav('landing-cta:rentals')}
+              aria-label="Browse driver-published rentals"
+              className="w-full min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#172554] text-white border-2 border-brand hover:bg-[#1e3a8a] active:scale-[0.99] transition-all shadow-[0_6px_18px_rgba(23,37,84,0.30)]"
+            >
+              <span
+                className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-brand"
+                aria-hidden
+              >
+                <Truck className="w-5 h-5 text-[#172554]" strokeWidth={2.5} />
+              </span>
+              <span className="flex-1 text-left min-w-0">
+                <span className="block font-extrabold text-[13px] leading-tight">
+                  Rentals · Bike, Car, Bus, Truck by-day
+                </span>
+                <span className="block text-[11px] font-bold opacity-80 leading-tight mt-0.5">
+                  Browse driver-published listings — from Rp 250K/day
+                </span>
+              </span>
+              <span className="shrink-0 text-brand font-black text-[16px]" aria-hidden>→</span>
+            </Link>
           </div>
 
           {/* Language toggle — centered under the tile grid (was previously
