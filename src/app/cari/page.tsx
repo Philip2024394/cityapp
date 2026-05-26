@@ -743,7 +743,12 @@ function ServiceTab({
         'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 text-[11px] font-extrabold uppercase tracking-wider transition active:scale-95 ' +
         (active
           ? 'text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_6px_18px_rgba(250,204,21,0.32)]'
-          : 'text-white bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.10]')
+          : 'text-white border border-white/[0.10] hover:bg-white/[0.06]')
+      }
+      style={
+        active
+          ? undefined
+          : { background: '#0A0A0A', boxShadow: '0 4px 14px rgba(0,0,0,0.40)' }
       }
     >
       {icon}
