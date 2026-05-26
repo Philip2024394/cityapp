@@ -308,61 +308,61 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
         </Field>
       </Card>
 
-      {/* Physical location */}
-      {/* Where I travel to — drives the Home / Hotel / Villa icon row
-          on both the public profile hero and the marketplace card.
-          Customers only see the icons you tick here. */}
-      <Card title="Where I travel to" hint="Tick the locations you accept bookings at. Unchecked locations are hidden from your marketplace card and profile." icon={<MapPin size={18} />}>
-        <div className="grid grid-cols-3 gap-2">
+      {/* Service modes — unified four-toggle group.
+          Customer-facing card + profile show whichever of these four
+          modes the beautician ticks. Each toggle maps to one DB field:
+            • Beautician Spa Place → has_physical_location
+            • Home / Hotel / Villa → entries in service_locations[]
+          When "Beautician Spa Place" is on, the location-pin editor
+          below the grid becomes visible. */}
+      <Card title="Service modes — where customers meet you" hint="Tick every mode you offer. Unticked modes are hidden from your marketplace card and profile." icon={<MapPin size={18} />}>
+        <div className="grid grid-cols-2 gap-2">
           {([
-            { id: 'home',  label: 'Home',  hint: 'Customer house' },
-            { id: 'hotel', label: 'Hotel', hint: 'Hotel rooms' },
-            { id: 'villa', label: 'Villa', hint: 'Villa stays' },
+            { id: 'spa',   label: 'Beautician Spa Place', hint: 'Customers visit my salon' },
+            { id: 'home',  label: 'Home service',          hint: 'I visit customer homes' },
+            { id: 'hotel', label: 'Hotel service',         hint: 'I visit hotels' },
+            { id: 'villa', label: 'Villa service',         hint: 'I visit villas' },
           ] as const).map((opt) => {
-            const on = f.service_locations.includes(opt.id)
+            const on = opt.id === 'spa'
+              ? f.has_physical_location
+              : f.service_locations.includes(opt.id as 'home' | 'hotel' | 'villa')
             return (
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => upd(
-                  'service_locations',
-                  on ? f.service_locations.filter((x) => x !== opt.id)
-                     : [...f.service_locations, opt.id],
-                )}
+                onClick={() => {
+                  if (opt.id === 'spa') {
+                    upd('has_physical_location', !on)
+                  } else {
+                    const lid = opt.id as 'home' | 'hotel' | 'villa'
+                    upd(
+                      'service_locations',
+                      on ? f.service_locations.filter((x) => x !== lid)
+                         : [...f.service_locations, lid],
+                    )
+                  }
+                }}
                 aria-pressed={on}
-                className={`flex flex-col items-center justify-center gap-1 rounded-xl p-3 border transition min-h-[68px] ${
+                className={`flex flex-col items-start justify-center gap-1 rounded-xl p-3 border transition min-h-[68px] text-left ${
                   on
                     ? 'bg-yellow-400 border-yellow-300 text-yellow-900 shadow-md shadow-yellow-400/30'
-                    : 'bg-white/10 border-white/15 text-black/70 hover:bg-white/15'
+                    : 'bg-gray-100 border-gray-200 text-black/80 hover:bg-gray-200'
                 }`}
               >
-                <span className="text-[13px] font-extrabold leading-none">{opt.label}</span>
-                <span className={`text-[10px] leading-tight ${on ? 'text-yellow-900/70' : 'text-white/50'}`}>
+                <span className="text-[13px] font-extrabold leading-tight">{opt.label}</span>
+                <span className={`text-[10.5px] leading-tight ${on ? 'text-yellow-900/70' : 'text-black/55'}`}>
                   {opt.hint}
                 </span>
               </button>
             )
           })}
         </div>
-        {f.service_locations.length === 0 && (
-          <p className="text-[11px] text-amber-200 leading-snug">
-            ⚠ With none selected, your card and profile won&apos;t show any travel-location icons.
+        {!f.has_physical_location && f.service_locations.length === 0 && (
+          <p className="text-[11px] text-amber-700 leading-snug">
+            ⚠ With none selected, your card and profile won&apos;t show any service icons.
           </p>
         )}
-      </Card>
 
-      <Card title="Physical location (optional)" hint="Enable if you have a salon or studio customers can visit. Don't publish your home address unless you want walk-ins." icon={<MapPin size={18} />}>
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={f.has_physical_location}
-            onChange={(e) => upd('has_physical_location', e.target.checked)}
-            className="w-5 h-5 accent-yellow-400"
-          />
-          <span className="text-[14px] font-extrabold text-white">
-            I have a physical location
-          </span>
-        </label>
         {f.has_physical_location && (
           <div className="pt-3 space-y-2">
             <span className="text-[13px] font-bold text-white/85 inline-block">Pick a location</span>
@@ -385,9 +385,9 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
               </div>
             )}
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[11px] text-white/40 uppercase tracking-wider font-bold">or type address</span>
-              <div className="flex-1 h-px bg-white/10" />
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-[11px] text-black/40 uppercase tracking-wider font-bold">or type address</span>
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
             <PlaceAutocomplete
               value={locationQuery}
@@ -400,7 +400,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
               countryCodes={['id']}
               placeholder="Type address or place name…"
               ariaLabel="Search location"
-              className="w-full rounded-xl bg-gray-100 border border-gray-200 px-3 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-pink-400"
+              className="w-full rounded-xl bg-gray-100 border border-gray-200 px-3 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-pink-400"
             />
             {f.latitude != null && f.longitude != null ? (
               <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-500/15 border border-emerald-400/40 px-3 py-2">
@@ -414,14 +414,14 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
                     upd('latitude', null)
                     upd('longitude', null)
                   }}
-                  className="text-[12px] font-bold text-black/70 hover:text-white"
+                  className="text-[12px] font-bold text-black/70 hover:text-black"
                 >
                   Change
                 </button>
               </div>
             ) : (
-              <p className="text-[12px] text-white/60 leading-snug">
-                Type a place name (e.g. "Malioboro Yogyakarta") — pick a suggestion to drop a pin.
+              <p className="text-[12px] text-black/60 leading-snug">
+                Type a place name (e.g. &quot;Malioboro Yogyakarta&quot;) — pick a suggestion to drop a pin.
               </p>
             )}
           </div>

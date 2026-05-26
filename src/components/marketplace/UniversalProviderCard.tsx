@@ -5,6 +5,7 @@ import {
   Home, Hotel, Building2,
   Clock, DollarSign, Scale, Truck, Sparkles,
   Bike, Fuel, Globe,
+  Store,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -23,6 +24,7 @@ const BOTTOM_ICON_MAP: Record<string, LucideIcon> = {
   bike:        Bike,
   fuel:        Fuel,
   globe:       Globe,
+  spa:         Store,   // physical salon / studio location
 }
 export type BottomIconKey = keyof typeof BOTTOM_ICON_MAP
 

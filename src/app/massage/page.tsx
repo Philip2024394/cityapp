@@ -149,9 +149,18 @@ function ProviderCard({ provider: p }: { provider: MassageProviderPublic; demo?:
   // Home / Hotel / Villa icons same as beautician.
   const locs = new Set(p.service_locations ?? [])
   const bottomItems: UniversalProviderCardBottomItem[] = []
-  if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: 'home',  label: 'Home' })
-  if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: 'hotel', label: 'Hotel' })
-  if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: 'villa', label: 'Villa' })
+  // Four independent service modes — see beautician adapter for the
+  // promote-to-full-label rule when spa is the only mode.
+  if (p.has_physical_location && locs.size === 0) {
+    bottomItems.push({ key: 'spa', icon: 'spa', label: 'Therapist Spa Center' })
+  } else {
+    if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: 'home',  label: 'Home' })
+    if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: 'hotel', label: 'Hotel' })
+    if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: 'villa', label: 'Villa' })
+    if (p.has_physical_location) {
+      bottomItems.push({ key: 'spa', icon: 'spa', label: 'Spa' })
+    }
+  }
 
   return (
     <UniversalProviderCard

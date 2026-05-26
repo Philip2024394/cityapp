@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Star, Award, Menu, Home, Hotel, Building2, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
+import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
 import VisitUsMap from '@/components/profile/VisitUsMap'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
@@ -256,13 +256,21 @@ export default function BeauticianProviderPage() {
                     locations they may not actually serve. */}
                 {(() => {
                   const locs = new Set(p.service_locations ?? [])
-                  if (locs.size === 0) return null
+                  const hasSpa = Boolean(p.has_physical_location)
+                  if (locs.size === 0 && !hasSpa) return null
                   const items: Array<{ key: string; icon: typeof Home; label: string }> = []
                   if (locs.has('home'))  items.push({ key: 'home',  icon: Home,      label: 'Home' })
                   if (locs.has('hotel')) items.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
                   if (locs.has('villa')) items.push({ key: 'villa', icon: Building2, label: 'Villa' })
+                  // Spa icon — appended when has_physical_location is on.
+                  // When spa is the ONLY mode, the label expands to
+                  // "Beautician Spa" so it's obvious this is in-salon only.
+                  if (hasSpa) {
+                    const label = locs.size === 0 ? 'Beautician Spa' : 'Spa'
+                    items.push({ key: 'spa', icon: Store, label })
+                  }
                   return (
-                    <div className="flex items-start gap-2 max-w-[260px]" style={{ marginTop: 15 }}>
+                    <div className="flex items-start gap-2 max-w-[280px]" style={{ marginTop: 15 }}>
                       {items.map((it, idx) => (
                         <React.Fragment key={it.key}>
                           {idx > 0 && <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />}

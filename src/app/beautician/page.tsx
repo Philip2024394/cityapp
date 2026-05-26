@@ -296,12 +296,25 @@ function ProviderCardViaUniversal({ provider: p }: { provider: BeauticianProvide
     return out
   })()
 
-  // Location icons — same filter rule as the profile hero.
+  // Service-mode pills — beautician picks any combination of four
+  // independent checkboxes on their dashboard (mig 0079 + 0086):
+  //   has_physical_location  → "Beautician Spa Center"
+  //   service_locations[home/hotel/villa] → Home / Hotel / Villa pills
+  // When spa is the ONLY mode (no service_locations set), promote it
+  // to a full-label "Beautician Spa Center" pill so customers know
+  // this provider only serves in-salon.
   const locs = new Set(p.service_locations ?? [])
   const bottomItems: UniversalProviderCardBottomItem[] = []
-  if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: 'home',  label: 'Home' })
-  if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: 'hotel', label: 'Hotel' })
-  if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: 'villa', label: 'Villa' })
+  if (p.has_physical_location && locs.size === 0) {
+    bottomItems.push({ key: 'spa', icon: 'spa', label: 'Beautician Spa Center' })
+  } else {
+    if (locs.has('home'))  bottomItems.push({ key: 'home',  icon: 'home',  label: 'Home' })
+    if (locs.has('hotel')) bottomItems.push({ key: 'hotel', icon: 'hotel', label: 'Hotel' })
+    if (locs.has('villa')) bottomItems.push({ key: 'villa', icon: 'villa', label: 'Villa' })
+    if (p.has_physical_location) {
+      bottomItems.push({ key: 'spa', icon: 'spa', label: 'Spa' })
+    }
+  }
 
   const eff = effectiveAvailability(p)
 
