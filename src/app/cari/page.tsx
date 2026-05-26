@@ -352,18 +352,18 @@ function PlanTripPageInner() {
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center hover:opacity-85 transition rounded-xl px-3 py-1.5"
+            className="inline-flex items-center hover:opacity-85 transition"
             aria-label="IndoCity home"
-            style={{
-              background: 'rgba(255,255,255,0.92)',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
-            }}
           >
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
               alt="IndoCity"
-              className="h-7 sm:h-8 w-auto"
+              className="h-8 sm:h-10 w-auto"
               loading="eager"
+              /* Invert colors so the wordmark (dark on transparent)
+                 renders white on the navy backdrop. Drops the white
+                 pill background per founder request. */
+              style={{ filter: 'invert(1) brightness(1.15)' }}
             />
           </Link>
 
