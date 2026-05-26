@@ -235,8 +235,11 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  // Paint over the global PageBackground with solid white so the
+  // marketplace reads as a clean directory page. Text colour switches
+  // to dark inks (ink → black via the surface).
   return (
-    <main className="relative min-h-screen text-ink">
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
