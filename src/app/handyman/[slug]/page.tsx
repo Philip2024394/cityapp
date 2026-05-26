@@ -11,6 +11,7 @@ import SocialShareSheet   from '@/components/profile/SocialShareSheet'
 import TrustBadges        from '@/components/profile/TrustBadges'
 import AboutSection       from '@/components/profile/AboutSection'
 import OperatingHoursCard from '@/components/profile/OperatingHoursCard'
+import RunningMarquee     from '@/components/profile/RunningMarquee'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { SPECIALTY_LABELS, type HandymanProviderPublic } from '@/lib/handyman/types'
@@ -91,6 +92,15 @@ export default function HandymanProviderPage() {
         <Link href="/handyman" className="text-[12px] text-ink/60 hover:text-ink inline-block">← Back to marketplace</Link>
 
         <TrustBadges idVerified memberSince={p.created_at} lastActiveAt={p.last_active_at} />
+
+        {/* Promo marquee — only renders when the tukang has set promo_text. */}
+        {p.promo_text && (
+          <RunningMarquee
+            text={p.promo_text}
+            background={themeColor + '1A'}
+            color="rgba(255,255,255,0.75)"
+          />
+        )}
 
         {/* Specialties — primary buying signal for handyman. */}
         {(p.specialties || []).length > 0 && (

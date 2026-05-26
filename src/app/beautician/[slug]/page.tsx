@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Star, Award, Menu, Home, Hotel, Building2, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
 import VisitUsMap from '@/components/profile/VisitUsMap'
+import RunningMarquee from '@/components/profile/RunningMarquee'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { Sparkles } from 'lucide-react'
@@ -533,29 +534,10 @@ export default function BeauticianProviderPage() {
           )
         })()}
 
-        {/* Running marquee — weekly promo ribbon under the carousel.
-            Two copies of the same text scroll seamlessly so the loop
-            never has a visible gap. */}
-        <div
-          className="overflow-hidden py-1.5 rounded-full"
-          style={{ background: '#FDF2F8', marginTop: 0 }}
-        >
-          <style>{`@keyframes cr-marquee { from { transform: translateX(0%); } to { transform: translateX(-50%); } }`}</style>
-          <div
-            className="flex whitespace-nowrap"
-            style={{ animation: 'cr-marquee 28s linear infinite' }}
-          >
-            {[0, 1].map((k) => (
-              <span
-                key={k}
-                aria-hidden={k === 1 ? true : undefined}
-                className="px-8 text-[16px] tracking-wide text-gray-500"
-              >
-                {p.promo_text || 'Message me this week — exclusive promo on professional beauty service delivered straight to your home, hotel or villa, in the comfort of your stay.'} ✦
-              </span>
-            ))}
-          </div>
-        </div>
+        {/* Running marquee — weekly promo ribbon under the carousel. */}
+        <RunningMarquee
+          text={p.promo_text || 'Message me this week — exclusive promo on professional beauty service delivered straight to your home, hotel or villa, in the comfort of your stay.'}
+        />
 
         {/* CTA row under the carousel — large price on the left,
             themed Contact button (square w/ rounded corners) on the
