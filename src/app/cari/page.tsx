@@ -6,7 +6,6 @@ import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Briefcase, Utensi
 import RiderMap from '@/components/map/RiderMapDynamic'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
-import TripPriceBanner from '@/components/cari/TripPriceBanner'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -459,15 +458,6 @@ function PlanTripPageInner() {
             />
           </div>
 
-          {/* TRIP PRICE BANNER — only renders once dropoff is set (so we
-              have a real distance). Surfaces the lowest published
-              minimum fare from drivers in the area; never our calculation.
-              Sits as its own row above the pickup tile so the visual
-              hierarchy reads price-then-form. */}
-          {canSearch && tripKm != null && (
-            <TripPriceBanner distanceKm={tripKm} lowestFareIdr={lowestFareIdr} />
-          )}
-
           {/* PICKUP TILE — dark-red round GPS button sits INSIDE the input
               on the right, auto-sets the location to the customer's GPS
               coords on tap. Replaces the previous "My location" text link. */}
@@ -666,6 +656,34 @@ function PlanTripPageInner() {
               ariaLabel="Drop off location"
               clearOnFocus
             />
+            {/* INLINE PRICE READOUT — surfaces the lowest published driver
+                fare + distance once both pickup and dropoff are set. Lives
+                inside the dropoff tile (not its own ribbon above pickup)
+                so the customer sees price the moment they finish the
+                destination field — same container, same visual block.
+                Copy is compliance-safe (PM 12/2019 directory safe-harbour):
+                "Starting from" — never "Trip price" / "Total fare". */}
+            {canSearch && tripKm != null && (
+              <div className="mt-2 pt-2 border-t border-bg/25">
+                <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                  {lowestFareIdr != null ? (
+                    <span className="text-[13px] font-extrabold tracking-tight text-bg">
+                      Starting from Rp {lowestFareIdr.toLocaleString('en-US')}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-bold tracking-tight text-bg/70">
+                      No driver price yet
+                    </span>
+                  )}
+                  <span className="text-[11px] font-bold tracking-tight text-bg/80">
+                    {tripKm.toFixed(1)} km
+                  </span>
+                </div>
+                <div className="text-[9px] uppercase tracking-wider text-bg/55 mt-0.5">
+                  Estimate · agreed with driver
+                </div>
+              </div>
+            )}
           </div>
 
           {/* CTA TILE — black infill with brand-yellow edge line. Under
