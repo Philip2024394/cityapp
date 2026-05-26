@@ -39,7 +39,7 @@ export default async function RentListAuthGatePage() {
               List your <span className="gradient-text">rental bike</span>
             </h1>
             <p className="text-[13px] text-muted leading-snug">
-              Pilih cara masuk untuk mulai listing motor sewa kamu di City Riders.
+              Pilih cara masuk untuk mulai listing motor sewa kamu di IndoCity.
             </p>
           </header>
 

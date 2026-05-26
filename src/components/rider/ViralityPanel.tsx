@@ -244,7 +244,7 @@ function DriverGroupCard({ city }: { city: string | null }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-extrabold text-[14px]">
-          Join the {city ? `${city} ` : ''}City Rider drivers group
+          Join the {city ? `${city} ` : ''}IndoCity drivers group
         </div>
         <div className="text-[12px] text-muted truncate mt-0.5">
           WhatsApp group — driver tips, hotspots, peer support

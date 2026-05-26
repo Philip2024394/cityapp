@@ -1,7 +1,7 @@
 -- ============================================================================
 -- 0034_account_type_and_rental_company.sql
 -- ----------------------------------------------------------------------------
--- Two account types live on the City Rider auth users:
+-- Two account types live on the IndoCity auth users:
 --
 --   * 'personal'        (default) — can use bike booking, food, parcel AND
 --                                    list 1 bike rental for free.

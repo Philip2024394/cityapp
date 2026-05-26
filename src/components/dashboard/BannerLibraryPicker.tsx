@@ -441,7 +441,7 @@ function PremiumBannerModal({
           {step === "intro" ? (
             <>
               <ul className="text-[12px] text-ink/75 space-y-1 leading-snug">
-                <li>✓ Banner becomes yours — no one else on City Riders gets it</li>
+                <li>✓ Banner becomes yours — no one else on IndoCity gets it</li>
                 <li>✓ Activates on your profile immediately after payment proof is sent</li>
                 <li>✓ Admin verifies payment within 24h</li>
               </ul>

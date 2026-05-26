@@ -9,9 +9,9 @@ import AppNav from '@/components/layout/AppNav'
 // once the schema migrations + form components ship.
 
 export const metadata = {
-  title: 'List Your Place · City Rider',
+  title: 'List Your Place · IndoCity',
   description:
-    'Daftarkan tempat usahamu di City Rider. GRATIS 7 hari pertama, lalu Rp 38.000/bulan atau Rp 350.000/tahun — listing langsung tampil di area kotamu.',
+    'Daftarkan tempat usahamu di IndoCity. GRATIS 7 hari pertama, lalu Rp 38.000/bulan atau Rp 350.000/tahun — listing langsung tampil di area kotamu.',
 }
 
 const STEPS = [
@@ -55,7 +55,7 @@ export default function ListPlacePage() {
             List your <span className="gradient-text">place</span>
           </h1>
           <p className="mt-2 text-[14px] text-muted leading-snug">
-            Tampilkan tempat usahamu di City Rider dan biarkan pelanggan kami yang sedang booking
+            Tampilkan tempat usahamu di IndoCity dan biarkan pelanggan kami yang sedang booking
             rider langsung menemukan tempatmu. <strong className="text-ink">GRATIS 7 hari</strong> — lalu hanya
             <strong className="text-ink"> Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong>, satu listing per tempat.
           </p>
@@ -96,7 +96,7 @@ export default function ListPlacePage() {
             </span>
           </div>
           <p className="text-[13px] font-bold leading-snug">
-            Isi detail tempatmu, upload foto, dan kirim — admin City Rider akan meninjau dalam
+            Isi detail tempatmu, upload foto, dan kirim — admin IndoCity akan meninjau dalam
             24–48 jam. Setelah disetujui kamu mendapat GRATIS 7 hari, lalu Rp 38.000/bulan atau Rp 350.000/tahun untuk tetap tayang.
           </p>
           <div className="mt-3 flex items-center gap-2 flex-wrap">

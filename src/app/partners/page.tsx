@@ -14,8 +14,8 @@ const PARTNER_BG_URL =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 export const metadata = {
-  title: 'Partner Program — City Riders',
-  description: 'Hotels, villas and businesses earn 8% commission when your guests book a City Rider via your QR or link. Free to join, paid weekly by the driver directly. No platform fee.',
+  title: 'Partner Program — IndoCity',
+  description: 'Hotels, villas and businesses earn 8% commission when your guests book a IndoCity via your QR or link. Free to join, paid weekly by the driver directly. No platform fee.',
 }
 
 export default function PartnersLanding() {
@@ -37,7 +37,7 @@ export default function PartnersLanding() {
         </h1>
         <p className="text-[15px] text-ink/70 leading-relaxed max-w-xl mb-8">
           Hotels, villas, restaurants and cafés: print our QR code, hand out the link,
-          and earn a referral commission on every City Rider booking your guests make.
+          and earn a referral commission on every IndoCity booking your guests make.
           Free to join. No fees. Driver pays you directly.
         </p>
         <PartnerProgramCTA variant="top" />
@@ -55,12 +55,12 @@ export default function PartnersLanding() {
               Each guest who scans is tagged to you for 24 hours.
             </Step>
             <Step n={3} title="Guest books a rider">
-              When a tagged guest contacts a driver through City Riders, we add an 8% commission
+              When a tagged guest contacts a driver through IndoCity, we add an 8% commission
               line to your dashboard.
             </Step>
             <Step n={4} title="Driver pays you weekly">
               Drivers settle directly with you each week (cash, GoPay, transfer — your choice).
-              City Riders never holds money — we&apos;re just the ledger.
+              IndoCity never holds money — we&apos;re just the ledger.
             </Step>
             <Step n={5} title="Unpaid? Driver loses access">
               If a driver doesn&apos;t settle within 7 days, they&apos;re suspended from the partner program
@@ -74,7 +74,7 @@ export default function PartnersLanding() {
         <div className="rounded-2xl bg-black/85 border border-white/10 p-6 shadow-card">
           <h2 className="text-[22px] font-black mb-6">Why it&apos;s safe</h2>
           <div className="space-y-3 text-[14px] text-ink/80 leading-relaxed">
-            <p><strong className="text-ink">City Riders is software only.</strong> We never hold funds, never take a cut of the 8%, and never touch the money between you and the driver.</p>
+            <p><strong className="text-ink">IndoCity is software only.</strong> We never hold funds, never take a cut of the 8%, and never touch the money between you and the driver.</p>
             <p><strong className="text-ink">Compliant with Perpres 27/2026.</strong> The 8% you earn is a B2B referral commission, not an aplikator commission deducted from the fare. The full 92% still goes to the driver.</p>
             <p><strong className="text-ink">You control your QR.</strong> Print it, place it where you want, change rates within the policy cap.</p>
           </div>

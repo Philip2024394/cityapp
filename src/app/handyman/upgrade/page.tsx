@@ -1,6 +1,6 @@
 import ProviderUpgradePage from '@/components/upgrade/ProviderUpgradePage'
 
-export const metadata = { title: 'Upgrade · Handyman (Tukang) · City Rider' }
+export const metadata = { title: 'Upgrade · Handyman (Tukang) · IndoCity' }
 
 export default function Page() {
   return (

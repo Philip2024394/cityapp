@@ -6,7 +6,7 @@ import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { getServerSupabase } from '@/lib/supabase/server'
 import ProfileSlugIslands from '@/components/profile/ProfileSlugIslands'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 // Public detail page for an approved bike rental listing. Server-rendered
 // for SEO. status='approved' filter prevents pending/rejected leakage.
@@ -81,7 +81,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
 
   const waNumber = (r.owner_whatsapp_e164 ?? '').replace(/[^0-9]/g, '')
   const waText = encodeURIComponent(
-    `Halo ${r.owner_name}, saya lihat ${title} di City Rider. Bisa cek ketersediaan?`,
+    `Halo ${r.owner_name}, saya lihat ${title} di IndoCity. Bisa cek ketersediaan?`,
   )
   const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : null
 
@@ -243,7 +243,7 @@ export default async function RentalDetailPage({ params }: { params: Promise<{ s
               providerId={r.id}
               shareUrl={`${SITE_URL}/rent/${r.slug}`}
               shareName={title}
-              shareText={`Lihat sewa motor ${title} di City Riders:`}
+              shareText={`Lihat sewa motor ${title} di IndoCity:`}
               socials={{ instagram: r.instagram_url, tiktok: r.tiktok_url, facebook: r.facebook_url }}
               hours={r.operating_hours}
             />

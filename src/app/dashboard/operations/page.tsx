@@ -356,7 +356,7 @@ export default function OperationsPage() {
             </h1>
             <p className="text-[13px] text-muted mt-1 leading-snug">
               Your own bookkeeping for NPWP, insurance claims, and operational records.
-              City Rider doesn&apos;t track your rides — you do, here.
+              IndoCity doesn&apos;t track your rides — you do, here.
             </p>
           </header>
 
@@ -495,7 +495,7 @@ export default function OperationsPage() {
           </section>
 
           <p className="text-[11px] text-dim leading-snug">
-            City Rider doesn&apos;t auto-record your rides — this log is yours.
+            IndoCity doesn&apos;t auto-record your rides — this log is yours.
             Use the CSV export for NPWP filings, insurance claims, or accountant handoff.
           </p>
         </div>

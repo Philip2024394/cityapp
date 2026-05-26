@@ -136,7 +136,7 @@ export function buildWhatsAppLink(a: WhatsAppQuoteArgs): string {
     '',
     divider,
     '',
-    '⚡ *Mohon buka aplikasi City Rider sekarang untuk TERIMA BOOKING ini.*',
+    '⚡ *Mohon buka aplikasi IndoCity sekarang untuk TERIMA BOOKING ini.*',
     '',
     'Terima kasih! 🙏',
   )

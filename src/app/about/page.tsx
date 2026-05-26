@@ -2,12 +2,12 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getLegalEntity } from '@/lib/legal/entity'
 
-// What City Rider is + isn't. Anchors our SaaS positioning publicly.
+// What IndoCity is + isn't. Anchors our SaaS positioning publicly.
 // Plain HTML, no client components — readable + crawlable by search +
 // regulators alike.
 export const metadata = {
-  title: 'About · City Rider — Booking software for independent riders',
-  description: 'City Rider is booking software for independent Indonesian motorcycle riders. Each rider runs their own business; we are not a transportation service provider.',
+  title: 'About · IndoCity — Booking software for independent riders',
+  description: 'IndoCity is booking software for independent Indonesian motorcycle riders. Each rider runs their own business; we are not a transportation service provider.',
 }
 
 export default function AboutPage() {
@@ -26,7 +26,7 @@ export default function AboutPage() {
       <article className="max-w-2xl mx-auto px-4 pt-6 space-y-6">
         <div>
           <h1 className="text-3xl font-extrabold leading-tight">
-            What <span className="gradient-text">City Rider</span> is
+            What <span className="gradient-text">IndoCity</span> is
           </h1>
           <p className="text-muted text-[14px] mt-2">
             Booking software for independent Indonesian motorcycle riders. Each rider runs their own local business.
@@ -35,7 +35,7 @@ export default function AboutPage() {
 
         <Section title="We are software">
           <p>
-            City Rider is a Software-as-a-Service (SaaS) listing platform. Independent motorcycle
+            IndoCity is a Software-as-a-Service (SaaS) listing platform. Independent motorcycle
             couriers subscribe for Rp 38,000/month to get a public profile, GPS-marketplace
             visibility, a customer database, business tools, and WhatsApp-driven lead capture.
             That is the entire product.
@@ -54,13 +54,13 @@ export default function AboutPage() {
           </ul>
           <p className="text-muted mt-2">
             All transportation services on this platform are provided by individual independent
-            couriers. City Rider provides only the software and directory.
+            couriers. IndoCity provides only the software and directory.
           </p>
         </Section>
 
         <Section title="Regulatory positioning">
           <p>
-            City Rider operates as a registered Indonesian Penyelenggara Sistem Elektronik (PSE
+            IndoCity operates as a registered Indonesian Penyelenggara Sistem Elektronik (PSE
             Privat) and as a B2B software vendor. We do not operate as an Aplikasi Penyedia Jasa
             Transportasi (APJT) under Permenhub PM 12/2019, because we do not provide
             transportation services, do not control pricing, do not process payments, and do not
@@ -81,7 +81,7 @@ export default function AboutPage() {
         <Section title="If you are a customer">
           <p>
             When you contact a rider through this directory, you are entering a direct service
-            agreement with that independent rider — not with City Rider. The rider sets the price,
+            agreement with that independent rider — not with IndoCity. The rider sets the price,
             performs the service, handles payment, and is responsible for any aspect of the trip.
           </p>
           <p className="mt-2">
@@ -104,7 +104,7 @@ export default function AboutPage() {
 
         <Section title="Contact">
           <p>
-            City Rider · part of the StreetLocal family of apps · Yogyakarta, Indonesia<br />
+            IndoCity · part of the StreetLocal family of apps · Yogyakarta, Indonesia<br />
             All inquiries (support, data requests, business): <Link href="/contact" className="text-brand hover:underline">contact page</Link>
           </p>
         </Section>

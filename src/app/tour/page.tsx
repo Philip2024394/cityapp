@@ -7,7 +7,7 @@ import { getLanguageByCode } from '@/data/tourLanguages'
 
 function tourWaHref(p: { name: string; whatsapp_e164: string }): string {
   const digits = p.whatsapp_e164.replace(/[^0-9]/g, '')
-  const text = `Halo ${p.name}, saya menemukan profil Anda di City Riders. Apakah Anda available untuk tour guide?`
+  const text = `Halo ${p.name}, saya menemukan profil Anda di IndoCity. Apakah Anda available untuk tour guide?`
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
 }
 
@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 const TOUR_CARD_BG = 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png'
 
 export const metadata = {
-  title: 'Tour Guides · City Rider',
+  title: 'Tour Guides · IndoCity',
   description:
     'Local tour guides across Indonesia — temples, beaches, mountains, jungles. WhatsApp the guide directly to book.',
 }
@@ -103,7 +103,7 @@ export default async function TourGuideFeedPage({
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
-            alt="City Riders"
+            alt="IndoCity"
             className="h-8 sm:h-10 w-auto"
           />
         </Link>

@@ -3,7 +3,7 @@ import { CheckCircle2, ArrowRight } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 
 export const metadata = {
-  title: 'Listing submitted · City Rider',
+  title: 'Listing submitted · IndoCity',
 }
 
 export default function SubmittedPage() {
@@ -18,7 +18,7 @@ export default function SubmittedPage() {
           Listing <span className="gradient-text">submitted</span>
         </h1>
         <p className="text-[14px] text-muted leading-snug mb-6">
-          Terima kasih! Admin City Rider akan meninjau tempatmu dalam <strong className="text-ink">24–48 jam</strong>.
+          Terima kasih! Admin IndoCity akan meninjau tempatmu dalam <strong className="text-ink">24–48 jam</strong>.
           Setelah disetujui kamu mendapat <strong className="text-ink">GRATIS 7 hari</strong> —
           lalu hanya <strong className="text-ink">Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong> untuk tetap tayang.
           Kami akan menghubungi via WhatsApp + email yang kamu daftarkan.

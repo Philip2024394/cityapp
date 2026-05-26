@@ -15,8 +15,8 @@ import { ChevronLeft, Mail, Trash2, AlertTriangle, ShieldCheck } from 'lucide-re
 // ============================================================================
 
 export const metadata = {
-  title: 'Delete your account · City Rider',
-  description: 'How to permanently delete your City Rider account, profile, and data.',
+  title: 'Delete your account · IndoCity',
+  description: 'How to permanently delete your IndoCity account, profile, and data.',
 }
 
 export default function AccountDeletePage() {
@@ -64,7 +64,7 @@ export default function AccountDeletePage() {
         <section className="card p-5 space-y-2.5">
           <h2 className="font-extrabold text-[16px]">If you can still sign in</h2>
           <ol className="list-decimal list-inside space-y-1 text-[14px] leading-relaxed text-ink/90">
-            <li>Open the City Rider app or visit <Link href="/login" className="text-brand hover:underline">/login</Link> in a browser</li>
+            <li>Open the IndoCity app or visit <Link href="/login" className="text-brand hover:underline">/login</Link> in a browser</li>
             <li>Sign in to your account</li>
             <li>Go to <Link href="/dashboard" className="text-brand hover:underline">Dashboard</Link></li>
             <li>Scroll to the bottom and tap <strong className="text-ink">&quot;Delete my account&quot;</strong></li>

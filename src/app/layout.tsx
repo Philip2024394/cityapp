@@ -6,25 +6,25 @@ import PreloadTiles from '@/components/pwa/PreloadTiles'
 import CapacitorBoot from '@/components/pwa/CapacitorBoot'
 import DevToolbar from '@/components/dev/DevToolbar'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'City Rider — Marketplace kurir motor Indonesia',
-    template: '%s · City Rider',
+    default: 'IndoCity — Marketplace kurir motor Indonesia',
+    template: '%s · IndoCity',
   },
   description:
     'Platform bisnis untuk rider motor independen. Profil rider, harga sendiri, kontak langsung via WhatsApp. Tidak ada komisi.',
   manifest: '/manifest.webmanifest',
-  applicationName: 'City Rider',
+  applicationName: 'IndoCity',
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
-    siteName: 'City Rider',
+    siteName: 'IndoCity',
     locale: 'id_ID',
     url: SITE_URL,
-    title: 'City Rider — Marketplace kurir motor Indonesia',
+    title: 'IndoCity — Marketplace kurir motor Indonesia',
     description:
       'Cari rider motor independen di kota kamu. Bayar langsung, kontak via WhatsApp, tanpa komisi.',
     images: [
@@ -32,19 +32,19 @@ export const metadata: Metadata = {
         url: '/og-default.png',
         width: 1200,
         height: 630,
-        alt: 'City Rider',
+        alt: 'IndoCity',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'City Rider',
+    title: 'IndoCity',
     description: 'Marketplace kurir motor Indonesia — tanpa komisi.',
     images: ['/og-default.png'],
   },
   appleWebApp: {
     capable: true,
-    title: 'City Rider',
+    title: 'IndoCity',
     statusBarStyle: 'black-translucent',
   },
   formatDetection: { telephone: false },

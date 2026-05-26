@@ -13,7 +13,7 @@ type Props = {
 // Pre-June 2026: Gojek/Grab took ~20% of gross fare (driver kept 80%).
 // From June 2026: Perpres No. 27/2026 (signed 1 May 2026) is reported
 // to cap platform commission at 8% MAXIMUM, guaranteeing drivers ≥92%.
-// City Rider still takes 0% commission (subscription model) — so the
+// IndoCity still takes 0% commission (subscription model) — so the
 // honest pitch is "save the 8% Gojek now takes", not 20%.
 //
 // VERIFY BEFORE LAUNCH (audit 2026-05): confirm Perpres 27/2026 actually
@@ -39,9 +39,9 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
 
   function onShareSavings() {
     if (typeof window === 'undefined') return
-    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan City Rider — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali (Gojek/Grab masih potong 8% per Perpres 27/2026).
+    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan IndoCity — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali (Gojek/Grab masih potong 8% per Perpres 27/2026).
 
-Cek di cityriders.streetlocal.live`
+Cek di indocity.streetlocal.live`
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
@@ -122,7 +122,7 @@ Cek di cityriders.streetlocal.live`
               You saved <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
             </div>
             <div className="text-[12px] text-muted mt-1">
-              They&apos;d have taken {idr(competitorCommission)} (8% of {idr(monthlyLeadsValue)} — {COMPETITOR_COMMISSION_BASIS}). City Rider takes Rp 0.
+              They&apos;d have taken {idr(competitorCommission)} (8% of {idr(monthlyLeadsValue)} — {COMPETITOR_COMMISSION_BASIS}). IndoCity takes Rp 0.
             </div>
             <button
               onClick={onShareSavings}

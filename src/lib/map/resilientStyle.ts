@@ -172,7 +172,7 @@ function buildProtomapsStyle(pmtilesUrl: string, variant: 'positron' | 'dark'): 
 
   return {
     version: 8,
-    name: 'CityRiders self-hosted (Protomaps Basemap)',
+    name: 'IndoCity self-hosted (Protomaps Basemap)',
     glyphs: PROTOMAPS_GLYPHS,
     sprite: PROTOMAPS_SPRITE(themeName),
     sources: {

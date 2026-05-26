@@ -29,7 +29,7 @@ export default function AdminNav({ adminName }: { adminName: string }) {
             <Shield className="w-3.5 h-3.5 text-danger" />
           </div>
           <div className="text-[15px] font-extrabold tracking-tight truncate">
-            City Rider · <span className="text-danger">Admin</span>
+            IndoCity · <span className="text-danger">Admin</span>
           </div>
         </div>
         <div className="text-[12px] text-muted truncate hidden sm:block">{adminName}</div>

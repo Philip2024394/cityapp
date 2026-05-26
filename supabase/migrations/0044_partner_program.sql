@@ -3,7 +3,7 @@
 -- ----------------------------------------------------------------------------
 -- Hotels / villas / restaurants etc. join the program (free), get a unique
 -- QR code, and earn an 8% commission when their guests scan and book a
--- City Rider. Driver pays the partner DIRECTLY (cash / GoPay / transfer);
+-- IndoCity. Driver pays the partner DIRECTLY (cash / GoPay / transfer);
 -- the platform never touches the money (per 0001 invariant).
 --
 -- LEGAL POSTURE (Perpres 27/2026, signed 1 May 2026):

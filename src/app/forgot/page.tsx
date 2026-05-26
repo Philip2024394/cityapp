@@ -20,7 +20,7 @@ export default function ForgotPage() {
             </div>
             <h1 className="text-2xl font-extrabold">No password needed</h1>
             <p className="text-muted text-[14px] mt-1">
-              City Rider uses phone-OTP sign-in. Every time you sign in we send a fresh 6-digit code to your WhatsApp number — there's no password to forget.
+              IndoCity uses phone-OTP sign-in. Every time you sign in we send a fresh 6-digit code to your WhatsApp number — there's no password to forget.
             </p>
           </div>
 

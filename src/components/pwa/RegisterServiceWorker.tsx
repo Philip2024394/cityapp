@@ -2,7 +2,7 @@
 import { useEffect } from 'react'
 
 // ============================================================================
-// Registers the City Rider service worker on first mount.
+// Registers the IndoCity service worker on first mount.
 // ----------------------------------------------------------------------------
 // Mounted once at the root layout. Silently no-ops in browsers that don't
 // support service workers (older iOS Safari < 11.3). Registration failure

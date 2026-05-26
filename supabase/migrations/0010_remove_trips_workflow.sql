@@ -3,7 +3,7 @@
 -- ----------------------------------------------------------------------------
 -- Strip the dispatch / trip-lifecycle tables.
 --
--- WHY: City Rider is a software listing directory, NOT a ride-hailing
+-- WHY: IndoCity is a software listing directory, NOT a ride-hailing
 -- operator under Permenhub PM 12/2019. The trips + trip_events tables
 -- and their Realtime channel were the one piece of the schema that
 -- materially crossed the line into "aplikasi penyedia jasa angkutan"

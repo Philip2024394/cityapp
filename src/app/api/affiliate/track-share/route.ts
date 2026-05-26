@@ -18,7 +18,7 @@ import { verifyTurnstile } from '@/lib/security/turnstile'
 //                copy_link | copy_code | copy_text | email | direct | other
 //   referrer   — optional URL, max 512 chars, must parse via new URL()
 //
-// Also called from cityriders.id home-page client effect when a visitor
+// Also called from indocity.id home-page client effect when a visitor
 // lands with BOTH ?ref=... AND ?b=... — platform='direct' for those rows.
 //
 // Hardening:

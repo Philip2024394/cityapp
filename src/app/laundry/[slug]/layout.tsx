@@ -5,7 +5,7 @@ import JsonLd from '@/components/seo/JsonLd'
 
 // Server-side SEO + lapsed redirect for /laundry/[slug].
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 type Row = {
   id?: string; slug: string; display_name: string; bio: string | null

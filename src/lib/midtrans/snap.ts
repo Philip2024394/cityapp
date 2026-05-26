@@ -26,7 +26,7 @@ export type SnapCreateInput = {
     phone?: string          // E.164 preferred
     email?: string
   }
-  itemName: string          // e.g. 'City Rider Subscription · 30 days'
+  itemName: string          // e.g. 'IndoCity Subscription · 30 days'
   callbackFinishUrl?: string
 }
 

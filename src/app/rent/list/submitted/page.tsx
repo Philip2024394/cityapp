@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { CheckCircle2, ArrowRight } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 
-export const metadata = { title: 'Bike listing submitted · City Rider' }
+export const metadata = { title: 'Bike listing submitted · IndoCity' }
 
 export default function BikeSubmittedPage() {
   return (
@@ -16,7 +16,7 @@ export default function BikeSubmittedPage() {
           Bike <span className="gradient-text">submitted</span>
         </h1>
         <p className="text-[14px] text-muted leading-snug mb-6">
-          Terima kasih! Admin City Riders akan meninjau motormu dalam <strong className="text-ink">24–48 jam</strong>.
+          Terima kasih! Admin IndoCity akan meninjau motormu dalam <strong className="text-ink">24–48 jam</strong>.
           Setelah disetujui kamu mendapat <strong className="text-ink">GRATIS 7 hari</strong> —
           lalu hanya <strong className="text-ink">Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong> untuk tetap tayang di /rent.
           Kami akan hubungi via WhatsApp + email yang kamu daftarkan.

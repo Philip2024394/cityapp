@@ -24,7 +24,7 @@ export default function TourGuideCard({ driver }: { driver: Rider }) {
   // the platform's main language, always shown first.
   const languages = resolveDisplayLanguages(driver.tourGuideLanguages)
   const waText = encodeURIComponent(
-    `Halo ${driver.name}! Saya tertarik tour 1 hari penuh (8 jam) bersama Anda lewat City Rider — bisa diskusi rute dan tempat-tempat yang bisa kita kunjungi?`,
+    `Halo ${driver.name}! Saya tertarik tour 1 hari penuh (8 jam) bersama Anda lewat IndoCity — bisa diskusi rute dan tempat-tempat yang bisa kita kunjungi?`,
   )
   const waLink = driver.whatsappE164
     ? `https://wa.me/${driver.whatsappE164.replace(/[^\d]/g, '')}?text=${waText}`

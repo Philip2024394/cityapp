@@ -9,7 +9,7 @@ import TourContactButton from '@/components/tour/TourContactButton'
 import ProfileGallery from '@/components/profile/ProfileGallery'
 import ProfileSlugIslands from '@/components/profile/ProfileSlugIslands'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +43,7 @@ type Row = {
 function waLink(e164: string, name: string): string {
   const phone = e164.replace(/[^\d]/g, '')
   const text = encodeURIComponent(
-    `Halo ${name}, saya tertarik untuk hire kamu sebagai tour guide via City Riders. Apakah masih available?`,
+    `Halo ${name}, saya tertarik untuk hire kamu sebagai tour guide via IndoCity. Apakah masih available?`,
   )
   return `https://wa.me/${phone}?text=${text}`
 }
@@ -214,7 +214,7 @@ export default async function TourGuideDetailPage({
           providerId={r.id}
           shareUrl={`${SITE_URL}/tour/${r.slug}`}
           shareName={r.name}
-          shareText={`Lihat tour guide ${r.name} di City Riders:`}
+          shareText={`Lihat tour guide ${r.name} di IndoCity:`}
           socials={{ instagram: r.instagram_url, tiktok: r.tiktok_url, facebook: r.facebook_url }}
           hours={r.operating_hours}
         />

@@ -15,7 +15,7 @@ import AppNav from '@/components/layout/AppNav'
 // ============================================================================
 
 export const metadata = {
-  title: 'In case of accident · City Rider',
+  title: 'In case of accident · IndoCity',
 }
 
 export default function AccidentPage() {
@@ -103,8 +103,8 @@ export default function AccidentPage() {
                 <a href="tel:175" className="text-brand font-extrabold"> 175 </a>
                 or visit the nearest BPJS TK office. Pays for medical + loss of income.
               </Step>
-              <Step n={10} title="Notify City Rider — operational only">
-                Send a brief WhatsApp to City Rider support so we know you may be offline.
+              <Step n={10} title="Notify IndoCity — operational only">
+                Send a brief WhatsApp to IndoCity support so we know you may be offline.
                 Note: we have no liability for the incident itself, but we can pause your
                 profile so customers see you&apos;re unavailable.
               </Step>
@@ -148,7 +148,7 @@ export default function AccidentPage() {
           </section>
 
           <p className="text-[11px] text-dim leading-snug">
-            City Rider is a directory of independent riders. We are not a party to your
+            IndoCity is a directory of independent riders. We are not a party to your
             accident or its insurance claim. This page is practical guidance — for legal
             representation contact a lawyer or LBH (Lembaga Bantuan Hukum).
           </p>

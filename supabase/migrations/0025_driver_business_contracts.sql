@@ -7,7 +7,7 @@
 -- shops) can browse + contact them for REGULAR DELIVERY CONTRACTS —
 -- not one-off bookings.
 --
--- Same legal model as the rest of the platform: City Rider is a
+-- Same legal model as the rest of the platform: IndoCity is a
 -- directory + facilitator. We never store contracts, broker payments,
 -- or take commission. The driver and business agree terms on WhatsApp.
 --

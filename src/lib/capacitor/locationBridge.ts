@@ -21,7 +21,7 @@ const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('Backg
 //   • Hook fires from React (foreground only, browser-limited).
 //   • This bridge runs in the native runtime — survives WebView pause.
 //   • Same auth context: the WebView session cookie for
-//     cityriders.streetlocal.live carries through plugin fetch() calls
+//     indocity.streetlocal.live carries through plugin fetch() calls
 //     because they share the WebView's URLSession (Android) / WKWebsite
 //     (iOS WKWebView). No Bearer header refactor needed today.
 //
@@ -51,8 +51,8 @@ export async function startNativeBackgroundPing(): Promise<StartResult> {
   try {
     const id = await BackgroundGeolocation.addWatcher(
       {
-        backgroundMessage: 'City Rider is sharing your location so customers can find you.',
-        backgroundTitle:   'City Rider is online',
+        backgroundMessage: 'IndoCity is sharing your location so customers can find you.',
+        backgroundTitle:   'IndoCity is online',
         requestPermissions: true,
         // Reject stale fixes — we want fresh GPS for accurate "X km away".
         stale: false,

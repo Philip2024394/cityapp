@@ -347,7 +347,7 @@ export const SERVICE_REGULATION: Record<ServiceType, {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Suggested PARCEL + FOOD rates per zone (City Rider platform defaults)
+// Suggested PARCEL + FOOD rates per zone (IndoCity platform defaults)
 // ─────────────────────────────────────────────────────────────────────
 //
 // Parcel + food have NO statutory floor in Indonesia (Permenkominfo
@@ -368,7 +368,7 @@ export const SERVICE_REGULATION: Record<ServiceType, {
 //   GoFood Zona I customer ~Rp 2,000/km + Rp 8-10k min
 //   GrabFood ~Rp 2,500/km after 4km + Rp 10,400 min
 //   ShopeeFood flat ~Rp 10k/order
-// City Rider drivers KEEP 100% (vs incumbents' 92% post-Perpres 27/2026,
+// IndoCity drivers KEEP 100% (vs incumbents' 92% post-Perpres 27/2026,
 // or 80% pre-June 2026). Customer pays roughly the same; driver earns more.
 
 export const SUGGESTED_PARCEL_RATES: Record<Zone, {

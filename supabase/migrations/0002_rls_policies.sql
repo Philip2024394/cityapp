@@ -1,5 +1,5 @@
 -- ============================================================================
--- City Rider — Row Level Security policies
+-- IndoCity — Row Level Security policies
 -- ============================================================================
 -- Identity model:
 --   * auth.uid() is the authenticated user's profile id

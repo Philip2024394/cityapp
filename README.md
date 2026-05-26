@@ -1,14 +1,19 @@
-# City Rider
+# IndoCity.id
 
-**Booking software for independent rider businesses.**
-City Rider is a SaaS platform for individual rider entrepreneurs in Indonesia. Each rider runs their own independent transport / parcel / food-delivery business; the platform sells software access only. We never process trip payments, never auto-assign customers to riders, and never run a fleet.
+**Indonesia city directory — local business profile platform.**
+IndoCity.id is a SaaS directory where Indonesian micro-businesses
+(handyman, beautician, laundry, massage, home-clean, tour guides,
+riders, rentals, and more) each own a professional profile page.
+We never process payments, never custody money, and never auto-match
+customers to providers — the customer always picks the provider
+manually and contacts them directly via WhatsApp.
 
 ## Core rules (architectural invariants)
 
-- One driver = one independent rider business. No fleet hierarchy.
-- The customer **always** picks the rider manually. Platform never auto-assigns.
-- Payments flow directly customer ↔ rider (cash / QR / transfer). Platform records `payment_method` + `payment_status` only.
-- Subscription: Rp 38.000/month per rider, paid directly to the platform.
+- One business = one independent profile. No fleet hierarchy.
+- The customer **always** picks the provider manually. Platform never auto-assigns.
+- Payments flow directly customer ↔ provider (cash / QR / transfer). Platform never custodies funds.
+- Subscription: monthly fee per provider, paid directly to the platform.
 
 ## Stack
 

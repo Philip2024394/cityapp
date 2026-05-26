@@ -19,7 +19,7 @@ import { sendEmail, renderEmail } from '@/lib/email/resend'
 // same day will skip already-sent rows.
 //
 // Email channel: Resend via lib/email/resend.ts. WhatsApp can be added
-// later (cityriders has no WA Cloud API config yet — Phase 2).
+// later (indocity has no WA Cloud API config yet — Phase 2).
 //
 // Returns a JSON summary suitable for cron logs / admin debugging.
 // ============================================================================
@@ -40,7 +40,7 @@ type Plan = 'driver' | 'rental_company' | 'tour_guide'
   | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://cityriders.id'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://indocity.id'
 const RENEW_URL          = APP_URL + '/dashboard'
 const UPGRADE_URL        = APP_URL + '/rent/upgrade'
 const TOUR_UPGRADE_URL   = APP_URL + '/tour/upgrade'
@@ -349,7 +349,7 @@ function composeWaMessage(args: {
   const planLabel = args.verticalLabel
     ?? (args.plan === 'rental_company' ? 'Rental Company'
       : args.plan === 'tour_guide' ? 'Tour Guide'
-      : 'City Rider Driver')
+      : 'IndoCity Driver')
 
   const k = args.kind as string
   if (k.endsWith('_t_minus_7')) {
@@ -399,7 +399,7 @@ function composeMessage(args: {
   const planLabel = args.verticalLabel
     ?? (args.plan === 'rental_company' ? 'Rental Company'
       : args.plan === 'tour_guide' ? 'Tour Guide'
-      : 'City Rider Driver')
+      : 'IndoCity Driver')
 
   // Normalise provider kinds (massage_t_minus_7 etc.) to the matching
   // base offset bucket so the switch below can stay tight. The plan +
@@ -465,7 +465,7 @@ function composeMessage(args: {
       }
     case 'driver_t_plus_7':
       return {
-        subject: `7 hari lewat — last reminder renew City Rider`,
+        subject: `7 hari lewat — last reminder renew IndoCity`,
         html: renderEmail({
           heading: 'Last reminder',
           preheader: 'Renew dalam 24 jam atau profilmu mungkin di-purge dari sistem.',
@@ -476,11 +476,11 @@ function composeMessage(args: {
       }
     case 'pending_intent_stuck':
       return {
-        subject: `Pembayaran City Rider belum selesai`,
+        subject: `Pembayaran IndoCity belum selesai`,
         html: renderEmail({
           heading: 'Lanjutkan pembayaran',
           preheader: 'Kamu membuka Snap tapi belum menyelesaikan pembayaran.',
-          bodyHtml: `<p>Hai! Sepertinya kamu mulai pembayaran City Rider (${planLabel}) pada ${dueLabel} tapi belum selesai. Mulai ulang pembayaran di bawah ini — Snap support QRIS, GoPay, OVO, ShopeePay, kartu kredit, dan VA bank besar.</p>`,
+          bodyHtml: `<p>Hai! Sepertinya kamu mulai pembayaran IndoCity (${planLabel}) pada ${dueLabel} tapi belum selesai. Mulai ulang pembayaran di bawah ini — Snap support QRIS, GoPay, OVO, ShopeePay, kartu kredit, dan VA bank besar.</p>`,
           ctaUrl: args.renewUrl,
           ctaLabel: 'Lanjut bayar',
         }),

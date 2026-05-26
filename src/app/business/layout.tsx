@@ -7,9 +7,9 @@ import type { Metadata } from 'next'
 // runtime.
 // ============================================================================
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
-const title = 'Contract drivers — find a regular delivery rider · City Rider'
+const title = 'Contract drivers — find a regular delivery rider · IndoCity'
 const description =
   'Browse independent motorcycle couriers available for regular contracts in Indonesia. Daily parcel runs for Shopee/TikTok sellers, restaurants, warungs. Contact direct on WhatsApp.'
 

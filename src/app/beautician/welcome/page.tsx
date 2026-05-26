@@ -24,7 +24,7 @@ import {
 // incomplete item below is a tile linking back to the relevant dashboard
 // section so the beautician can fill it in.
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 const DEFAULT_HERO =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 
@@ -158,7 +158,7 @@ export default function BeauticianWelcomePage() {
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`Cek profil saya di City Riders: ${profileUrl}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`Cek profil saya di IndoCity: ${profileUrl}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-extrabold text-white shrink-0"

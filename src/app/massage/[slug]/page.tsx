@@ -65,11 +65,11 @@ export default function MassageProviderPage() {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
   }
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://cityriders.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/massage/${p.slug}`
 
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di City Riders.`,
+    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
     `Saya tertarik untuk booking sesi pijat.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
@@ -166,7 +166,7 @@ export default function MassageProviderPage() {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         url={profileUrl}
-        prefillText={`Lihat profil ${p.display_name} di City Riders:`}
+        prefillText={`Lihat profil ${p.display_name} di IndoCity:`}
         providerName={p.display_name}
       />
     </Shell>

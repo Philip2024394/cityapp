@@ -79,7 +79,7 @@ export default function ReferDashboard() {
   async function onShareWhatsApp() {
     if (!shareUrl) return
     haptic.tap()
-    const text = `Saya gabung City Rider — platform driver motor independen tanpa potongan komisi. Profil + harga kamu sendiri, customer langsung WhatsApp. Sign up pakai link saya:
+    const text = `Saya gabung IndoCity — platform driver motor independen tanpa potongan komisi. Profil + harga kamu sendiri, customer langsung WhatsApp. Sign up pakai link saya:
 
 ${shareUrl}`
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`
@@ -92,7 +92,7 @@ ${shareUrl}`
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: 'Join me on City Rider',
+          title: 'Join me on IndoCity',
           text: 'Platform driver motor independen — tanpa potongan komisi.',
           url: shareUrl,
         })

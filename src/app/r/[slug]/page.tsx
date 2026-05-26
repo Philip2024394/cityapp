@@ -743,7 +743,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 // Maps app.
                 const mapPin = (lat: number, lng: number) =>
                   `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`
-                const lines = [`Hi ${rider.name}, saya mau booking via City Rider.`]
+                const lines = [`Hi ${rider.name}, saya mau booking via IndoCity.`]
                 if (pickupLabel || pickup || dropoffLabel || dropoff || pitstop) {
                   lines.push('')
                   if (pickupLabel || pickup) {
@@ -784,7 +784,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
                 lines.push(
                   '',
                   '⚠️ Sebelum berangkat: pastikan SIM C, helm, dan kondisi motor OK.',
-                  'Perjalanan langsung antara saya & driver — di luar tanggung jawab City Rider.',
+                  'Perjalanan langsung antara saya & driver — di luar tanggung jawab IndoCity.',
                   '',
                   'Apakah tersedia?',
                 )
@@ -1326,7 +1326,7 @@ function PageBackground() {
   )
 }
 
-// Minimal header — just the City Rider logo + name on the left and a
+// Minimal header — just the IndoCity logo + name on the left and a
 // close-X on the right. No back arrow, no glass blur, no dark band.
 // Close routes to "/" (marketplace home) since "close" implies leaving
 // the driver page entirely.

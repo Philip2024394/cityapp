@@ -131,7 +131,7 @@ export async function getHealthSnapshot(): Promise<HealthSnapshot> {
     }
   }
 
-  // Active bookings — City Rider is a directory product. Permenhub PM 12/2019
+  // Active bookings — IndoCity is a directory product. Permenhub PM 12/2019
   // forbids platform-side dispatch; bookings happen on WhatsApp after the
   // customer taps a Contact button. The trips/bookings tables were removed
   // in migration 0010 — see supabase/migrations/0010_remove_trips_workflow.sql.

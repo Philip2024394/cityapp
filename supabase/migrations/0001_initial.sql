@@ -1,7 +1,7 @@
 -- ============================================================================
--- City Rider — Independent Rider Booking Platform
+-- IndoCity — Independent Rider Booking Platform
 -- ============================================================================
--- City Rider is software infrastructure for INDEPENDENT rider businesses.
+-- IndoCity is software infrastructure for INDEPENDENT rider businesses.
 -- It is NOT ride-hailing, NOT a fleet manager, NOT a dispatch service.
 --
 -- Core rules baked into this schema:

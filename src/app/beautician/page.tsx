@@ -241,7 +241,7 @@ function MarketplaceInner() {
 }
 
 function ProviderCard({ provider: p }: { provider: BeauticianProviderPublic }) {
-  // Marketplace cards use the CityRiders brand yellow uniformly for
+  // Marketplace cards use the IndoCity brand yellow uniformly for
   // every beautician — keeps the listing grid coherent under the
   // platform brand. Each beautician's personal theme_color still
   // drives their own /beautician/[slug] profile page so individual
@@ -350,7 +350,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
-            alt="City Riders"
+            alt="IndoCity"
             className="h-8 sm:h-10 w-auto"
           />
         </Link>

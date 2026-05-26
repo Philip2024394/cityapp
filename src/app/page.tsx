@@ -64,8 +64,8 @@ const STRINGS: Record<Locale, {
   trust: { commission: string; whatsapp: string; verified: string }
 }> = {
   id: {
-    pill: 'Rider independen di kota kamu',
-    h1Line1: 'Komunitas motor,',
+    pill: 'Direktori bisnis lokal Indonesia',
+    h1Line1: 'IndoCity,',
     h1Line2: 'Indonesia.',
     lede: 'At Your Finger Tips',
     enter: 'Masuk',
@@ -73,8 +73,8 @@ const STRINGS: Record<Locale, {
     trust: { commission: '0% komisi', whatsapp: 'WhatsApp', verified: 'Nomor WhatsApp ter-verifikasi' },
   },
   en: {
-    pill: 'Independent riders in your city',
-    h1Line1: 'Motorbike community,',
+    pill: 'Local business directory across Indonesia',
+    h1Line1: 'IndoCity,',
     h1Line2: 'Indonesia.',
     lede: 'At Your Finger Tips',
     enter: 'Enter',

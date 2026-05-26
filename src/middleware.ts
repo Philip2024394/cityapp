@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 // ============================================================================
-// City Rider — auth middleware
+// IndoCity — auth middleware
 // ============================================================================
 // Protects rider/admin/onboarding routes. Public surfaces (landing, /cari,
 // /cari/rider, /r/[slug]) stay open so customers can browse without an account.

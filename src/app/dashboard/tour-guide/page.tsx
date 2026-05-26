@@ -56,7 +56,7 @@ export default async function DashboardTourGuidePage() {
                 My <span className="gradient-text">Tour Guide</span>
               </h1>
               <p className="text-[13px] text-muted mt-1">
-                Profil tour guide kamu di City Riders. 1 listing per akun — edit kapan saja.
+                Profil tour guide kamu di IndoCity. 1 listing per akun — edit kapan saja.
               </p>
             </div>
             {!row && (
@@ -77,7 +77,7 @@ export default async function DashboardTourGuidePage() {
               </div>
               <div className="text-[14px] font-extrabold text-black">Belum ada listing tour guide</div>
               <p className="text-[12px] text-muted leading-snug">
-                Daftar gratis kalau kamu City Rider driver aktif. Tour guide independen Rp 38.000/bulan.
+                Daftar gratis kalau kamu IndoCity driver aktif. Tour guide independen Rp 38.000/bulan.
               </p>
               <Link
                 href="/tour/list/auth"

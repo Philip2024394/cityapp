@@ -91,7 +91,7 @@ export default function CustomerBookPage() {
               <h1 className="text-2xl font-extrabold">Customer Book</h1>
             </div>
             <p className="text-muted text-[14px]">
-              Semua customer yang booking via City Rider. Pesan mereka kapan saja — data kamu sendiri.
+              Semua customer yang booking via IndoCity. Pesan mereka kapan saja — data kamu sendiri.
             </p>
           </header>
 
@@ -169,7 +169,7 @@ function CustomerBookEmptyState({ slug }: { slug: string | null }) {
       <div>
         <div className="font-extrabold text-[16px]">Customer Book masih kosong</div>
         <p className="text-[14px] text-muted leading-relaxed mt-1.5 max-w-sm mx-auto">
-          Setiap customer yang booking via City Rider akan otomatis masuk ke sini.
+          Setiap customer yang booking via IndoCity akan otomatis masuk ke sini.
           Mulai dari share link profilmu — semakin banyak yang lihat, semakin cepat
           Customer Book ini terisi.
         </p>

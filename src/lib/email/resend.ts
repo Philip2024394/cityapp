@@ -8,7 +8,7 @@
 //
 // Env:
 //   RESEND_API_KEY   — required for real sends; missing = console fallback
-//   RESEND_FROM      — default sender, e.g. "City Rider <reminders@streetlocal.live>"
+//   RESEND_FROM      — default sender, e.g. "IndoCity <reminders@streetlocal.live>"
 //   RESEND_REPLY_TO  — default reply-to inbox (defaults to streetlocallive@gmail.com)
 //
 // Note: Resend cannot send FROM a @gmail.com address (DKIM/SPF must align
@@ -33,7 +33,7 @@ export type SendEmailResult =
   | { ok: true; id: string | null }
   | { ok: false; error: string }
 
-const DEFAULT_FROM     = process.env.RESEND_FROM     || 'City Rider <reminders@streetlocal.live>'
+const DEFAULT_FROM     = process.env.RESEND_FROM     || 'IndoCity <reminders@streetlocal.live>'
 const DEFAULT_REPLY_TO = process.env.RESEND_REPLY_TO || 'streetlocallive@gmail.com'
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
@@ -91,16 +91,16 @@ ${preheader ? `<div style="display:none;font-size:1px;line-height:1px;color:#f5f
   <tr><td align="center">
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid rgba(0,0,0,0.06)">
       <tr><td style="background:linear-gradient(135deg,#FACC15,#EAB308);padding:18px 24px">
-        <div style="font-size:14px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#0a0a0c">City Rider</div>
+        <div style="font-size:14px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#0a0a0c">IndoCity</div>
       </td></tr>
       <tr><td style="padding:24px">
         <h1 style="margin:0 0 12px;font-size:22px;line-height:1.25;font-weight:800;color:#0a0a0c">${escapeHtml(heading)}</h1>
         <div style="font-size:14px;line-height:1.55;color:#374151">${bodyHtml}</div>
         ${ctaUrl && ctaLabel ? `<div style="margin:24px 0 8px"><a href="${escapeAttr(ctaUrl)}" style="display:inline-block;background:#0a0a0c;color:#FACC15;text-decoration:none;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.04em;padding:12px 20px;border-radius:10px">${escapeHtml(ctaLabel)}</a></div>` : ''}
-        <p style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.5">Ada pertanyaan? Balas email ini atau hubungi tim City Rider di streetlocallive@gmail.com.</p>
+        <p style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.5">Ada pertanyaan? Balas email ini atau hubungi tim IndoCity di streetlocallive@gmail.com.</p>
       </td></tr>
     </table>
-    <div style="margin-top:14px;font-size:11px;color:#9ca3af">City Rider · StreetLocal</div>
+    <div style="margin-top:14px;font-size:11px;color:#9ca3af">IndoCity · StreetLocal</div>
   </td></tr>
 </table>
 </body></html>`

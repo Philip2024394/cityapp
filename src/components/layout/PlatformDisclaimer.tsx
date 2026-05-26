@@ -8,7 +8,7 @@ type Props = {
   variant?: 'links' | 'compact' | 'full'
 }
 
-// Footer disclaimer affirming City Rider's position as a SOFTWARE
+// Footer disclaimer affirming IndoCity's position as a SOFTWARE
 // LISTING PLATFORM for independent riders — NOT a transportation
 // service provider. Used on every customer-facing page to anchor the
 // SaaS positioning and reduce risk of being classified as APJT
@@ -33,7 +33,7 @@ export default function PlatformDisclaimer({ variant = 'full' }: Props) {
   if (variant === 'compact') {
     return (
       <div className="text-center text-[11px] text-dim leading-relaxed pt-3 pb-2 px-4 max-w-3xl mx-auto">
-        City Rider is a software directory.{' '}
+        IndoCity is a software directory.{' '}
         <Link href="/legal" className="text-muted hover:text-ink underline-offset-2 hover:underline">
           See legal info
         </Link>
@@ -44,7 +44,7 @@ export default function PlatformDisclaimer({ variant = 'full' }: Props) {
     <footer className="relative z-20 mt-auto px-4 py-5 border-t border-line/50 bg-bg/60 backdrop-blur-md">
       <div className="max-w-3xl mx-auto space-y-2 text-center">
         <p className="text-[11px] text-dim leading-relaxed">
-          <span className="font-bold text-muted">City Rider</span> is a software listing platform
+          <span className="font-bold text-muted">IndoCity</span> is a software listing platform
           for independent motorcycle couriers. We do not provide transportation services.
           All trips are arranged directly between customers and independent riders, who set their
           own prices and operate their own businesses.

@@ -1,7 +1,7 @@
 // ============================================================================
 // Partner attribution capture (client-side localStorage)
 // ----------------------------------------------------------------------------
-// Hotels / villas distribute a QR code that opens cityriders.id/p/[slug].
+// Hotels / villas distribute a QR code that opens indocity.id/p/[slug].
 // On that page we stash { slug, anonId, capturedAt } in localStorage for
 // 24 hours. When the guest taps Contact on a driver profile, /api/contact/ping
 // reads this attribution and writes a partner_bookings row crediting the

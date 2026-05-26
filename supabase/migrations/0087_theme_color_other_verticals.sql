@@ -4,12 +4,12 @@
 -- Beautician got per-provider theme_color in migration 0078. Bringing the
 -- same column to handyman, laundry, massage, home-clean, and tour-guide so
 -- the unified <UniversalProviderCard> can apply per-provider accents on
--- their profile pages. (The marketplace cards themselves stay City Riders
+-- their profile pages. (The marketplace cards themselves stay IndoCity
 -- brand-yellow for grid coherence — same policy as the beautician
 -- marketplace.)
 --
 -- Each column is text + nullable + checked against the standard hex
--- pattern. Defaults to the City Riders brand yellow so existing rows have
+-- pattern. Defaults to the IndoCity brand yellow so existing rows have
 -- a sensible non-null fallback.
 -- ============================================================================
 

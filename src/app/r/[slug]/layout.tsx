@@ -10,7 +10,7 @@ import JsonLd from '@/components/seo/JsonLd'
 // layout server-side regardless of child runtime.
 // ============================================================================
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

@@ -189,7 +189,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
-            alt="City Riders"
+            alt="IndoCity"
             className="h-8 sm:h-10 w-auto"
           />
         </Link>

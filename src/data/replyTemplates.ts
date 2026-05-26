@@ -13,7 +13,7 @@ export const REPLY_TEMPLATES: Template[] = [
     category: 'salam',
     label: 'Salam pembuka',
     text:
-      'Halo kak 👋 Terima kasih sudah pesan via City Rider. Saya siap berangkat sekarang. Ada hal khusus yang perlu saya bawa?',
+      'Halo kak 👋 Terima kasih sudah pesan via IndoCity. Saya siap berangkat sekarang. Ada hal khusus yang perlu saya bawa?',
   },
   {
     id: 'eta',
@@ -62,7 +62,7 @@ export const REPLY_TEMPLATES: Template[] = [
     category: 'tutup',
     label: 'Sedang sibuk',
     text:
-      'Mohon maaf kak, saat ini saya masih dalam pengantaran. Estimasi free dalam ±30 menit. Boleh ditunggu, atau bisa juga pilih rider lain di marketplace City Rider 🙏',
+      'Mohon maaf kak, saat ini saya masih dalam pengantaran. Estimasi free dalam ±30 menit. Boleh ditunggu, atau bisa juga pilih rider lain di marketplace IndoCity 🙏',
   },
 ]
 

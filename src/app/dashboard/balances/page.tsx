@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 
 // Driver-side view: what you owe to each partner from attributed bookings.
-// Settlement happens OUTSIDE City Riders (cash / GoPay / transfer). When
+// Settlement happens OUTSIDE IndoCity (cash / GoPay / transfer). When
 // the partner marks paid, the row disappears from here. If you don't pay
 // within 7 days you get suspended from the partner program.
 
@@ -144,7 +144,7 @@ export default function DriverBalancesPage() {
 function PartnerBalanceRow({ balance: b }: { balance: Balance }) {
   const waLink = b.contact_whatsapp
     ? `https://wa.me/${b.contact_whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-        `Halo, saya driver City Riders. Saya akan transfer komisi Rp ${b.outstanding_idr.toLocaleString('id-ID')} (${b.bookings_count} booking) hari ini. Mohon konfirmasi nomor rekening / GoPay.`
+        `Halo, saya driver IndoCity. Saya akan transfer komisi Rp ${b.outstanding_idr.toLocaleString('id-ID')} (${b.bookings_count} booking) hari ini. Mohon konfirmasi nomor rekening / GoPay.`
       )}`
     : null
 

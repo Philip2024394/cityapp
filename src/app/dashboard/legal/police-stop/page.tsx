@@ -15,7 +15,7 @@ import AppNav from '@/components/layout/AppNav'
 // ============================================================================
 
 export const metadata = {
-  title: 'If police stop you · City Rider',
+  title: 'If police stop you · IndoCity',
 }
 
 export default function PoliceStopPage() {

@@ -28,7 +28,7 @@ export default function BusinessCardPage() {
   const profileUrl = ME
     ? (typeof window !== 'undefined'
         ? `${window.location.origin}/r/${ME.slug}`
-        : `https://cityriders.id/r/${ME.slug}`)
+        : `https://indocity.id/r/${ME.slug}`)
     : ''
 
   function onPrint() {
@@ -40,7 +40,7 @@ export default function BusinessCardPage() {
     if (!ME) return
     haptic.tap()
     const shareData = {
-      title: `${ME.name} · City Rider`,
+      title: `${ME.name} · IndoCity`,
       text: `Motorcycle courier in ${ME.city} · ${ME.bike.make} ${ME.bike.model}. Book directly via WhatsApp.`,
       url: profileUrl,
     }

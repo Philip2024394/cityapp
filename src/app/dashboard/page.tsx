@@ -73,7 +73,7 @@ export default function DashboardPage() {
     haptic.tap()
     const url = `${window.location.origin}/r/${ME.slug}`
     const shareData = {
-      title: `${ME.name} · City Rider`,
+      title: `${ME.name} · IndoCity`,
       text: `I'm a motorcycle courier in ${ME.city}. Book directly on WhatsApp.`,
       url,
     }

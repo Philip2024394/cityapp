@@ -347,7 +347,7 @@ function PlanTripPageInner() {
           the brand legible over any map content underneath. */}
       <header ref={headerRef} className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="City Rider home">
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-85 transition" aria-label="IndoCity home">
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
               alt=""

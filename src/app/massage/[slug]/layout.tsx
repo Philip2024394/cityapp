@@ -13,7 +13,7 @@ import JsonLd from '@/components/seo/JsonLd'
 // 88a1013 for the rationale.
 // ============================================================================
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 type ProviderRow = {
   id?: string

@@ -90,7 +90,7 @@ export default function HeaderRoleMenu({
     }
   }, [open])
 
-  const titleText = variant === 'signin' ? 'Open your dashboard' : 'Join City Rider'
+  const titleText = variant === 'signin' ? 'Open your dashboard' : 'Join IndoCity'
 
   return (
     <>

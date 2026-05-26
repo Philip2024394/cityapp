@@ -6,7 +6,7 @@ import PlacesList from '@/components/places/PlacesList'
 import { listPlacesForCity } from '@/lib/places/queries'
 
 export const metadata = {
-  title: 'Places · City Rider',
+  title: 'Places · IndoCity',
   description:
     'Temukan tempat penting di sekitarmu — kuil, pantai, mal, hotel, rumah sakit — dan langsung pesan rider untuk berangkat.',
 }

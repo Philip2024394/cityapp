@@ -52,11 +52,11 @@ export default function HomeCleanProviderPage() {
   }
   if (!p) return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://cityriders.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/home-clean/${p.slug}`
 
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di City Riders.`,
+    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
     `Saya butuh jasa cleaning di rumah.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Bisa info jadwal?`,
@@ -128,7 +128,7 @@ export default function HomeCleanProviderPage() {
 
       <StickyContactBar whatsappE164={p.whatsapp_e164} prefillText={waText} onShare={() => setShareOpen(true)} />
       <SocialShareSheet open={shareOpen} onClose={() => setShareOpen(false)} url={profileUrl}
-        prefillText={`Lihat profil ${p.display_name} di City Riders:`} providerName={p.display_name} />
+        prefillText={`Lihat profil ${p.display_name} di IndoCity:`} providerName={p.display_name} />
     </Shell>
   )
 }

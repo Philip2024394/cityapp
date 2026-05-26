@@ -88,7 +88,7 @@ export default function RentalCompanyUpgradePage() {
                   <li>• Listing motor tanpa batas (harian / mingguan / bulanan)</li>
                   <li>• Bike + driver tour bundle (3 / 6 / 8 jam)</li>
                   <li>• Dashboard kelola listing, edit harga + lokasi</li>
-                  <li>• Tampil di /rent untuk semua pelanggan City Riders</li>
+                  <li>• Tampil di /rent untuk semua pelanggan IndoCity</li>
                 </ul>
                 <p className="text-[11px] text-muted leading-snug pt-1">
                   Akun Rental Company khusus listing motor — booking personal

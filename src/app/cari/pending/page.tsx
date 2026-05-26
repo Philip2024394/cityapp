@@ -618,7 +618,7 @@ export default function PendingBookingPage() {
               <p>
                 Chat selanjutnya dilanjutkan langsung di WhatsApp — tarif,
                 jam berangkat, dan pembayaran kamu sepakati dengan driver.
-                City Rider adalah direktori, bukan operator perjalanan.
+                IndoCity adalah direktori, bukan operator perjalanan.
               </p>
               <ul className="mt-1.5 space-y-0.5 text-muted">
                 <li>· Cek helm tersedia sebelum berangkat</li>

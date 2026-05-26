@@ -104,11 +104,11 @@ export default function HandymanProviderPage() {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
   }
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://cityriders.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/handyman/${p.slug}`
 
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di City Riders.`,
+    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
     `Saya butuh tukang untuk pekerjaan di rumah / kantor.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
@@ -563,7 +563,7 @@ export default function HandymanProviderPage() {
               </button>
 
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di City Riders: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di IndoCity: ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -640,7 +640,7 @@ export default function HandymanProviderPage() {
       {/* Right-edge "back" bar */}
       <a
         href="/handyman"
-        aria-label="Back to City Riders tukang"
+        aria-label="Back to IndoCity tukang"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,

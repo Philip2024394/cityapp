@@ -1,8 +1,8 @@
 // ============================================================================
 // Affiliate referrer capture + retrieve
 // ----------------------------------------------------------------------------
-// Customers arrive at City Rider via streetlocal affiliate links shaped
-// like `https://cityriders.id/?ref=AB12CD` (or `/signup?ref=...`). We
+// Customers arrive at IndoCity via streetlocal affiliate links shaped
+// like `https://indocity.id/?ref=AB12CD` (or `/signup?ref=...`). We
 // capture that code on first page load and persist it in localStorage
 // for 30 days, so even if the customer browses around before signing
 // up, the agent code rides along to the eventual driver row.

@@ -8,9 +8,9 @@ import {
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 
-// What a City Rider subscriber needs to operate LEGALLY as an
+// What a IndoCity subscriber needs to operate LEGALLY as an
 // independent motorcycle courier in Indonesia. A self-check list —
-// City Rider does NOT enforce these (verifying compliance would shift
+// IndoCity does NOT enforce these (verifying compliance would shift
 // us toward employer-like control, contrary to our software-directory
 // posture under Permenhub PM 12/2019).
 //
@@ -100,7 +100,7 @@ const REQUIREMENTS: Array<{
 ]
 
 export default function DashboardLegalPage() {
-  // Rider's self-check state — purely client-side localStorage. City Rider
+  // Rider's self-check state — purely client-side localStorage. IndoCity
   // does NOT verify these. Acting as a checker (and gating subscription
   // on them) would shift us toward employer-like control of subscribers
   // contrary to the platform's directory-only posture (PM 12/2019).
@@ -225,7 +225,7 @@ export default function DashboardLegalPage() {
             </div>
             <p className="text-muted text-[14px] leading-relaxed">
               Daftar persyaratan untuk beroperasi sebagai driver kurir motor independen di Indonesia.
-              City Rider tidak memverifikasi item-item ini — sebagai bisnis independen, kepatuhan
+              IndoCity tidak memverifikasi item-item ini — sebagai bisnis independen, kepatuhan
               adalah tanggung jawab kamu sendiri.
             </p>
           </header>
@@ -250,7 +250,7 @@ export default function DashboardLegalPage() {
               </div>
               <div className="text-[12px] text-muted mt-2 leading-relaxed">
                 Centang setiap item saat kamu sudah memenuhinya. Status hanya tersimpan di
-                perangkatmu — City Rider tidak menyimpan apapun.
+                perangkatmu — IndoCity tidak menyimpan apapun.
               </div>
             </div>
           </div>
@@ -265,7 +265,7 @@ export default function DashboardLegalPage() {
             <AlertCircle className="w-4 h-4 text-brand shrink-0 mt-0.5 ml-1" />
             <div className="text-ink/85 leading-relaxed">
               <strong className="text-brand">Mengapa halaman ini ada:</strong>{' '}
-              kamu adalah pemilik bisnis kurir kamu sendiri. City Rider menyediakan
+              kamu adalah pemilik bisnis kurir kamu sendiri. IndoCity menyediakan
               perangkat lunak direktori — kamu menyediakan layanan. Jika terjadi masalah
               di lapangan, kamu (bukan platform) yang menangani. Persyaratan ini melindungi
               kamu — bukan kami.
@@ -456,13 +456,13 @@ export default function DashboardLegalPage() {
           {/* Closing posture note — explains the platform's stance plainly */}
           <div className="card p-4 text-[13px] text-ink/85 leading-relaxed space-y-2">
             <div>
-              <strong>Kamu bukan karyawan City Rider.</strong>{' '}
+              <strong>Kamu bukan karyawan IndoCity.</strong>{' '}
               Kami menjual perangkat lunak (Rp 38.000/bulan). Kamu yang memutuskan
               siapa pelangganmu, berapa harga yang kamu pasang, kapan kamu kerja, dan
               bagaimana kamu beroperasi.
             </div>
             <div className="text-muted text-[12px]">
-              Posisi ini sesuai dengan Permenhub PM 12/2019 — City Rider bertindak
+              Posisi ini sesuai dengan Permenhub PM 12/2019 — IndoCity bertindak
               sebagai direktori, bukan operator transportasi aplikasi.
             </div>
           </div>

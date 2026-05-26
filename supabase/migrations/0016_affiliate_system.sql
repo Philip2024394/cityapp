@@ -3,7 +3,7 @@
 -- ----------------------------------------------------------------------------
 -- Affiliate programme — applies the schema previously kept at
 -- `supabase_affiliate_tables.sql` in the streetlocal monorepo root,
--- plus the City Rider attribution layer (drivers.referrer_agent_code +
+-- plus the IndoCity attribution layer (drivers.referrer_agent_code +
 -- a trigger that auto-creates an affiliate_referrals row when a
 -- referred driver signs up).
 --

@@ -2,14 +2,14 @@
 import { useRef } from 'react'
 
 // Printable QR card for hotel/villa partners. The QR encodes
-// https://cityriders.id/p/[slug] — guests scan, app opens, attribution
+// https://indocity.id/p/[slug] — guests scan, app opens, attribution
 // stored for 24h, partner earns 8% on any booking that follows.
 
 export default function PartnerQRCard({
   partnerName,
   partnerSlug,
   city,
-  baseUrl = 'https://cityriders.id',
+  baseUrl = 'https://indocity.id',
 }: {
   partnerName: string
   partnerSlug: string
@@ -36,7 +36,7 @@ export default function PartnerQRCard({
       const dataUrl = canvas.toDataURL('image/png')
       const a = document.createElement('a')
       a.href = dataUrl
-      a.download = `cityriders-${partnerSlug}.png`
+      a.download = `indocity-${partnerSlug}.png`
       a.click()
     } catch {
       // Fallback: just open the QR SVG in a new tab so they can save it.
@@ -49,7 +49,7 @@ export default function PartnerQRCard({
     if (!w) return
     w.document.write(`
       <!DOCTYPE html>
-      <html><head><title>${partnerName} — City Riders QR</title>
+      <html><head><title>${partnerName} — IndoCity QR</title>
       <style>
         body { font-family: Inter, system-ui, sans-serif; padding: 32px; display: flex; justify-content: center; }
         .card { width: 320px; padding: 24px; border: 2px solid #0A0A0A; border-radius: 16px; text-align: center; }
@@ -62,7 +62,7 @@ export default function PartnerQRCard({
         @media print { @page { margin: 12mm; } body { padding: 0; } }
       </style></head><body>
       <div class="card">
-        <div class="brand">City Riders</div>
+        <div class="brand">IndoCity</div>
         <div class="name">${escapeHtml(partnerName)}</div>
         ${city ? `<div class="city">${escapeHtml(city)}</div>` : ''}
         <div class="qr"><img src="${qrSrc}" style="width:100%;height:100%" alt="QR" /></div>
@@ -81,7 +81,7 @@ export default function PartnerQRCard({
         className="bg-white text-black rounded-2xl border-2 border-black/85 p-6 max-w-[320px] text-center mx-auto"
       >
         <div className="text-[11px] font-extrabold tracking-[0.15em] text-brand2 uppercase mb-1">
-          City Riders
+          IndoCity
         </div>
         <div className="text-[18px] font-black text-black mb-1 leading-tight">{partnerName}</div>
         {city && <div className="text-[12px] text-gray-600 mb-4">{city}</div>}

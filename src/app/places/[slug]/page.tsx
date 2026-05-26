@@ -17,7 +17,7 @@ import type { PlaceCategory } from '@/lib/places/types'
 // HTML between updates while still picking up moderation changes quickly.
 export const revalidate = 300
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cityriders.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 async function loadPlace(slug: string) {
   const supabase = await getServerSupabase()
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   const categoryLabel = CATEGORIES[place.category]?.label ?? place.category
   const title = `${place.name} · ${place.city}`
-  const description = place.description?.slice(0, 160) || `${place.name} di ${place.city} — ${categoryLabel}. Pesan rider untuk berangkat lewat City Rider.`
+  const description = place.description?.slice(0, 160) || `${place.name} di ${place.city} — ${categoryLabel}. Pesan rider untuk berangkat lewat IndoCity.`
   return {
     title,
     description,
@@ -88,7 +88,7 @@ export default async function PlaceDetailPage({ params }: { params: Promise<{ sl
   const categoryLabel = CATEGORIES[place.category]?.label ?? place.category
 
   const waNumber = (place.whatsapp_e164 ?? '').replace(/[^0-9]/g, '')
-  const waText = encodeURIComponent(`Halo ${place.name}, saya lihat listingmu di City Rider.`)
+  const waText = encodeURIComponent(`Halo ${place.name}, saya lihat listingmu di IndoCity.`)
   const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waText}` : null
 
   // Schema.org Place — gives Google a structured handle on each landmark

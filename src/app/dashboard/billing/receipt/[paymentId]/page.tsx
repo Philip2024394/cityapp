@@ -20,8 +20,8 @@ import { idr } from '@/lib/format/idr'
 // ============================================================================
 
 export const metadata = {
-  title: 'Kuitansi · City Rider',
-  description: 'Receipt for City Rider subscription payment.',
+  title: 'Kuitansi · IndoCity',
+  description: 'Receipt for IndoCity subscription payment.',
 }
 
 type PageProps = { params: Promise<{ paymentId: string }> }
@@ -74,8 +74,8 @@ export default async function ReceiptPage({ params }: PageProps) {
   const entity = getLegalEntity()
   const paidAt = new Date(payment.paid_at ?? payment.created_at)
   const productLabel = payment.product === 'subscription'
-    ? 'City Rider — langganan software (1 bulan)'
-    : 'City Rider — Tour Verified (1 bulan)'
+    ? 'IndoCity — langganan software (1 bulan)'
+    : 'IndoCity — Tour Verified (1 bulan)'
 
   return (
     <main className="min-h-screen pb-16">
@@ -102,7 +102,7 @@ export default async function ReceiptPage({ params }: PageProps) {
               <div className="text-[12px] uppercase tracking-wider font-extrabold text-brand print:text-black">
                 Kuitansi · Receipt
               </div>
-              <h1 className="text-[24px] font-extrabold mt-1 leading-tight">City Rider</h1>
+              <h1 className="text-[24px] font-extrabold mt-1 leading-tight">IndoCity</h1>
               {entity.name && (
                 <div className="text-[13px] text-muted mt-1 print:text-black/70">{entity.name}</div>
               )}

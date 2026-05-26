@@ -5,7 +5,7 @@ import RentalList from '@/components/rent/RentalList'
 import { listRentalsForCity } from '@/lib/rentals/queries'
 
 export const metadata = {
-  title: 'Bike Rental · City Rider',
+  title: 'Bike Rental · IndoCity',
   description:
     'Sewa motor di Yogyakarta, Bali, dan kota lain — harian / mingguan / bulanan. ' +
     'Self ride atau dengan driver. Listing langsung dari pemilik & rental shop terpercaya.',

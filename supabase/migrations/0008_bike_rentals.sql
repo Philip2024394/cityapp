@@ -1,6 +1,6 @@
 -- 0008_bike_rentals.sql
 -- Motorcycle rental marketplace — Slice 1.
--- Integrated into City Riders (not standalone): listings live at /rent,
+-- Integrated into IndoCity (not standalone): listings live at /rent,
 -- owners reuse the platform's existing auth/KYC where available, and
 -- rentals share city zones + supabase storage with the places directory.
 --
