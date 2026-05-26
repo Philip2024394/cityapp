@@ -126,7 +126,14 @@ export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
 // ============================================================================
 // List of active independent riders (discovery page)
 // ============================================================================
-export async function fetchActiveDriversBrowser(): Promise<Rider[]> {
+export async function fetchActiveDriversBrowser(
+  /** When supplied, restricts the result set to that vehicle_type. Used
+   *  by /cari/rider to keep the Bike rider list separate from Car/Minibus
+   *  results when the customer has picked a vehicle category. Default
+   *  'bike' preserves the legacy behaviour (all callers that don't pass
+   *  this parameter continue to see motorbike drivers only). */
+  vehicleType: 'bike' | 'car' | 'truck' | 'premium_car' | 'minibus' = 'bike',
+): Promise<Rider[]> {
   if (!isSupabaseConfigured()) return MOCK_RIDERS
   const supabase = getBrowserSupabase()
   if (!supabase) return MOCK_RIDERS
@@ -149,6 +156,7 @@ export async function fetchActiveDriversBrowser(): Promise<Rider[]> {
     .from('drivers_public')
     .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('status', 'active')
+    .eq('vehicle_type', vehicleType)
     .or(`online_until.is.null,online_until.gt.${nowIso}`)
     .order('availability', { ascending: true })
     .order('last_active_at', { ascending: false, nullsFirst: false })

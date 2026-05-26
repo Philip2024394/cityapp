@@ -329,6 +329,23 @@ function PlanTripPageInner() {
     if (!canSearch) return
     logNav('cari:view-drivers')
     haptic.impact()
+    // service → vehicleType + filter mapping. /cari/rider now filters
+    // its driver query by vehicleType (so Bike picks see only motorbike
+    // drivers, Car picks see only car drivers). The Passenger/Parcel
+    // toggle on /cari/rider then filters within that pool by the
+    // driver's services array.
+    const vehicleTypeForRider =
+      service === 'car' ? 'car'
+      : service === 'bus' ? 'minibus'
+      : 'bike'
+    // For the Bus tile, send the customer to the dedicated /bus
+    // marketplace — group / charter transport is best discovered as a
+    // browse experience (drivers describe daily charter rates in their
+    // bio), not the live ride-list flow.
+    if (service === 'bus') {
+      router.push('/bus')
+      return
+    }
     const params = new URLSearchParams({
       pLat: pickup!.lat.toString(),
       pLng: pickup!.lng.toString(),
@@ -341,6 +358,7 @@ function PlanTripPageInner() {
       params.set('stop', pitstopNote.trim())
     }
     params.set('filter', service)
+    params.set('vehicleType', vehicleTypeForRider)
     router.push(`/cari/rider?${params.toString()}`)
   }
 
@@ -839,20 +857,19 @@ function PlanTripPageInner() {
                 + label (high contrast against the yellow dropoff tile).
                 Inactive tiles = translucent black so the eye reads them
                 as alternates to the current mode. */}
-            {/* Service squares — 4 surfaced selectors:
-                Bike (person rides + food delivery implicitly), Car,
-                Parcel, Bus (group transport via minibus — Hiace /
-                Avanza / Innova for Yogya/Bali tourism). Food was
-                dropped because a bike rider will collect food
-                anyway (founder direction).
-                The 'food' ServiceType still exists in the type system
-                and accepts deep links (/cari?service=food) for backwards
-                compat with old landing-page tiles, drivers' services
-                arrays, and external bookmarks. */}
-            <div className="mt-2 grid grid-cols-4 gap-2">
+            {/* Service squares — 3 surfaced vehicle selectors (Bike /
+                Car / Bus). The Passenger ↔ Parcel choice has moved
+                to a sub-toggle that appears on the driver-list page
+                (/cari/rider) AFTER the customer taps "View drivers",
+                since the same Bike rider — and the same Car driver —
+                can offer either service. Food and Parcel ServiceType
+                values still exist for backwards-compat deep-links:
+                  /cari?service=parcel → Bike tile active, /cari/rider
+                  toggle pre-selected to Parcel. */}
+            <div className="mt-2 grid grid-cols-3 gap-2">
               <ServiceSquare
                 href="/cari?service=person"
-                active={service === 'person' || service === 'food'}
+                active={service === 'person' || service === 'parcel' || service === 'food'}
                 icon={<Bike className="w-6 h-6" strokeWidth={2.5} />}
                 label="Bike"
               />
@@ -861,12 +878,6 @@ function PlanTripPageInner() {
                 active={service === 'car'}
                 icon={<CarIcon className="w-6 h-6" strokeWidth={2.5} />}
                 label="Car"
-              />
-              <ServiceSquare
-                href="/cari?service=parcel"
-                active={service === 'parcel'}
-                icon={<Briefcase className="w-6 h-6" strokeWidth={2.5} />}
-                label="Parcel"
               />
               <ServiceSquare
                 href="/cari?service=bus"

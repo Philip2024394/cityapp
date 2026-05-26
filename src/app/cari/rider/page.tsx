@@ -20,13 +20,27 @@ import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import PartnerBookingBadge from '@/components/rider/PartnerBookingBadge'
 import { getBikeImageUrl } from '@/data/bikeImages'
 
-// Customer-facing labels for the service-type toggle. Stable order so
-// the underline bar always slides over consistent positions.
+// Customer-facing labels for the service-type toggle. Reduced to two
+// options (Passenger / Parcel) per founder direction: bike riders pick
+// up food anyway, so a separate Food tile/toggle entry is redundant.
+// The same toggle drives filtering for both Bike and Car vehicle types
+// — drivers' services array determines which appear under each tab.
 const SERVICE_TOGGLE: ReadonlyArray<{ id: ServiceType; label: string }> = [
-  { id: 'person', label: 'Bike' },
+  { id: 'person', label: 'Passenger' },
   { id: 'parcel', label: 'Parcel'    },
-  { id: 'food',   label: 'Food'      },
 ]
+
+// Allowed values for the vehicleType URL param. Mirrors the drivers
+// table CHECK constraint from migration 0092 plus the customer-facing
+// 'bike' default (when the customer arrived via Bike on /cari).
+const VEHICLE_TYPES = ['bike', 'car', 'truck', 'premium_car', 'minibus'] as const
+type VehicleType = (typeof VEHICLE_TYPES)[number]
+
+function parseVehicleType(raw: string | null): VehicleType {
+  return (VEHICLE_TYPES as readonly string[]).includes(raw ?? '')
+    ? (raw as VehicleType)
+    : 'bike'
+}
 
 export default function Page() {
   return (
@@ -62,17 +76,27 @@ function DriverResults() {
   // so the FeaturedDriverCard's `isCheapest` flag keeps working.
   const [sort] = useState<'cheapest' | 'nearest'>('cheapest')
   // Read service choice from URL — set by /cari when customer picks one
-  // of the 3 service cards. Falls back to the pending booking's service
+  // of the service tiles. Falls back to the pending booking's service
   // (so /cari/pending → Pick another driver keeps the same service type)
   // then to 'person' (Passenger) since the new toggle has no "all" option.
+  // 'food' is folded into 'parcel' visually since the Food tile was
+  // dropped — a bike rider collects food the same way they collect a
+  // small parcel.
   const initialFilter: ServiceType = (() => {
     const f = sp.get('filter')
-    if (f === 'person' || f === 'parcel' || f === 'food') return f
+    if (f === 'parcel' || f === 'food') return 'parcel'
+    if (f === 'person') return 'person'
     const fromPending = pending?.trip.service
-    if (fromPending === 'person' || fromPending === 'parcel' || fromPending === 'food') return fromPending
+    if (fromPending === 'parcel' || fromPending === 'food') return 'parcel'
+    if (fromPending === 'person') return 'person'
     return 'person'
   })()
   const [filter, setFilter] = useState<ServiceType>(initialFilter)
+
+  // Read vehicleType from URL — set by /cari when customer picks Bike or
+  // Car (Bus has its own /bus marketplace route, doesn't pass through
+  // here). Drives which slice of the drivers_public view we query.
+  const vehicleType: VehicleType = parseVehicleType(sp.get('vehicleType'))
 
   // Brief non-blocking toast shown when the user taps Book Driver. Tells
   // them WhatsApp is opening and the driver will reply there. Auto-dismiss.
@@ -96,13 +120,13 @@ function DriverResults() {
   const [ridersLoaded, setRidersLoaded] = useState(false)
   useEffect(() => {
     let cancelled = false
-    fetchActiveDriversBrowser().then((list) => {
+    fetchActiveDriversBrowser(vehicleType).then((list) => {
       if (cancelled) return
       setRiders(list)
       setRidersLoaded(true)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [vehicleType])
 
   // Back-to-booking URL — carries the current trip params so /cari can
   // reload exactly where the user left off rather than starting blank.
