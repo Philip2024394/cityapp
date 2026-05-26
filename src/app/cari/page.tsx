@@ -369,15 +369,6 @@ function PlanTripPageInner() {
               alt="IndoCity"
               className="h-8 sm:h-10 w-auto"
               loading="eager"
-              /* Colorize the dark wordmark to brand yellow (#FACC15)
-                 via a tested filter chain. brightness(0) flattens any
-                 non-transparent pixel to black; the invert/sepia/
-                 hue-rotate sequence then re-tints those pixels to the
-                 brand yellow without needing a separate asset. */
-              style={{
-                filter:
-                  'brightness(0) saturate(100%) invert(82%) sepia(73%) saturate(637%) hue-rotate(359deg) brightness(101%) contrast(101%)',
-              }}
             />
           </Link>
 
