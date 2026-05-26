@@ -4,16 +4,32 @@ import { SPECIALTY_SHORT, type HandymanSpecialty } from './types'
 // Handyman banner library — same shape as beautician's BANNER_LIBRARY:
 // theme-hex (uppercase) → category id (HandymanSpecialty) → entries.
 //
-// Empty for now: the founder hasn't sourced handyman scene banners yet.
-// The picker still works because the "Upload my own banner" tile is
-// always visible. To seed: pick a trade (e.g. 'plumbing'), generate or
-// source 16:9 banner URLs hosted on ik.imagekit.io / *.supabase.co, and
-// add them to the matching `[themeHex][specialty]` array.
+// Curated banners sourced by the founder, grouped by closest matching
+// specialty. The picker doesn't gate visibility by the tukang's selected
+// specialties — every category header with banners is shown — so each
+// banner only needs to live under its single best fit.
 //
 // Theme default is yellow (#FACC15) — the City Riders brand. Other
 // themes can be added later if handymen want per-provider accents.
 export const HANDYMAN_BANNER_LIBRARY: BannerLibrary = {
-  '#FACC15': {},
+  '#FACC15': {
+    carpentry: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2026,%202026,%2003_39_50%20PM.png',
+    ],
+    general_repair: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2026,%202026,%2003_38_08%20PM.png',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2026,%202026,%2003_33_32%20PM.png',
+    ],
+    plumbing: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2026,%202026,%2003_42_54%20PM.png',
+    ],
+    electrical: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2026,%202026,%2003_46_51%20PM.png',
+    ],
+    roof_repair: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2026,%202026,%2003_49_10%20PM.png',
+    ],
+  },
 }
 
 // Categories the picker iterates. We expose the same 24 specialties so
