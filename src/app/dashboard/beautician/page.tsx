@@ -30,6 +30,7 @@ type Extras = {
   services_offered?:   BeauticianServiceOffered[] | null
   service_photos?:     Partial<Record<BeauticianServiceOffered, BeauticianServicePhoto[]>> | null
   marketplace_categories?: BeauticianServiceOffered[] | null
+  visitor_count?:      number | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -150,7 +151,12 @@ export default function BeauticianDashboardPage() {
               style={{ width: `${pct}%` }}
             />
           </div>
-          <p className="text-[11px] text-white/55 text-right mt-1.5 tabular-nums">{pct}%</p>
+          <div className="flex items-center justify-between mt-1.5">
+            <p className="text-[11px] text-white/55 tabular-nums">
+              {(provider.visitor_count ?? 0).toLocaleString()} profile {provider.visitor_count === 1 ? 'view' : 'views'}
+            </p>
+            <p className="text-[11px] text-white/55 tabular-nums">{pct}%</p>
+          </div>
         </section>
 
         {/* Task cards */}

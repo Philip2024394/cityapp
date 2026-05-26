@@ -86,6 +86,9 @@ export type BeauticianProviderPublic = Pick<
   hero_text?: BeauticianHeroText | null
   // mig 0082 — Running marquee text under the portfolio carousel.
   promo_text?: string | null
+  // mig 0085 — Self-marked busy dates (ISO YYYY-MM-DD) shown as
+  // unavailable in the customer-side calendar.
+  busy_dates?: string[] | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.
@@ -119,6 +122,12 @@ export type BeauticianServicePhoto = {
    *  a portrait photo's subject sits below center and the default
    *  center-crop hides it. */
   object_position?: string
+  /** Optional before / after pair shown as thumbnails in the View
+   *  Details popup. Tapping a thumb swaps it into the main image
+   *  slot. Either field may be set independently; missing ones
+   *  simply don't render. */
+  before_image_url?: string
+  after_image_url?:  string
 }
 
 export const SERVICE_LABELS = {

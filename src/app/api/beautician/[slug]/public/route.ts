@@ -32,6 +32,8 @@ const PUBLIC_COLS = [
   'hero_text',
   // mig 0082 running marquee promo text
   'promo_text',
+  // mig 0085 self-marked busy dates for the customer date picker
+  'busy_dates',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

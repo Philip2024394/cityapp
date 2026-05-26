@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       for (const raw of v) {
         // String shape (legacy): just the URL.
         // Object shape (new):    { url, name?, description?, price_idr? }
-        let url: string, name: string | undefined, description: string | undefined, price: number | null | undefined, objectPosition: string | undefined
+        let url: string, name: string | undefined, description: string | undefined, price: number | null | undefined, objectPosition: string | undefined, beforeUrl: string | undefined, afterUrl: string | undefined
         if (typeof raw === 'string') {
           url = raw.trim()
         } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -195,6 +195,28 @@ export async function POST(req: Request) {
             }
             objectPosition = op || undefined
           }
+          // before / after — optional pair shown as thumbs in the
+          // View Details popup. Same allowlist guard as the main URL.
+          if (o.before_image_url !== undefined) {
+            if (typeof o.before_image_url !== 'string') {
+              return NextResponse.json({ error: 'invalid_before_image_url' }, { status: 400 })
+            }
+            const u = o.before_image_url.trim()
+            if (u && !isAllowedImageUrl(u)) {
+              return NextResponse.json({ error: 'invalid_before_image_host' }, { status: 400 })
+            }
+            beforeUrl = u || undefined
+          }
+          if (o.after_image_url !== undefined) {
+            if (typeof o.after_image_url !== 'string') {
+              return NextResponse.json({ error: 'invalid_after_image_url' }, { status: 400 })
+            }
+            const u = o.after_image_url.trim()
+            if (u && !isAllowedImageUrl(u)) {
+              return NextResponse.json({ error: 'invalid_after_image_host' }, { status: 400 })
+            }
+            afterUrl = u || undefined
+          }
         } else {
           return NextResponse.json({ error: 'invalid_service_photo_entry' }, { status: 400 })
         }
@@ -207,6 +229,8 @@ export async function POST(req: Request) {
         if (description)    entry.description = description
         if (price !== undefined) entry.price_idr = price
         if (objectPosition) entry.object_position = objectPosition
+        if (beforeUrl)      entry.before_image_url = beforeUrl
+        if (afterUrl)       entry.after_image_url  = afterUrl
         entries.push(entry)
       }
       if (entries.length > 0) cleaned[k] = entries

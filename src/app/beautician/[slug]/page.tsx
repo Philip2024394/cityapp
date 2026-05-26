@@ -1,8 +1,8 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Star, Award, Menu, Home, Hotel, Building2, Share2, Link2, MessageCircle, X, ChevronLeft, BadgeCheck, MapPin, Bike, type LucideIcon } from 'lucide-react'
+import { Star, Award, Menu, Home, Hotel, Building2, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
 import VisitUsMap from '@/components/profile/VisitUsMap'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
@@ -11,7 +11,6 @@ import { Sparkles } from 'lucide-react'
 import {
   BEAUTICIAN_SERVICES_OFFERED,
   SERVICE_OFFERED_LABELS,
-  aboutImageForTheme,
   type BeauticianProviderPublic,
   type BeauticianServiceOffered,
   type BeauticianServicePhoto,
@@ -70,6 +69,11 @@ export default function BeauticianProviderPage() {
   // Lifted from ReviewsPanel so the footer Leave Review button can open
   // the form too, not just the in-panel trigger.
   const [reviewFormOpen, setReviewFormOpen] = useState(false)
+  // Contact popup — opened by both the bottom Contact CTA and the
+  // per-service "View Details" Contact button. `contactServiceName`
+  // pre-fills the service field when triggered from a service card.
+  const [contactOpen,        setContactOpen]        = useState(false)
+  const [contactServiceName, setContactServiceName] = useState<string>('')
 
   useEffect(() => {
     capturePartnerFromUrl()
@@ -147,7 +151,7 @@ export default function BeauticianProviderPage() {
 
         <div
           className="relative w-full overflow-hidden bg-black"
-          style={{ aspectRatio: '16 / 9', maxHeight: 200 }}
+          style={{ aspectRatio: '16 / 9' }}
         >
           <img
             src={p.cover_image_url || DEFAULT_BEAUTICIAN_HERO}
@@ -226,16 +230,16 @@ export default function BeauticianProviderPage() {
                     {line2}
                   </span>
                 </div>
-                <div className="text-[12px] sm:text-[13px] font-medium mt-1.5 drop-shadow-[0_1px_3px_rgba(255,255,255,0.55)] max-w-[220px] leading-snug" style={{ color: taglineColor }}>
+                <div className="text-[13px] sm:text-[14px] font-semibold mt-1.5 drop-shadow-[0_1px_3px_rgba(255,255,255,0.55)] whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: taglineColor, maxWidth: 'min(360px, calc(100vw - 32px))' }}>
                   {tagline}
                 </div>
 
                 {/* Service locations the beautician travels to. */}
-                <div className="mt-2 flex items-start gap-1 max-w-[150px]">
+                <div className="flex items-start gap-1.5 max-w-[210px]" style={{ marginTop: 15 }}>
                   <HeroIcon icon={Home}       slogan="Home"  theme={theme} />
-                  <div className="w-px h-6 bg-black/30 mt-0.5" aria-hidden />
+                  <div className="w-px h-8 bg-black/30 mt-0.5" aria-hidden />
                   <HeroIcon icon={Hotel}      slogan="Hotel" theme={theme} />
-                  <div className="w-px h-6 bg-black/30 mt-0.5" aria-hidden />
+                  <div className="w-px h-8 bg-black/30 mt-0.5" aria-hidden />
                   <HeroIcon icon={Building2}  slogan="Villa" theme={theme} />
                 </div>
               </div>
@@ -261,7 +265,7 @@ export default function BeauticianProviderPage() {
         {/* Floating info card — overlaps the bottom edge of the cover.
             All 4 corners 15px. Left: avatar. Middle: name / city / rating.
             Right: "Top Rated Seller" badge. */}
-        <div className="px-4 relative z-20" style={{ marginTop: 8 }}>
+        <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
           <div
             className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
             style={{ borderRadius: 15 }}
@@ -330,7 +334,7 @@ export default function BeauticianProviderPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-8 max-w-2xl mx-auto space-y-2 pt-2">
+      <div className="px-4 pb-6 max-w-2xl mx-auto space-y-3 pt-3">
         {showVisitUs ? (
           <VisitUsPanel
             displayName={p.display_name}
@@ -339,6 +343,10 @@ export default function BeauticianProviderPage() {
             lat={typeof p.latitude  === 'number' ? p.latitude  : null}
             lng={typeof p.longitude === 'number' ? p.longitude : null}
             hours={p.operating_hours ?? null}
+            instagramUrl={p.instagram_url ?? null}
+            tiktokUrl={p.tiktok_url ?? null}
+            facebookUrl={p.facebook_url ?? null}
+            busyDates={(p.busy_dates ?? []) as string[]}
             theme={theme}
             onClose={() => setShowVisitUs(false)}
           />
@@ -376,24 +384,23 @@ export default function BeauticianProviderPage() {
           <div className="flex items-start gap-3">
             {p.bio?.trim() ? (
               <p
-                className="text-[13px] text-gray-600 leading-snug whitespace-pre-wrap flex-1 min-w-0"
+                className="text-[13px] text-gray-600 leading-snug flex-1 min-w-0"
                 style={{
                   display: '-webkit-box',
-                  WebkitLineClamp: 3,
+                  WebkitLineClamp: 5,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
                 }}
               >
-                {p.bio}
+                {/* Collapse stray \n in the stored bio to a single
+                    space so short sentences don't each sit on their
+                    own line — text now flows naturally and the line
+                    clamp counts true rendered lines. */}
+                {p.bio.replace(/\s*\n\s*/g, ' ')}
               </p>
             ) : (
               <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
             )}
-            <img
-              src={aboutImageForTheme(theme)}
-              alt=""
-              className="w-[58px] h-[58px] object-contain shrink-0"
-            />
           </div>
         </section>
 
@@ -421,7 +428,7 @@ export default function BeauticianProviderPage() {
           const hidden  = all.slice(3)
           const hasMore = hidden.length > 0
           return (
-            <section className="space-y-2">
+            <section className="space-y-2" style={{ marginTop: 15 }}>
               <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
                 Services Provided
               </h2>
@@ -547,16 +554,15 @@ export default function BeauticianProviderPage() {
             </div>
           </div>
           {p.whatsapp_e164 && (
-            <a
-              href={`https://wa.me/${p.whatsapp_e164.replace(/[^\d]/g, '')}?text=${encodeURIComponent(waText)}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => { setContactServiceName(''); setContactOpen(true) }}
               className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
               style={{ background: theme }}
             >
               <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
               Contact
-            </a>
+            </button>
           )}
         </div>
           </>
@@ -675,18 +681,6 @@ export default function BeauticianProviderPage() {
         </button>
       )}
 
-      {/* Powered-by credit — sits just above the accent strip so it
-          shows on every public profile without intruding on the main
-          content. Small + low-contrast so it doesn't compete with
-          the beautician's branding. */}
-      <a
-        href="/"
-        className="fixed left-0 right-0 z-10 text-center text-[10px] font-bold tracking-wider uppercase text-gray-400 hover:text-gray-600 transition"
-        style={{ bottom: 8 }}
-      >
-        Powered by <span style={{ color: theme }}>cityriders.id</span>
-      </a>
-
       {/* Bottom accent bar — fixed to visible viewport edge. */}
       <div
         className="fixed left-0 right-0 z-10"
@@ -694,70 +688,452 @@ export default function BeauticianProviderPage() {
         aria-hidden
       />
 
-      {/* Portfolio "View Details" popup — full image + full description
-          + start price + WhatsApp contact button. */}
+      {/* Portfolio "View Details" popup — full image + before/after
+          thumbs (if uploaded) + description + start price + Contact. */}
       {detailPhoto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.6)' }}
-          onClick={() => setDetailPhoto(null)}
+        <PortfolioDetailPopup
+          photo={detailPhoto}
+          theme={theme}
+          canContact={Boolean(p.whatsapp_e164)}
+          onClose={() => setDetailPhoto(null)}
+          onContact={() => {
+            setContactServiceName(detailPhoto.name ?? '')
+            setDetailPhoto(null)
+            setContactOpen(true)
+          }}
+        />
+      )}
+      {/* Contact / booking popup — opened by both the bottom Contact
+          CTA and any per-service Contact button. Submits a booking
+          request server-side first (so it shows up on the beautician's
+          calendar) and then opens WhatsApp with a matching pre-filled
+          message. Skips busy_dates the beautician has marked. */}
+      {contactOpen && p.whatsapp_e164 && (
+        <ContactBookingPopup
+          beauticianSlug={p.slug}
+          beauticianName={p.display_name}
+          whatsapp={p.whatsapp_e164}
+          theme={theme}
+          servicesOffered={(p.services_offered ?? []) as BeauticianServiceOffered[]}
+          presetService={contactServiceName}
+          busyDates={(p.busy_dates ?? []) as string[]}
+          onClose={() => setContactOpen(false)}
+        />
+      )}
+    </Shell>
+  )
+}
+
+// "View Details" popup — shows the main image at top with optional
+// Before / After thumbs underneath. Tapping a thumb swaps that image
+// into the main slot, and a "Main" pill appears so the customer can
+// jump back. Mounts fresh per photo (key={detailPhoto.url} could be
+// passed but the parent only renders one at a time, so local state
+// resets naturally when the parent unmounts the popup).
+function PortfolioDetailPopup({
+  photo, theme, canContact, onClose, onContact,
+}: {
+  photo:      BeauticianServicePhoto
+  theme:      string
+  canContact: boolean
+  onClose:    () => void
+  onContact:  () => void
+}) {
+  type View = 'main' | 'before' | 'after'
+  const [view, setView] = useState<View>('main')
+  const hasBefore = Boolean(photo.before_image_url)
+  const hasAfter  = Boolean(photo.after_image_url)
+  const showThumbs = hasBefore || hasAfter
+
+  const mainSrc = view === 'before' ? photo.before_image_url
+                : view === 'after'  ? photo.after_image_url
+                : photo.url
+  const mainPosition = view === 'main' ? (photo.object_position || 'center') : 'center'
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.6)' }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
+        style={{ borderTop: `4px solid ${theme}` }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center"
         >
-          <div
-            className="bg-white rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
-            style={{ borderTop: `4px solid ${theme}` }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setDetailPhoto(null)}
-              aria-label="Close"
-              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center"
+          <X className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
+        </button>
+
+        {/* Main image with a small floating label showing which view
+            (Main / Before / After) is currently displayed. */}
+        <div className="relative">
+          <img
+            src={mainSrc}
+            alt={photo.name || ''}
+            className="w-full aspect-square object-cover transition-opacity"
+            style={{ objectPosition: mainPosition }}
+          />
+          {view !== 'main' && (
+            <div
+              className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white shadow"
+              style={{ background: theme }}
             >
-              <X className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
-            </button>
-            <img
-              src={detailPhoto.url}
-              alt={detailPhoto.name || ''}
-              className="w-full aspect-square object-cover"
-              style={{ objectPosition: detailPhoto.object_position || 'center' }}
-            />
-            <div className="p-4 space-y-3">
-              {detailPhoto.name && (
-                <h3 className="text-[18px] font-black text-black leading-tight">
-                  {detailPhoto.name}
-                </h3>
+              {view === 'before' ? 'Before' : 'After'}
+            </div>
+          )}
+        </div>
+
+        {/* Before / After thumb row — only when either is uploaded. */}
+        {showThumbs && (
+          <div className="px-4 pt-3">
+            <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 mb-1.5">
+              Compare
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <ThumbButton
+                label="Main"
+                src={photo.url}
+                active={view === 'main'}
+                onClick={() => setView('main')}
+                theme={theme}
+                objectPosition={photo.object_position}
+              />
+              {hasBefore && (
+                <ThumbButton
+                  label="Before"
+                  src={photo.before_image_url ?? ''}
+                  active={view === 'before'}
+                  onClick={() => setView('before')}
+                  theme={theme}
+                />
               )}
-              {detailPhoto.description && (
-                <p className="text-[13px] text-gray-600 leading-snug whitespace-pre-wrap">
-                  {detailPhoto.description}
-                </p>
-              )}
-              {formatPriceIdr(detailPhoto.price_idr) && (
-                <div className="leading-none">
-                  <div className="text-[22px] font-black text-black">
-                    {formatPriceIdr(detailPhoto.price_idr)}
-                  </div>
-                  <div className="text-[11px] font-medium text-gray-500 mt-1">Start from</div>
-                </div>
-              )}
-              {p.whatsapp_e164 && (
-                <a
-                  href={`https://wa.me/${p.whatsapp_e164.replace(/[^\d]/g, '')}?text=${encodeURIComponent(
-                    `Halo ${p.display_name}, saya tertarik dengan layanan "${detailPhoto.name ?? 'Beauty Service'}" di profil City Riders Anda. Bisa info lebih lanjut?`,
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-full text-white font-extrabold text-[13px] shadow-md active:scale-[0.98] transition"
-                  style={{ background: theme }}
-                >
-                  <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-                  Contact
-                </a>
+              {hasAfter && (
+                <ThumbButton
+                  label="After"
+                  src={photo.after_image_url ?? ''}
+                  active={view === 'after'}
+                  onClick={() => setView('after')}
+                  theme={theme}
+                />
               )}
             </div>
           </div>
+        )}
+
+        <div className="p-4 space-y-3">
+          {photo.name && (
+            <h3 className="text-[18px] font-black text-black leading-tight">
+              {photo.name}
+            </h3>
+          )}
+          {photo.description && (
+            <p className="text-[13px] text-gray-600 leading-snug whitespace-pre-wrap">
+              {photo.description}
+            </p>
+          )}
+          {formatPriceIdr(photo.price_idr) && (
+            <div className="leading-none">
+              <div className="text-[22px] font-black text-black">
+                {formatPriceIdr(photo.price_idr)}
+              </div>
+              <div className="text-[11px] font-medium text-gray-500 mt-1">Start from</div>
+            </div>
+          )}
+          {canContact && (
+            <button
+              type="button"
+              onClick={onContact}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-full text-white font-extrabold text-[13px] shadow-md active:scale-[0.98] transition"
+              style={{ background: theme }}
+            >
+              <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+              Contact
+            </button>
+          )}
         </div>
-      )}
-    </Shell>
+      </div>
+    </div>
+  )
+}
+
+function ThumbButton({
+  label, src, active, onClick, theme, objectPosition,
+}: {
+  label:           string
+  src:             string
+  active:          boolean
+  onClick:         () => void
+  theme:           string
+  objectPosition?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`relative rounded-lg overflow-hidden border-2 transition active:scale-95 ${
+        active ? '' : 'border-gray-200 hover:border-gray-300'
+      }`}
+      style={{
+        aspectRatio: '1 / 1',
+        borderColor: active ? theme : undefined,
+      }}
+    >
+      <img
+        src={src}
+        alt={label}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ objectPosition: objectPosition || 'center' }}
+      />
+      <div
+        className="absolute bottom-0 inset-x-0 text-center text-[10px] font-black uppercase tracking-wider py-0.5"
+        style={{
+          background: active ? theme : 'rgba(0,0,0,0.55)',
+          color: '#FFFFFF',
+        }}
+      >
+        {label}
+      </div>
+    </button>
+  )
+}
+
+// Customer-facing booking popup — date + time + service form that
+// records a booking_request server-side then bounces the customer to
+// WhatsApp with a pre-filled message containing the same details. The
+// WA chat stays Standard (not Business) since we never custody money.
+function ContactBookingPopup({
+  beauticianSlug, beauticianName, whatsapp, theme,
+  servicesOffered, presetService, busyDates, onClose,
+}: {
+  beauticianSlug:   string
+  beauticianName:   string
+  whatsapp:         string
+  theme:            string
+  servicesOffered:  BeauticianServiceOffered[]
+  presetService:    string
+  busyDates:        string[]
+  onClose:          () => void
+}) {
+  const [name,    setName]    = useState('')
+  const [wa,      setWa]      = useState('')
+  const [date,    setDate]    = useState('')
+  const [time,    setTime]    = useState('')
+  const [service, setService] = useState(presetService)
+  const [notes,   setNotes]   = useState('')
+  const [busy,    setBusy]    = useState(false)
+  const [err,     setErr]     = useState<string | null>(null)
+
+  const today    = useMemo(() => {
+    const d = new Date()
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  }, [])
+  const busySet  = useMemo(() => new Set(busyDates), [busyDates])
+  const dateBusy = date.length === 10 && busySet.has(date)
+
+  const timeSuggestions = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30']
+
+  async function submit() {
+    setErr(null)
+    if (name.trim().length < 2) { setErr('Please add your name.'); return }
+    const waDigits = wa.replace(/[^\d]/g, '')
+    if (waDigits.length < 8 || waDigits.length > 15) {
+      setErr('Please add a valid WhatsApp number.')
+      return
+    }
+    if (!date)  { setErr('Pick a date.'); return }
+    if (dateBusy) { setErr('That date is unavailable — please pick another.'); return }
+    if (!time)  { setErr('Pick a time.'); return }
+
+    setBusy(true)
+    try {
+      const r = await fetch(`/api/beautician/${beauticianSlug}/book`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          customer_name:     name.trim(),
+          customer_whatsapp: wa.startsWith('+') ? wa.trim() : `+${waDigits}`,
+          service_name:      service.trim() || undefined,
+          requested_date:    date,
+          requested_time:    time,
+          notes:             notes.trim() || undefined,
+        }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok || !j.ok) {
+        setErr(j.error === 'rate_limited'
+          ? 'Too many requests from this device. Try again tomorrow.'
+          : j.error === 'date_unavailable'
+            ? 'That date is unavailable — please pick another.'
+            : 'Could not submit. Please try again.')
+        return
+      }
+
+      const waMsg = [
+        `Hi ${beauticianName}, I'd like to book ${service.trim() || 'a service'} `,
+        `on ${date} at ${time}.`,
+        notes.trim() ? `\nNotes: ${notes.trim()}` : '',
+        `\n\n— Sent via cityriders.id`,
+      ].join('')
+      window.open(
+        `https://wa.me/${whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(waMsg)}`,
+        '_blank',
+      )
+      onClose()
+    } catch {
+      setErr('Network error. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] overflow-y-auto"
+        style={{ borderTop: `4px solid ${theme}` }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center z-10"
+        >
+          <X className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+
+        <div className="px-5 pt-6 pb-6 space-y-3.5">
+          <div>
+            <h2 className="text-[20px] font-black text-black leading-tight">Book {beauticianName}</h2>
+            <p className="text-[12px] text-gray-500 mt-1 leading-snug">
+              Pick a date + time and we&apos;ll open WhatsApp with your request.
+            </p>
+          </div>
+
+          <label className="block space-y-1">
+            <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Your name</span>
+            <input
+              type="text"
+              maxLength={60}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Sarah"
+              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-400 min-h-[44px]"
+            />
+          </label>
+
+          <label className="block space-y-1">
+            <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Your WhatsApp</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={wa}
+              onChange={(e) => setWa(e.target.value)}
+              placeholder="+62 812 3456 7890"
+              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-400 min-h-[44px]"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block space-y-1">
+              <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Date</span>
+              <input
+                type="date"
+                min={today}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className={`w-full rounded-xl border px-3 py-3 text-[14px] text-black focus:outline-none focus:border-gray-400 min-h-[44px] ${
+                  dateBusy ? 'border-red-400 bg-red-50' : 'border-gray-200'
+                }`}
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Time</span>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                list="cr-time-suggestions"
+                className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black focus:outline-none focus:border-gray-400 min-h-[44px]"
+              />
+              <datalist id="cr-time-suggestions">
+                {timeSuggestions.map((t) => <option key={t} value={t} />)}
+              </datalist>
+            </label>
+          </div>
+          {dateBusy && (
+            <p className="text-[12px] text-red-600 -mt-1">
+              {beauticianName} marked this day busy. Please pick another date.
+            </p>
+          )}
+
+          {servicesOffered.length > 0 && (
+            <label className="block space-y-1">
+              <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Service</span>
+              <select
+                value={service}
+                onChange={(e) => setService(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-3 py-3 text-[14px] text-black bg-white focus:outline-none focus:border-gray-400 min-h-[44px]"
+              >
+                <option value="">Choose service…</option>
+                {servicesOffered.map((sid) => (
+                  <option key={sid} value={SERVICE_OFFERED_LABELS[sid] ?? sid}>
+                    {SERVICE_OFFERED_LABELS[sid] ?? sid}
+                  </option>
+                ))}
+                {presetService && !servicesOffered.some((sid) => (SERVICE_OFFERED_LABELS[sid] ?? sid) === presetService) && (
+                  <option value={presetService}>{presetService}</option>
+                )}
+              </select>
+            </label>
+          )}
+
+          <label className="block space-y-1">
+            <span className="text-[12px] font-extrabold text-gray-700 uppercase tracking-wider">Notes (optional)</span>
+            <textarea
+              maxLength={300}
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Anything she should know (e.g. bridal makeup for 5 people, hotel in Seminyak…)"
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-[13px] text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-400 resize-none"
+            />
+          </label>
+
+          {err && (
+            <div className="rounded-xl border border-red-300 bg-red-50 text-red-700 text-[13px] px-3 py-2">
+              {err}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy || dateBusy}
+            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-white font-extrabold text-[14px] shadow-md disabled:opacity-60 active:scale-[0.98] transition"
+            style={{ background: theme }}
+          >
+            <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+            {busy ? 'Sending…' : 'Send & open WhatsApp'}
+          </button>
+          <p className="text-[10px] text-gray-400 text-center leading-snug">
+            We&apos;ll log your request so {beauticianName} sees the time + service in her calendar.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -882,7 +1258,7 @@ function PortfolioCard({
         src={photo.url}
         alt={photo.name || ''}
         loading="lazy"
-        className="w-full h-[70px] object-cover bg-gray-100"
+        className="w-full h-[130px] object-cover bg-gray-100"
         style={{ objectPosition: photo.object_position || 'center' }}
       />
       <div className="p-2 flex flex-col gap-1">
@@ -1031,17 +1407,41 @@ function formatPriceIdr(amount: number | null | undefined): string | null {
 // that pre-fills the City Riders ride-booking dropoff with the salon
 // coordinates.
 function VisitUsPanel({
-  displayName, address, city, lat, lng, hours, theme, onClose,
+  displayName, address, city, lat, lng, hours,
+  instagramUrl, tiktokUrl, facebookUrl,
+  busyDates,
+  theme, onClose,
 }: {
-  displayName: string
-  address: string | null
-  city:    string | null
-  lat:     number | null
-  lng:     number | null
-  hours:   Record<string, string> | null
-  theme:   string
-  onClose: () => void
+  displayName:   string
+  address:       string | null
+  city:          string | null
+  lat:           number | null
+  lng:           number | null
+  hours:         Record<string, string> | null
+  instagramUrl:  string | null
+  tiktokUrl:     string | null
+  facebookUrl:   string | null
+  busyDates:     string[]
+  theme:         string
+  onClose:       () => void
 }) {
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const socials: Array<{ href: string; label: string; svg: React.ReactNode }> = []
+  if (instagramUrl?.trim()) socials.push({
+    href:  instagramUrl.trim(),
+    label: 'Instagram',
+    svg:   <SocialInstagramIcon />,
+  })
+  if (tiktokUrl?.trim()) socials.push({
+    href:  tiktokUrl.trim(),
+    label: 'TikTok',
+    svg:   <SocialTikTokIcon />,
+  })
+  if (facebookUrl?.trim()) socials.push({
+    href:  facebookUrl.trim(),
+    label: 'Facebook',
+    svg:   <SocialFacebookIcon />,
+  })
   const hasCoords = typeof lat === 'number' && typeof lng === 'number'
   const todaysHours = (() => {
     if (!hours) return null
@@ -1049,12 +1449,34 @@ function VisitUsPanel({
     return hours[day] ?? null
   })()
 
-  // Book Bike URL — preserves the established ride-booking entrypoint
-  // (/r) with dropoff query params. The booking page picks these up
-  // and pre-fills the dropoff so the user only sets pickup + driver.
-  const bookBikeHref = hasCoords
-    ? `/r?dropoff_lat=${lat}&dropoff_lng=${lng}&dropoff_label=${encodeURIComponent(displayName)}`
+  // Book Bike Service — opens the rider-search booking page (/cari/rider)
+  // pre-filled with the beautician's lat/lng as dropoff. We also try
+  // to capture the customer's current GPS as pickup so /cari/rider
+  // arrives with both ends populated and shows the fare estimate
+  // immediately. Geolocation is best-effort: if the browser denies
+  // or it's unsupported, we navigate with dropoff only and the rider
+  // page asks the customer to pick a pickup location.
+  const bookBikeBase = hasCoords
+    ? `/cari/rider?dLat=${lat}&dLng=${lng}&dName=${encodeURIComponent(displayName)}`
     : null
+
+  function bookBikeService() {
+    if (!bookBikeBase) return
+    const fallback = () => { window.location.href = bookBikeBase! }
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      fallback()
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const pLat = pos.coords.latitude.toFixed(6)
+        const pLng = pos.coords.longitude.toFixed(6)
+        window.location.href = `${bookBikeBase}&pLat=${pLat}&pLng=${pLng}&pName=${encodeURIComponent('My location')}`
+      },
+      fallback,
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+    )
+  }
 
   return (
     <section className="space-y-3">
@@ -1066,15 +1488,19 @@ function VisitUsPanel({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-black"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.96] transition"
+          style={{ color: theme }}
         >
           <X className="w-3.5 h-3.5" strokeWidth={2.5} />
           Close
         </button>
       </div>
 
-      {/* Address card */}
-      <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-1">
+      {/* Address card. Social-media icons render as a separate row
+          at the bottom-right, well clear of the address text, with
+          solid black buttons (theme-colored icons would have clashed
+          with the address pin). Each social opens in a new tab. */}
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-3">
         <div className="flex items-start gap-2">
           <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: theme }} strokeWidth={2.5} />
           <div className="min-w-0 flex-1">
@@ -1085,14 +1511,54 @@ function VisitUsPanel({
             )}
           </div>
         </div>
+        {socials.length > 0 && (
+          <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-gray-200">
+            {socials.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open ${displayName} on ${s.label}`}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white bg-black hover:bg-gray-800 shadow-sm active:scale-[0.94] transition"
+              >
+                {s.svg}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Today's hours */}
-      {todaysHours && (
-        <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 flex items-center gap-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">Today</span>
-          <span className="text-[13px] font-extrabold text-black">{todaysHours}</span>
-        </div>
+      {/* Today's hours row with a Check Booking button on the right
+          that opens a read-only month calendar so the customer can
+          eyeball availability before committing to the contact form. */}
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 flex items-center gap-2">
+        {todaysHours ? (
+          <>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">Today</span>
+            <span className="text-[13px] font-extrabold text-black">{todaysHours}</span>
+          </>
+        ) : (
+          <span className="text-[12px] font-bold text-gray-500">Hours not set</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setCalendarOpen(true)}
+          className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-[11px] font-extrabold uppercase tracking-wider shadow-sm active:scale-[0.97]"
+          style={{ background: theme }}
+        >
+          <Calendar className="w-3 h-3" strokeWidth={2.5} />
+          Check Booking
+        </button>
+      </div>
+
+      {calendarOpen && (
+        <AvailabilityCalendarPopup
+          displayName={displayName}
+          busyDates={busyDates}
+          theme={theme}
+          onClose={() => setCalendarOpen(false)}
+        />
       )}
 
       {/* Map preview */}
@@ -1104,21 +1570,213 @@ function VisitUsPanel({
         </div>
       )}
 
-      {/* Book Bike CTA */}
-      {bookBikeHref && (
-        <a
-          href={bookBikeHref}
+      {/* Book Bike Service CTA — captures customer's pickup GPS on
+          tap, then opens /r with both pickup + dropoff pre-filled so
+          the fare estimate appears immediately. */}
+      {bookBikeBase && (
+        <button
+          type="button"
+          onClick={bookBikeService}
           className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.98] transition"
           style={{ background: theme }}
         >
           <Bike className="w-4 h-4" strokeWidth={2.5} />
-          Book Bike — auto-fill drop-off here
-        </a>
+          Book Bike Service
+        </button>
       )}
       <p className="text-[10px] text-gray-400 leading-snug text-center">
-        Pickup location & driver dipilih di langkah berikutnya.
+        We&apos;ll use your location for pickup and {displayName}&apos;s for drop-off — fare shows on the next screen.
       </p>
     </section>
+  )
+}
+
+// Brand-mark SVGs for social icons. Inlined rather than importing more
+// from lucide-react so we keep the bundle small and the marks visually
+// match the platforms (lucide's "Instagram" is generic). Each draws on
+// `currentColor` so a parent text-white container fills them in white.
+// Read-only month calendar popup — shows busy_dates as red blocks so
+// the customer can scan availability without opening the full booking
+// form. No actions: tap is purely visual. Customer goes back to the
+// Contact CTA to actually book a slot.
+function AvailabilityCalendarPopup({
+  displayName, busyDates, theme, onClose,
+}: {
+  displayName: string
+  busyDates:   string[]
+  theme:       string
+  onClose:     () => void
+}) {
+  const todayIso = useMemo(() => {
+    const d = new Date()
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  }, [])
+  const [viewMonth, setViewMonth] = useState(() => {
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const d = new Date()
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`
+  })
+
+  const cells = useMemo(() => {
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    const start  = new Date(viewMonth + 'T00:00:00')
+    const first  = start.getDay()
+    const total  = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+    const out: Array<{ iso: string; day: number; inMonth: boolean }> = []
+    const prevTotal = new Date(start.getFullYear(), start.getMonth(), 0).getDate()
+    for (let i = first - 1; i >= 0; i--) {
+      const day = prevTotal - i
+      const d = new Date(start.getFullYear(), start.getMonth() - 1, day)
+      out.push({ iso: iso(d), day, inMonth: false })
+    }
+    for (let day = 1; day <= total; day++) {
+      const d = new Date(start.getFullYear(), start.getMonth(), day)
+      out.push({ iso: iso(d), day, inMonth: true })
+    }
+    while (out.length < 42) {
+      const last = out[out.length - 1]
+      const ld = new Date(last.iso + 'T00:00:00')
+      ld.setDate(ld.getDate() + 1)
+      out.push({ iso: iso(ld), day: ld.getDate(), inMonth: ld.getMonth() === start.getMonth() })
+    }
+    return out
+  }, [viewMonth])
+
+  const busySet = useMemo(() => new Set(busyDates), [busyDates])
+
+  function shiftMonth(delta: number) {
+    const d = new Date(viewMonth + 'T00:00:00')
+    d.setMonth(d.getMonth() + delta)
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    setViewMonth(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`)
+  }
+
+  const monthLabel = new Date(viewMonth + 'T00:00:00')
+    .toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+        style={{ borderTop: `4px solid ${theme}` }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center z-10"
+        >
+          <X className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+        <div className="px-5 pt-6 pb-5">
+          <h2 className="text-[18px] font-black text-black leading-tight">
+            {displayName}&apos;s availability
+          </h2>
+          <p className="text-[12px] text-gray-500 mt-1">
+            Red dates are unavailable. Use the Contact button to book any other day.
+          </p>
+
+          <div className="flex items-center justify-between mt-4">
+            <button
+              type="button"
+              onClick={() => shiftMonth(-1)}
+              aria-label="Previous month"
+              className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-700" />
+            </button>
+            <div className="text-[15px] font-black text-black">{monthLabel}</div>
+            <button
+              type="button"
+              onClick={() => shiftMonth(1)}
+              aria-label="Next month"
+              className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-700" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 mt-3 mb-1">
+            {['S','M','T','W','T','F','S'].map((d, i) => (
+              <div key={i} className="text-[10px] font-bold text-gray-400 text-center">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((c) => {
+              const inMonth = c.inMonth
+              const isToday = c.iso === todayIso
+              const isBusy  = busySet.has(c.iso)
+              const isPast  = c.iso < todayIso
+              let bg = 'bg-transparent'
+              let text = inMonth ? (isPast ? 'text-gray-300' : 'text-gray-800') : 'text-gray-200'
+              let ring = ''
+              if (isBusy && inMonth) {
+                bg   = ''
+                text = 'text-white'
+              } else if (isToday) {
+                ring = 'ring-2'
+              }
+              return (
+                <div
+                  key={c.iso}
+                  className={`relative aspect-square rounded-lg ${bg} ${text} ${ring} text-[12px] font-bold flex items-center justify-center`}
+                  style={
+                    isBusy && inMonth
+                      ? { background: '#EF4444' }
+                      : isToday
+                        ? { '--tw-ring-color': theme } as React.CSSProperties
+                        : undefined
+                  }
+                >
+                  {c.day}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center gap-4 mt-4 text-[11px] text-gray-600">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-red-500" /> Unavailable
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded ring-2" style={{ '--tw-ring-color': theme } as React.CSSProperties} /> Today
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SocialInstagramIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+function SocialTikTokIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M19.5 7.5a6 6 0 0 1-4.5-2v8.5a5 5 0 1 1-5-5c.34 0 .68.04 1 .11v2.6a2.5 2.5 0 1 0 1.75 2.39V3h2.5a4 4 0 0 0 4 4v.5z" />
+    </svg>
+  )
+}
+function SocialFacebookIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M13.5 22v-8h2.7l.4-3.1H13.5V8.9c0-.9.25-1.5 1.55-1.5h1.65V4.6c-.3-.05-1.3-.13-2.45-.13-2.4 0-4.05 1.46-4.05 4.16v2.27H7.5V14h2.7v8h3.3z" />
+    </svg>
   )
 }
 
@@ -1175,7 +1833,7 @@ function ReviewsPanel({
   }
 
   return (
-    <section className="space-y-2" style={{ marginTop: 24 }}>
+    <section className="space-y-2" style={{ marginTop: 32 }}>
       {!formOpen && (
         <div className="flex items-baseline justify-between">
           <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
@@ -1361,11 +2019,11 @@ function HeroIcon({
   return (
     <div className="flex-1 flex flex-col items-center text-center min-w-0">
       {src
-        ? <img src={src} alt="" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
+        ? <img src={src} alt="" className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px] object-contain" />
         : Icon
-          ? <Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} style={{ color: theme }} />
+          ? <Icon className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px]" strokeWidth={2} style={{ color: theme }} />
           : null}
-      <div className="mt-0.5 text-[7px] sm:text-[8px] font-medium text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]">
+      <div className="mt-1 text-[10px] sm:text-[11px] font-medium text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]">
         {slogan}
       </div>
     </div>
@@ -1383,9 +2041,12 @@ function Shell({ children }: { children: React.ReactNode }) {
     return () => { document.body.style.overflow = prev }
   }, [])
   // Solid white paints over the global PageBackground (which sits at
-  // -z-10) so the courier scene doesn't show through here.
+  // -z-10) so the courier scene doesn't show through here. Uses
+  // min-h-screen (not h-screen) so long profiles can scroll naturally
+  // and reach the powered-by footer + accent strip; overflow-hidden
+  // was previously clamping content to a single viewport.
   return (
-    <main className="relative h-screen overflow-hidden bg-white text-ink">
+    <main className="relative min-h-screen bg-white text-ink">
       {/* Hide the floating dev-toolbar wrench on this page only — the
           page is meant to read as a polished customer-facing profile
           and the spanner clutters the corner. Scoped to mount lifetime. */}

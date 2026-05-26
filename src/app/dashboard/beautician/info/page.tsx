@@ -19,6 +19,9 @@ type Extras = {
   has_physical_location?: boolean
   latitude?:  number | null
   longitude?: number | null
+  instagram_url?: string | null
+  tiktok_url?:    string | null
+  facebook_url?:  string | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -87,6 +90,9 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     has_physical_location: boolean
     latitude:  number | null
     longitude: number | null
+    instagram_url: string
+    tiktok_url:    string
+    facebook_url:  string
   }
   const [f, setF] = useState<FormState>({
     display_name:        provider.display_name,
@@ -99,6 +105,9 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     has_physical_location: provider.has_physical_location ?? false,
     latitude:            provider.latitude  ?? null,
     longitude:           provider.longitude ?? null,
+    instagram_url:       provider.instagram_url ?? '',
+    tiktok_url:          provider.tiktok_url    ?? '',
+    facebook_url:        provider.facebook_url  ?? '',
   })
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
@@ -167,6 +176,9 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
           has_physical_location: f.has_physical_location,
           latitude:              f.latitude,
           longitude:             f.longitude,
+          instagram_url:         f.instagram_url.trim() || null,
+          tiktok_url:            f.tiktok_url.trim()    || null,
+          facebook_url:          f.facebook_url.trim()  || null,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -245,6 +257,50 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
         </Field>
         <Field label="Service area" hint="Province or neighborhood — e.g. South Bandung">
           <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} className={inputCls} placeholder="e.g. South Bandung" />
+        </Field>
+      </Card>
+
+      {/* Social media — optional. Buttons only show on the public
+          profile when a URL is set, so empty fields stay invisible. */}
+      <Card title="Social media (optional)" hint="Paste full URLs. Each link adds a small icon button on your public profile." icon={<User size={18} />}>
+        <Field label="Instagram URL">
+          <input
+            type="url"
+            value={f.instagram_url}
+            onChange={(e) => upd('instagram_url', e.target.value)}
+            className={inputCls}
+            placeholder="https://instagram.com/yourhandle"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <Field label="TikTok URL">
+          <input
+            type="url"
+            value={f.tiktok_url}
+            onChange={(e) => upd('tiktok_url', e.target.value)}
+            className={inputCls}
+            placeholder="https://tiktok.com/@yourhandle"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <Field label="Facebook URL">
+          <input
+            type="url"
+            value={f.facebook_url}
+            onChange={(e) => upd('facebook_url', e.target.value)}
+            className={inputCls}
+            placeholder="https://facebook.com/yourpage"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
         </Field>
       </Card>
 

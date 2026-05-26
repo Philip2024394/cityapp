@@ -481,6 +481,28 @@ function PromoTextEditor({
         placeholder="Write your promo message — appears as scrolling text below your portfolio."
         className="w-full rounded-xl bg-black/85 border border-white/15 px-3 py-2 text-[13px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand resize-none leading-snug"
       />
+      <p className="text-[11px] text-ink/60 leading-snug">
+        Use this for special offers — weddings, birthdays, graduations,
+        or seasonal discounts. Tap a suggestion to drop it in.
+      </p>
+      <div className="flex flex-wrap gap-1.5 pt-1">
+        {[
+          'Bridal package — book early for wedding season discount',
+          'Birthday glam? Group of 3+ gets 10% off',
+          'Graduation makeup specials this month',
+          'Free brow shaping with any makeup booking this week',
+          'Hotel + villa mobile service — Yogya area',
+        ].map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setDraft(s)}
+            className="text-[11px] text-ink/80 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-2.5 py-1 transition active:scale-[0.97]"
+          >
+            {s.length > 36 ? s.slice(0, 34) + '…' : s}
+          </button>
+        ))}
+      </div>
       <div className={`text-[10px] tabular-nums text-right ${draft.length >= 450 ? 'text-amber-300' : 'text-ink/45'}`}>
         {draft.length} / 500
       </div>

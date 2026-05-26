@@ -76,6 +76,10 @@ const SECURITY_HEADERS = [
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
+  // Hide the floating "N" build-status indicator Next.js shows on the
+  // bottom-left in `next dev`. The badge competes with our profile-page
+  // chrome (back button, accent bar, social row) for the same corner.
+  devIndicators: false,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'krbewsrfxjswkoosohyc.supabase.co' },
