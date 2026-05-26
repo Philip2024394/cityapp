@@ -19,8 +19,7 @@ export default function PageBackground() {
       aria-hidden
       className="fixed inset-0 -z-10 pointer-events-none"
       style={{
-        backgroundImage:
-          `linear-gradient(rgba(10,10,10,0.72), rgba(10,10,10,0.86)), url('${BG_URL}')`,
+        backgroundImage: `url('${BG_URL}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
