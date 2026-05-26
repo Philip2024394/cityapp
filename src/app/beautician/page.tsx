@@ -223,6 +223,17 @@ function MarketplaceInner() {
         {/* "Are you a beautician?" CTA panel removed per founder request —
             providers now use the landing-page "Join today indoscity.id"
             footer link to reach /join. */}
+
+        {/* Founder-supplied footer image — full-width banner that ends
+            the scrolled content. */}
+        <div className="mt-8 -mx-4">
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/sdfsdfasdfasdfasdfasdasda.png"
+            alt=""
+            aria-hidden
+            className="block w-full h-auto"
+          />
+        </div>
       </div>
     </Shell>
   )
@@ -315,20 +326,11 @@ function ProviderCardViaUniversal({ provider: p }: { provider: BeauticianProvide
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  // Themed beauty-scene background image with a light white scrim
-  // (78%) so the city heading + light cards stay readable on any
-  // tonal value in the image. Same pattern as /handyman.
+  // Solid white surface. Footer image lives inside the page below
+  // the cards (see MarketplaceInner) so it sits at the natural end
+  // of the scrolled content rather than as a fixed-attachment bg.
   return (
-    <main
-      className="relative min-h-screen text-black"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.78), rgba(255,255,255,0.78)), url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2001_21_11%20AM.png')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-      }}
-    >
+    <main className="relative min-h-screen bg-white text-black">
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
