@@ -375,13 +375,24 @@ function PlanTripPageInner() {
             >
               Ind
             </span>
-            <MapPin
+            {/* Custom map-pin SVG so the outer teardrop fills yellow
+                while the inner circle stays WHITE (lucide's <MapPin>
+                flattens both shapes to one color). translate-y-[4px]
+                drops the pin below the cap-line so it sits lower
+                than the surrounding letters — reads as the "o" hanging
+                slightly below the baseline. */}
+            <svg
               aria-hidden
-              className="w-[22px] h-[22px] sm:w-[28px] sm:h-[28px] mx-[1px] -translate-y-[1px]"
-              strokeWidth={2.6}
-              style={{ color: '#FACC15' }}
-              fill="#FACC15"
-            />
+              viewBox="0 0 24 24"
+              fill="none"
+              className="w-[22px] h-[22px] sm:w-[28px] sm:h-[28px] mx-[1px] translate-y-[4px]"
+            >
+              <path
+                d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                fill="#FACC15"
+              />
+              <circle cx="12" cy="10" r="3" fill="#FFFFFF" />
+            </svg>
             <span
               className="font-black tracking-tight text-[26px] sm:text-[32px] leading-none"
               style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
