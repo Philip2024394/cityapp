@@ -270,10 +270,17 @@ function PlanTripPageInner() {
   useEffect(() => {
     if (queryLat == null || queryLng == null) return
     const ctrl = new AbortController()
+    // vehicleType maps from the customer-facing service tab:
+    //   service='car'                            → vehicle_type='car'
+    //   service='person'|'parcel'|'food'         → vehicle_type='bike'
+    // Bike is the default for the three motorbike-based services
+    // (person ride, parcel courier, food delivery).
+    const vehicleType = service === 'car' ? 'car' : 'bike'
     const params = new URLSearchParams({
       lat: queryLat.toFixed(4),
       lng: queryLng.toFixed(4),
       radiusKm: '30',
+      vehicleType,
     })
     fetch(`/api/drivers/lowest-fare?${params}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : null))
@@ -284,7 +291,7 @@ function PlanTripPageInner() {
       })
       .catch(() => { /* silent — button gracefully omits price */ })
     return () => ctrl.abort()
-  }, [queryLat, queryLng])
+  }, [queryLat, queryLng, service])
 
   const mapCenter = pickup ?? geo.coords ?? { lat: -7.7928, lng: 110.3657, accuracyM: 0 }
 

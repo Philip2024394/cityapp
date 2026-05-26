@@ -3,17 +3,18 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import { haversineKm } from '@/lib/geo/haversine'
 
 // ============================================================================
-// GET /api/drivers/lowest-fare?lat=&lng=&radiusKm=&city=
+// GET /api/drivers/lowest-fare?lat=&lng=&radiusKm=&city=&vehicleType=
 // ----------------------------------------------------------------------------
 // Returns the lowest published minimum fare + count across ONLINE drivers,
 // optionally narrowed by geographic radius or city. Pure aggregation of
 // what drivers themselves listed — we never set or calculate a price.
-// This keeps the customer-facing "Starting from Rp X" banner safely inside
-// PM 12/2019 directory safe-harbour: the number is a driver's own published
+// This keeps the customer-facing "From Rp X" banner safely inside PM
+// 12/2019 directory safe-harbour: the number is a driver's own published
 // rate, not ours.
 //
 // Filters:
 //   • drivers.status = 'active' AND availability = 'online'
+//   • drivers.vehicle_type = <param>  (defaults 'bike' for backwards compat)
 //   • subscriptions.status IN ('trial', 'active') — past_due drivers are
 //     hidden from /cari/rider, so excluding them here keeps the banner
 //     honest (no "Rp X from Driver Y" if Driver Y isn't bookable).
@@ -21,12 +22,26 @@ import { haversineKm } from '@/lib/geo/haversine'
 //   • Optional city — used only when lat/lng absent.
 // ============================================================================
 
+// Allowed vehicle_type values. Mirrors the CHECK constraint added in
+// migration 0092_multi_vehicle_directory.sql. Any other value falls
+// through to 'bike' so legacy callers (which don't pass the param) get
+// the historical behaviour unchanged.
+const VEHICLE_TYPES = ['bike', 'car', 'truck', 'premium_car', 'minibus'] as const
+type VehicleType = (typeof VEHICLE_TYPES)[number]
+
+function parseVehicleType(raw: string | null): VehicleType {
+  return (VEHICLE_TYPES as readonly string[]).includes(raw ?? '')
+    ? (raw as VehicleType)
+    : 'bike'
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url)
   const lat = parseFloat(url.searchParams.get('lat') ?? '')
   const lng = parseFloat(url.searchParams.get('lng') ?? '')
   const radiusKm = parseFloat(url.searchParams.get('radiusKm') ?? '30')
   const city = (url.searchParams.get('city') ?? '').trim()
+  const vehicleType = parseVehicleType(url.searchParams.get('vehicleType'))
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng)
 
   const admin = getAdminSupabase()
@@ -37,6 +52,7 @@ export async function GET(req: Request) {
     .select('min_fee, current_lat, current_lng, service_zone_center_lat, service_zone_center_lng, subscriptions(status)')
     .eq('status', 'active')
     .eq('availability', 'online')
+    .eq('vehicle_type', vehicleType)
     .not('min_fee', 'is', null)
     .gt('min_fee', 0)
   if (city && !hasCoords) q = q.eq('city', city.slice(0, 60))
