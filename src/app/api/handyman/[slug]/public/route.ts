@@ -20,6 +20,8 @@ const PUBLIC_COLS = [
   // mig 0089 — profile parity fields
   'promo_text','service_photos','busy_dates',
   'has_physical_location','latitude','longitude',
+  // mig 0091 — customisable hero overlay text
+  'hero_text',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

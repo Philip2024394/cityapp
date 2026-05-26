@@ -152,6 +152,18 @@ export type HandymanProviderPublic = Pick<
   rating_count?: number | null
   // mig 0087 — per-provider accent for the public profile page.
   theme_color?: string | null
+  // mig 0091 — customisable hero overlay text. Same shape as
+  // beautician's BeauticianHeroText so the profile page renders both
+  // verticals through the same overlay block.
+  hero_text?: {
+    line1?:         string
+    line2?:         string
+    tagline?:       string
+    color?:         string
+    line1_color?:   string
+    tagline_color?: string
+    effect?:        'none' | 'shimmer' | 'dance' | 'underline'
+  } | null
   // mig 0089 — profile-parity fields. All NULL-safe.
   promo_text?:           string | null
   service_photos?:       Array<{
