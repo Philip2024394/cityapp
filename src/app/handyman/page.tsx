@@ -238,9 +238,20 @@ function Shell({ children }: { children: React.ReactNode }) {
   // marketplace reads as a clean directory page. Text colour switches
   // to dark inks (ink → black via the surface). AppNav (the dark
   // sticky glass header) is intentionally omitted here per founder
-  // request — the rest of the app still gets it.
+  // request — the rest of the app still gets it. A minimal header
+  // with the founder wordmark sits at the top-left as the only
+  // brand anchor on this surface.
   return (
     <main className="relative min-h-screen bg-white text-black">
+      <header className="px-4 pt-safe pt-3 pb-2 max-w-4xl mx-auto">
+        <Link href="/" aria-label="Home" className="inline-block">
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+            alt="City Riders"
+            className="h-8 sm:h-10 w-auto"
+          />
+        </Link>
+      </header>
       {children}
     </main>
   )
