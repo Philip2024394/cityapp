@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Star, Award, Menu, Home, Hotel, Building2, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
@@ -234,14 +234,30 @@ export default function BeauticianProviderPage() {
                   {tagline}
                 </div>
 
-                {/* Service locations the beautician travels to. */}
-                <div className="flex items-start gap-1.5 max-w-[210px]" style={{ marginTop: 15 }}>
-                  <HeroIcon icon={Home}       slogan="Home"  theme={theme} />
-                  <div className="w-px h-8 bg-black/30 mt-0.5" aria-hidden />
-                  <HeroIcon icon={Hotel}      slogan="Hotel" theme={theme} />
-                  <div className="w-px h-8 bg-black/30 mt-0.5" aria-hidden />
-                  <HeroIcon icon={Building2}  slogan="Villa" theme={theme} />
-                </div>
+                {/* Service locations the beautician travels to —
+                    driven by p.service_locations (mig 0086). Each
+                    location is rendered only when explicitly set; a
+                    missing or null array hides the whole row so
+                    legacy profiles without the field don't reveal
+                    locations they may not actually serve. */}
+                {(() => {
+                  const locs = new Set(p.service_locations ?? [])
+                  if (locs.size === 0) return null
+                  const items: Array<{ key: string; icon: typeof Home; label: string }> = []
+                  if (locs.has('home'))  items.push({ key: 'home',  icon: Home,      label: 'Home' })
+                  if (locs.has('hotel')) items.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
+                  if (locs.has('villa')) items.push({ key: 'villa', icon: Building2, label: 'Villa' })
+                  return (
+                    <div className="flex items-start gap-2 max-w-[260px]" style={{ marginTop: 15 }}>
+                      {items.map((it, idx) => (
+                        <React.Fragment key={it.key}>
+                          {idx > 0 && <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />}
+                          <HeroIcon icon={it.icon} slogan={it.label} theme={theme} />
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             )
           })()}
@@ -439,7 +455,7 @@ export default function BeauticianProviderPage() {
                     filter is active. */}
                 <button
                   type="button"
-                  onClick={() => setActiveService(null)}
+                  onClick={() => { setActiveService(null); setShowMoreServices(false) }}
                   aria-pressed={activeService === null}
                   className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
                   style={
@@ -2085,12 +2101,20 @@ function HeroIcon({
 }: { src?: string; icon?: LucideIcon; slogan: string; theme: string }) {
   return (
     <div className="flex-1 flex flex-col items-center text-center min-w-0">
-      {src
-        ? <img src={src} alt="" className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px] object-contain" />
-        : Icon
-          ? <Icon className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px]" strokeWidth={2} style={{ color: theme }} />
-          : null}
-      <div className="mt-1 text-[10px] sm:text-[11px] font-medium text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]">
+      {/* Icon sits inside a soft white-tinted squircle so the theme-
+          coloured icon stays readable on any cover-image backdrop
+          (especially dark themes like Rina's #B91C1C). */}
+      <span
+        className="inline-flex items-center justify-center rounded-xl bg-white/75 backdrop-blur-sm shadow-sm"
+        style={{ width: 44, height: 44 }}
+      >
+        {src
+          ? <img src={src} alt="" className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] object-contain" />
+          : Icon
+            ? <Icon className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px]" strokeWidth={2.25} style={{ color: theme }} />
+            : null}
+      </span>
+      <div className="mt-1.5 text-[13px] sm:text-[14px] font-bold text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
         {slogan}
       </div>
     </div>

@@ -179,9 +179,12 @@ export default function LandingPage() {
       </header>
 
       {/* Hero — flex-1 so it fills the viewport between header and the
-          bottom edge. Inner content vertically centered. Tight paddings
-          + min-h-0 so flex can shrink the section if content overflows. */}
-      <section className="relative z-20 px-4 py-3 flex-1 flex items-center min-h-0 overflow-hidden">
+          bottom edge. Content anchored to the TOP of the section
+          (items-start + pt-4) so the headline + lede stay in the hero
+          band on phones instead of being pushed off-screen by the 10
+          tile buttons below. Tight paddings + min-h-0 so flex can
+          shrink the section if content overflows. */}
+      <section className="relative z-20 px-4 pt-4 pb-3 flex-1 flex items-start min-h-0 overflow-hidden">
         <div className="max-w-xl mx-auto text-center space-y-3 w-full">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/25">
             <span className="dot-online !w-2 !h-2" />
@@ -200,10 +203,11 @@ export default function LandingPage() {
             {t.lede}
           </p>
 
-          {/* PRIMARY CTA — 3 landscape service tiles. Tapping a tile
-              routes straight to /cari?service=<id> so the customer never
-              has to pick the service type twice. */}
-          <div className="pt-1 w-full max-w-sm mx-auto grid grid-cols-2 gap-2 mb-2">
+          {/* PRIMARY CTA — service tiles. 2-column grid with generous
+              gap so adjacent tiles can't be accidentally co-tapped on
+              a mobile screen (8px → 14px between tiles + safe inner
+              padding inside each Link). */}
+          <div className="pt-1 w-full max-w-sm mx-auto grid grid-cols-2 gap-x-3.5 gap-y-3 mb-2">
             {SERVICE_TILES.map((tile, i) => (
               // 2 tiles per row — same Link prefetch + logNav timing
               // so tap-to-paint stays near-instant.

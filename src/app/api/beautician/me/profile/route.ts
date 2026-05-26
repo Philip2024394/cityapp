@@ -132,6 +132,27 @@ export async function POST(req: Request) {
   if (!universal.ok) return NextResponse.json({ error: universal.error }, { status: 400 })
   Object.assign(update, universal.fields)
 
+  // mig 0086 — service_locations: subset of {home,hotel,villa}.
+  // Empty array is valid (means "no location icons shown").
+  if ((body as { service_locations?: unknown }).service_locations !== undefined) {
+    const raw = (body as { service_locations?: unknown }).service_locations
+    if (raw === null) {
+      update.service_locations = null
+    } else if (!Array.isArray(raw)) {
+      return NextResponse.json({ error: 'invalid_service_locations' }, { status: 400 })
+    } else {
+      const allow = new Set(['home', 'hotel', 'villa'])
+      const cleaned: string[] = []
+      for (const v of raw) {
+        if (typeof v !== 'string' || !allow.has(v)) {
+          return NextResponse.json({ error: 'invalid_service_location' }, { status: 400 })
+        }
+        if (!cleaned.includes(v)) cleaned.push(v)
+      }
+      update.service_locations = cleaned
+    }
+  }
+
   if (body.service_photos !== undefined) {
     const sp = body.service_photos
     if (sp === null || typeof sp !== 'object' || Array.isArray(sp)) {

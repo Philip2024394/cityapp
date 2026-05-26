@@ -22,6 +22,7 @@ type Extras = {
   instagram_url?: string | null
   tiktok_url?:    string | null
   facebook_url?:  string | null
+  service_locations?: Array<'home' | 'hotel' | 'villa'> | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -93,6 +94,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     instagram_url: string
     tiktok_url:    string
     facebook_url:  string
+    service_locations: Array<'home' | 'hotel' | 'villa'>
   }
   const [f, setF] = useState<FormState>({
     display_name:        provider.display_name,
@@ -108,6 +110,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     instagram_url:       provider.instagram_url ?? '',
     tiktok_url:          provider.tiktok_url    ?? '',
     facebook_url:        provider.facebook_url  ?? '',
+    service_locations:   provider.service_locations ?? ['home','hotel','villa'],
   })
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
@@ -179,6 +182,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
           instagram_url:         f.instagram_url.trim() || null,
           tiktok_url:            f.tiktok_url.trim()    || null,
           facebook_url:          f.facebook_url.trim()  || null,
+          service_locations:     f.service_locations,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -305,6 +309,48 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
       </Card>
 
       {/* Physical location */}
+      {/* Where I travel to — drives the Home / Hotel / Villa icon row
+          on both the public profile hero and the marketplace card.
+          Customers only see the icons you tick here. */}
+      <Card title="Where I travel to" hint="Tick the locations you accept bookings at. Unchecked locations are hidden from your marketplace card and profile." icon={<MapPin size={18} />}>
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { id: 'home',  label: 'Home',  hint: 'Customer house' },
+            { id: 'hotel', label: 'Hotel', hint: 'Hotel rooms' },
+            { id: 'villa', label: 'Villa', hint: 'Villa stays' },
+          ] as const).map((opt) => {
+            const on = f.service_locations.includes(opt.id)
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => upd(
+                  'service_locations',
+                  on ? f.service_locations.filter((x) => x !== opt.id)
+                     : [...f.service_locations, opt.id],
+                )}
+                aria-pressed={on}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl p-3 border transition min-h-[68px] ${
+                  on
+                    ? 'bg-yellow-400 border-yellow-300 text-yellow-900 shadow-md shadow-yellow-400/30'
+                    : 'bg-white/10 border-white/15 text-white/70 hover:bg-white/15'
+                }`}
+              >
+                <span className="text-[13px] font-extrabold leading-none">{opt.label}</span>
+                <span className={`text-[10px] leading-tight ${on ? 'text-yellow-900/70' : 'text-white/50'}`}>
+                  {opt.hint}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        {f.service_locations.length === 0 && (
+          <p className="text-[11px] text-amber-200 leading-snug">
+            ⚠ With none selected, your card and profile won&apos;t show any travel-location icons.
+          </p>
+        )}
+      </Card>
+
       <Card title="Physical location (optional)" hint="Enable if you have a salon or studio customers can visit. Don't publish your home address unless you want walk-ins." icon={<MapPin size={18} />}>
         <label className="inline-flex items-center gap-2 cursor-pointer">
           <input

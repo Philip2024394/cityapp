@@ -89,6 +89,10 @@ export type BeauticianProviderPublic = Pick<
   // mig 0085 — Self-marked busy dates (ISO YYYY-MM-DD) shown as
   // unavailable in the customer-side calendar.
   busy_dates?: string[] | null
+  // mig 0086 — Subset of {'home','hotel','villa'} the beautician is
+  // willing to travel to. Drives the location-icon row on the public
+  // profile hero + the bottom-left icons on marketplace cards.
+  service_locations?: Array<'home' | 'hotel' | 'villa'> | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.

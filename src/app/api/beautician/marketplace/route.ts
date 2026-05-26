@@ -19,6 +19,12 @@ const PUBLIC_COLS = [
   // mig 0075/0076 — review aggregate columns drive rating badge + star meter
   'rating',
   'rating_count',
+  // mig 0086 — Home/Hotel/Villa icons on the card bottom-left
+  'service_locations',
+  // Card hero strip + mini portfolio + themed accents (new card design)
+  'cover_image_url',
+  'theme_color',
+  'service_photos',
 ].join(', ')
 
 export async function GET(req: Request) {

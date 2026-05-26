@@ -34,6 +34,8 @@ const PUBLIC_COLS = [
   'promo_text',
   // mig 0085 self-marked busy dates for the customer date picker
   'busy_dates',
+  // mig 0086 service locations (home / hotel / villa subset)
+  'service_locations',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

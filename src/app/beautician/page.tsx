@@ -2,7 +2,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Menu, Plus, User } from 'lucide-react'
+import { Menu, Plus, Star, User, Home, Hotel, Building2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import {
   BEAUTICIAN_SERVICES_OFFERED,
@@ -226,9 +226,13 @@ function MarketplaceInner() {
 }
 
 function ProviderCard({ provider: p }: { provider: BeauticianProviderPublic }) {
-  // Category badges replace the old black price tiles. Source order:
-  // primary marketplace_categories (mig 0077) first; if empty fall back
-  // to whatever legacy price columns are set.
+  // Marketplace cards use the CITY RIDERS brand yellow uniformly for
+  // every beautician — keeps the listing grid coherent under the
+  // platform brand. Each beautician's personal theme_color still
+  // drives their own /beautician/[slug] profile page so individual
+  // identity colors live there, not on the marketplace listing.
+  const theme = '#FACC15'
+
   const cats: BeauticianServiceOffered[] = (() => {
     if (p.marketplace_categories && p.marketplace_categories.length > 0) {
       return p.marketplace_categories as BeauticianServiceOffered[]
@@ -239,151 +243,234 @@ function ProviderCard({ provider: p }: { provider: BeauticianProviderPublic }) {
     if (p.price_hair_idr   != null) fallback.push('hair')
     return fallback
   })()
+  const primary   = cats[0]
+  const mainLabel = primary
+    ? BEAUTICIAN_SERVICES_OFFERED.find((s) => s.id === primary)?.label ?? primary
+    : null
 
-  const body = (
+  // Up to 3 thumbnails for the mini portfolio strip — prefer primary
+  // category, fall back to whatever else has data.
+  const sp = p.service_photos ?? {}
+  const portfolioThumbs: string[] = (() => {
+    const out: string[] = []
+    if (primary && Array.isArray(sp[primary])) {
+      for (const item of sp[primary] ?? []) {
+        if (out.length >= 3) break
+        const url = typeof item === 'string' ? item : (item as { url?: string })?.url
+        if (url) out.push(url)
+      }
+    }
+    if (out.length < 3) {
+      for (const arr of Object.values(sp)) {
+        if (!Array.isArray(arr)) continue
+        for (const item of arr) {
+          if (out.length >= 3) break
+          const url = typeof item === 'string' ? item : (item as { url?: string })?.url
+          if (url && !out.includes(url)) out.push(url)
+        }
+        if (out.length >= 3) break
+      }
+    }
+    return out
+  })()
+
+  // Location icons — same filter rule as the profile hero.
+  const locs = new Set(p.service_locations ?? [])
+  const locItems: Array<{ key: string; icon: typeof Home; label: string }> = []
+  if (locs.has('home'))  locItems.push({ key: 'home',  icon: Home,      label: 'Home' })
+  if (locs.has('hotel')) locItems.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
+  if (locs.has('villa')) locItems.push({ key: 'villa', icon: Building2, label: 'Villa' })
+
+  const eff = effectiveAvailability(p)
+
+  return (
     <div
-      className="p-4 relative overflow-hidden rounded-2xl cursor-pointer hover:-translate-y-0.5 transition"
+      className="relative overflow-hidden rounded-2xl transition hover:-translate-y-0.5 hover:shadow-2xl"
       style={{
-        backgroundImage: `url('${BEAUTY_CARD_BG}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundColor: '#FFFFFF',
-        border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+        background: 'rgba(15, 15, 18, 0.62)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderLeft: `3px solid ${theme}`,
+        boxShadow: `0 6px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06), 0 0 0 0.5px ${theme}40`,
       }}
     >
-
-      <div className="flex items-start gap-3 mb-3">
-        <div className="relative shrink-0">
-          {p.profile_image_url
-            ? <img
-                src={p.profile_image_url}
-                alt={p.display_name}
-                className="w-14 h-14 rounded-2xl object-cover bg-white/5"
-                style={{
-                  border: '2px solid #FACC15',
-                  boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                }}
-              />
-            : <div
-                className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-[20px] font-black"
-                style={{
-                  color: '#0A0A0A',
-                  border: '2px solid #FACC15',
-                  boxShadow: '0 0 0 2px rgba(250,204,21,0.25), 0 2px 8px rgba(0,0,0,0.35)',
-                }}
-              >{p.display_name[0]}</div>}
-          {/* Availability dot at lower-right of the avatar. Auto-busy
-              when stored=online but current time is outside today's
-              operating_hours. Two concentric green rings ping when truly
-              online; busy/offline shows a solid orange dot. */}
-          {(() => {
-            const eff = effectiveAvailability(p)
-            return (
-              <span
-                aria-label={eff === 'online' ? 'Online · available' : 'Busy / outside hours'}
-                className="absolute -bottom-1 -right-1"
-                style={{ width: 14, height: 14 }}
-              >
-                {eff === 'online' && (
-                  <>
-                    <span aria-hidden className="absolute inset-0 rounded-full animate-ping"
-                      style={{ background: 'rgba(34,197,94,0.55)', animationDuration: '1.6s' }} />
-                    <span aria-hidden className="absolute inset-0 rounded-full animate-ping"
-                      style={{ background: 'rgba(34,197,94,0.75)', animationDuration: '1s' }} />
-                  </>
-                )}
-                <span
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    background: eff === 'online' ? '#22C55E' : '#F97316',
-                    border: '2px solid #FFFFFF',
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
-                  }}
-                />
-              </span>
-            )
-          })()}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[16px] font-extrabold truncate leading-tight" style={{ color: '#0A0A0A' }}>{p.display_name}</div>
-          {p.city && (
-            <div className="text-[13px] truncate mt-1" style={{ color: '#374151' }}>
-              {p.city}
-            </div>
-          )}
-          {/* Always render the time line — shows today's hours when set,
-              otherwise an honest "By appointment" fallback. */}
-          <div className="text-[12px] font-semibold truncate mt-0.5" style={{ color: '#6B7280' }}>
-            Time {todayHoursLabel(p.operating_hours) ?? 'By appointment'}
-          </div>
-        </div>
-
-        {/* Primary category image on the right of the name block.
-            Renders the first item in marketplace_categories that has
-            a brand image; falls back to nothing. */}
-        {(() => {
-          const primary = cats.find((c) => CATEGORY_IMAGES[c])
-          if (!primary) return null
-          const label = BEAUTICIAN_SERVICES_OFFERED.find((s) => s.id === primary)?.label ?? primary
-          return (
-            <img
-              src={CATEGORY_IMAGES[primary]}
-              alt={label}
-              title={label}
-              className="w-[56px] h-[56px] object-contain shrink-0 self-center"
-            />
-          )
-        })()}
-      </div>
-
-      <p
-        className="text-[13px] mb-3 leading-snug"
-        style={{
-          color: '#4B5563',
-          display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >{p.bio}</p>
-
-      {/* Bottom row — rate text on the LEFT (no star icon), Profile
-          button on the RIGHT. */}
-      <div className="flex items-center justify-between gap-3">
-        {p.rating != null && p.rating > 0 ? (
-          <div className="text-[13px] font-extrabold text-black truncate">
-            {p.rating.toFixed(1)}
-            <span className="text-[12px] text-gray-500 font-semibold ml-1">
-              ({p.rating_count ?? 0} {(p.rating_count ?? 0) === 1 ? 'review' : 'reviews'})
+      {/* HERO STRIP — cover image with a smooth fade into the dark
+          glass body so the avatar/name area stays readable on any
+          backdrop. When no cover is set, the band is a soft
+          theme-tinted gradient instead of empty grey. */}
+      <div className="relative h-[110px]" style={{ background: `linear-gradient(135deg, ${theme}25, ${theme}08)` }}>
+        {p.cover_image_url && (
+          <img
+            src={p.cover_image_url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+          />
+        )}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(15,15,18,0) 45%, rgba(15,15,18,0.95) 100%)',
+          }}
+        />
+        {/* Rating chip — top-right of the cover. */}
+        {p.rating != null && p.rating > 0 && (
+          <div
+            className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full border shadow-md"
+            style={{
+              background: 'rgba(15, 15, 18, 0.78)',
+              borderColor: 'rgba(255,255,255,0.18)',
+            }}
+          >
+            <Star className="w-3.5 h-3.5" fill="#FACC15" stroke="none" />
+            <span className="text-[13px] font-extrabold text-white tabular-nums leading-none">
+              {p.rating.toFixed(1)}
             </span>
           </div>
-        ) : <span /> }
+        )}
+      </div>
 
-        <Link
-          href={`/beautician/${p.slug}`}
-          aria-label={`View profile of ${p.display_name}`}
-          className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shrink-0 hover:brightness-110 transition"
-          style={{
-            backgroundColor: '#0A0A0A',
-            color: '#FFFFFF',
-            border: '2px solid #FFFFFF',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.2)',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <User className="w-3.5 h-3.5" strokeWidth={2.5} />
-          Profile
-        </Link>
+      {/* BODY — pulled up so the avatar bridges cover + body in the
+          classic profile-card pattern. */}
+      <div className="px-4 pb-4 -mt-6 relative z-10">
+        <div className="flex items-end gap-3 mb-2">
+          <div className="relative shrink-0">
+            {p.profile_image_url
+              ? <img
+                  src={p.profile_image_url}
+                  alt={p.display_name}
+                  className="w-16 h-16 rounded-2xl object-cover bg-black/40"
+                  style={{
+                    border: `3px solid ${theme}`,
+                    boxShadow: `0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,15,18,0.8)`,
+                  }}
+                />
+              : <div
+                  className="w-16 h-16 rounded-2xl bg-black/40 flex items-center justify-center text-[22px] font-black text-white"
+                  style={{
+                    border: `3px solid ${theme}`,
+                    boxShadow: `0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(15,15,18,0.8)`,
+                  }}
+                >{p.display_name[0]}</div>}
+            <span
+              aria-label={eff === 'online' ? 'Online · available' : 'Busy / outside hours'}
+              className="absolute -bottom-1 -right-1"
+              style={{ width: 14, height: 14 }}
+            >
+              {eff === 'online' && (
+                <>
+                  <span aria-hidden className="absolute inset-0 rounded-full animate-ping"
+                    style={{ background: 'rgba(34,197,94,0.55)', animationDuration: '1.6s' }} />
+                  <span aria-hidden className="absolute inset-0 rounded-full animate-ping"
+                    style={{ background: 'rgba(34,197,94,0.75)', animationDuration: '1s' }} />
+                </>
+              )}
+              <span
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: eff === 'online' ? '#22C55E' : '#F97316',
+                  border: '2px solid #0F0F12',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                }}
+              />
+            </span>
+          </div>
+
+          <div className="min-w-0 flex-1 pb-1">
+            <div className="text-[17px] font-black text-white truncate leading-tight">{p.display_name}</div>
+            {p.city && (
+              <div className="text-[12px] text-white/70 flex items-center gap-1 mt-0.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: theme }} />
+                {p.city}
+              </div>
+            )}
+            <div className="text-[11px] text-white/55 truncate mt-0.5">
+              Time {todayHoursLabel(p.operating_hours) ?? 'By appointment'}
+            </div>
+          </div>
+
+          {mainLabel && (
+            <div
+              className="shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider"
+              style={{
+                background: `${theme}22`,
+                color: theme,
+                border: `1px solid ${theme}60`,
+              }}
+            >
+              {mainLabel}
+            </div>
+          )}
+        </div>
+
+        {p.bio?.trim() && (
+          <p
+            className="text-[12.5px] leading-snug text-white/70 mb-3"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {p.bio.replace(/\s*\n\s*/g, ' ')}
+          </p>
+        )}
+
+        {portfolioThumbs.length > 0 && (
+          <div className="grid grid-cols-3 gap-1.5 mb-3">
+            {portfolioThumbs.map((url, i) => (
+              <div
+                key={url + i}
+                className="relative aspect-[4/3] rounded-lg overflow-hidden bg-black/40"
+                style={{ boxShadow: `inset 0 0 0 1px ${theme}40` }}
+              >
+                <img
+                  src={url}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-3">
+          {locItems.length > 0 ? (
+            <div className="flex items-center gap-2.5 min-w-0">
+              {locItems.map((it) => (
+                <span
+                  key={it.key}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-bold text-white/85"
+                  title={`Travels to ${it.label}`}
+                >
+                  <it.icon className="w-[16px] h-[16px]" strokeWidth={2.25} style={{ color: '#FFFFFF' }} />
+                  {it.label}
+                </span>
+              ))}
+            </div>
+          ) : <span />}
+
+          <Link
+            href={`/beautician/${p.slug}`}
+            aria-label={`View profile of ${p.display_name}`}
+            className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shrink-0 hover:brightness-110 transition shadow-md"
+            style={{
+              background: theme,
+              color: '#0A0A0A',
+              boxShadow: `0 4px 14px ${theme}55`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <User className="w-3.5 h-3.5" strokeWidth={2.5} />
+            Profile
+          </Link>
+        </div>
       </div>
     </div>
   )
-
-  // Card itself is NOT a Link (would nest <a> inside the inner Profile
-  // <Link>, causing a hydration error). The explicit Profile button is
-  // the only navigation affordance.
-  return body
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
