@@ -11,38 +11,38 @@ import { logNav } from '@/lib/perf/navTiming'
 //   tour                    → /tour (tour-guide marketplace)
 //   massage                 → /massage (massage marketplace)
 // Order: Ride → Parcel → Food → Rental → Tour → Massage.
-// All labels keep the "Bike X" prefix per the brand convention — every
-// service is delivered by an independent motorbike-equipped operator.
+// All labels share the "Indo X" prefix — founder's brand convention for
+// the directory-of-Indonesia positioning.
 type TileId = 'person' | 'parcel' | 'food' | 'rental' | 'tour' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean'
 const SERVICE_TILES: ReadonlyArray<{ id: TileId; label: string; sub: string; img: string; href: string }> = [
-  { id: 'person', label: 'Bike Ride',   sub: 'Passenger',
+  { id: 'person', label: 'Indo Ride',   sub: 'Passenger',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
     href: '/cari?service=person' },
-  { id: 'parcel', label: 'Bike Parcel', sub: 'Package · Courier',
+  { id: 'parcel', label: 'Indo Parcel', sub: 'Package · Courier',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledsddasd-removebg-preview.png?updatedAt=1779013880961',
     href: '/cari?service=parcel' },
-  { id: 'food',   label: 'Bike Food',   sub: 'Resto · Warung',
+  { id: 'food',   label: 'Indo Food',   sub: 'Resto · Warung',
     img: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2017,%202026,%2005_29_25%20PM.png?updatedAt=1779013783890',
     href: '/cari?service=food' },
-  { id: 'rental', label: 'Bike Rental', sub: 'Self-ride · With driver',
+  { id: 'rental', label: 'Indo Rental', sub: 'Self-ride · With driver',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledwrrssswdqw-removebg-preview.png?updatedAt=1778253308442',
     href: '/rent' },
-  { id: 'tour', label: 'Bike Tour',     sub: 'Local guides · Day trips',
+  { id: 'tour', label: 'Indo Tour',     sub: 'Local guides · Day trips',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledsssaaa-removebg-preview.png?updatedAt=1779390066960',
     href: '/tour' },
-  { id: 'massage', label: 'Bike Massage', sub: 'Home & Hotel · 60/90/120 min',
+  { id: 'massage', label: 'Indo Massage', sub: 'Home & Hotel · 60/90/120 min',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledsssaaa-removebg-preview.png?updatedAt=1779390066960',
     href: '/massage' },
-  { id: 'beautician', label: 'Bike Beautician', sub: 'Makeup · Nail · Hair',
+  { id: 'beautician', label: 'Indo Beautician', sub: 'Makeup · Nail · Hair',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledassss-removebg-preview.png',
     href: '/beautician' },
-  { id: 'laundry', label: 'Bike Laundry', sub: 'Pickup & dropoff · per kg',
+  { id: 'laundry', label: 'Indo Laundry', sub: 'Pickup & dropoff · per kg',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasaaaaa-removebg-preview.png',
     href: '/laundry' },
-  { id: 'handyman', label: 'Bike Handyman', sub: 'Tukang · Listrik · AC · Pipa',
+  { id: 'handyman', label: 'Indo Handyman', sub: 'Tukang · Listrik · AC · Pipa',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasaasdasd-removebg-preview.png',
     href: '/handyman' },
-  { id: 'home-clean', label: 'Bike Home Clean', sub: 'Bersih rumah · per jam / hari',
+  { id: 'home-clean', label: 'Indo Home Clean', sub: 'Bersih rumah · per jam / hari',
     img: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdasd-removebg-preview%20(1).png',
     href: '/home-clean' },
 ]
