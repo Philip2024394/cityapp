@@ -47,7 +47,7 @@ export default async function DashboardTourGuidePage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-screen pb-16">
+      <main className="min-h-screen pb-16 bg-white text-black">
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-24 space-y-5">
           <TourGuideSubscriptionBanner />
           <header className="flex items-end justify-between gap-3">
@@ -75,7 +75,7 @@ export default async function DashboardTourGuidePage() {
               <div className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)', border: '1px solid rgba(0,0,0,0.85)' }}>
                 <Compass className="w-6 h-6 text-bg" strokeWidth={2.5} />
               </div>
-              <div className="text-[14px] font-extrabold text-ink">Belum ada listing tour guide</div>
+              <div className="text-[14px] font-extrabold text-black">Belum ada listing tour guide</div>
               <p className="text-[12px] text-muted leading-snug">
                 Daftar gratis kalau kamu City Rider driver aktif. Tour guide independen Rp 38.000/bulan.
               </p>
@@ -93,7 +93,7 @@ export default async function DashboardTourGuidePage() {
             <article className="card p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-[16px] font-extrabold text-ink leading-tight truncate">{row.name}</h2>
+                  <h2 className="text-[16px] font-extrabold text-black leading-tight truncate">{row.name}</h2>
                   <div className="mt-1 flex items-center gap-1 text-[12px] text-muted">
                     <MapPin className="w-3 h-3" />
                     <span className="capitalize truncate">{row.city.replace(/-/g, ' ')}</span>
@@ -104,7 +104,7 @@ export default async function DashboardTourGuidePage() {
               </div>
 
               {row.day_rate_idr != null && (
-                <div className="text-[14px] font-extrabold text-ink">
+                <div className="text-[14px] font-extrabold text-black">
                   Rp {row.day_rate_idr.toLocaleString('id-ID')}
                   <span className="text-muted font-bold text-[12px]"> / hari</span>
                 </div>
@@ -144,7 +144,7 @@ export default async function DashboardTourGuidePage() {
                       const l = getLanguageByCode(code)
                       if (!l) return null
                       return (
-                        <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold text-ink/85" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                        <span key={code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold text-black/85" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.10)' }}>
                           <span aria-hidden>{l.flag}</span>{l.label}
                         </span>
                       )
@@ -177,7 +177,7 @@ export default async function DashboardTourGuidePage() {
                 {row.status === 'approved' && (
                   <Link
                     href={`/tour/${row.slug}`}
-                    className="inline-flex items-center gap-1 text-[12px] font-extrabold uppercase tracking-wider text-muted hover:text-ink"
+                    className="inline-flex items-center gap-1 text-[12px] font-extrabold uppercase tracking-wider text-muted hover:text-black"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

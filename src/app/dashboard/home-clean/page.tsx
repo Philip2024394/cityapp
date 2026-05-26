@@ -8,7 +8,6 @@ import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import type { HomeCleanProvider, HomeCleanAvailability } from '@/lib/home-clean/types'
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 export default function HomeCleanDashboardPage() {
   const [p, setP] = useState<HomeCleanProvider | null>(null)
@@ -41,7 +40,7 @@ export default function HomeCleanDashboardPage() {
     } catch { setP({ ...p, availability: prev }) }
   }
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-ink/50 text-[13px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/50 text-[13px]">Loading…</div></Shell>
   if (err === 'not_signed_in') return (
     <Shell><div className="px-4 pt-20 max-w-md mx-auto text-center">
       <h1 className="text-[20px] font-black mb-2">Sign in required</h1>
@@ -59,9 +58,9 @@ export default function HomeCleanDashboardPage() {
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
         <ProviderRenewBanner provider={p} upgradeHref="/home-clean/upgrade" />
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{p.display_name}</h1>
-          <div className="text-[12px] text-ink/60 font-mono mb-3">{p.slug}</div>
+          <div className="text-[12px] text-black/60 font-mono mb-3">{p.slug}</div>
           {p.status !== 'active' && (
             <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 text-[12px] px-3 py-2 mb-3">
               <strong>Awaiting verification.</strong> Profile not yet listed on marketplace.
@@ -73,7 +72,7 @@ export default function HomeCleanDashboardPage() {
               return (
                 <button key={a} onClick={() => setAvailability(a)}
                   className={`rounded-xl px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider transition border ${
-                    active ? 'bg-brand text-bg border-brand' : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                    active ? 'bg-brand text-bg border-brand' : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   {a === 'online' ? 'Online' : a === 'busy' ? 'Busy' : 'Offline'}
@@ -83,7 +82,7 @@ export default function HomeCleanDashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[14px] font-extrabold uppercase tracking-wider">Profile + tariffs</h2>
             <button onClick={() => setEditing((v) => !v)} className="text-[12px] font-bold text-brand hover:underline">
@@ -93,7 +92,7 @@ export default function HomeCleanDashboardPage() {
           {!editing ? <ReadOnly p={p} /> : <EditForm p={p} onSaved={reload} />}
         </section>
 
-        <p className="text-[12px] text-ink/60 text-center">
+        <p className="text-[12px] text-black/60 text-center">
           Public profile: <a href={`/home-clean/${p.slug}`} target="_blank" rel="noopener" className="text-brand hover:underline">/home-clean/{p.slug}</a>
         </p>
       </div>
@@ -118,8 +117,8 @@ function ReadOnly({ p }: { p: HomeCleanProvider }) {
 }
 function PriceBox({ label, v }: { label: string; v: number }) {
   return (
-    <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-2 text-center">
-      <div className="text-[11px] text-ink/60 uppercase tracking-wider font-bold">{label}</div>
+    <div className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2 text-center">
+      <div className="text-[11px] text-black/60 uppercase tracking-wider font-bold">{label}</div>
       <div className="text-[14px] font-black text-brand">Rp {v.toLocaleString('id-ID')}</div>
     </div>
   )
@@ -127,8 +126,8 @@ function PriceBox({ label, v }: { label: string; v: number }) {
 function KV({ k, v, multiline = false }: { k: string; v: string; multiline?: boolean }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider font-bold text-ink/55">{k}</div>
-      <div className={`text-[13px] text-ink ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
+      <div className="text-[11px] uppercase tracking-wider font-bold text-black/55">{k}</div>
+      <div className={`text-[13px] text-black ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
     </div>
   )
 }
@@ -263,7 +262,7 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
 function PriceInput({ label, v, set }: { label: string; v: string; set: (s: string) => void }) {
   return (
     <label className="block">
-      <span className="text-[11px] font-bold text-ink/70 mb-1 inline-block uppercase">{label}</span>
+      <span className="text-[11px] font-bold text-black/70 mb-1 inline-block uppercase">{label}</span>
       <input type="number" min={0} value={v} onChange={(e) => set(e.target.value)} placeholder="—" className={inputCls + ' text-[13px]'} />
     </label>
   )
@@ -271,13 +270,11 @@ function PriceInput({ label, v, set }: { label: string; v: string; set: (s: stri
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/75" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-black/85 border border-white/15 px-4 py-3 text-[14px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-brand'

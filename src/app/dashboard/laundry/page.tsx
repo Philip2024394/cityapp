@@ -8,7 +8,6 @@ import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import type { LaundryProvider, LaundryAvailability } from '@/lib/laundry/types'
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 export default function LaundryDashboardPage() {
   const [provider, setProvider] = useState<LaundryProvider | null>(null)
@@ -46,7 +45,7 @@ export default function LaundryDashboardPage() {
     } catch { setProvider({ ...provider, availability: prev }) }
   }
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-ink/50 text-[13px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/50 text-[13px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
@@ -72,9 +71,9 @@ export default function LaundryDashboardPage() {
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
         <ProviderRenewBanner provider={provider} upgradeHref="/laundry/upgrade" />
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{provider.display_name}</h1>
-          <div className="text-[12px] text-ink/60 font-mono mb-3">{provider.slug}</div>
+          <div className="text-[12px] text-black/60 font-mono mb-3">{provider.slug}</div>
 
           {provider.status !== 'active' && (
             <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 text-[12px] px-3 py-2 mb-3">
@@ -88,7 +87,7 @@ export default function LaundryDashboardPage() {
               return (
                 <button key={a} onClick={() => setAvailability(a)}
                   className={`rounded-xl px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider transition border ${
-                    active ? 'bg-brand text-bg border-brand' : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                    active ? 'bg-brand text-bg border-brand' : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   {a === 'online' ? 'Online' : a === 'busy' ? 'Busy' : 'Offline'}
@@ -98,7 +97,7 @@ export default function LaundryDashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[14px] font-extrabold uppercase tracking-wider">Profile + prices</h2>
             <button onClick={() => setEditing((v) => !v)} className="text-[12px] font-bold text-brand hover:underline">
@@ -108,7 +107,7 @@ export default function LaundryDashboardPage() {
           {!editing ? <ReadOnly provider={provider} /> : <EditForm provider={provider} onSaved={reload} />}
         </section>
 
-        <p className="text-[12px] text-ink/60 text-center">
+        <p className="text-[12px] text-black/60 text-center">
           Public profile: <a href={`/laundry/${provider.slug}`} target="_blank" rel="noopener" className="text-brand hover:underline">/laundry/{provider.slug}</a>
         </p>
       </div>
@@ -128,10 +127,10 @@ function ReadOnly({ provider }: { provider: LaundryProvider }) {
       <KV k="Bio" v={provider.bio} multiline />
       <div className="grid grid-cols-3 gap-2 pt-2">
         {pkgs.map((s) => (
-          <div key={s.l} className="rounded-xl bg-black/40 border border-white/10 px-3 py-2 text-center">
-            <div className="text-[11px] text-ink/60 uppercase tracking-wider font-bold">{s.l}</div>
+          <div key={s.l} className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2 text-center">
+            <div className="text-[11px] text-black/60 uppercase tracking-wider font-bold">{s.l}</div>
             <div className="text-[14px] font-black text-brand">
-              Rp {s.v.toLocaleString('id-ID')}<span className="text-[10px] text-ink/55">/kg</span>
+              Rp {s.v.toLocaleString('id-ID')}<span className="text-[10px] text-black/55">/kg</span>
             </div>
           </div>
         ))}
@@ -147,8 +146,8 @@ function ReadOnly({ provider }: { provider: LaundryProvider }) {
 function KV({ k, v, multiline = false }: { k: string; v: string; multiline?: boolean }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider font-bold text-ink/55">{k}</div>
-      <div className={`text-[13px] text-ink ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
+      <div className="text-[11px] uppercase tracking-wider font-bold text-black/55">{k}</div>
+      <div className={`text-[13px] text-black ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
     </div>
   )
 }
@@ -275,7 +274,7 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
 function PriceInput({ label, v, onChange }: { label: string; v: string | number; onChange: (v: string) => void }) {
   return (
     <label className="block">
-      <span className="text-[11px] font-bold text-ink/70 mb-1 inline-block uppercase">{label}</span>
+      <span className="text-[11px] font-bold text-black/70 mb-1 inline-block uppercase">{label}</span>
       <input type="number" min={0} value={v as string | number} onChange={(e) => onChange(e.target.value)} placeholder="—" className={inputCls + ' text-[13px]'} />
     </label>
   )
@@ -283,13 +282,11 @@ function PriceInput({ label, v, onChange }: { label: string; v: string | number;
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/75" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-black/85 border border-white/15 px-4 py-3 text-[14px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-brand'

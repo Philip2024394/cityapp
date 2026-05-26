@@ -16,7 +16,6 @@ import {
   type MassageType,
 } from '@/lib/massage/types'
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 export default function MassageDashboardPage() {
   const [provider, setProvider] = useState<MassageProvider | null>(null)
@@ -61,7 +60,7 @@ export default function MassageDashboardPage() {
     }
   }
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-ink/50 text-[13px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/50 text-[13px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
@@ -77,7 +76,7 @@ export default function MassageDashboardPage() {
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
           <h1 className="text-[20px] font-black mb-2">Not a therapist yet</h1>
-          <p className="text-[13px] text-ink/70 mb-6">Register to start receiving WhatsApp bookings.</p>
+          <p className="text-[13px] text-black/70 mb-6">Register to start receiving WhatsApp bookings.</p>
           <Link href="/massage/signup" className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block">Register as therapist</Link>
         </div>
       </Shell>
@@ -89,17 +88,17 @@ export default function MassageDashboardPage() {
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
         <ProviderRenewBanner provider={provider} upgradeHref="/massage/upgrade" />
         {/* Header card */}
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             {provider.profile_image_url
               ? <img src={provider.profile_image_url} alt={provider.display_name} className="w-14 h-14 rounded-full object-cover bg-white/5" />
-              : <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-ink/40 text-[20px] font-black">{provider.display_name[0]}</div>}
+              : <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-black/40 text-[20px] font-black">{provider.display_name[0]}</div>}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-[20px] font-black truncate">{provider.display_name}</h1>
                 <AvailabilityDot availability={provider.availability} />
               </div>
-              <div className="text-[12px] text-ink/60 font-mono truncate">{provider.slug}</div>
+              <div className="text-[12px] text-black/60 font-mono truncate">{provider.slug}</div>
             </div>
           </div>
 
@@ -120,7 +119,7 @@ export default function MassageDashboardPage() {
                   className={`rounded-xl px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider transition border ${
                     active
                       ? 'bg-brand text-bg border-brand'
-                      : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                      : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   {a === 'online' ? 'Online' : a === 'busy' ? 'Busy' : 'Offline'}
@@ -128,14 +127,14 @@ export default function MassageDashboardPage() {
               )
             })}
           </div>
-          <p className="text-[11px] text-ink/50 mt-2">
+          <p className="text-[11px] text-black/50 mt-2">
             Online = listed top of marketplace with a pulsing green dot. Busy = listed but greyed.
             Offline = hidden from search.
           </p>
         </section>
 
         {/* Profile + pricing */}
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[14px] font-extrabold uppercase tracking-wider">Profile</h2>
             <button onClick={() => setEditing((v) => !v)} className="text-[12px] font-bold text-brand hover:underline">
@@ -169,7 +168,7 @@ export default function MassageDashboardPage() {
           )}
         </section>
 
-        <p className="text-[12px] text-ink/60 text-center">
+        <p className="text-[12px] text-black/60 text-center">
           Public profile: <a href={`/massage/${provider.slug}`} target="_blank" rel="noopener" className="text-brand hover:underline">/massage/{provider.slug}</a>
         </p>
       </div>
@@ -199,16 +198,16 @@ function ReadOnly({ provider }: { provider: MassageProvider }) {
 function KV({ k, v, multiline = false }: { k: string; v: string; multiline?: boolean }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider font-bold text-ink/55">{k}</div>
-      <div className={`text-[13px] text-ink ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
+      <div className="text-[11px] uppercase tracking-wider font-bold text-black/55">{k}</div>
+      <div className={`text-[13px] text-black ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
     </div>
   )
 }
 
 function Price({ min, v }: { min: number; v: number }) {
   return (
-    <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-2 text-center">
-      <div className="text-[11px] text-ink/60 uppercase tracking-wider font-bold">{min} min</div>
+    <div className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2 text-center">
+      <div className="text-[11px] text-black/60 uppercase tracking-wider font-bold">{min} min</div>
       <div className="text-[14px] font-black text-brand">Rp {v.toLocaleString('id-ID')}</div>
     </div>
   )
@@ -314,7 +313,7 @@ function EditForm({
       <input type="text" value={f.display_name} onChange={(e) => upd('display_name', e.target.value)} placeholder="Display name" className={inputCls} />
       <div className="grid grid-cols-2 gap-2">
         {(['woman','man'] as const).map((g) => (
-          <label key={g} className={`flex items-center justify-center gap-2 rounded-xl p-2.5 cursor-pointer border ${f.gender === g ? 'bg-brand/15 border-brand/50' : 'bg-black/85 border-white/10'}`}>
+          <label key={g} className={`flex items-center justify-center gap-2 rounded-xl p-2.5 cursor-pointer border ${f.gender === g ? 'bg-brand/15 border-brand/50' : 'bg-gray-100 border-gray-200'}`}>
             <input type="radio" name="gender" value={g} checked={f.gender === g} onChange={() => upd('gender', g)} className="accent-brand" />
             <span className="text-[13px] font-extrabold">{g === 'woman' ? 'Wanita' : 'Pria'}</span>
           </label>
@@ -377,13 +376,11 @@ function EditForm({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/75" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-black/85 border border-white/15 px-4 py-3 text-[14px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-brand'
