@@ -347,51 +347,49 @@ function PlanTripPageInner() {
         }}
       />
 
-      {/* ACTIVE MAP — sized to EXACTLY the visible hero band between the
-          header and the bottom stack. fitBounds now frames the route
-          into the container's full size, so the pickup pin, drop-off
-          pin and route line are guaranteed to sit in the visible area —
-          no padding tricks fighting with chrome. The container animates
-          when the bottom sheet expands (pit-stop) or the keyboard opens
-          so the route smoothly re-fits into the new band. */}
-      <div
-        className="fixed left-0 right-0 z-[1] px-3"
-        style={{
-          // The pickup card now lives BETWEEN the header and the map,
-          // so the map starts BELOW header + pickupBar (plus a 12px
-          // breathing gap, matching the bottom-edge gap).
-          top: `${headerHeight + pickupBarHeight + 12}px`,
-          // +12px adds breathing room between the map's bottom edge and
-          // the top of the bottom sheet (service tabs). Keeps the map
-          // floating as a card instead of butting against the sheet.
-          bottom: `${bottomHeight + keyboardOffset + 12}px`,
-          transition: 'top 220ms ease, bottom 220ms ease',
-        }}
-      >
-        {/* Inner wrapper rounds the map corners now that there is
-            breathing room on the left + right (px-3 above). overflow
-            hidden so the map tiles get clipped by the rounded mask. */}
-        <div className="w-full h-full rounded-2xl overflow-hidden shadow-[0_8px_28px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
-          <RiderMap
-            center={mapCenter}
-            zoom={14}
-            riders={nearbyRiders}
-            markerStyle="ping"
-            pickup={pickup}
-            dropoff={dropoff}
-            showRoute={canSearch}
-            pitStop={canSearch && pitstopNote.trim().length > 0}
-            onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-            height="100%"
-            // pitch flattens to 0 once a route is set so fitBounds can
-            // place the line cleanly in the hero band. Before route: a
-            // gentle 25° tilt for visual interest.
-            pitch={canSearch ? 0 : 25}
-            // Container IS the visible band — padding is just edge
-            // clearance so markers aren't flush against the boundary.
-            viewportPadding={{ top: 24, bottom: 24, left: 32, right: 32 }}
-          />
-        </div>
+      {/* ACTIVE MAP — FULLSCREEN behind every card. The map container
+          fills the viewport (fixed inset-0) so the page reads as a
+          single immersive map surface with the pickup card, bottom
+          sheet, and floating buttons floating over it. The cards
+          themselves keep their existing z-indexes; the map sits at
+          z-[1] (above the radial backdrop, below all chrome).
+
+          fitBounds gets DYNAMIC padding values that mirror the
+          on-screen chrome — header + pickup bar at the top, bottom
+          sheet + keyboard offset at the bottom, edge-clearance on the
+          sides plus a wider right pad so the floating FAB column
+          (Rent / B2B / Places) doesn't obscure the route. This keeps
+          the trip pins + polyline framed inside the unobstructed
+          hero window even though the map tiles extend fullscreen. */}
+      <div className="fixed inset-0 z-[1]">
+        <RiderMap
+          center={mapCenter}
+          zoom={14}
+          riders={nearbyRiders}
+          markerStyle="ping"
+          pickup={pickup}
+          dropoff={dropoff}
+          showRoute={canSearch}
+          pitStop={canSearch && pitstopNote.trim().length > 0}
+          onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
+          height="100%"
+          // pitch flattens to 0 once a route is set so fitBounds can
+          // place the line cleanly in the hero band. Before route: a
+          // gentle 25° tilt for visual interest.
+          pitch={canSearch ? 0 : 25}
+          // Dynamic insets reserve the chrome's screen real estate so
+          // fitBounds frames the route inside the unblocked hero band.
+          // 12px breathing rows above + below the cards; 16px left
+          // for general edge clearance; 88px right to clear the
+          // floating FAB column (64px buttons + 12px right inset +
+          // 12px breathing gap).
+          viewportPadding={{
+            top: headerHeight + pickupBarHeight + 12,
+            bottom: bottomHeight + keyboardOffset + 12,
+            left: 16,
+            right: 88,
+          }}
+        />
       </div>
 
       {/* FLOATING ACTION BUTTONS — vertically centred in the hero band
