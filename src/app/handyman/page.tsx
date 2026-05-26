@@ -249,15 +249,20 @@ function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  // Paint over the global PageBackground with solid white so the
-  // marketplace reads as a clean directory page. Text colour switches
-  // to dark inks (ink → black via the surface). AppNav (the dark
-  // sticky glass header) is intentionally omitted here per founder
-  // request — the rest of the app still gets it. A minimal header
-  // with the founder wordmark sits at the top-left as the only
-  // brand anchor on this surface.
+  // Themed scene background for the /handyman marketplace. Light scrim
+  // on top (white at 78%) keeps the city heading + light cards
+  // readable regardless of where the image's tonal values land.
   return (
-    <main className="relative min-h-screen bg-white text-black">
+    <main
+      className="relative min-h-screen text-black"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.78), rgba(255,255,255,0.78)), url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2001_17_23%20AM.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img

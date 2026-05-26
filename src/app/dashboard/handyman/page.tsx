@@ -16,7 +16,6 @@ import {
   HANDYMAN_BANNER_CATEGORIES,
 } from '@/lib/handyman/banners'
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
 
 export default function HandymanDashboardPage() {
   const [p, setP] = useState<HandymanProvider | null>(null)
@@ -49,7 +48,7 @@ export default function HandymanDashboardPage() {
     } catch { setP({ ...p, availability: prev }) }
   }
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-ink/50 text-[13px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-black/50 text-[13px]">Loading…</div></Shell>
   if (err === 'not_signed_in') return (
     <Shell><div className="px-4 pt-20 max-w-md mx-auto text-center">
       <h1 className="text-[20px] font-black mb-2">Sign in required</h1>
@@ -67,9 +66,9 @@ export default function HandymanDashboardPage() {
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
         <ProviderRenewBanner provider={p} upgradeHref="/handyman/upgrade" />
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{p.display_name}</h1>
-          <div className="text-[12px] text-ink/60 font-mono mb-3">{p.slug}</div>
+          <div className="text-[12px] text-black/60 font-mono mb-3">{p.slug}</div>
           {p.status !== 'active' && (
             <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 text-[12px] px-3 py-2 mb-3">
               <strong>Awaiting verification.</strong> Profile not yet listed on marketplace.
@@ -81,7 +80,7 @@ export default function HandymanDashboardPage() {
               return (
                 <button key={a} onClick={() => setAvailability(a)}
                   className={`rounded-xl px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider transition border ${
-                    active ? 'bg-brand text-bg border-brand' : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                    active ? 'bg-brand text-bg border-brand' : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   {a === 'online' ? 'Online' : a === 'busy' ? 'Busy' : 'Offline'}
@@ -91,7 +90,7 @@ export default function HandymanDashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card">
+        <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[14px] font-extrabold uppercase tracking-wider">Profile + tariffs</h2>
             <button onClick={() => setEditing((v) => !v)} className="text-[12px] font-bold text-brand hover:underline">
@@ -104,18 +103,18 @@ export default function HandymanDashboardPage() {
         {/* Quick-link to the dedicated Services & photos editor. */}
         <Link
           href="/dashboard/handyman/services"
-          className="block rounded-2xl bg-black/85 border border-white/10 p-5 shadow-card hover:border-brand/40 transition active:scale-[0.995]"
+          className="block rounded-2xl bg-white border border-gray-200 p-5 shadow-sm hover:border-brand/60 transition active:scale-[0.995]"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[14px] font-extrabold uppercase tracking-wider text-brand">Services &amp; photos →</div>
-              <div className="text-[13px] text-ink mt-1">Pick trades, set hourly/day rates, and upload portfolio photos that drive the carousel.</div>
+              <div className="text-[13px] text-black mt-1">Pick trades, set hourly/day rates, and upload portfolio photos that drive the carousel.</div>
             </div>
             <span className="text-brand text-[22px]">→</span>
           </div>
         </Link>
 
-        <p className="text-[12px] text-ink/60 text-center">
+        <p className="text-[12px] text-black/60 text-center">
           Public profile: <a href={`/handyman/${p.slug}`} target="_blank" rel="noopener" className="text-brand hover:underline">/handyman/{p.slug}</a>
         </p>
       </div>
@@ -129,7 +128,7 @@ function ReadOnly({ p }: { p: HandymanProvider }) {
       <KV k="Years" v={String(p.years_experience)} />
       <KV k="Bio" v={p.bio} multiline />
       <div>
-        <div className="text-[11px] uppercase tracking-wider font-bold text-ink/55 mb-1">Spesialisasi</div>
+        <div className="text-[11px] uppercase tracking-wider font-bold text-black/55 mb-1">Spesialisasi</div>
         <div className="flex flex-wrap gap-1.5">
           {p.specialties.map((s) => (
             <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-extrabold"
@@ -152,8 +151,8 @@ function ReadOnly({ p }: { p: HandymanProvider }) {
 }
 function PriceBox({ label, v }: { label: string; v: number }) {
   return (
-    <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-2 text-center">
-      <div className="text-[11px] text-ink/60 uppercase tracking-wider font-bold">{label}</div>
+    <div className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2 text-center">
+      <div className="text-[11px] text-black/60 uppercase tracking-wider font-bold">{label}</div>
       <div className="text-[14px] font-black text-brand">Rp {v.toLocaleString('id-ID')}</div>
     </div>
   )
@@ -161,8 +160,8 @@ function PriceBox({ label, v }: { label: string; v: number }) {
 function KV({ k, v, multiline = false }: { k: string; v: string; multiline?: boolean }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider font-bold text-ink/55">{k}</div>
-      <div className={`text-[13px] text-ink ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
+      <div className="text-[11px] uppercase tracking-wider font-bold text-black/55">{k}</div>
+      <div className={`text-[13px] text-black ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>{v}</div>
     </div>
   )
 }
@@ -276,8 +275,8 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
       <textarea maxLength={300} rows={3} value={f.bio} onChange={(e) => upd('bio', e.target.value)} placeholder="Bio (max 300)" className={inputCls + ' resize-none'} />
       <div>
         <div className="flex items-baseline justify-between mb-1.5">
-          <div className="text-[11px] uppercase tracking-wider font-bold text-ink/55">Spesialisasi</div>
-          <div className="text-[11px] text-ink/55">{f.specialties.length}/{MAX_HANDYMAN_SPECIALTIES}</div>
+          <div className="text-[11px] uppercase tracking-wider font-bold text-black/55">Spesialisasi</div>
+          <div className="text-[11px] text-black/55">{f.specialties.length}/{MAX_HANDYMAN_SPECIALTIES}</div>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {ALL_SPECIALTIES.map((s) => {
@@ -287,8 +286,8 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
               <button key={s} type="button" disabled={atLimit} onClick={() => toggle(s)}
                 className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider border transition ${
                   on ? 'bg-brand text-bg border-brand'
-                     : atLimit ? 'bg-black/40 text-ink/30 border-white/10 cursor-not-allowed'
-                               : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                     : atLimit ? 'bg-gray-50 text-black/30 border-gray-100 cursor-not-allowed'
+                               : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
                 }`}
               >{SPECIALTY_LABELS[s]}</button>
             )
@@ -299,7 +298,7 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
         <PriceInput label="Hour"     v={f.hourly_rate} set={(v) => upd('hourly_rate', v)} />
         <PriceInput label="Day · 8h" v={f.day_rate}    set={(v) => upd('day_rate', v)} />
       </div>
-      <label className="flex items-center gap-2 text-[12px] text-ink/85 cursor-pointer">
+      <label className="flex items-center gap-2 text-[12px] text-black/85 cursor-pointer">
         <input type="checkbox" checked={f.has_own_tools} onChange={(e) => upd('has_own_tools', e.target.checked)} className="accent-brand w-4 h-4" />
         Own tools
       </label>
@@ -348,7 +347,7 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
 function PriceInput({ label, v, set }: { label: string; v: string; set: (s: string) => void }) {
   return (
     <label className="block">
-      <span className="text-[11px] font-bold text-ink/70 mb-1 inline-block uppercase">{label}</span>
+      <span className="text-[11px] font-bold text-black/70 mb-1 inline-block uppercase">{label}</span>
       <input type="number" min={0} value={v} onChange={(e) => set(e.target.value)} placeholder="—" className={inputCls + ' text-[13px]'} />
     </label>
   )
@@ -356,13 +355,11 @@ function PriceInput({ label, v, set }: { label: string; v: string; set: (s: stri
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen text-ink overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/75" />
+    <main className="relative min-h-screen bg-white text-black">
       <AppNav />
       {children}
     </main>
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-black/85 border border-white/15 px-4 py-3 text-[14px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-brand'
