@@ -907,19 +907,24 @@ function Header() {
   // yellow "Edit trip" button next to TUJUAN is now the single edit
   // entry point. Logo is left-aligned alone; no right slot needed.
   return (
-    <header className="sticky top-0 z-40 glass-strong pt-safe">
+    <header
+      className="sticky top-0 z-40 pt-safe"
+      style={{
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
+      }}
+    >
       <div className="max-w-xl mx-auto px-4 h-14 flex items-center">
-        <div className="flex items-center gap-2">
+        <Link href="/" aria-label="IndoCity home" className="inline-block hover:opacity-85 transition">
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png"
-            alt=""
-            className="h-9 w-auto"
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+            alt="IndoCity"
+            className="h-7 sm:h-8 w-auto"
             loading="eager"
           />
-          <div className="text-[15px] font-extrabold tracking-tight">
-            City <span className="gradient-text">Rider</span>
-          </div>
-        </div>
+        </Link>
       </div>
     </header>
   )

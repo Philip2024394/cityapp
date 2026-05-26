@@ -1334,16 +1334,13 @@ function BackNav() {
   return (
     <header className="pt-safe">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 min-w-0">
+        <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="IndoCity home">
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714"
-            alt=""
-            className="h-7 w-auto shrink-0"
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+            alt="IndoCity"
+            className="h-7 sm:h-8 w-auto"
             loading="eager"
           />
-          <span className="text-[15px] font-extrabold tracking-tight">
-            City <span className="gradient-text">Rider</span>
-          </span>
         </Link>
         <Link
           href="/"
