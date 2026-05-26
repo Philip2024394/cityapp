@@ -369,10 +369,14 @@ function PlanTripPageInner() {
               alt="IndoCity"
               className="h-8 sm:h-10 w-auto"
               loading="eager"
-              /* Invert the dark PNG so the IndoCity wordmark renders
-                 white on the slate-900 backdrop. brightness(1.15) lifts
-                 the result to pure-ish white instead of pale grey. */
-              style={{ filter: 'invert(1) brightness(1.15)' }}
+              /* Colorize the dark wordmark to brand yellow (#FACC15)
+                 via a tested filter chain. The white "Indo" portion in
+                 the source PNG passes through visually as the lighter
+                 highlight inside the yellow result. */
+              style={{
+                filter:
+                  'brightness(0) saturate(100%) invert(82%) sepia(73%) saturate(637%) hue-rotate(359deg) brightness(101%) contrast(101%)',
+              }}
             />
           </Link>
 
