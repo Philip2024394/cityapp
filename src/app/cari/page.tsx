@@ -327,9 +327,6 @@ function PlanTripPageInner() {
         }}
         aria-hidden
       />
-      {/* Soft dim so the white booking card pops against the photo. */}
-      <div className="fixed inset-0 z-[1] bg-black/30" aria-hidden />
-
       {/* HEADER — wordmark on the left, nearby pill on the right. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
