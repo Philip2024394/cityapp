@@ -8,9 +8,10 @@
 // and the caller falls back to haversine × 1.3 — same fallback the proxy
 // route relies on, so the system is always working.
 //
-// We hit the public route service (`/route/v1/driving/...`) with
-// `overview=false` because we don't need the geometry, just the distance
-// in metres. Always pass `geometries=geojson` would be wasted bytes.
+// `osrmRoute()` hits the public route service with `overview=false` because
+// fare-distance lookups only need the distance number — not the geometry.
+// `osrmRouteWithGeometry()` adds `overview=full&geometries=geojson` so the
+// map can render the actual road-following polyline with all turns.
 
 import 'server-only'
 
@@ -19,6 +20,16 @@ const OSRM_TIMEOUT_MS = 1500
 export type OsrmRouteResult = {
   meters: number
   durationSeconds: number
+}
+
+export type OsrmRouteGeometryResult = {
+  meters: number
+  durationSeconds: number
+  /** GeoJSON LineString coordinates: [[lng, lat], ...] in OSRM's full
+   *  overview resolution (typically a few hundred points for a city trip,
+   *  ~1KB on the wire). Use to render the route polyline with all turns
+   *  on the customer's map. */
+  coordinates: [number, number][]
 }
 
 function getBase(): string | null {
@@ -56,6 +67,52 @@ export async function osrmRoute(
     return {
       meters: r.distance,
       durationSeconds: typeof r.duration === 'number' ? r.duration : 0,
+    }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+// Variant of osrmRoute() that ALSO returns the route's GeoJSON polyline
+// so the customer's map can draw the road-following line with all
+// turns. Same OSRM endpoint, just with overview=full instead of false.
+// Payload is larger (~1–10 KB depending on trip length) so we use this
+// only when the map is actively going to render a route — fare-distance
+// lookups continue to call osrmRoute() for the lean response.
+export async function osrmRouteWithGeometry(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+): Promise<OsrmRouteGeometryResult | null> {
+  const base = getBase()
+  if (!base) return null
+
+  const path = `/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}`
+  const url = `${base}${path}?overview=full&geometries=geojson&alternatives=false&steps=false`
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), OSRM_TIMEOUT_MS)
+  try {
+    const res = await fetch(url, { signal: controller.signal })
+    if (!res.ok) return null
+    const json = (await res.json()) as {
+      code?: string
+      routes?: {
+        distance?: number
+        duration?: number
+        geometry?: { type?: string; coordinates?: [number, number][] }
+      }[]
+    }
+    if (json.code !== 'Ok' || !json.routes?.[0]) return null
+    const r = json.routes[0]
+    if (typeof r.distance !== 'number' || !Number.isFinite(r.distance)) return null
+    const coords = r.geometry?.coordinates
+    if (!Array.isArray(coords) || coords.length < 2) return null
+    return {
+      meters: r.distance,
+      durationSeconds: typeof r.duration === 'number' ? r.duration : 0,
+      coordinates: coords,
     }
   } catch {
     return null

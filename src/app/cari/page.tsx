@@ -255,6 +255,69 @@ function PlanTripPageInner() {
   const tripKm = tripRoute?.km ?? null
   const canSearch = !!pickup && !!dropoff
 
+  // Road-following polyline for the map. Fetched whenever pickup +
+  // dropoff are both set; falls back to a null state so RiderMap
+  // renders the legacy 2-point straight line until the network round
+  // trip lands. Endpoint caches for 24h per coord pair, so HMR /
+  // tab-switch re-renders don't re-fetch.
+  const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null)
+  useEffect(() => {
+    if (!pickup || !dropoff) {
+      setRoutePolyline(null)
+      return
+    }
+    let cancelled = false
+    const ctrl = new AbortController()
+    const params = new URLSearchParams({
+      fromLat: pickup.lat.toFixed(6),
+      fromLng: pickup.lng.toFixed(6),
+      toLat: dropoff.lat.toFixed(6),
+      toLng: dropoff.lng.toFixed(6),
+    })
+    fetch(`/api/route/polyline?${params}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { coordinates: [number, number][] | null } | null) => {
+        if (cancelled) return
+        setRoutePolyline(d?.coordinates ?? null)
+      })
+      .catch(() => { /* silent — straight-line fallback already renders */ })
+    return () => { cancelled = true; ctrl.abort() }
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng])
+
+  // Demo journey simulation. Drives the progressFraction prop on
+  // RiderMap so the customer can WATCH the route's yellow remaining
+  // half shrink + the black completed half grow, simulating a driver
+  // moving from pickup to dropoff. Manually triggered via a button on
+  // the map so it doesn't auto-fire and consume battery. Run length
+  // ~12 seconds (visible enough to read, short enough to not bore).
+  const [demoProgress, setDemoProgress] = useState(0)
+  const [demoRunning, setDemoRunning] = useState(false)
+  useEffect(() => {
+    if (!demoRunning) return
+    const startedAt = performance.now()
+    const DURATION_MS = 12000
+    let raf = 0
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startedAt) / DURATION_MS)
+      setDemoProgress(t)
+      if (t < 1) {
+        raf = requestAnimationFrame(tick)
+      } else {
+        setDemoRunning(false)
+      }
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [demoRunning])
+  function startDemo() {
+    setDemoProgress(0)
+    setDemoRunning(true)
+  }
+  function resetDemo() {
+    setDemoRunning(false)
+    setDemoProgress(0)
+  }
+
   // Lowest published driver fare in the city — surfaced in the View
   // drivers CTA so customers see the entry price before tapping. We only
   // ever display what drivers themselves listed, never a calculation
@@ -396,6 +459,12 @@ function PlanTripPageInner() {
           pitStop={canSearch && pitstopNote.trim().length > 0}
           onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
           height="100%"
+          // Road-following polyline + demo progress. routePolyline is
+          // fetched from /api/route/polyline once both pickup and
+          // dropoff are set. progressFraction drives the yellow→black
+          // colour split — manual demo button below toggles it.
+          routePolyline={routePolyline}
+          progressFraction={demoProgress}
           // pitch flattens to 0 once a route is set so fitBounds can
           // place the line cleanly in the hero band. Before route: a
           // gentle 25° tilt for visual interest.
@@ -441,6 +510,34 @@ function PlanTripPageInner() {
           <Landmark className="w-6 h-6" strokeWidth={2.5} />
           <span className="text-[11px] font-extrabold uppercase tracking-wider">Places</span>
         </Link>
+
+        {/* DEMO PLAY/RESET — visible only once a route exists (pickup +
+            dropoff both set). Drives the yellow→black progress
+            visualisation on the polyline so the customer can preview
+            what an in-progress trip would look like. ~12s animation.
+            Real live-tracking comes later when driver-side background
+            GPS is wired; until then this is the founder-requested
+            visual demo. */}
+        {canSearch && (
+          <button
+            type="button"
+            onClick={() => {
+              haptic.tap()
+              if (demoRunning) resetDemo()
+              else if (demoProgress >= 1) resetDemo()
+              else startDemo()
+            }}
+            aria-label={demoRunning ? 'Stop demo journey' : 'Play demo journey'}
+            className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-bg bg-brand backdrop-blur-md border-2 border-bg shadow-[0_10px_28px_rgba(250,204,21,0.45)] active:scale-95 transition"
+          >
+            <span className="text-[20px] leading-none font-black" aria-hidden>
+              {demoRunning ? '⏸' : demoProgress >= 1 ? '↻' : '▶'}
+            </span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">
+              {demoRunning ? 'Stop' : demoProgress >= 1 ? 'Reset' : 'Demo'}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* HEADER — transparent, sits over the map. Logo + brand on the

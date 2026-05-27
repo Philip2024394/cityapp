@@ -6,6 +6,33 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { Info, X as XIcon } from 'lucide-react'
 import type { Rider } from '@/types/rider'
 import { getResilientStyle } from '@/lib/map/resilientStyle'
+import { splitPolylineAtFraction, type LngLat } from '@/lib/geo/polyline'
+
+// Map-pin SVG generator used for pickup + dropoff markers. Single
+// hand-rolled SVG so the outer teardrop fills with `fill` while the
+// inner circle uses `dotFill` — mirrors the wordmark "Ind📍 City"
+// treatment in the header (black-and-white pin in the IndoCity wordmark,
+// same shape here as black-pickup / yellow-dropoff trip markers).
+function pinSvg({
+  fill,
+  dotFill,
+  size,
+}: {
+  fill: string
+  dotFill: string
+  size: number
+}): string {
+  const halfStroke = 0.5
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+         style="display:block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45));"
+         aria-hidden="true">
+      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+            fill="${fill}" stroke="#0A0A0A" stroke-width="${halfStroke}"/>
+      <circle cx="12" cy="10" r="3" fill="${dotFill}"/>
+    </svg>
+  `
+}
 
 // Register the PMTiles protocol on MapLibre once per app lifecycle so any
 // `pmtiles://...` URL in a style source resolves through the pmtiles
@@ -64,6 +91,16 @@ type Props = {
    *  the way". Free-form pit-stop notes don't have real coordinates, so
    *  the midpoint is a visual indicator rather than a real location. */
   pitStop?: boolean
+  /** Road-following polyline coordinates (OSRM full overview). When
+   *  supplied AND showRoute, the route line follows actual roads with
+   *  every turn instead of the 2-point straight line between pickup and
+   *  dropoff. Falsy = fall back to straight-line behaviour. */
+  routePolyline?: [number, number][] | null
+  /** Fraction (0–1) of the route the driver has completed. When > 0 and
+   *  a routePolyline is present, the front of the line renders in
+   *  "completed" colour (black) while the back stays in "remaining"
+   *  colour (yellow). Wires the demo / live-trip progress visual. */
+  progressFraction?: number
 }
 
 // OpenFreeMap primary wired via getResilientStyle(). The Service Worker
@@ -86,6 +123,7 @@ export default function RiderMap({
   variant = 'dark', hideLabels = false, autoPan = false,
   markerStyle = 'scooter', roadsOnly = false, pitch = 0,
   viewportPadding, pitStop = false,
+  routePolyline = null, progressFraction = 0,
 }: Props) {
   const pitStopMarkerRef = useRef<Marker | null>(null)
   const dashFrameRef = useRef<number | null>(null)
@@ -461,40 +499,31 @@ export default function RiderMap({
     })
   }, [riders, markerStyle])
 
-  // Render pickup marker — green square so the customer sees their
-  // pickup take effect on the map the moment they set it.
+  // Render pickup marker — BLACK map-pin (matching the IndoCity wordmark
+  // "Ind📍 City" pin treatment; the pin head sits at the trip origin).
+  // White centre dot so the pin reads as a marker, not a solid blob.
   useEffect(() => {
     if (!mapRef.current) return
     if (pickupMarkerRef.current) { pickupMarkerRef.current.remove(); pickupMarkerRef.current = null }
     if (!pickup) return
     const el = document.createElement('div')
-    el.innerHTML = `
-      <div style="
-        width: 18px; height: 18px; border-radius: 4px;
-        background: #22C55E; border: 3px solid #0A0A0A;
-        box-shadow: 0 0 14px rgba(34,197,94,0.85);
-      "></div>
-    `
-    pickupMarkerRef.current = new maplibregl.Marker({ element: el })
+    el.innerHTML = pinSvg({ fill: '#0A0A0A', dotFill: '#FFFFFF', size: 30 })
+    pickupMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
       .setLngLat([pickup.lng, pickup.lat])
       .addTo(mapRef.current)
   }, [pickup])
 
-  // Render dropoff marker — red circle. Distinct shape AND colour from
-  // the green pickup square so the trip ends read unambiguously.
+  // Render dropoff marker — YELLOW map-pin (mirrors the pickup pin shape
+  // but in brand yellow). The pickup→dropoff colour pair (black → yellow)
+  // also drives the route-progress effect below: yellow line ahead, black
+  // line behind the driver as they advance.
   useEffect(() => {
     if (!mapRef.current) return
     if (dropoffMarkerRef.current) { dropoffMarkerRef.current.remove(); dropoffMarkerRef.current = null }
     if (!dropoff) return
     const el = document.createElement('div')
-    el.innerHTML = `
-      <div style="
-        width: 18px; height: 18px; border-radius: 50%;
-        background: #DC2626; border: 3px solid #0A0A0A;
-        box-shadow: 0 0 14px rgba(220,38,38,0.85);
-      "></div>
-    `
-    dropoffMarkerRef.current = new maplibregl.Marker({ element: el })
+    el.innerHTML = pinSvg({ fill: '#FACC15', dotFill: '#0A0A0A', size: 30 })
+    dropoffMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
       .setLngLat([dropoff.lng, dropoff.lat])
       .addTo(mapRef.current)
   }, [dropoff])
@@ -551,17 +580,29 @@ export default function RiderMap({
         cancelAnimationFrame(dashFrameRef.current)
         dashFrameRef.current = null
       }
-      if (map.getLayer('route-line')) map.removeLayer('route-line')
-      if (map.getLayer('route-glow')) map.removeLayer('route-glow')
-      if (map.getSource('route')) map.removeSource('route')
+      // Remove every route layer + source we may have created.
+      for (const id of ['route-completed', 'route-remaining', 'route-line', 'route-glow']) {
+        if (map.getLayer(id)) map.removeLayer(id)
+      }
+      for (const id of ['route-completed', 'route-remaining', 'route']) {
+        if (map.getSource(id)) map.removeSource(id)
+      }
     }
 
     const fitRouteBounds = () => {
       if (!pickup || !dropoff) return
       map.resize()
       const bounds = new maplibregl.LngLatBounds()
-      bounds.extend([pickup.lng, pickup.lat])
-      bounds.extend([dropoff.lng, dropoff.lat])
+      // When we have a road-following polyline, frame to the polyline's
+      // extent so turn-heavy detour loops aren't cropped (a route that
+      // loops north before heading south needs the loop included). Falls
+      // back to just-the-endpoints when no polyline is supplied.
+      if (routePolyline && routePolyline.length >= 2) {
+        for (const c of routePolyline) bounds.extend(c)
+      } else {
+        bounds.extend([pickup.lng, pickup.lat])
+        bounds.extend([dropoff.lng, dropoff.lat])
+      }
       // The map container IS the visible hero band (page sizes it to
       // fit between the header and the bottom stack), so padding here
       // is just edge clearance — markers shouldn't sit flush against
@@ -586,57 +627,96 @@ export default function RiderMap({
         clearRoute()
         return
       }
-      const data = {
+
+      // Build the source polyline. Prefer the road-following geometry
+      // when the caller has fetched it; otherwise fall back to the
+      // 2-point straight line (graceful degradation when OSRM is not
+      // configured or the request failed).
+      const fullCoords: LngLat[] =
+        routePolyline && routePolyline.length >= 2
+          ? routePolyline
+          : [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]]
+
+      // Split at the progress fraction so the front of the line renders
+      // in "completed" colour (black) while the back stays "remaining"
+      // (yellow). When fraction === 0 the completed half is just a single
+      // point and effectively invisible — same visual as no progress.
+      const { completed, remaining } = splitPolylineAtFraction(
+        fullCoords,
+        progressFraction ?? 0,
+      )
+
+      const remainingFeature = {
         type: 'Feature' as const,
         properties: {},
-        geometry: {
-          type: 'LineString' as const,
-          coordinates: [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]],
-        },
+        geometry: { type: 'LineString' as const, coordinates: remaining },
       }
-      if (map.getSource('route')) {
-        ;(map.getSource('route') as maplibregl.GeoJSONSource).setData(data)
+      const completedFeature = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: { type: 'LineString' as const, coordinates: completed },
+      }
+
+      const remainingSrc = map.getSource('route-remaining') as
+        maplibregl.GeoJSONSource | undefined
+      const completedSrc = map.getSource('route-completed') as
+        maplibregl.GeoJSONSource | undefined
+
+      if (remainingSrc && completedSrc) {
+        remainingSrc.setData(remainingFeature)
+        completedSrc.setData(completedFeature)
       } else {
-        map.addSource('route', { type: 'geojson', data })
-        // Soft underline glow — keeps the line readable as a continuous
-        // path even while the dashed foreground breaks visually.
+        // Strip any legacy single-source layers from before the
+        // two-layer (remaining/completed) refactor — defensive in case
+        // a previous render set them up before this code path ran.
+        for (const id of ['route-line', 'route-glow']) {
+          if (map.getLayer(id)) map.removeLayer(id)
+        }
+        if (map.getSource('route')) map.removeSource('route')
+
+        map.addSource('route-remaining', { type: 'geojson', data: remainingFeature })
+        map.addSource('route-completed', { type: 'geojson', data: completedFeature })
+
+        // REMAINING segment (ahead of the driver) — yellow marching-ants
+        // line with a soft yellow glow underneath for continuity.
         map.addLayer({
-          id: 'route-glow',
+          id: 'route-remaining',
           type: 'line',
-          source: 'route',
+          source: 'route-remaining',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
-            'line-color': '#22C55E',
-            'line-width': 10,
-            'line-opacity': 0.18,
-            'line-blur': 4,
-          },
-        })
-        // Dashed animated foreground — marching ants from pickup → dropoff.
-        map.addLayer({
-          id: 'route-line',
-          type: 'line',
-          source: 'route',
-          layout: { 'line-cap': 'butt', 'line-join': 'round' },
-          paint: {
-            'line-color': '#22C55E',
-            'line-width': 4,
-            'line-opacity': 0.95,
+            'line-color': '#FACC15',
+            'line-width': 5,
+            'line-opacity': 0.98,
             'line-dasharray': DASH_SEQUENCE[0],
           },
         })
 
-        // RAF dash cycle — throttled to ~16fps so the marching effect is
-        // smooth but doesn't redraw the whole map on every frame.
+        // COMPLETED segment (behind the driver) — solid black, no dashes,
+        // slightly thinner so the remaining line dominates visually.
+        map.addLayer({
+          id: 'route-completed',
+          type: 'line',
+          source: 'route-completed',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#0A0A0A',
+            'line-width': 5,
+            'line-opacity': 0.95,
+          },
+        })
+
+        // RAF dash cycle on the REMAINING line — same throttled marching
+        // ants as before, but driving the yellow ahead-of-driver portion.
         let step = 0
         let last = 0
         const tick = (t: number) => {
           if (!mapRef.current) return
           if (t - last > 60) {
             step = (step + 1) % DASH_SEQUENCE.length
-            if (mapRef.current.getLayer('route-line')) {
+            if (mapRef.current.getLayer('route-remaining')) {
               mapRef.current.setPaintProperty(
-                'route-line',
+                'route-remaining',
                 'line-dasharray',
                 DASH_SEQUENCE[step],
               )
@@ -658,6 +738,11 @@ export default function RiderMap({
     dropoff?.lat, dropoff?.lng,
     showRoute,
     padding.top, padding.bottom, padding.left, padding.right,
+    // Re-run when the polyline reference changes (new OSRM response)
+    // OR when the demo progress fraction advances — both require a
+    // re-render of the two route layers.
+    routePolyline,
+    progressFraction,
   ])
 
   // Cancel the dash RAF on unmount so it doesn't outlive the map.
