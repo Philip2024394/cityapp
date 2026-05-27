@@ -479,14 +479,6 @@ export default function PlaceProfileShell({
               color="#78350F"
             />
 
-            {/* Compliance footer — keeps the directory disclaimer visible
-                above the sticky CTAs without contributing to chrome. */}
-            <p className="text-[11px] text-gray-400 leading-snug pt-2">
-              Self-listed venue · IndoCity is a software directory ·{' '}
-              <Link href="/legal" className="underline-offset-2 hover:underline">
-                Legal info
-              </Link>
-            </p>
           </>
         )}
       </div>
