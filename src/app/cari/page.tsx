@@ -7,6 +7,7 @@ import {
   ArrowUp,
   ArrowRight,
   ChevronRight,
+  Compass,
   MapPin,
   Plus,
   Search,
@@ -14,7 +15,6 @@ import {
   X,
 } from 'lucide-react'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
-import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -484,12 +484,20 @@ function PlanTripPageInner() {
                       haptic.tap()
                     }}
                     placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
-                    className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
+                    className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
                     near={geo.coords ?? null}
                     countryCodes={countryCodes}
                     ariaLabel="Pick up location"
                     clearOnFocus
                     dropdownDirection="down"
+                    rightSlot={
+                      <span
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
+                        aria-hidden
+                      >
+                        <Compass className="w-[18px] h-[18px] text-[#52525B]" strokeWidth={2.4} />
+                      </span>
+                    }
                   />
                   <PlaceAutocomplete
                     value={dropoffLabel}
@@ -501,46 +509,21 @@ function PlanTripPageInner() {
                       haptic.tap()
                     }}
                     placeholder={PLACEHOLDERS[service].dropoff}
-                    className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
+                    className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
                     near={pickup ?? geo.coords ?? null}
                     countryCodes={countryCodes}
                     ariaLabel="Drop off location"
                     clearOnFocus
                     dropdownDirection="down"
+                    rightSlot={
+                      <span
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
+                        aria-hidden
+                      >
+                        <Star className="w-[18px] h-[18px] text-[#FACC15]" strokeWidth={2.4} fill="#FACC15" />
+                      </span>
+                    }
                   />
-                </div>
-
-                {/* Saved-places column — SavedPlacesChip for pickup (top)
-                    and dropoff (bottom). Per founder spec these are the
-                    compass / star slots; the chip itself renders a star-
-                    icon button that opens the saved-places picker. */}
-                <div className="flex flex-col gap-1.5 justify-between items-center shrink-0">
-                  <div className="h-[42px] flex items-center">
-                    <SavedPlacesChip
-                      kind="pickup"
-                      currentLocation={pickup}
-                      currentLocationLabel={pickupLabel}
-                      onSelect={(p) => {
-                        setPickup({ lat: p.lat, lng: p.lng, accuracyM: 0 })
-                        setPickupLabel(p.label)
-                        addRecent(p)
-                        haptic.tap()
-                      }}
-                    />
-                  </div>
-                  <div className="h-[42px] flex items-center">
-                    <SavedPlacesChip
-                      kind="dropoff"
-                      currentLocation={dropoff}
-                      currentLocationLabel={dropoffLabel}
-                      onSelect={(p) => {
-                        setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
-                        setDropoffLabel(p.label)
-                        addRecent(p)
-                        haptic.tap()
-                      }}
-                    />
-                  </div>
                 </div>
 
                 {/* Swap arrows column — single button with stacked up/down
@@ -798,15 +781,18 @@ function DriverCard({
   else if (color) subtitle = color
   else subtitle = driver.area || driver.city || ''
 
-  // ETA estimate — distance / 25 km/h, surfaced only when pickup is set.
-  // Uses haversine to the driver's last-known location. Floored at 2 min
-  // so a driver next door doesn't read "0 min away".
-  let etaLabel: string | null = null
+  // Distance hint — straight-line km from customer's pickup to the driver's
+  // last-known location. Surfaced only when pickup is set. Floor at 1km
+  // so a driver across the street doesn't read "0km away".
+  // Founder direction: surface DISTANCE in yellow instead of the ETA
+  // minutes — Indonesian customers compare drivers on proximity, and
+  // a km figure is more honest than a derived time estimate.
+  let kmLabel: string | null = null
   if (pickup && driver.lat && driver.lng) {
     const km = haversineKm({ lat: pickup.lat, lng: pickup.lng }, { lat: driver.lat, lng: driver.lng })
     if (Number.isFinite(km)) {
-      const minutes = Math.max(2, Math.round((km / 25) * 60))
-      etaLabel = `${minutes} min away`
+      const rounded = km < 1 ? 1 : Math.round(km)
+      kmLabel = `min ${rounded} km away`
     }
   }
 
@@ -867,16 +853,19 @@ function DriverCard({
         )}
       </div>
 
-      {/* Right column — price + ETA */}
+      {/* Right column — price + distance (yellow per founder spec) */}
       <div className="shrink-0 text-right">
         {priceLabel && (
           <div className="text-[13px] font-black text-bg tracking-tight">
             {priceLabel}
           </div>
         )}
-        {etaLabel && (
-          <div className="text-[11px] font-bold text-[#52525B] mt-0.5">
-            {etaLabel}
+        {kmLabel && (
+          <div
+            className="text-[11px] font-extrabold mt-0.5"
+            style={{ color: '#F59E0B' }}
+          >
+            {kmLabel}
           </div>
         )}
       </div>
