@@ -1014,16 +1014,27 @@ function PlaceCartSheet({
         style={{ borderTop: `4px solid ${theme}` }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header — brand-yellow ShoppingBag icon on the LEFT mirroring
+            the cart icon in the hero top-right, name + count in the
+            middle, X close on the right. */}
         <div className="px-5 pt-4 pb-2 flex items-center justify-between gap-3 shrink-0">
-          <div className="min-w-0">
-            <h3 className="text-[15px] font-black text-black truncate">
-              Your order · <span className="font-extrabold">{placeName}</span>
-            </h3>
-            <div className="text-[11px] text-gray-500 mt-0.5">
-              {totalQty > 0
-                ? `${totalQty} item${totalQty === 1 ? '' : 's'}`
-                : 'No items yet'}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span
+              className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full"
+              style={{ background: theme }}
+              aria-hidden
+            >
+              <ShoppingBag className="w-4 h-4 text-black" strokeWidth={2.5} />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-black text-black truncate">
+                Your order · <span className="font-extrabold">{placeName}</span>
+              </h3>
+              <div className="text-[11px] text-gray-500 mt-0.5">
+                {totalQty > 0
+                  ? `${totalQty} item${totalQty === 1 ? '' : 's'}`
+                  : 'No items yet'}
+              </div>
             </div>
           </div>
           <button
@@ -1079,8 +1090,8 @@ function PlaceCartSheet({
                           type="button"
                           onClick={() => onSetQty(it.offer_id, it.qty - 1)}
                           aria-label={`Decrease quantity of ${it.name}`}
-                          className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-black active:scale-[0.95] transition"
-                          style={{ minWidth: 44, minHeight: 44 }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-black active:scale-[0.95] transition"
+                          style={{ minWidth: 44, minHeight: 44, background: theme }}
                         >
                           <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
                         </button>
@@ -1096,8 +1107,8 @@ function PlaceCartSheet({
                           onClick={() => onSetQty(it.offer_id, Math.min(99, it.qty + 1))}
                           aria-label={`Increase quantity of ${it.name}`}
                           disabled={it.qty >= 99}
-                          className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-black active:scale-[0.95] transition disabled:opacity-40 disabled:active:scale-100"
-                          style={{ minWidth: 44, minHeight: 44 }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-black active:scale-[0.95] transition disabled:opacity-40 disabled:active:scale-100"
+                          style={{ minWidth: 44, minHeight: 44, background: theme }}
                         >
                           <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
                         </button>
@@ -1111,8 +1122,8 @@ function PlaceCartSheet({
                     type="button"
                     onClick={() => onRemove(it.offer_id)}
                     aria-label={`Remove ${it.name}`}
-                    className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0 text-gray-500"
-                    style={{ minWidth: 44, minHeight: 44 }}
+                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white active:scale-[0.95] transition"
+                    style={{ minWidth: 44, minHeight: 44, background: '#B91C1C' }}
                   >
                     <Trash2 className="w-4 h-4" strokeWidth={2.25} />
                   </button>
