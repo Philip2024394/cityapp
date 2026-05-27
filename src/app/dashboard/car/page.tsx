@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { Loader2, X, Upload, CheckCircle2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import RentalSection, { type RentalSavePayload } from '@/components/dashboard/RentalSection'
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -59,6 +60,11 @@ type CarDriverRow = {
   availability: 'online' | 'busy' | 'offline' | null
   service_zone_radius_km: number | null
   paid_until: string | null // ISO date (YYYY-MM-DD) or null
+  rental_type: 'self_drive' | 'with_driver' | 'both' | null
+  rental_daily_rate_idr: number | null
+  rental_weekly_rate_idr: number | null
+  rental_monthly_rate_idr: number | null
+  rental_min_days: number | null
 }
 
 type LoadState =
@@ -113,7 +119,8 @@ export default function CarDriverDashboardPage() {
         'vehicle_make, vehicle_model, vehicle_year, vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos, ' +
         'price_per_km, min_fee, pitstop_fee, ' +
         'accepts_cash, accepts_qr, accepts_transfer, qr_payment_url, transfer_details, ' +
-        'availability, service_zone_radius_km, paid_until',
+        'availability, service_zone_radius_km, paid_until, ' +
+        'rental_type, rental_daily_rate_idr, rental_weekly_rate_idr, rental_monthly_rate_idr, rental_min_days',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -269,6 +276,7 @@ function Dashboard({ row, onReload }: { row: CarDriverRow; onReload: () => void 
         <VehicleSection      row={row} onSaved={onReload} />
         <PhotosSection       row={row} onSaved={onReload} />
         <PricingSection      row={row} onSaved={onReload} />
+        <CarRentalSection    row={row} onSaved={onReload} />
         <PaymentMethodsSection row={row} onSaved={onReload} />
         <BusinessProfileSection row={row} onSaved={onReload} />
       </div>
@@ -657,6 +665,36 @@ function PricingSection({ row, onSaved }: { row: CarDriverRow; onSaved: () => vo
         </div>
       </form>
     </SectionCard>
+  )
+}
+
+// ============================================================================
+// Rental rates — delegates to shared <RentalSection /> component.
+// ----------------------------------------------------------------------------
+// Car rentals split fairly evenly between self-drive (lepas kunci) and
+// with-driver (sopir + BBM), so we default rental_type to 'both' to force
+// the driver to pick explicitly. The shared component writes to the
+// rental_* columns on `drivers`, which are surfaced via drivers_public to
+// the /rentals/car marketplace.
+//
+// COMPLIANCE: rental rates are self-published — IndoCity displays them
+// as-is, customers agree terms directly with the driver.
+// ============================================================================
+function CarRentalSection({ row, onSaved }: { row: CarDriverRow; onSaved: () => void }) {
+  const { saving, toast, save } = useSectionSaver(onSaved)
+  return (
+    <RentalSection
+      rentalType={row.rental_type}
+      rentalDailyRateIdr={row.rental_daily_rate_idr}
+      rentalWeeklyRateIdr={row.rental_weekly_rate_idr}
+      rentalMonthlyRateIdr={row.rental_monthly_rate_idr}
+      rentalMinDays={row.rental_min_days}
+      defaultRentalType="both"
+      vehicleNoun="car"
+      saving={saving}
+      toast={toast}
+      onSave={(payload: RentalSavePayload) => save(payload)}
+    />
   )
 }
 

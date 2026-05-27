@@ -24,6 +24,7 @@ import Link from 'next/link'
 import { Loader2, X, Upload, CheckCircle2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import RentalSection, { type RentalSavePayload } from '@/components/dashboard/RentalSection'
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -281,7 +282,7 @@ function Dashboard({ row, onReload }: { row: TruckDriverRow; onReload: () => voi
         <VehicleSection      row={row} onSaved={onReload} />
         <PhotosSection       row={row} onSaved={onReload} />
         <PricingSection      row={row} onSaved={onReload} />
-        <RentalSection       row={row} onSaved={onReload} />
+        <TruckRentalSection  row={row} onSaved={onReload} />
         <PaymentMethodsSection row={row} onSaved={onReload} />
         <BusinessProfileSection row={row} onSaved={onReload} />
       </div>
@@ -694,154 +695,31 @@ function PricingSection({ row, onSaved }: { row: TruckDriverRow; onSaved: () => 
 }
 
 // ============================================================================
-// Rental rates — NEW for /dashboard/truck
+// Rental rates — delegates to the shared <RentalSection /> component.
 // ----------------------------------------------------------------------------
 // Trucks transact mostly as DAILY/WEEKLY RENTAL — Pindahan rumah, distribusi
-// barang, jasa angkut. This section is unique to the truck dashboard (the
-// car/bus dashboards don't have rental fields). Writes to rental_* columns
-// on `drivers`, which are surfaced via drivers_public to the /rentals
-// marketplaces.
-//
-// The toggle controls whether rental fields are SUBMITTED. When toggled
-// off, saving the section nulls rental_type + rental_daily_rate_idr +
-// weekly + monthly (i.e. the driver opts out of the rental marketplace).
-// rental_min_days has a NOT NULL DEFAULT 1 at the DB level, so we always
-// send a value (defaulted to 1 in the UI).
+// barang, jasa angkut. The same component is reused on /dashboard/car and
+// /dashboard/bus. Truck defaults rental_type to 'with_driver' since most
+// truck rentals include a sopir.
 //
 // COMPLIANCE: rental rates are self-published — IndoCity displays them
 // as-is, customers agree terms directly with the driver.
 // ============================================================================
-function RentalSection({ row, onSaved }: { row: TruckDriverRow; onSaved: () => void }) {
+function TruckRentalSection({ row, onSaved }: { row: TruckDriverRow; onSaved: () => void }) {
   const { saving, toast, save } = useSectionSaver(onSaved)
-
-  // The toggle is "enabled" when the driver has any rental_type set on the
-  // server. If the row arrives with rental_type=null we start in disabled
-  // mode but still seed the inputs from any stale numeric values so the
-  // driver doesn't lose data if they flip the toggle on accidentally.
-  const initialEnabled = row.rental_type != null
-  const [enabled,  setEnabled]  = useState<boolean>(initialEnabled)
-  const [rType,    setRType]    = useState<'self_drive' | 'with_driver' | 'both'>(row.rental_type ?? 'with_driver')
-  const [daily,    setDaily]    = useState<string>(row.rental_daily_rate_idr   != null ? String(row.rental_daily_rate_idr)   : '')
-  const [weekly,   setWeekly]   = useState<string>(row.rental_weekly_rate_idr  != null ? String(row.rental_weekly_rate_idr)  : '')
-  const [monthly,  setMonthly]  = useState<string>(row.rental_monthly_rate_idr != null ? String(row.rental_monthly_rate_idr) : '')
-  const [minDays,  setMinDays]  = useState<string>(row.rental_min_days != null ? String(row.rental_min_days) : '1')
-
-  // Dirty detection. We compare the FINAL payload that would be submitted
-  // against the current row values — so flipping the toggle off counts as
-  // dirty (because the patch will null all fields).
-  const initialDaily   = row.rental_daily_rate_idr   != null ? String(row.rental_daily_rate_idr)   : ''
-  const initialWeekly  = row.rental_weekly_rate_idr  != null ? String(row.rental_weekly_rate_idr)  : ''
-  const initialMonthly = row.rental_monthly_rate_idr != null ? String(row.rental_monthly_rate_idr) : ''
-  const initialMinDays = row.rental_min_days != null ? String(row.rental_min_days) : '1'
-
-  const dirty = enabled !== initialEnabled
-    || (enabled && (
-      rType   !== (row.rental_type ?? 'with_driver') ||
-      daily   !== initialDaily   ||
-      weekly  !== initialWeekly  ||
-      monthly !== initialMonthly ||
-      minDays !== initialMinDays
-    ))
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!enabled) {
-      // Opt out — null all rental columns, but keep min_days at 1 (NOT NULL DEFAULT).
-      await save({
-        rental_type: null,
-        rental_daily_rate_idr: null,
-        rental_weekly_rate_idr: null,
-        rental_monthly_rate_idr: null,
-        rental_min_days: 1,
-      })
-      return
-    }
-    await save({
-      rental_type: rType,
-      rental_daily_rate_idr:   daily   === '' ? null : Number(daily),
-      rental_weekly_rate_idr:  weekly  === '' ? null : Number(weekly),
-      rental_monthly_rate_idr: monthly === '' ? null : Number(monthly),
-      rental_min_days:         minDays === '' ? 1    : Math.max(1, Number(minDays)),
-    })
-  }
-
   return (
-    <SectionCard title="Rental rates · Self-published">
-      <p className="text-[13px] text-black/70 leading-snug">
-        Your rental rates · Self-published. Customers agree the rental terms directly with you.
-      </p>
-      <form onSubmit={onSubmit} className="space-y-3">
-        <Toggle label="Offer my truck for daily rental" checked={enabled} onChange={setEnabled} />
-
-        {enabled && (
-          <div className="space-y-3 rounded-xl bg-yellow-50/40 border border-yellow-200 p-3">
-            <label className={labelCls}>
-              <span className={labelTextCls}>Rental type</span>
-              <select
-                className={inputCls}
-                value={rType}
-                onChange={(e) => setRType(e.target.value as 'self_drive' | 'with_driver' | 'both')}
-              >
-                <option value="with_driver">With driver (sopir included)</option>
-                <option value="self_drive">Self-drive (lepas kunci)</option>
-                <option value="both">Both</option>
-              </select>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <label className={labelCls}>
-                <span className={labelTextCls}>Daily rate (Rp)</span>
-                <input
-                  type="number"
-                  min={0}
-                  className={inputCls}
-                  value={daily}
-                  onChange={(e) => setDaily(e.target.value)}
-                  placeholder="600000"
-                />
-              </label>
-              <label className={labelCls}>
-                <span className={labelTextCls}>Weekly rate (Rp) — optional</span>
-                <input
-                  type="number"
-                  min={0}
-                  className={inputCls}
-                  value={weekly}
-                  onChange={(e) => setWeekly(e.target.value)}
-                  placeholder="3500000"
-                />
-              </label>
-              <label className={labelCls}>
-                <span className={labelTextCls}>Monthly rate (Rp) — optional</span>
-                <input
-                  type="number"
-                  min={0}
-                  className={inputCls}
-                  value={monthly}
-                  onChange={(e) => setMonthly(e.target.value)}
-                  placeholder="12000000"
-                />
-              </label>
-            </div>
-            <label className={labelCls}>
-              <span className={labelTextCls}>Minimum rental (days)</span>
-              <input
-                type="number"
-                min={1}
-                className={inputCls}
-                value={minDays}
-                onChange={(e) => setMinDays(e.target.value)}
-                placeholder="1"
-              />
-            </label>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-3">
-          {toast ? <Toast kind={toast.kind}>{toast.msg}</Toast> : <span />}
-          <SaveButton saving={saving} dirty={dirty} />
-        </div>
-      </form>
-    </SectionCard>
+    <RentalSection
+      rentalType={row.rental_type}
+      rentalDailyRateIdr={row.rental_daily_rate_idr}
+      rentalWeeklyRateIdr={row.rental_weekly_rate_idr}
+      rentalMonthlyRateIdr={row.rental_monthly_rate_idr}
+      rentalMinDays={row.rental_min_days}
+      defaultRentalType="with_driver"
+      vehicleNoun="truck"
+      saving={saving}
+      toast={toast}
+      onSave={(payload: RentalSavePayload) => save(payload)}
+    />
   )
 }
 

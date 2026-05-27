@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import { Truck as TruckIcon } from 'lucide-react'
-import UniversalProviderCard, {
-  type UniversalProviderCardBottomItem,
-} from '@/components/marketplace/UniversalProviderCard'
+import RentalDriverCard from '@/components/marketplace/RentalDriverCard'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 
 // ============================================================================
@@ -390,9 +388,47 @@ export default async function TruckRentalsPage({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {list.map((d) => (
-              <TruckRentalCard key={d.slug} rental={d} />
-            ))}
+            {list.map((d) => {
+              // Defensive guards — the SQL filter should keep these out,
+              // but if a row sneaks past (e.g. admin cleared rate after
+              // setting type), we skip rather than render Rp 0/day.
+              if (d.rental_daily_rate_idr == null || d.rental_daily_rate_idr <= 0) return null
+              if (!d.rental_type) return null
+
+              // Vehicle line — e.g. "Mitsubishi L300 Pickup 2019". Collapses
+              // to make+model when year is missing; falls back to null when
+              // neither is present so the line disappears entirely.
+              const makeModel = [d.vehicle_make, d.vehicle_model].filter(Boolean).join(' ')
+              const vehicleParts: string[] = []
+              if (makeModel) vehicleParts.push(makeModel)
+              if (d.vehicle_year) vehicleParts.push(String(d.vehicle_year))
+              const vehicleLine = vehicleParts.length ? vehicleParts.join(' ') : null
+
+              const cityArea = [d.city, d.area]
+                .filter((v) => v && v.trim().length > 0)
+                .join(' · ') || null
+
+              return (
+                <RentalDriverCard
+                  key={d.slug}
+                  href={`/rentals/truck/${d.slug}`}
+                  displayName={d.business_name}
+                  coverImageUrl={d.vehicle_photos[0] ?? null}
+                  profileImageUrl={d.profile_image_url}
+                  vehicleLine={vehicleLine}
+                  seats={d.vehicle_seats}
+                  cityArea={cityArea}
+                  rentalType={d.rental_type}
+                  specialtyPill={truckClassLabel(d.vehicle_model)}
+                  dailyRateIdr={d.rental_daily_rate_idr}
+                  weeklyRateIdr={d.rental_weekly_rate_idr}
+                  monthlyRateIdr={d.rental_monthly_rate_idr}
+                  minDays={d.rental_min_days}
+                  rating={d.rating}
+                  tripsCount={d.trips_count}
+                />
+              )
+            })}
           </div>
         )}
 
@@ -436,96 +472,6 @@ function FilterChip({
       <span>{label}</span>
       <span className="tabular-nums text-[11px] opacity-70">{count}</span>
     </Link>
-  )
-}
-
-// Adapter from TruckRental → UniversalProviderCard props. Kept inline (not
-// extracted into a shared lib) because the field mapping is rental-specific
-// and changing the truck card shouldn't ripple to other verticals. If a
-// future RentalDriverCard ships, this is the call-site to swap.
-function TruckRentalCard({ rental: d }: { rental: TruckRental }) {
-  // Vehicle line — e.g. "Mitsubishi L300 Pickup 2019". Collapses to the
-  // make+model when year is missing.
-  const vehicleParts: string[] = []
-  const makeModel = [d.vehicle_make, d.vehicle_model].filter(Boolean).join(' ')
-  if (makeModel) vehicleParts.push(makeModel)
-  if (d.vehicle_year) vehicleParts.push(String(d.vehicle_year))
-  const vehicleFull = vehicleParts.length ? vehicleParts.join(' ') : null
-
-  // City + area combined — e.g. "Yogyakarta · Sleman".
-  const cityArea = [d.city, d.area]
-    .filter((v) => v && v.trim().length > 0)
-    .join(' · ') || null
-
-  // Specialty pill = truck class derived from vehicle_model. Pickup /
-  // Box van / Engkel box / etc. — the most useful quick-read for a
-  // truck rental (seats are mostly cabin-occupancy and not the buyer's
-  // concern).
-  const specialtyLabel = truckClassLabel(d.vehicle_model)
-
-  // Rental-type chip lives in the subline rather than crowding the
-  // specialty pill. "With driver" / "Self-drive" / "Both options" —
-  // the directory's most important rental-vertical distinction.
-  const rentalLabel =
-    d.rental_type === 'with_driver' ? 'With driver'
-    : d.rental_type === 'self_drive' ? 'Self-drive'
-    : d.rental_type === 'both'       ? 'Driver optional'
-    : null
-
-  // Bottom row — published daily rate + optional weekly rate. Compliance
-  // copy: "From Rp X/day" — never "rental price" or "total cost".
-  const bottomItems: UniversalProviderCardBottomItem[] = []
-  if (d.rental_daily_rate_idr != null && d.rental_daily_rate_idr > 0) {
-    bottomItems.push({
-      key: 'daily',
-      icon: 'dollar',
-      label: `From Rp ${d.rental_daily_rate_idr.toLocaleString('id-ID')}/day`,
-    })
-  }
-  if (d.rental_weekly_rate_idr != null && d.rental_weekly_rate_idr > 0) {
-    bottomItems.push({
-      key: 'weekly',
-      label: `Rp ${d.rental_weekly_rate_idr.toLocaleString('id-ID')}/week`,
-    })
-  }
-
-  // Subline — vehicle name + rental-type chip + minimum-days note.
-  // Trip count omitted for trucks (mocks all sit at 0 and the field
-  // is mostly meaningful for live-ride drivers).
-  const sublineBits: string[] = []
-  if (vehicleFull) sublineBits.push(vehicleFull)
-  if (rentalLabel) sublineBits.push(rentalLabel)
-  if (d.rental_min_days > 1) sublineBits.push(`Min ${d.rental_min_days} days`)
-
-  // Portfolio thumbs come from vehicle_photos (jsonb). Capped at 3 inside
-  // the universal card; we pass the full array.
-  const thumbs = d.vehicle_photos
-
-  // Cover image — first vehicle photo when available, otherwise the
-  // universal card paints a themed gradient.
-  const cover = d.vehicle_photos[0] ?? null
-
-  return (
-    <UniversalProviderCard
-      // Profile route — /rentals/truck/[slug] doesn't exist yet (separate
-      // task). For now this 404s, by design — the universal card link is
-      // wired to the canonical route so it activates the moment that page
-      // ships, with no rebrowse / re-deploy needed here.
-      href={`/rentals/truck/${d.slug}`}
-      displayName={d.business_name}
-      city={cityArea}
-      subline={sublineBits.length ? sublineBits.join(' · ') : null}
-      bio={d.bio?.replace(/\s*\n\s*/g, ' ') ?? null}
-      coverImageUrl={cover}
-      profileImageUrl={d.profile_image_url}
-      availabilityDot={d.availability}
-      rating={d.rating ?? null}
-      specialtyLabel={specialtyLabel}
-      portfolioThumbs={thumbs}
-      bottomItems={bottomItems}
-      ctaLabel="View profile"
-      variant="light"
-    />
   )
 }
 

@@ -168,10 +168,9 @@ function realToCard(r: RealRow): RentalCardData | null {
     minDays:         r.rental_min_days,
     rating:          r.rating,
     tripsCount:      r.trips_count ?? 0,
-    // /rentals/car/[slug] doesn't exist yet — fall back to /car/[slug]
-    // (the live-ride profile already renders the same driver). The
-    // separate rental profile page is a follow-up task.
-    href:            `/car/${r.slug}`,
+    // Dedicated rental profile page — distinct from /car/[slug] which is
+    // the live-ride per-km surface (wrong context for daily/weekly hire).
+    href:            `/rentals/car/${r.slug}`,
   }
 }
 
@@ -195,7 +194,7 @@ function mockToCard(r: MockRow): RentalCardData | null {
     minDays:         r.rental_min_days,
     rating:          r.rating,
     tripsCount:      0,
-    href:            `/car/${r.slug}`,
+    href:            `/rentals/car/${r.slug}`,
   }
 }
 

@@ -39,6 +39,11 @@ export type RentalDriverCardProps = {
   cityArea?:                string | null
   /** Rental type chip(s) — driver may offer self_drive, with_driver, or both. */
   rentalType:               RentalType
+  /** Optional vertical-specific pill, rendered alongside the rental-type
+   *  chips (top-left of the cover). Used by /rentals/truck to surface a
+   *  truck-class label like "Pickup" / "Box van" / "Engkel box". Cars
+   *  omit this — their `seats` chip already carries the relevant detail. */
+  specialtyPill?:           string | null
   /** Daily rate in IDR — the visual focal point of the card. */
   dailyRateIdr:             number
   /** Optional longer-window rates surfaced as a small inline line. */
@@ -101,6 +106,7 @@ export default function RentalDriverCard({
   seats,
   cityArea,
   rentalType,
+  specialtyPill,
   dailyRateIdr,
   weeklyRateIdr,
   monthlyRateIdr,
@@ -154,9 +160,16 @@ export default function RentalDriverCard({
           }}
         />
 
-        {/* Rental-type chip(s) — TOP LEFT of the card per the brief. */}
-        <div className="absolute top-3 left-3 z-10">
+        {/* Rental-type chip(s) — TOP LEFT of the card per the brief.
+            When the caller passes `specialtyPill` (e.g. truck-class label
+            from /rentals/truck), it sits alongside the rental-type chip. */}
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 flex-wrap max-w-[75%]">
           <RentalTypeChips type={rentalType} />
+          {specialtyPill && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-white/95 text-black border border-black/15 shadow-sm">
+              {specialtyPill}
+            </span>
+          )}
         </div>
 
         {/* Rating chip — TOP RIGHT, when present. */}
