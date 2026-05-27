@@ -758,19 +758,14 @@ function DriverCard({
   else if (color) subtitle = color
   else subtitle = driver.area || driver.city || ''
 
-  // Two proximity lines under the price (founder spec):
-  //   • kmLabel  — straight-line km in YELLOW (visual emphasis)
-  //   • etaLabel — derived minutes in GRAY (secondary detail)
-  // Both pulled from the same haversine measurement to the driver's
-  // last-known location. Minutes = km / 25 km/h, floored at 2 min so
-  // a nearby driver doesn't read "0 min away".
-  let kmLabel: string | null = null
+  // Proximity hint under the price — minutes-to-driver only. Derived
+  // from haversine km / 25 km/h, floored at 2 min so a nearby driver
+  // doesn't read "0 min away". Rendered in yellow per founder spec
+  // (the same yellow accent the km line used before).
   let etaLabel: string | null = null
   if (pickup && driver.lat && driver.lng) {
     const km = haversineKm({ lat: pickup.lat, lng: pickup.lng }, { lat: driver.lat, lng: driver.lng })
     if (Number.isFinite(km)) {
-      const roundedKm = km < 1 ? 1 : Math.round(km)
-      kmLabel = `min ${roundedKm} km away`
       const minutes = Math.max(2, Math.round((km / 25) * 60))
       etaLabel = `${minutes} min away`
     }
@@ -833,23 +828,18 @@ function DriverCard({
         )}
       </div>
 
-      {/* Right column — price + distance (yellow) + ETA (grey) */}
+      {/* Right column — price + ETA (yellow) */}
       <div className="shrink-0 text-right">
         {priceLabel && (
           <div className="text-[13px] font-black text-bg tracking-tight">
             {priceLabel}
           </div>
         )}
-        {kmLabel && (
+        {etaLabel && (
           <div
             className="text-[11px] font-extrabold mt-0.5"
             style={{ color: '#F59E0B' }}
           >
-            {kmLabel}
-          </div>
-        )}
-        {etaLabel && (
-          <div className="text-[11px] font-bold text-[#52525B] mt-0.5">
             {etaLabel}
           </div>
         )}
