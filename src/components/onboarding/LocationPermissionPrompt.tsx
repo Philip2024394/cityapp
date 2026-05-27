@@ -167,13 +167,7 @@ export default function LocationPermissionPrompt({ open, onComplete }: Props) {
 
       {/* Sheet — bottom-sheet on mobile, centered card on >= sm. */}
       <div
-        className="
-          relative w-full sm:max-w-md
-          rounded-t-3xl sm:rounded-3xl
-          bg-white shadow-2xl
-          px-5 pt-6 pb-6 sm:pb-7
-          animate-[slideUp_0.25s_ease-out]
-        "
+        className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white shadow-2xl px-5 pt-6 pb-6 sm:pb-7 animate-[slideUp_0.25s_ease-out]"
         style={{
           paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)',
         }}
@@ -227,13 +221,7 @@ export default function LocationPermissionPrompt({ open, onComplete }: Props) {
             type="button"
             onClick={handleUseGps}
             disabled={requesting}
-            className="
-              w-full min-h-[48px] rounded-2xl px-4
-              bg-[#FACC15] text-[#0F172A] font-extrabold text-[14px]
-              hover:bg-[#FBBF24] active:scale-[0.99]
-              transition shadow-[0_6px_18px_rgba(250,204,21,0.30)]
-              disabled:opacity-60 disabled:cursor-not-allowed
-            "
+            className="w-full min-h-[48px] rounded-2xl px-4 bg-[#FACC15] text-[#0F172A] font-extrabold text-[14px] hover:bg-[#FBBF24] active:scale-[0.99] transition shadow-[0_6px_18px_rgba(250,204,21,0.30)] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {requesting ? 'Locating…' : 'Use my GPS'}
           </button>
@@ -241,11 +229,7 @@ export default function LocationPermissionPrompt({ open, onComplete }: Props) {
           <button
             type="button"
             onClick={handleSkip}
-            className="
-              w-full min-h-[48px] rounded-2xl px-4
-              bg-gray-100 text-gray-700 font-bold text-[13px]
-              hover:bg-gray-200 active:scale-[0.99] transition
-            "
+            className="w-full min-h-[48px] rounded-2xl px-4 bg-gray-100 text-gray-700 font-bold text-[13px] hover:bg-gray-200 active:scale-[0.99] transition"
           >
             Skip for now
           </button>

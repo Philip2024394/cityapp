@@ -150,13 +150,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={handleEnterApp}
-              className="
-                w-full min-h-[52px] rounded-2xl px-6
-                bg-gradient-to-r from-brand to-brand2
-                text-[#0F172A] font-extrabold text-[15px]
-                hover:from-brand2 hover:to-brand active:scale-[0.99]
-                transition shadow-[0_8px_22px_rgba(250,204,21,0.35)]
-              "
+              className="w-full min-h-[52px] rounded-2xl px-6 bg-gradient-to-r from-brand to-brand2 text-[#0F172A] font-extrabold text-[15px] hover:from-brand2 hover:to-brand active:scale-[0.99] transition shadow-[0_8px_22px_rgba(250,204,21,0.35)]"
               aria-label={t.enter}
             >
               {t.enter}
