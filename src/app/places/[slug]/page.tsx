@@ -23,21 +23,31 @@ export const revalidate = 300
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 type Row = {
-  id:            string
-  slug:          string
-  name:          string
-  category:      PlaceCategory
-  description:   string | null
-  image_urls:    string[] | null
-  city:          string
-  address:       string | null
-  tags:          string[] | null
-  lat:           number
-  lng:           number
-  whatsapp_e164: string | null
-  hours_json:    Record<string, unknown> | null
-  rating:        number | null
-  review_count:  number | null
+  id:              string
+  slug:            string
+  name:            string
+  category:        PlaceCategory
+  description:     string | null
+  image_urls:      string[] | null
+  city:            string
+  address:         string | null
+  tags:            string[] | null
+  lat:             number
+  lng:             number
+  whatsapp_e164:   string | null
+  hours_json:      Record<string, unknown> | null
+  rating:          number | null
+  review_count:    number | null
+  contact_enabled: boolean | null
+}
+
+type OfferRow = {
+  id:          string
+  name:        string
+  description: string | null
+  price_idr:   number | null
+  image_url:   string | null
+  sort_order:  number
 }
 
 async function loadPlace(slug: string): Promise<Row | null> {
@@ -45,11 +55,27 @@ async function loadPlace(slug: string): Promise<Row | null> {
   if (!supabase) return null
   const { data } = await supabase
     .from('places')
-    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count')
+    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count, contact_enabled')
     .eq('slug', slug)
     .eq('status', 'approved')
     .maybeSingle()
   return data as Row | null
+}
+
+// Fetch the place_offers rows for this place. The public RLS policy on
+// place_offers already gates this to approved places — we still scope by
+// place_id at the query level so each profile only sees its own items.
+// Returns [] on missing client / error so the caller can keep rendering.
+async function loadOffers(placeId: string): Promise<OfferRow[]> {
+  const supabase = await getServerSupabase()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('place_offers')
+    .select('id, name, description, price_idr, image_url, sort_order')
+    .eq('place_id', placeId)
+    .order('sort_order', { ascending: true })
+  if (error) return []
+  return (data ?? []) as unknown as OfferRow[]
 }
 
 export async function generateMetadata(
@@ -90,6 +116,8 @@ export default async function PlaceDetailPage(
   const { slug } = await params
   const place = await loadPlace(slug)
   if (!place) notFound()
+
+  const offers = await loadOffers(place.id)
 
   const categoryMeta  = CATEGORIES[place.category]
   const categoryLabel = categoryMeta?.label ?? place.category
@@ -149,7 +177,9 @@ export default async function PlaceDetailPage(
           hoursJson:     place.hours_json,
           rating:        place.rating,
           reviewCount:   place.review_count,
+          offers,
         }}
+        contactEnabled={place.contact_enabled !== false}
       />
     </>
   )

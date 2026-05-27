@@ -20,7 +20,7 @@
 // ============================================================================
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Loader2, X, Upload, CheckCircle2, ChevronDown } from 'lucide-react'
+import { Loader2, X, Upload, CheckCircle2, ChevronDown, Plus, Trash2, Pencil } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { CATEGORIES, GROUPS } from '@/lib/places/categories'
@@ -61,6 +61,23 @@ type PlaceRow = {
   rating: number | null
   review_count: number | null
   created_at: string | null
+  contact_enabled: boolean | null
+}
+
+// Row shape for place_offers — owner-managed menu/ticket/highlight items.
+// price_idr is nullable so image-only entries (e.g. temple highlights,
+// gallery pieces) skip price entirely. RLS handles authorisation; we
+// scope every write to owner_user_id at the call site for defence in depth.
+type PlaceOfferRow = {
+  id:          string
+  place_id:    string
+  name:        string
+  description: string | null
+  price_idr:   number | null
+  image_url:   string | null
+  sort_order:  number
+  created_at:  string | null
+  updated_at:  string | null
 }
 
 type LoadState =
@@ -117,7 +134,7 @@ export default function PlaceOwnerDashboardPage() {
       .select(
         'id, slug, name, category, description, image_urls, city, address, lat, lng, ' +
         'whatsapp_e164, hours_json, status, paid_until, verified, owner_user_id, ' +
-        'tags, rating, review_count, created_at',
+        'tags, rating, review_count, created_at, contact_enabled',
       )
       .eq('owner_user_id', user.id)
       .order('created_at', { ascending: false })
@@ -275,10 +292,12 @@ function Dashboard({
         </header>
 
         <ListingStatusCard row={effectiveRow} />
-        <BasicsSection   row={row} onSaved={onReload} />
-        <VisitInfoSection row={row} onSaved={onReload} />
-        <PhotosSection   row={row} onSaved={onReload} />
-        <HoursSection    row={row} onSaved={onReload} />
+        <BasicsSection      row={row} onSaved={onReload} />
+        <VisitInfoSection   row={row} onSaved={onReload} />
+        <PhotosSection      row={row} onSaved={onReload} />
+        <OffersSection      row={row} />
+        <ContactToggleSection row={row} onSaved={onReload} />
+        <HoursSection       row={row} onSaved={onReload} />
       </div>
 
       <QrisPaymentModal
@@ -833,6 +852,485 @@ function PhotosSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void })
           <SaveButton saving={saving} dirty={dirty} />
         </div>
       </form>
+    </SectionCard>
+  )
+}
+
+// ============================================================================
+// Offers / Menu — owner CRUD over `place_offers`.
+// ----------------------------------------------------------------------------
+// Restaurants list menu items, attractions list ticket types, temples and
+// galleries can leave price empty for image-only entries. Sort order is a
+// numeric input (drag is overkill for v1). Each row has its own Save button
+// so a single broken row doesn't block the rest.
+// ============================================================================
+function OffersSection({ row }: { row: PlaceRow }) {
+  const [offers, setOffers] = useState<PlaceOfferRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+
+  const reload = useCallback(async () => {
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setLoadError('Supabase not configured.'); setLoading(false); return }
+    setLoadError(null)
+    const { data, error } = await supabase
+      .from('place_offers')
+      .select('id, place_id, name, description, price_idr, image_url, sort_order, created_at, updated_at')
+      .eq('place_id', row.id)
+      .order('sort_order', { ascending: true })
+    if (error) { setLoadError(error.message); setLoading(false); return }
+    setOffers((data ?? []) as unknown as PlaceOfferRow[])
+    setLoading(false)
+  }, [row.id])
+
+  useEffect(() => { setLoading(true); reload() }, [reload])
+
+  return (
+    <SectionCard title="Offers / Menu">
+      <p className="text-[13px] text-black/70 leading-snug">
+        Restaurants: list menu items. Attractions: list ticket types. Temples / gallery:
+        leave price empty for image-only entries.
+      </p>
+      <p className="text-[12px] text-black/55 leading-snug">
+        Offers self-published by venue · agree price directly when you visit.
+      </p>
+
+      {loadError && <Toast kind="err">{loadError}</Toast>}
+
+      {loading ? (
+        <div className="text-[13px] text-black/50">Loading offers…</div>
+      ) : (
+        <div className="space-y-3">
+          {offers.length === 0 && !adding && (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center">
+              <div className="text-[13px] font-extrabold text-black/70">No offers yet</div>
+              <div className="text-[12px] text-black/55 mt-1">
+                Add a menu item, ticket type, or highlight to show on your profile.
+              </div>
+            </div>
+          )}
+
+          {offers.map((offer) => (
+            <OfferEditor
+              key={offer.id}
+              placeId={row.id}
+              offer={offer}
+              onSaved={reload}
+              onDeleted={reload}
+            />
+          ))}
+
+          {adding ? (
+            <OfferEditor
+              placeId={row.id}
+              offer={null}
+              defaultSortOrder={
+                offers.length > 0
+                  ? Math.max(...offers.map((o) => o.sort_order)) + 1
+                  : 0
+              }
+              onSaved={() => { setAdding(false); reload() }}
+              onCancel={() => setAdding(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-[13px] font-extrabold text-black/80 hover:border-brand min-h-[44px]"
+            >
+              <Plus className="w-4 h-4" aria-hidden />
+              Add offer
+            </button>
+          )}
+        </div>
+      )}
+    </SectionCard>
+  )
+}
+
+// Editor for a single offer row — handles both "edit existing" and "add new"
+// via the `offer === null` branch. Local state is the source of truth; we
+// only round-trip to Supabase on Save or Delete. Each editor owns its own
+// saving / toast state so siblings can be edited independently.
+function OfferEditor({
+  placeId,
+  offer,
+  defaultSortOrder = 0,
+  onSaved,
+  onDeleted,
+  onCancel,
+}: {
+  placeId:           string
+  offer:             PlaceOfferRow | null
+  defaultSortOrder?: number
+  onSaved:           () => void
+  onDeleted?:        () => void
+  onCancel?:         () => void
+}) {
+  const isNew = offer === null
+  const [name,        setName]        = useState(offer?.name ?? '')
+  const [description, setDescription] = useState(offer?.description ?? '')
+  const [priceText,   setPriceText]   = useState(offer?.price_idr != null ? String(offer.price_idr) : '')
+  const [imageUrl,    setImageUrl]    = useState(offer?.image_url ?? '')
+  const [sortOrder,   setSortOrder]   = useState<string>(
+    offer ? String(offer.sort_order) : String(defaultSortOrder),
+  )
+  const [editing, setEditing] = useState(isNew)
+  const [saving,  setSaving]  = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [toast,   setToast]   = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+
+  // Re-sync if the parent reloaded with a different snapshot of this offer.
+  useEffect(() => {
+    if (!offer) return
+    setName(offer.name ?? '')
+    setDescription(offer.description ?? '')
+    setPriceText(offer.price_idr != null ? String(offer.price_idr) : '')
+    setImageUrl(offer.image_url ?? '')
+    setSortOrder(String(offer.sort_order))
+  }, [offer?.id, offer?.name, offer?.description, offer?.price_idr, offer?.image_url, offer?.sort_order, offer])
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    setToast(null)
+    if (!name.trim()) { setToast({ kind: 'err', msg: 'Name is required.' }); return }
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setToast({ kind: 'err', msg: 'Supabase not configured.' }); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setToast({ kind: 'err', msg: 'Not signed in.' }); return }
+
+    // Parse price — empty string means "image-only", null in DB.
+    const priceTrimmed = priceText.trim()
+    const priceNum = priceTrimmed === '' ? null : Math.round(Number(priceTrimmed))
+    if (priceTrimmed !== '' && (!Number.isFinite(priceNum) || (priceNum ?? -1) < 0)) {
+      setToast({ kind: 'err', msg: 'Price must be a non-negative integer (IDR).' })
+      return
+    }
+    const sortNum = Math.round(Number(sortOrder))
+    if (!Number.isFinite(sortNum)) {
+      setToast({ kind: 'err', msg: 'Sort order must be a number.' })
+      return
+    }
+
+    setSaving(true)
+    const payload = {
+      place_id:    placeId,
+      name:        name.trim(),
+      description: description.trim() || null,
+      price_idr:   priceNum,
+      image_url:   imageUrl.trim() || null,
+      sort_order:  sortNum,
+    }
+
+    if (isNew) {
+      const { error } = await supabase.from('place_offers').insert(payload)
+      setSaving(false)
+      if (error) { setToast({ kind: 'err', msg: error.message }); return }
+      onSaved()
+    } else {
+      const { error } = await supabase
+        .from('place_offers')
+        .update(payload)
+        .eq('id', offer!.id)
+      setSaving(false)
+      if (error) { setToast({ kind: 'err', msg: error.message }); return }
+      setToast({ kind: 'ok', msg: 'Saved.' })
+      setTimeout(() => setToast(null), 2200)
+      setEditing(false)
+      onSaved()
+    }
+  }
+
+  async function remove() {
+    if (!offer) return
+    if (!confirm(`Delete "${offer.name}"? This cannot be undone.`)) return
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setToast({ kind: 'err', msg: 'Supabase not configured.' }); return }
+    setDeleting(true)
+    const { error } = await supabase.from('place_offers').delete().eq('id', offer.id)
+    setDeleting(false)
+    if (error) { setToast({ kind: 'err', msg: error.message }); return }
+    onDeleted?.()
+  }
+
+  // Compact non-editing summary — image thumb + name + price + truncated
+  // description. Edit / Delete buttons hang on the right.
+  if (!editing && offer) {
+    const priceLabel = offer.price_idr != null
+      ? `Rp ${offer.price_idr.toLocaleString('id-ID')}`
+      : 'No price'
+    const descPreview = (offer.description ?? '').trim()
+    const descTruncated = descPreview.length > 80
+      ? descPreview.slice(0, 80).trimEnd() + '…'
+      : descPreview
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-3 flex items-start gap-3">
+        <OfferThumb url={offer.image_url} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-[15px] font-extrabold text-black truncate">{offer.name}</div>
+              <div className="text-[12px] text-black/55">
+                {priceLabel} · sort {offer.sort_order}
+              </div>
+            </div>
+          </div>
+          {descTruncated && (
+            <div className="text-[13px] text-black/70 leading-snug mt-1">{descTruncated}</div>
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 hover:bg-gray-200 px-3 py-1.5 text-[12px] font-extrabold text-black/80 min-h-[36px]"
+            >
+              <Pencil className="w-3.5 h-3.5" aria-hidden />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={remove}
+              disabled={deleting}
+              className="inline-flex items-center gap-1.5 rounded-full bg-red-50 hover:bg-red-100 px-3 py-1.5 text-[12px] font-extrabold text-red-700 min-h-[36px] disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" aria-hidden />
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+            {toast && (
+              <span
+                className={`text-[12px] font-bold ${
+                  toast.kind === 'ok' ? 'text-green-700' : 'text-red-700'
+                }`}
+              >
+                {toast.msg}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Editor form — used for both "edit existing" and "add new".
+  return (
+    <form
+      onSubmit={save}
+      className="rounded-xl border border-gray-200 bg-white p-3 space-y-2"
+    >
+      <label className={labelCls}>
+        <span className={labelTextCls}>Name *</span>
+        <input
+          className={inputCls}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Nasi Goreng Spesial"
+          required
+        />
+      </label>
+      <label className={labelCls}>
+        <span className={labelTextCls}>Description</span>
+        <textarea
+          rows={2}
+          maxLength={400}
+          className={inputCls + ' resize-none'}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Optional — what's in it, why it's special"
+        />
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        <label className={labelCls}>
+          <span className={labelTextCls}>Price (IDR)</span>
+          <input
+            type="number"
+            min="0"
+            step="1000"
+            className={inputCls}
+            value={priceText}
+            onChange={(e) => setPriceText(e.target.value)}
+            placeholder="Leave empty for image-only"
+          />
+        </label>
+        <label className={labelCls}>
+          <span className={labelTextCls}>Sort order</span>
+          <input
+            type="number"
+            step="1"
+            className={inputCls}
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            placeholder="0"
+          />
+        </label>
+      </div>
+      <label className={labelCls}>
+        <span className={labelTextCls}>Image URL</span>
+        <div className="flex items-stretch gap-2">
+          <input
+            className={inputCls}
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://…"
+          />
+          {imageUrl && /^https?:\/\//i.test(imageUrl) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt=""
+              className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+            />
+          )}
+        </div>
+        <span className="block text-[12px] text-black/55 mt-1">
+          Optional — paste a public image URL.
+        </span>
+      </label>
+
+      <div className="flex items-center justify-between gap-3 pt-1">
+        {toast ? <Toast kind={toast.kind}>{toast.msg}</Toast> : <span />}
+        <div className="flex items-center gap-2">
+          {isNew ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="rounded-full border border-gray-300 bg-white px-4 py-2 text-[13px] font-extrabold text-black/80 min-h-[44px] disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              className="rounded-full border border-gray-300 bg-white px-4 py-2 text-[13px] font-extrabold text-black/80 min-h-[44px] disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : isNew ? 'Add offer' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </form>
+  )
+}
+
+function OfferThumb({ url }: { url: string | null }) {
+  if (url && /^https?:\/\//i.test(url)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url}
+        alt=""
+        className="w-14 h-14 rounded-lg object-cover border border-gray-200 shrink-0 bg-gray-100"
+        onError={(e) => {
+          // Swap to placeholder on broken URL so the row layout doesn't shift.
+          const img = e.currentTarget as HTMLImageElement
+          img.style.visibility = 'hidden'
+        }}
+      />
+    )
+  }
+  return (
+    <div
+      aria-hidden
+      className="w-14 h-14 rounded-lg border border-gray-200 shrink-0 bg-gradient-to-br from-yellow-100 to-yellow-200 flex items-center justify-center"
+    >
+      <span className="text-[10px] font-extrabold uppercase tracking-wider text-yellow-800/70">
+        Item
+      </span>
+    </div>
+  )
+}
+
+// ============================================================================
+// Contact button toggle — single switch controlling places.contact_enabled.
+// ----------------------------------------------------------------------------
+// When OFF the public profile hides the WhatsApp CTA (and falls back to the
+// "Open in Maps" sticky CTA). The transport "Get me there" buttons stay
+// visible regardless — transport is independent of venue contact.
+// ============================================================================
+function ContactToggleSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void }) {
+  const initial = row.contact_enabled !== false // default true when null
+  const [enabled, setEnabled] = useState(initial)
+  const [saving,  setSaving]  = useState(false)
+  const [toast,   setToast]   = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+
+  useEffect(() => { setEnabled(row.contact_enabled !== false) }, [row.id, row.contact_enabled])
+
+  async function flip(next: boolean) {
+    setToast(null)
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setToast({ kind: 'err', msg: 'Supabase not configured.' }); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setToast({ kind: 'err', msg: 'Not signed in.' }); return }
+    // Optimistic — the switch flips instantly; on error we revert.
+    setEnabled(next)
+    setSaving(true)
+    const { error } = await supabase
+      .from('places')
+      .update({ contact_enabled: next })
+      .eq('id', row.id)
+      .eq('owner_user_id', user.id)
+    setSaving(false)
+    if (error) {
+      setEnabled(!next)
+      setToast({ kind: 'err', msg: error.message })
+      return
+    }
+    setToast({ kind: 'ok', msg: 'Saved.' })
+    setTimeout(() => setToast(null), 2200)
+    onSaved()
+  }
+
+  return (
+    <SectionCard title="Contact button">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[14px] font-extrabold text-black leading-snug">
+            Show WhatsApp contact on public profile
+          </div>
+          <p className="text-[13px] text-black/65 leading-relaxed mt-1">
+            Turn off if this place has no WhatsApp number. The transport
+            &ldquo;Get me there&rdquo; button stays visible regardless.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label="Show WhatsApp contact on public profile"
+          onClick={() => flip(!enabled)}
+          disabled={saving}
+          className={`shrink-0 relative inline-flex items-center rounded-full transition-colors disabled:opacity-60 ${
+            enabled ? 'bg-yellow-400' : 'bg-gray-300'
+          }`}
+          style={{ width: 56, height: 32 }}
+        >
+          <span
+            aria-hidden
+            className="inline-block bg-white rounded-full shadow transition-transform"
+            style={{
+              width: 24,
+              height: 24,
+              transform: `translateX(${enabled ? 28 : 4}px)`,
+            }}
+          />
+        </button>
+      </div>
+      {toast && (
+        <div className="pt-1">
+          <Toast kind={toast.kind}>{toast.msg}</Toast>
+        </div>
+      )}
     </SectionCard>
   )
 }
