@@ -1,9 +1,10 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Star, BadgeCheck, Award, MapPin, Bike, Car as CarIcon,
   Share2, Link2, X, ChevronLeft, MessageCircle,
+  ShoppingBag, Minus, Plus, Trash2,
 } from 'lucide-react'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
@@ -18,6 +19,7 @@ import VisitUsPanel, {
 } from '@/components/profile/VisitUsPanel'
 import { CATEGORIES } from '@/lib/places/categories'
 import type { PlaceCategory } from '@/lib/places/types'
+import { usePlaceCart, type PlaceCartItem } from '@/components/profile/usePlaceCart'
 
 // =============================================================================
 // PlaceProfileShell — 1:1 visual + functional mirror of
@@ -155,6 +157,16 @@ export default function PlaceProfileShell({
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
   // Selected offer card — opens the View Details popup when set.
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  // Cart state — per-place localStorage cart for the WhatsApp handoff.
+  const cart = usePlaceCart(place.id)
+  const [cartOpen, setCartOpen] = useState(false)
+  // Lightweight toast — fires on "Add to cart" success and auto-dismisses.
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  useEffect(() => {
+    if (!toastMsg) return
+    const t = setTimeout(() => setToastMsg(null), 1800)
+    return () => clearTimeout(t)
+  }, [toastMsg])
 
   const photos    = place.imageUrls
   const heroSrc   = photos[0] || DEFAULT_PLACE_HERO
@@ -228,16 +240,46 @@ export default function PlaceProfileShell({
     <Shell>
       {/* HERO — 16/9 cover with optional sparkle overlay + share button. */}
       <div className="relative pb-2">
-        {/* Top-right share button — same yellow chip as beautician's themed pill. */}
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          aria-label="Share place"
-          className="absolute top-3 right-3 z-30 w-10 h-10 rounded-full flex items-center justify-center text-black shadow-md active:scale-[0.96] transition"
-          style={{ background: theme }}
-        >
-          <Share2 className="w-4 h-4" strokeWidth={2.5} />
-        </button>
+        {/* Top-right floating row — share + cart icons. Always rendered
+            (regardless of cart count) so the cart entry point is
+            visible the moment a customer adds anything. White-glass
+            cart pill matches the hero share chip visually. */}
+        <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            aria-label="Share place"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-black shadow-md active:scale-[0.96] transition"
+            style={{ background: theme }}
+          >
+            <Share2 className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            aria-label={cart.totalQty > 0
+              ? `Open cart (${cart.totalQty} item${cart.totalQty === 1 ? '' : 's'})`
+              : 'Open cart'}
+            className="relative w-10 h-10 rounded-full flex items-center justify-center text-black shadow-md active:scale-[0.96] transition"
+            style={{
+              background: 'rgba(255,255,255,0.92)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              minWidth: 44, minHeight: 44,
+            }}
+          >
+            <ShoppingBag className="w-4 h-4" strokeWidth={2.5} />
+            {cart.totalQty > 0 && (
+              <span
+                aria-hidden
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-black leading-none shadow"
+                style={{ background: BRAND_YELLOW, color: BRAND_NAVY, border: '1.5px solid #FFFFFF' }}
+              >
+                {cart.totalQty > 99 ? '99+' : cart.totalQty}
+              </span>
+            )}
+          </button>
+        </div>
 
         <div
           className="relative w-full overflow-hidden bg-black"
@@ -735,21 +777,130 @@ export default function PlaceProfileShell({
       {/* Offer "View Details" popup — full image + description + price.
           Reuses the beautician PortfolioDetailPopup; contact CTA is
           enabled only when contactEnabled && whatsappE164 so the popup
-          mirrors the privacy posture of the sticky CTA. */}
-      {detailPhoto && (
-        <PortfolioDetailPopup
-          photo={detailPhoto}
-          themeColor={BRAND_NAVY}
-          canContact={showContact}
-          onClose={() => setDetailPhoto(null)}
-          onContact={() => {
-            if (waHref) window.open(waHref, '_blank')
-            setDetailPhoto(null)
+          mirrors the privacy posture of the sticky CTA.
+
+          For priced offers we additionally pass onAddToCart so the
+          popup renders the quantity stepper + "Add to cart" CTA below
+          the price block. Resolving back from PortfolioPhoto → offer
+          uses name match (offers carry no id in PortfolioPhoto). */}
+      {detailPhoto && (() => {
+        const matchedOffer = offers.find((o) => o.name === detailPhoto.name) ?? null
+        const canAddToCart = Boolean(
+          matchedOffer && typeof matchedOffer.price_idr === 'number' && matchedOffer.price_idr > 0,
+        )
+        const existingLine = matchedOffer
+          ? cart.items.find((it) => it.offer_id === matchedOffer.id) ?? null
+          : null
+        return (
+          <PortfolioDetailPopup
+            photo={detailPhoto}
+            themeColor={BRAND_NAVY}
+            canContact={showContact}
+            onClose={() => setDetailPhoto(null)}
+            onContact={() => {
+              if (waHref) window.open(waHref, '_blank')
+              setDetailPhoto(null)
+            }}
+            onAddToCart={canAddToCart && matchedOffer
+              ? (qty) => {
+                  cart.add(
+                    {
+                      offer_id:  matchedOffer.id,
+                      name:      matchedOffer.name,
+                      price_idr: matchedOffer.price_idr as number,
+                      image_url: matchedOffer.image_url,
+                    },
+                    qty,
+                  )
+                  setDetailPhoto(null)
+                  setToastMsg(`Added ${qty} × ${matchedOffer.name} to cart`)
+                }
+              : undefined}
+            cartQty={existingLine?.qty}
+          />
+        )
+      })()}
+
+      {/* CART SHEET — bottom-sheet style modal listing every line in
+          the cart. Total is a simple sum of offer.price_idr × qty —
+          IndoCity never adds delivery, service, or platform fees. The
+          primary CTA builds an Indonesian WhatsApp message and hands
+          off to the venue's WhatsApp; we never see the conversation. */}
+      {cartOpen && (
+        <PlaceCartSheet
+          placeName={place.name}
+          whatsappE164={place.whatsappE164}
+          contactEnabled={contactEnabled}
+          items={cart.items}
+          totalIdr={cart.totalIdr}
+          totalQty={cart.totalQty}
+          theme={theme}
+          onSetQty={cart.setQty}
+          onRemove={cart.remove}
+          onClear={() => { cart.clear() }}
+          onClose={() => setCartOpen(false)}
+          onSend={() => {
+            // Build the order body. Each line: "• Name ×qty (Rp price) — Rp lineTotal"
+            // The trailing "Alamat saya" / "Catatan" lines are blank so
+            // the customer fills them in inside WhatsApp itself — no
+            // address auto-detection per spec.
+            const linesArr = cart.items.map((it) => {
+              const unit  = formatRpExact(it.price_idr)
+              const line  = formatRpExact(it.price_idr * it.qty)
+              return `• ${it.name}  ×${it.qty}  (${unit}) — ${line}`
+            })
+            const body = [
+              `Halo! Saya pesan dari IndoCity · ${place.name}`,
+              '',
+              ...linesArr,
+              '',
+              `Total: ${formatRpExact(cart.totalIdr)}`,
+              'Alamat saya: ____________',
+              'Catatan: ____________',
+            ].join('\n')
+            const digits = (place.whatsappE164 || '').replace(/[^\d]/g, '')
+            if (!digits) return
+            const url = `https://wa.me/${digits}?text=${encodeURIComponent(body)}`
+            window.open(url, '_blank', 'noopener,noreferrer')
+            // Keep the cart populated so the customer can re-send if
+            // WhatsApp eats the prefill on some Android builds. They
+            // can hit Clear cart manually when they're done.
+            setCartOpen(false)
           }}
         />
       )}
+
+      {/* Toast — confirms "Added to cart". Auto-dismisses after ~1.8s
+          via the useEffect on toastMsg. Stays out of the way of the
+          fixed bottom accent bar by sitting just above it. */}
+      {toastMsg && (
+        <div
+          className="fixed left-1/2 z-50 px-4 py-2.5 rounded-full shadow-lg text-[13px] font-extrabold pointer-events-none"
+          style={{
+            bottom: 28,
+            transform: 'translateX(-50%)',
+            background: BRAND_NAVY,
+            color: '#FFFFFF',
+            maxWidth: '90vw',
+          }}
+          role="status"
+        >
+          {toastMsg}
+        </div>
+      )}
     </Shell>
   )
+}
+
+// =============================================================================
+// Helpers — exact-rupiah formatter used by the WhatsApp message body and
+// the cart sheet total. We DON'T re-use the abbreviated `Start from` label
+// here because the customer needs to see the precise amount they're
+// agreeing to pay (Rp 102,000 not "Rp 102k").
+// =============================================================================
+function formatRpExact(amount: number): string {
+  if (!Number.isFinite(amount) || amount <= 0) return 'Rp 0'
+  return `Rp ${Math.round(amount).toLocaleString('id-ID')}`
 }
 
 // =============================================================================
@@ -806,6 +957,211 @@ function PlaceReviewsPanel({
         directly with the venue when you visit.
       </p>
     </section>
+  )
+}
+
+// =============================================================================
+// PlaceCartSheet — bottom-anchored review + WhatsApp handoff sheet.
+// Empty state, line items with steppers + remove, total, send + clear.
+//
+// The "Send via WhatsApp" CTA is disabled when the venue has opted out
+// of contact (contactEnabled=false) or has no whatsapp_e164 — the
+// tooltip explains why, no silent failure.
+// =============================================================================
+function PlaceCartSheet({
+  placeName, whatsappE164, contactEnabled, items, totalIdr, totalQty,
+  theme, onSetQty, onRemove, onClear, onClose, onSend,
+}: {
+  placeName:       string
+  whatsappE164:    string | null
+  contactEnabled:  boolean
+  items:           PlaceCartItem[]
+  totalIdr:        number
+  totalQty:        number
+  theme:           string
+  onSetQty:        (offer_id: string, qty: number) => void
+  onRemove:        (offer_id: string) => void
+  onClear:         () => void
+  onClose:         () => void
+  onSend:          () => void
+}) {
+  const empty = items.length === 0
+  const sendDisabled = empty || !contactEnabled || !whatsappE164
+  const sendDisabledReason = !contactEnabled || !whatsappE164
+    ? "This venue doesn't accept WhatsApp orders."
+    : empty
+      ? 'Add an item to send an order.'
+      : ''
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.55)' }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Your order"
+    >
+      <div
+        className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl relative flex flex-col max-h-[90dvh]"
+        style={{ borderTop: `4px solid ${theme}` }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-5 pt-4 pb-2 flex items-center justify-between gap-3 shrink-0">
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-black text-black truncate">
+              Your order · <span className="font-extrabold">{placeName}</span>
+            </h3>
+            <div className="text-[11px] text-gray-500 mt-0.5">
+              {totalQty > 0
+                ? `${totalQty} item${totalQty === 1 ? '' : 's'}`
+                : 'No items yet'}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close cart"
+            className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0"
+            style={{ minWidth: 44, minHeight: 44 }}
+          >
+            <X className="w-4 h-4 text-gray-600" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {/* Body — scrollable line items or empty state. */}
+        <div className="px-5 py-2 overflow-y-auto flex-1">
+          {empty ? (
+            <div
+              className="text-center py-10 px-4 rounded-xl border border-dashed border-gray-300 bg-gray-50"
+            >
+              <ShoppingBag className="w-7 h-7 mx-auto text-gray-400 mb-2" strokeWidth={2} />
+              <div className="text-[13px] font-extrabold text-gray-700">
+                Your cart is empty.
+              </div>
+              <div className="text-[12px] text-gray-500 mt-1">
+                Tap a menu item to add.
+              </div>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {items.map((it) => (
+                <li key={it.offer_id} className="py-3 flex items-start gap-3">
+                  {it.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={it.image_url}
+                      alt={it.name}
+                      className="w-14 h-14 rounded-lg object-cover bg-gray-100 shrink-0 border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
+                      <ShoppingBag className="w-5 h-5 text-gray-400" strokeWidth={2} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-extrabold text-black leading-tight line-clamp-2">
+                      {it.name}
+                    </div>
+                    <div className="text-[12px] text-gray-500 mt-0.5">
+                      {formatRpExact(it.price_idr)} each
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onSetQty(it.offer_id, it.qty - 1)}
+                          aria-label={`Decrease quantity of ${it.name}`}
+                          className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-black active:scale-[0.95] transition"
+                          style={{ minWidth: 44, minHeight: 44 }}
+                        >
+                          <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        </button>
+                        <span
+                          className="text-[14px] font-black text-black tabular-nums"
+                          style={{ minWidth: 22, textAlign: 'center' }}
+                          aria-live="polite"
+                        >
+                          {it.qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onSetQty(it.offer_id, Math.min(99, it.qty + 1))}
+                          aria-label={`Increase quantity of ${it.name}`}
+                          disabled={it.qty >= 99}
+                          className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-black active:scale-[0.95] transition disabled:opacity-40 disabled:active:scale-100"
+                          style={{ minWidth: 44, minHeight: 44 }}
+                        >
+                          <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        </button>
+                      </div>
+                      <div className="text-[13px] font-black text-black tabular-nums">
+                        {formatRpExact(it.price_idr * it.qty)}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRemove(it.offer_id)}
+                    aria-label={`Remove ${it.name}`}
+                    className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0 text-gray-500"
+                    style={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Footer — total + actions + compliance line. */}
+        <div className="px-5 pt-3 pb-5 border-t border-gray-200 shrink-0 space-y-3">
+          {!empty && (
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="text-[13px] font-extrabold uppercase tracking-wider text-gray-500">
+                Total
+              </div>
+              <div className="text-[20px] font-black text-black tabular-nums">
+                {formatRpExact(totalIdr)}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onClear}
+              disabled={empty}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl border border-gray-300 bg-white text-black text-[13px] font-extrabold active:scale-[0.98] transition disabled:opacity-40 disabled:active:scale-100"
+              style={{ minHeight: 44 }}
+            >
+              Clear cart
+            </button>
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={sendDisabled}
+              title={sendDisabled ? sendDisabledReason : undefined}
+              aria-disabled={sendDisabled}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-[13px] font-extrabold shadow-md active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
+              style={{
+                background: BRAND_YELLOW,
+                color: BRAND_NAVY,
+                minHeight: 44,
+              }}
+            >
+              <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+              Send via WhatsApp
+            </button>
+          </div>
+
+          <p className="text-[11px] text-gray-500 leading-snug text-center">
+            You pay the venue directly · agree delivery with them.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 

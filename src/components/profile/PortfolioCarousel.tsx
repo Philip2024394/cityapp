@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, X } from 'lucide-react'
+import { MessageCircle, Minus, Plus, ShoppingBag, X } from 'lucide-react'
 
 // Auto-drifting horizontal portfolio carousel + the lightbox popup that
 // opens when a card's View Details is tapped. Extracted from
@@ -206,18 +206,36 @@ function PortfolioCard({
 
 export function PortfolioDetailPopup({
   photo, themeColor, canContact, onClose, onContact,
+  onAddToCart, cartQty,
 }: {
   photo:      PortfolioPhoto
   themeColor: string
   canContact: boolean
   onClose:    () => void
   onContact:  () => void
+  /** Optional. When supplied AND photo has a positive price, the popup
+   *  renders a quantity stepper + "Add to cart" CTA below the price.
+   *  Beautician + handyman call sites omit this prop entirely and the
+   *  cart UI is invisible — no regression there. */
+  onAddToCart?: (qty: number) => void
+  /** Initial quantity when opening the popup. Useful for items already
+   *  in the cart (parent can pass the current line qty so editing feels
+   *  continuous). Defaults to 1 otherwise. */
+  cartQty?: number
 }) {
   type View = 'main' | 'before' | 'after'
   const [view, setView] = useState<View>('main')
+  // Local stepper qty — only matters when onAddToCart is supplied.
+  // Clamped to 1..99 so a user can't ship a 0-quantity order or fat-
+  // finger an absurd number into WhatsApp.
+  const initialQty = typeof cartQty === 'number' && cartQty > 0 ? Math.floor(cartQty) : 1
+  const [qty, setQty] = useState<number>(initialQty)
   const hasBefore = Boolean(photo.before_image_url)
   const hasAfter  = Boolean(photo.after_image_url)
   const showThumbs = hasBefore || hasAfter
+  const priceIdr  = typeof photo.price_idr === 'number' && photo.price_idr > 0 ? photo.price_idr : null
+  const showCartUi = Boolean(onAddToCart) && priceIdr != null
+  const totalIdr   = priceIdr != null ? priceIdr * qty : 0
 
   const mainSrc = view === 'before' ? photo.before_image_url
                 : view === 'after'  ? photo.after_image_url
@@ -313,6 +331,58 @@ export function PortfolioDetailPopup({
               <div className="text-[11px] font-medium text-gray-500 mt-1">Start from</div>
             </div>
           )}
+
+          {/* Cart stepper + Add to cart — restaurant template only.
+              Hidden entirely when the caller didn't pass onAddToCart
+              (beautician / handyman keep their original layout) OR
+              when the offer has no price (so we never wire up a
+              0-rupiah line item). */}
+          {showCartUi && priceIdr != null && onAddToCart && (
+            <>
+              <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
+                <span className="text-[13px] font-extrabold text-black">Quantity</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    aria-label="Decrease quantity"
+                    disabled={qty <= 1}
+                    className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-black active:scale-[0.95] transition disabled:opacity-40 disabled:active:scale-100"
+                    style={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <Minus className="w-4 h-4" strokeWidth={2.5} />
+                  </button>
+                  <span
+                    className="text-[15px] font-black text-black tabular-nums"
+                    style={{ minWidth: 22, textAlign: 'center' }}
+                    aria-live="polite"
+                  >
+                    {qty}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => Math.min(99, q + 1))}
+                    aria-label="Increase quantity"
+                    disabled={qty >= 99}
+                    className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-black active:scale-[0.95] transition disabled:opacity-40 disabled:active:scale-100"
+                    style={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <Plus className="w-4 h-4" strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onAddToCart(qty)}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-full font-extrabold text-[13px] shadow-md active:scale-[0.98] transition"
+                style={{ background: '#FACC15', color: '#0F172A', minHeight: 44 }}
+              >
+                <ShoppingBag className="w-4 h-4" strokeWidth={2.5} />
+                Add {qty} to cart · {priceLabel(totalIdr)}
+              </button>
+            </>
+          )}
+
           {canContact && (
             <button
               type="button"
