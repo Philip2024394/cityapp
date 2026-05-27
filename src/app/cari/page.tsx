@@ -571,33 +571,10 @@ function PlanTripPageInner() {
                 </div>
               )}
 
-              {/* RECENT PLACES — surfaces 3 most recent ONLY when neither
-                  field is fully set, so the user can one-tap fill. */}
-              {!pickup && !dropoff && recents.length > 0 && (
-                <div className="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar -mx-0.5 px-0.5">
-                  {recents.slice(0, 3).map((r) => (
-                    <button
-                      key={r.usedAt}
-                      type="button"
-                      onClick={() => {
-                        setDropoff({ lat: r.lat, lng: r.lng, accuracyM: 0 })
-                        setDropoffLabel(r.label)
-                        addRecent(r)
-                        haptic.tap()
-                      }}
-                      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[12px] font-extrabold text-bg active:scale-95 transition truncate max-w-[150px]"
-                      style={{
-                        background: '#FEF3C7',
-                        border: '1px solid #FACC15',
-                        minHeight: 28,
-                      }}
-                    >
-                      <MapPin className="w-3 h-3 shrink-0" strokeWidth={2.5} />
-                      <span className="truncate">{r.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Recent-places chips dropped per founder direction. The
+                  recent-places store is still maintained via addRecent()
+                  on field selects, ready to power a saved-places picker
+                  (compass / star icon taps) when that flow is wired. */}
             </div>
 
             {/* ROW 3 — Vehicle toggle (Car / Bike). Drives the inline
@@ -781,18 +758,21 @@ function DriverCard({
   else if (color) subtitle = color
   else subtitle = driver.area || driver.city || ''
 
-  // Distance hint — straight-line km from customer's pickup to the driver's
-  // last-known location. Surfaced only when pickup is set. Floor at 1km
-  // so a driver across the street doesn't read "0km away".
-  // Founder direction: surface DISTANCE in yellow instead of the ETA
-  // minutes — Indonesian customers compare drivers on proximity, and
-  // a km figure is more honest than a derived time estimate.
+  // Two proximity lines under the price (founder spec):
+  //   • kmLabel  — straight-line km in YELLOW (visual emphasis)
+  //   • etaLabel — derived minutes in GRAY (secondary detail)
+  // Both pulled from the same haversine measurement to the driver's
+  // last-known location. Minutes = km / 25 km/h, floored at 2 min so
+  // a nearby driver doesn't read "0 min away".
   let kmLabel: string | null = null
+  let etaLabel: string | null = null
   if (pickup && driver.lat && driver.lng) {
     const km = haversineKm({ lat: pickup.lat, lng: pickup.lng }, { lat: driver.lat, lng: driver.lng })
     if (Number.isFinite(km)) {
-      const rounded = km < 1 ? 1 : Math.round(km)
-      kmLabel = `min ${rounded} km away`
+      const roundedKm = km < 1 ? 1 : Math.round(km)
+      kmLabel = `min ${roundedKm} km away`
+      const minutes = Math.max(2, Math.round((km / 25) * 60))
+      etaLabel = `${minutes} min away`
     }
   }
 
@@ -853,7 +833,7 @@ function DriverCard({
         )}
       </div>
 
-      {/* Right column — price + distance (yellow per founder spec) */}
+      {/* Right column — price + distance (yellow) + ETA (grey) */}
       <div className="shrink-0 text-right">
         {priceLabel && (
           <div className="text-[13px] font-black text-bg tracking-tight">
@@ -866,6 +846,11 @@ function DriverCard({
             style={{ color: '#F59E0B' }}
           >
             {kmLabel}
+          </div>
+        )}
+        {etaLabel && (
+          <div className="text-[11px] font-bold text-[#52525B] mt-0.5">
+            {etaLabel}
           </div>
         )}
       </div>
