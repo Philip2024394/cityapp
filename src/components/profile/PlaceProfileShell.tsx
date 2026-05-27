@@ -1151,8 +1151,8 @@ function PlaceCartSheet({
               type="button"
               onClick={onClear}
               disabled={empty}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl border border-gray-300 bg-white text-black text-[13px] font-extrabold active:scale-[0.98] transition disabled:opacity-40 disabled:active:scale-100"
-              style={{ minHeight: 44 }}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-white text-[13px] font-extrabold active:scale-[0.98] transition disabled:opacity-40 disabled:active:scale-100"
+              style={{ minHeight: 44, background: '#B91C1C' }}
             >
               Clear cart
             </button>
