@@ -24,6 +24,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // ============================================================================
 
 const PAID_VEHICLE_TYPES = new Set(['car', 'truck', 'premium_car', 'minibus'])
+const PAID_LISTING_TYPES = new Set([...PAID_VEHICLE_TYPES, 'place'])
 const MAX_BYTES = 5 * 1024 * 1024 // 5MB cap — payment screenshots are tiny
 const PERIOD_DAYS = 30
 
@@ -46,13 +47,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
   }
   const file = form.get('screenshot')
-  const vehicleType = String(form.get('vehicleType') ?? '').trim()
+  // The form field is still called `vehicleType` for backwards compat
+  // with the car/bus/truck dashboards already in production. The value
+  // can now also be 'place' (per migration 0099) — treated as a generic
+  // listing_type discriminator under the same column name.
+  const listingType = String(form.get('vehicleType') ?? '').trim()
+  // Optional `placeId` — only required when listingType === 'place'.
+  // Lets owners with multiple places target a specific listing.
+  const placeIdParam = String(form.get('placeId') ?? '').trim()
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'Missing screenshot file' }, { status: 400 })
   }
-  if (!PAID_VEHICLE_TYPES.has(vehicleType)) {
+  if (!PAID_LISTING_TYPES.has(listingType)) {
     return NextResponse.json(
-      { error: `vehicleType must be one of: ${[...PAID_VEHICLE_TYPES].join(', ')}` },
+      { error: `listingType must be one of: ${[...PAID_LISTING_TYPES].join(', ')}` },
       { status: 400 },
     )
   }
@@ -73,33 +81,59 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
   }
 
-  // 4. Verify the user owns a drivers row with the matching vehicle_type
-  const { data: driverRow, error: driverErr } = await admin
-    .from('drivers')
-    .select('user_id, vehicle_type, paid_until')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  if (driverErr) {
-    return NextResponse.json({ error: driverErr.message }, { status: 500 })
-  }
-  if (!driverRow) {
-    return NextResponse.json(
-      { error: 'No driver listing found — sign up as a driver first' },
-      { status: 404 },
-    )
-  }
-  if (driverRow.vehicle_type !== vehicleType) {
-    return NextResponse.json(
-      {
-        error: `Your account is registered as ${driverRow.vehicle_type}, not ${vehicleType}`,
-      },
-      { status: 403 },
-    )
+  // 4. Verify the caller owns the listing they're paying for. Branch on
+  //    listing kind: vehicle types live in `drivers`, place lives in
+  //    `places` keyed on owner_user_id (+ optional ?placeId= when an
+  //    owner runs multiple venues).
+  let baselinePaidUntil: string | null = null
+  let placeRow: { id: string; paid_until: string | null } | null = null
+  if (listingType === 'place') {
+    let q = admin
+      .from('places')
+      .select('id, paid_until, owner_user_id')
+      .eq('owner_user_id', user.id)
+    if (placeIdParam) q = q.eq('id', placeIdParam)
+    const { data, error } = await q.order('created_at', { ascending: false }).limit(1).maybeSingle()
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    if (!data) {
+      return NextResponse.json(
+        { error: 'No place listing found for this account — submit one at /list-place/new first' },
+        { status: 404 },
+      )
+    }
+    placeRow = { id: data.id, paid_until: data.paid_until }
+    baselinePaidUntil = data.paid_until
+  } else {
+    const { data: driverRow, error: driverErr } = await admin
+      .from('drivers')
+      .select('user_id, vehicle_type, paid_until')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (driverErr) {
+      return NextResponse.json({ error: driverErr.message }, { status: 500 })
+    }
+    if (!driverRow) {
+      return NextResponse.json(
+        { error: 'No driver listing found — sign up as a driver first' },
+        { status: 404 },
+      )
+    }
+    if (driverRow.vehicle_type !== listingType) {
+      return NextResponse.json(
+        {
+          error: `Your account is registered as ${driverRow.vehicle_type}, not ${listingType}`,
+        },
+        { status: 403 },
+      )
+    }
+    baselinePaidUntil = driverRow.paid_until
   }
 
-  // 5. Upload to storage under {user_id}/{vehicle_type}/{timestamp}.{ext}
+  // 5. Upload to storage under {user_id}/{listing_type}/{timestamp}.{ext}
   const ext = pickExtension(file.name, file.type)
-  const objectPath = `${user.id}/${vehicleType}/${Date.now()}.${ext}`
+  const objectPath = `${user.id}/${listingType}/${Date.now()}.${ext}`
   const bytes = new Uint8Array(await file.arrayBuffer())
 
   const { error: uploadErr } = await admin.storage
@@ -115,11 +149,13 @@ export async function POST(req: Request) {
     )
   }
 
-  // 6. Compute new paid_until = greatest(current, today) + 30 days
+  // 6. Compute new paid_until = greatest(current, today) + 30 days.
+  //    Same window for both vehicle + place listings — keeps the admin
+  //    queue uniform and avoids surprises when an owner switches kinds.
   const today = new Date()
   const baselineMs = Math.max(
     today.getTime(),
-    driverRow.paid_until ? new Date(driverRow.paid_until).getTime() : 0,
+    baselinePaidUntil ? new Date(baselinePaidUntil).getTime() : 0,
   )
   const newPaidUntil = new Date(baselineMs + PERIOD_DAYS * 24 * 60 * 60 * 1000)
   const newPaidUntilStr = newPaidUntil.toISOString().slice(0, 10) // YYYY-MM-DD
@@ -130,7 +166,7 @@ export async function POST(req: Request) {
     .from('subscription_payments')
     .insert({
       user_id: user.id,
-      vehicle_type: vehicleType,
+      vehicle_type: listingType,
       amount_idr: 38000,
       screenshot_url: objectPath, // stored as object path; signed URL on read
       period_start: periodStartStr,
@@ -145,11 +181,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 })
   }
 
-  // 8. Optimistic activation — bump drivers.paid_until
-  const { error: updateErr } = await admin
-    .from('drivers')
-    .update({ paid_until: newPaidUntilStr })
-    .eq('user_id', user.id)
+  // 8. Optimistic activation — bump the listing's paid_until.
+  //    Vehicle: drivers.paid_until (matched by owner user_id).
+  //    Place:   places.paid_until (matched by the place_id resolved above).
+  let updateErr: { message: string } | null = null
+  if (listingType === 'place' && placeRow) {
+    const { error } = await admin
+      .from('places')
+      .update({ paid_until: newPaidUntilStr })
+      .eq('id', placeRow.id)
+    updateErr = error
+  } else {
+    const { error } = await admin
+      .from('drivers')
+      .update({ paid_until: newPaidUntilStr })
+      .eq('user_id', user.id)
+    updateErr = error
+  }
   if (updateErr) {
     // Payment row is recorded; admin can re-fire activation manually
     return NextResponse.json(

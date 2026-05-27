@@ -18,6 +18,7 @@ import { assertAdminFromCookies, writeAudit } from '@/lib/admin/guard'
 type PaymentRow = {
   id: string
   user_id: string
+  vehicle_type: string
   status: 'pending' | 'approved' | 'rejected'
   admin_notes: string | null
   reviewed_at: string | null
@@ -26,6 +27,7 @@ type PaymentRow = {
 }
 
 type DriverRow = { user_id: string; paid_until: string | null }
+type PlaceRow = { id: string; owner_user_id: string; paid_until: string | null }
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const me = await assertAdminFromCookies()
@@ -52,23 +54,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     )
   }
 
-  // 1. Load the target payment
+  // 1. Load the target payment (vehicle_type tells us which listing
+  //    bucket to revert).
   const { data: beforeData, error: beforeErr } = await admin
     .from('subscription_payments')
-    .select('id, user_id, status, admin_notes, reviewed_at, reviewed_by, period_end')
+    .select('id, user_id, vehicle_type, status, admin_notes, reviewed_at, reviewed_by, period_end')
     .eq('id', id)
     .maybeSingle()
   if (beforeErr) return NextResponse.json({ error: beforeErr.message }, { status: 500 })
   const before = beforeData as PaymentRow | null
   if (!before) return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
 
-  // 2. Find the LATEST other approved payment for this user (to determine
-  //    what paid_until should revert to). Exclude the row we're rejecting
-  //    in case it was previously approved.
+  // 2. Find the LATEST other approved payment of the SAME listing kind
+  //    (so a rejected car payment doesn't revert paid_until to a place
+  //    payment's period_end). Exclude the row we're rejecting in case
+  //    it was previously approved.
   const { data: prevApprovedData } = await admin
     .from('subscription_payments')
     .select('id, period_end, reviewed_at')
     .eq('user_id', before.user_id)
+    .eq('vehicle_type', before.vehicle_type)
     .eq('status', 'approved')
     .neq('id', id)
     .order('period_end', { ascending: false })
@@ -76,13 +81,28 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const prevApproved = (prevApprovedData as { id: string; period_end: string }[] | null) ?? []
   const revertedPaidUntil: string | null = prevApproved[0]?.period_end ?? null
 
-  // 3. Load driver before-state for the audit trail
-  const { data: driverBeforeData } = await admin
-    .from('drivers')
-    .select('user_id, paid_until')
-    .eq('user_id', before.user_id)
-    .maybeSingle()
-  const driverBefore = (driverBeforeData as DriverRow | null) ?? null
+  const isPlace = before.vehicle_type === 'place'
+
+  // 3. Load before-state for the audit trail (different table by kind)
+  let driverBefore: DriverRow | null = null
+  let placeBefore: PlaceRow | null = null
+  if (isPlace) {
+    const { data } = await admin
+      .from('places')
+      .select('id, owner_user_id, paid_until')
+      .eq('owner_user_id', before.user_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    placeBefore = (data as PlaceRow | null) ?? null
+  } else {
+    const { data } = await admin
+      .from('drivers')
+      .select('user_id, paid_until')
+      .eq('user_id', before.user_id)
+      .maybeSingle()
+    driverBefore = (data as DriverRow | null) ?? null
+  }
 
   // 4. Update payment row
   const paymentUpdate = {
@@ -97,22 +117,33 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     .eq('id', id)
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 
-  // 5. Revert drivers.paid_until. Done unconditionally — even if the
-  //    current paid_until matches the previous approval, writing it is
-  //    a safe no-op. If the driver row doesn't exist (deleted account?)
-  //    we silently skip.
-  if (driverBefore) {
+  // 5. Revert the listing's paid_until. Branches on listing kind.
+  //    Silently skip when the corresponding row no longer exists
+  //    (deleted account / listing).
+  if (isPlace && placeBefore) {
+    const { error: placeErr } = await admin
+      .from('places')
+      .update({ paid_until: revertedPaidUntil })
+      .eq('id', placeBefore.id)
+    if (placeErr) {
+      return NextResponse.json(
+        {
+          ok: true,
+          warning: `Payment rejected but failed to revert places.paid_until: ${placeErr.message}`,
+        },
+        { status: 207 },
+      )
+    }
+  } else if (!isPlace && driverBefore) {
     const { error: driverErr } = await admin
       .from('drivers')
       .update({ paid_until: revertedPaidUntil })
       .eq('user_id', before.user_id)
     if (driverErr) {
-      // Payment is already marked rejected; surface the partial failure so
-      // admin can re-fire from /admin/drivers if needed.
       return NextResponse.json(
         {
           ok: true,
-          warning: `Payment rejected but failed to revert driver.paid_until: ${driverErr.message}`,
+          warning: `Payment rejected but failed to revert drivers.paid_until: ${driverErr.message}`,
         },
         { status: 207 },
       )
@@ -129,13 +160,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       admin_notes: before.admin_notes,
       reviewed_at: before.reviewed_at,
       reviewed_by: before.reviewed_by,
-      driver_paid_until: driverBefore?.paid_until ?? null,
+      listing_kind: isPlace ? 'place' : 'vehicle',
+      listing_paid_until: isPlace ? placeBefore?.paid_until ?? null : driverBefore?.paid_until ?? null,
     },
     after: {
       ...paymentUpdate,
-      driver_paid_until: revertedPaidUntil,
+      listing_kind: isPlace ? 'place' : 'vehicle',
+      listing_paid_until: revertedPaidUntil,
     },
   })
 
-  return NextResponse.json({ ok: true, revertedPaidUntil })
+  return NextResponse.json({ ok: true, revertedPaidUntil, listingKind: isPlace ? 'place' : 'vehicle' })
 }
