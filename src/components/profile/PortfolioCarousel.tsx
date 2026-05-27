@@ -383,7 +383,7 @@ export function PortfolioDetailPopup({
             </>
           )}
 
-          {canContact && (
+          {canContact && !showCartUi && (
             <button
               type="button"
               onClick={onContact}
