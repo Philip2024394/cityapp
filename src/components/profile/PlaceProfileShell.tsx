@@ -794,8 +794,15 @@ export default function PlaceProfileShell({
         return (
           <PortfolioDetailPopup
             photo={detailPhoto}
-            themeColor={BRAND_NAVY}
-            canContact={showContact}
+            // Brand-yellow top edge — matches the profile theme so the
+            // popup reads as part of the same surface (founder ask:
+            // "add theme edge color to the pop up container").
+            themeColor={BRAND_YELLOW}
+            // Contact button suppressed on places per founder ask —
+            // the cart "Add to cart" action is the only CTA inside the
+            // menu-item popup. Beautician + handyman call sites still
+            // pass canContact={true} and see the Contact button.
+            canContact={false}
             onClose={() => setDetailPhoto(null)}
             onContact={() => {
               if (waHref) window.open(waHref, '_blank')
