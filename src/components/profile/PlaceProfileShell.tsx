@@ -344,15 +344,24 @@ export default function PlaceProfileShell({
             themeColor={theme}
             onClose={() => setShowVisitUs(false)}
             noLocationCopy="Lokasi belum di-pin oleh venue."
-            bottomCta={
+            bottomCtas={
               (Number.isFinite(place.lat) && Number.isFinite(place.lng))
-                ? {
-                    label: 'Bike — Take me there',
-                    icon: Bike,
-                    note: `We'll use your location for pickup and ${place.name}'s for drop-off — fare shows on the next screen.`,
-                    onClick: () => { window.location.href = takeMeThereHref('bike') },
-                  }
-                : null
+                ? [
+                    {
+                      label: 'Bike',
+                      icon: Bike,
+                      variant: 'yellow',
+                      onClick: () => { window.location.href = takeMeThereHref('bike') },
+                      note: `We'll use your location for pickup and ${place.name}'s for drop-off — fare shows on the next screen.`,
+                    },
+                    {
+                      label: 'Car',
+                      icon: CarIcon,
+                      variant: 'navy',
+                      onClick: () => { window.location.href = takeMeThereHref('car') },
+                    },
+                  ]
+                : undefined
             }
           />
         ) : showReviews ? (
@@ -602,57 +611,31 @@ export default function PlaceProfileShell({
         </span>
       </Link>
 
-      {/* STICKY BOTTOM CTA — transport first (Bike + Car), optional
-          WhatsApp contact stacked above when contactEnabled && number. */}
-      <div
-        className="fixed left-0 right-0 z-30"
-        style={{ bottom: 6 /* leave room for the accent bar */ }}
-      >
-        <div className="mx-auto max-w-2xl px-3 pb-3">
-          {showContact && waHref && (
+      {/* STICKY BOTTOM CTA — optional WhatsApp contact only. The Bike +
+          Car transport buttons have moved INSIDE the Visit Us panel
+          (founder direction: transport CTAs sit under the map, where
+          the destination is the user's actual context). When
+          contact_enabled=false OR no whatsapp_e164, this row is empty
+          and the bottom accent bar sits flush with the viewport. */}
+      {showContact && waHref && (
+        <div
+          className="fixed left-0 right-0 z-30"
+          style={{ bottom: 6 /* leave room for the accent bar */ }}
+        >
+          <div className="mx-auto max-w-2xl px-3 pb-3">
             <a
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="mb-2 inline-flex items-center justify-center gap-2 w-full rounded-xl bg-white border border-gray-200 px-4 py-2.5 text-[13px] font-extrabold text-black shadow-md active:scale-[0.98] transition"
-              style={{ minHeight: 44 }}
+              className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-white border border-gray-200 px-4 py-3 text-[13px] font-extrabold text-black shadow-md active:scale-[0.98] transition"
+              style={{ minHeight: 48 }}
             >
               <MessageCircle className="w-4 h-4 text-green-600" strokeWidth={2.5} />
               Contact venue on WhatsApp
             </a>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            <Link
-              href={takeMeThereHref('bike')}
-              aria-label={`Book bike ride to ${place.name}`}
-              className="inline-flex items-center justify-center gap-2 rounded-xl font-extrabold text-[14px] active:scale-[0.98] transition"
-              style={{
-                background: BRAND_YELLOW,
-                color: BRAND_NAVY,
-                minHeight: 52,
-                boxShadow: '0 6px 16px rgba(250,204,21,0.30)',
-              }}
-            >
-              <Bike className="w-5 h-5" strokeWidth={2.5} />
-              Bike — Take me there
-            </Link>
-            <Link
-              href={takeMeThereHref('car')}
-              aria-label={`Book car ride to ${place.name}`}
-              className="inline-flex items-center justify-center gap-2 rounded-xl font-extrabold text-[14px] active:scale-[0.98] transition"
-              style={{
-                background: BRAND_NAVY,
-                color: '#FFFFFF',
-                minHeight: 52,
-                boxShadow: '0 6px 16px rgba(15,23,42,0.25)',
-              }}
-            >
-              <CarIcon className="w-5 h-5" strokeWidth={2.5} />
-              Car — Take me there
-            </Link>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Bottom accent bar — fixed to visible viewport edge, same as beautician. */}
       <div

@@ -21,7 +21,9 @@ export type VisitUsPanelProps = {
   busyDates:     string[]
   themeColor:    string
   onClose:       () => void
-  /** Optional bottom CTA below the map. */
+  /** Optional single bottom CTA below the map. Backwards-compatible
+   *  with the original beautician + handyman call sites. Use
+   *  `bottomCtas` (plural) for the new 2-button transport pattern. */
   bottomCta?: {
     label:    string
     icon?:    LucideIcon
@@ -29,6 +31,20 @@ export type VisitUsPanelProps = {
     /** Small text rendered under the button. */
     note?:    string
   } | null
+  /** Optional array of bottom CTAs. When supplied AND length >= 1, this
+   *  takes precedence over `bottomCta` and renders the buttons in a
+   *  grid (2 cols when 2 entries, 1 col otherwise). Used by /places
+   *  profile to surface the Bike + Car "Take me there" pair under the
+   *  map — the destination is right there in the panel context. */
+  bottomCtas?: Array<{
+    label:    string
+    icon?:    LucideIcon
+    onClick:  () => void
+    /** Small text rendered under the button. */
+    note?:    string
+    /** Optional visual variant; defaults to 'yellow'. */
+    variant?: 'yellow' | 'navy'
+  }>
   /** Copy override for the "no coordinates pinned" placeholder. */
   noLocationCopy?: string
 }
@@ -38,6 +54,7 @@ export default function VisitUsPanel({
   instagramUrl, tiktokUrl, facebookUrl,
   busyDates, themeColor, onClose,
   bottomCta = null,
+  bottomCtas,
   noLocationCopy = 'Lokasi belum di-pin oleh provider.',
 }: VisitUsPanelProps) {
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -140,7 +157,39 @@ export default function VisitUsPanel({
         </div>
       )}
 
-      {bottomCta && (
+      {/* Multi-CTA path (places use this for Bike + Car). Takes precedence
+          over the single-bottomCta path when supplied + non-empty. */}
+      {bottomCtas && bottomCtas.length > 0 ? (
+        <>
+          <div className={bottomCtas.length === 2 ? 'grid grid-cols-2 gap-2' : 'flex flex-col gap-2'}>
+            {bottomCtas.map((cta, i) => {
+              const Icon = cta.icon
+              const isNavy = cta.variant === 'navy'
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={cta.onClick}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-extrabold text-[13px] shadow-md active:scale-[0.98] transition"
+                  style={
+                    isNavy
+                      ? { background: '#0F172A', color: '#FFFFFF' }
+                      : { background: '#FACC15', color: '#0A0A0A' }
+                  }
+                >
+                  {Icon && <Icon className="w-4 h-4" strokeWidth={2.5} />}
+                  {cta.label}
+                </button>
+              )
+            })}
+          </div>
+          {bottomCtas.some(c => c.note) && (
+            <p className="text-[10px] text-gray-400 leading-snug text-center">
+              {bottomCtas.find(c => c.note)?.note}
+            </p>
+          )}
+        </>
+      ) : bottomCta && (
         <>
           <button
             type="button"
