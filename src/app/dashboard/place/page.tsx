@@ -63,6 +63,7 @@ type PlaceRow = {
   review_count: number | null
   created_at: string | null
   contact_enabled: boolean | null
+  free_delivery: boolean | null
 }
 
 // Row shape for place_offers — owner-managed menu/ticket/highlight items.
@@ -135,7 +136,7 @@ export default function PlaceOwnerDashboardPage() {
       .select(
         'id, slug, name, category, description, image_urls, city, address, lat, lng, ' +
         'whatsapp_e164, hours_json, status, paid_until, verified, owner_user_id, ' +
-        'tags, cuisine_types, rating, review_count, created_at, contact_enabled',
+        'tags, cuisine_types, rating, review_count, created_at, contact_enabled, free_delivery',
       )
       .eq('owner_user_id', user.id)
       .order('created_at', { ascending: false })
@@ -297,7 +298,8 @@ function Dashboard({
         <VisitInfoSection   row={row} onSaved={onReload} />
         <PhotosSection      row={row} onSaved={onReload} />
         <OffersSection      row={row} />
-        <ContactToggleSection row={row} onSaved={onReload} />
+        <ContactToggleSection      row={row} onSaved={onReload} />
+        <FreeDeliveryToggleSection row={row} onSaved={onReload} />
         <HoursSection       row={row} onSaved={onReload} />
       </div>
 
@@ -1338,6 +1340,93 @@ function ContactToggleSection({ row, onSaved }: { row: PlaceRow; onSaved: () => 
           role="switch"
           aria-checked={enabled}
           aria-label="Show WhatsApp contact on public profile"
+          onClick={() => flip(!enabled)}
+          disabled={saving}
+          className={`shrink-0 relative inline-flex items-center rounded-full transition-colors disabled:opacity-60 ${
+            enabled ? 'bg-yellow-400' : 'bg-gray-300'
+          }`}
+          style={{ width: 56, height: 32 }}
+        >
+          <span
+            aria-hidden
+            className="inline-block bg-white rounded-full shadow transition-transform"
+            style={{
+              width: 24,
+              height: 24,
+              transform: `translateX(${enabled ? 28 : 4}px)`,
+            }}
+          />
+        </button>
+      </div>
+      {toast && (
+        <div className="pt-1">
+          <Toast kind={toast.kind}>{toast.msg}</Toast>
+        </div>
+      )}
+    </SectionCard>
+  )
+}
+
+// ============================================================================
+// Free delivery toggle — single switch controlling places.free_delivery.
+// ----------------------------------------------------------------------------
+// When ON the customer's cart sheet shows a green "Free delivery by venue"
+// pill in place of the bike-rider estimate row. The venue arranges and
+// pays for the delivery themselves — IndoCity never books or pays for it.
+// Mirrors the ContactToggleSection optimistic-update / revert-on-error
+// pattern so the switch always reflects the current DB state.
+// ============================================================================
+function FreeDeliveryToggleSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void }) {
+  const initial = row.free_delivery === true // default false when null
+  const [enabled, setEnabled] = useState(initial)
+  const [saving,  setSaving]  = useState(false)
+  const [toast,   setToast]   = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+
+  useEffect(() => { setEnabled(row.free_delivery === true) }, [row.id, row.free_delivery])
+
+  async function flip(next: boolean) {
+    setToast(null)
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setToast({ kind: 'err', msg: 'Supabase not configured.' }); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setToast({ kind: 'err', msg: 'Not signed in.' }); return }
+    // Optimistic — the switch flips instantly; on error we revert.
+    setEnabled(next)
+    setSaving(true)
+    const { error } = await supabase
+      .from('places')
+      .update({ free_delivery: next })
+      .eq('id', row.id)
+      .eq('owner_user_id', user.id)
+    setSaving(false)
+    if (error) {
+      setEnabled(!next)
+      setToast({ kind: 'err', msg: error.message })
+      return
+    }
+    setToast({ kind: 'ok', msg: 'Saved.' })
+    setTimeout(() => setToast(null), 2200)
+    onSaved()
+  }
+
+  return (
+    <SectionCard title="Free delivery">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[14px] font-extrabold text-black leading-snug">
+            Offer free delivery for this venue
+          </div>
+          <p className="text-[13px] text-black/65 leading-relaxed mt-1">
+            When on, the customer&rsquo;s cart sheet shows &ldquo;Free delivery
+            by venue&rdquo; instead of the bike-rider estimate. You arrange
+            delivery yourself — IndoCity does not book or pay for it.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label="Offer free delivery for this venue"
           onClick={() => flip(!enabled)}
           disabled={saving}
           className={`shrink-0 relative inline-flex items-center rounded-full transition-colors disabled:opacity-60 ${

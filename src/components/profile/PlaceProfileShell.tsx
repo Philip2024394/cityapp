@@ -6,6 +6,8 @@ import {
   Share2, Link2, X, ChevronLeft, MessageCircle,
   ShoppingBag, Minus, Plus, Trash2,
 } from 'lucide-react'
+import { haversineKm } from '@/lib/geo/haversine'
+import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
   PortfolioDetailPopup,
@@ -97,7 +99,31 @@ export type PlaceProfileShellProps = {
    * Transport CTAs always render.
    */
   contactEnabled?: boolean
+  /**
+   * Owner-controlled flag (places.free_delivery). When true, the cart
+   * sheet shows a green "Free delivery by venue" pill in place of the
+   * bike-rider estimate row. IndoCity never books or pays for delivery
+   * — this is purely a hint to the customer that the venue arranges it.
+   */
+  freeDelivery?: boolean
 }
+
+// =============================================================================
+// Bike-delivery estimate — display-only constants.
+//
+// `DEFAULT_BIKE_PER_KM` is a market-norm hint (2,500 IDR/km) used as the
+// per-km multiplier when /api/drivers/lowest-fare doesn't return a usable
+// per-km rate. The API currently returns min_fee (a flat floor), not a
+// per-km rate, so we use this constant as a transparent default. Founder
+// can revisit when the API exposes a real per-km aggregation.
+//
+// `DEFAULT_MIN_FEE_IDR` is the fallback floor when the API call fails
+// entirely — customers should still see a sensible estimate even if the
+// network blip means we couldn't fetch the actual drivers' min_fee.
+// =============================================================================
+const DEFAULT_BIKE_PER_KM = 2500
+const DEFAULT_MIN_FEE_IDR = 10_000
+const DELIVERY_HIDE_KEY = 'indocity:cart:delivery-estimate-hidden'
 
 // Map a PlaceCategory to the offers-section heading. Mirrors the
 // beautician page's "Portfolio" / "Services Provided" headings.
@@ -142,7 +168,7 @@ function coerceHoursForPanel(raw: Record<string, unknown> | null): Record<string
 }
 
 export default function PlaceProfileShell({
-  place, contactEnabled = true,
+  place, contactEnabled = true, freeDelivery = false,
 }: PlaceProfileShellProps) {
   // Beautician uses a per-profile theme_color; places share the brand
   // yellow until per-venue theming ships, so the accent stays consistent.
@@ -838,6 +864,9 @@ export default function PlaceProfileShell({
           placeName={place.name}
           whatsappE164={place.whatsappE164}
           contactEnabled={contactEnabled}
+          freeDelivery={freeDelivery}
+          venueLat={place.lat}
+          venueLng={place.lng}
           items={cart.items}
           totalIdr={cart.totalIdr}
           totalQty={cart.totalQty}
@@ -976,12 +1005,16 @@ function PlaceReviewsPanel({
 // tooltip explains why, no silent failure.
 // =============================================================================
 function PlaceCartSheet({
-  placeName, whatsappE164, contactEnabled, items, totalIdr, totalQty,
+  placeName, whatsappE164, contactEnabled, freeDelivery,
+  venueLat, venueLng, items, totalIdr, totalQty,
   theme, onSetQty, onRemove, onClear, onClose, onSend,
 }: {
   placeName:       string
   whatsappE164:    string | null
   contactEnabled:  boolean
+  freeDelivery:    boolean
+  venueLat:        number
+  venueLng:        number
   items:           PlaceCartItem[]
   totalIdr:        number
   totalQty:        number
@@ -999,6 +1032,93 @@ function PlaceCartSheet({
     : empty
       ? 'Add an item to send an order.'
       : ''
+
+  // ----------------------------------------------------------------------
+  // Delivery estimate row state — only relevant when venue does NOT
+  // offer free delivery. We intentionally DON'T auto-request GPS — the
+  // customer taps a "Tap to estimate" CTA inside the row, which fires
+  // geo.request() and then triggers the lowest-fare fetch. Hidden via
+  // a localStorage flag so the customer can opt out per device.
+  // ----------------------------------------------------------------------
+  const geo = useGeolocation(false)
+  const [estimateHidden, setEstimateHidden] = useState(false)
+  const [perKmIdr, setPerKmIdr] = useState<number>(DEFAULT_BIKE_PER_KM)
+  const [minFeeIdr, setMinFeeIdr] = useState<number>(DEFAULT_MIN_FEE_IDR)
+  const [estimateLoading, setEstimateLoading] = useState(false)
+  const [estimateError, setEstimateError] = useState<string | null>(null)
+  const [estimateFetched, setEstimateFetched] = useState(false)
+
+  // Read the hide flag on mount. Defensive — localStorage can throw
+  // in private/incognito modes; we just default to "show".
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const v = window.localStorage.getItem(DELIVERY_HIDE_KEY)
+      if (v === '1') setEstimateHidden(true)
+    } catch { /* ignore */ }
+  }, [])
+
+  function persistHidden(next: boolean) {
+    setEstimateHidden(next)
+    if (typeof window === 'undefined') return
+    try {
+      if (next) window.localStorage.setItem(DELIVERY_HIDE_KEY, '1')
+      else      window.localStorage.removeItem(DELIVERY_HIDE_KEY)
+    } catch { /* ignore */ }
+  }
+
+  // Distance (km) — derived from geo.coords + venue location. Falls
+  // back to null until the customer has granted GPS.
+  const distanceKm: number | null = (geo.coords && Number.isFinite(venueLat) && Number.isFinite(venueLng))
+    ? haversineKm(
+        { lat: geo.coords.lat, lng: geo.coords.lng },
+        { lat: venueLat, lng: venueLng },
+      )
+    : null
+
+  // Estimate (rounded to nearest 1,000 IDR, floored at min_fee).
+  const estimateIdr: number | null = (() => {
+    if (distanceKm == null) return null
+    const raw = perKmIdr * distanceKm
+    const rounded = Math.round(raw / 1000) * 1000
+    return Math.max(rounded, minFeeIdr)
+  })()
+
+  // Trigger fetching the lowest-fare data once we have GPS. Cancels
+  // if the customer closes the sheet mid-fetch.
+  async function fetchLowestFare(coords: GeoPoint) {
+    setEstimateLoading(true)
+    setEstimateError(null)
+    try {
+      const url = `/api/drivers/lowest-fare?vehicleType=bike&lat=${coords.lat}&lng=${coords.lng}&radiusKm=30`
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json() as { lowestFareIdr: number | null; driverCount: number }
+      if (typeof json.lowestFareIdr === 'number' && json.lowestFareIdr > 0) {
+        // The API returns min_fee (a flat floor), not a per-km rate.
+        // We keep the hardcoded DEFAULT_BIKE_PER_KM multiplier and
+        // surface the API value as the min-fee floor only. Founder
+        // direction: market-norm per-km, transparent floor.
+        setMinFeeIdr(json.lowestFareIdr)
+      }
+      setEstimateFetched(true)
+    } catch (err) {
+      setEstimateError(err instanceof Error ? err.message : 'Could not fetch estimate')
+    } finally {
+      setEstimateLoading(false)
+    }
+  }
+
+  async function handleTapToEstimate() {
+    const point = await geo.request()
+    if (point) await fetchLowestFare(point)
+  }
+
+  // Render flag — only render the delivery row inside the cart body
+  // when (a) the customer has at least one item AND (b) we're not
+  // showing the free-delivery pill instead.
+  const showEstimateRow  = !empty && !freeDelivery && !estimateHidden
+  const showFreeDelivery = !empty && freeDelivery
 
   return (
     <div
@@ -1135,6 +1255,114 @@ function PlaceCartSheet({
 
         {/* Footer — total + actions + compliance line. */}
         <div className="px-5 pt-3 pb-5 border-t border-gray-200 shrink-0 space-y-3">
+          {/* DELIVERY ROW — three states:
+              (A) Venue offers free delivery → green pill.
+              (B) Venue doesn't, customer hasn't hidden → gray estimate row.
+              (C) Customer hidden → row gone, "Show delivery estimate" link
+                  rendered just below the action buttons instead.
+              The estimate is INFORMATIONAL ONLY — it is never added to
+              Total, never appended to the WhatsApp message body. The
+              customer pays the rider directly and agrees fare in chat. */}
+          {showFreeDelivery && (
+            <div
+              className="rounded-xl border bg-green-50 border-green-200 text-green-700 px-3 py-2 flex items-center gap-2"
+              role="note"
+            >
+              <Bike className="w-4 h-4 shrink-0" strokeWidth={2.25} aria-hidden />
+              <span className="text-[13px] font-extrabold leading-snug">
+                Free delivery by venue
+              </span>
+            </div>
+          )}
+
+          {showEstimateRow && (
+            <div className="rounded-xl border bg-gray-50 border-gray-200 px-3 py-2.5">
+              <div className="flex items-start gap-2">
+                <Bike
+                  className="w-4 h-4 shrink-0 text-gray-700 mt-0.5"
+                  strokeWidth={2.25}
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-extrabold text-black leading-snug">
+                    Bike delivery — estimate
+                  </div>
+
+                  {/* State 1 — GPS not yet granted: "Tap to estimate" CTA. */}
+                  {geo.status !== 'granted' && (
+                    <div className="mt-1.5">
+                      <button
+                        type="button"
+                        onClick={handleTapToEstimate}
+                        disabled={geo.status === 'requesting'}
+                        className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-[13px] font-extrabold text-black active:scale-[0.98] transition disabled:opacity-60"
+                        style={{ background: BRAND_YELLOW, minHeight: 44 }}
+                      >
+                        {geo.status === 'requesting'
+                          ? 'Getting location…'
+                          : 'Tap to estimate delivery'}
+                      </button>
+                      {geo.status === 'denied' && (
+                        <p className="text-[12px] text-gray-500 mt-1 leading-snug">
+                          Location blocked — enable in your browser settings
+                          to see a delivery estimate.
+                        </p>
+                      )}
+                      <p className="text-[12px] text-gray-500 mt-1 leading-snug">
+                        Pay rider directly · agree fare in chat
+                      </p>
+                    </div>
+                  )}
+
+                  {/* State 2 — GPS granted, fetching or showing estimate. */}
+                  {geo.status === 'granted' && (
+                    <div className="mt-0.5">
+                      {estimateLoading && !estimateFetched ? (
+                        <div className="text-[12px] text-gray-500 leading-snug">
+                          Estimating…
+                        </div>
+                      ) : estimateIdr != null && distanceKm != null ? (
+                        <>
+                          <div className="text-[13px] text-black tabular-nums leading-snug">
+                            <span className="font-black">
+                              ~{formatRpExact(estimateIdr)}
+                            </span>
+                            <span className="text-gray-500"> · </span>
+                            <span className="text-gray-700">
+                              ~{distanceKm.toFixed(1)} km from you
+                            </span>
+                          </div>
+                          <p className="text-[12px] text-gray-500 mt-1 leading-snug">
+                            Pay rider directly · agree fare in chat
+                          </p>
+                        </>
+                      ) : (
+                        <div className="text-[12px] text-gray-500 leading-snug">
+                          {estimateError
+                            ? `Could not fetch estimate · ${estimateError}`
+                            : 'Estimate unavailable — agree fare in chat.'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Hide button — small text link on the right. Persists
+                    via localStorage so the customer's choice survives
+                    cart re-opens. */}
+                <button
+                  type="button"
+                  onClick={() => persistHidden(true)}
+                  className="shrink-0 text-[12px] text-gray-500 underline-offset-2 hover:underline font-bold"
+                  style={{ minHeight: 44, minWidth: 44 }}
+                  aria-label="Hide delivery estimate"
+                >
+                  Hide
+                </button>
+              </div>
+            </div>
+          )}
+
           {!empty && (
             <div className="flex items-baseline justify-between gap-2">
               <div className="text-[13px] font-extrabold uppercase tracking-wider text-gray-500">
@@ -1173,6 +1401,23 @@ function PlaceCartSheet({
               Send via WhatsApp
             </button>
           </div>
+
+          {/* Re-enable link — only renders when the customer previously
+              hid the estimate AND the venue doesn't offer free delivery.
+              Brings the estimate row back without forcing the customer
+              to clear localStorage manually. */}
+          {!empty && !freeDelivery && estimateHidden && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => persistHidden(false)}
+                className="text-[12px] text-gray-500 underline-offset-2 hover:underline font-bold"
+                style={{ minHeight: 44 }}
+              >
+                Show delivery estimate
+              </button>
+            </div>
+          )}
 
           <p className="text-[11px] text-gray-500 leading-snug text-center">
             You pay the venue directly · agree delivery with them.
