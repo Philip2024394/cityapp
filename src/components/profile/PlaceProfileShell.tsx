@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   Star, BadgeCheck, Award, MapPin, Bike, Car as CarIcon,
@@ -193,7 +193,7 @@ export default function PlaceProfileShell({
   // cleanup happens via unmount + a tab-hide listener so closing the
   // tab also clears. `clear` is a stable useCallback in usePlaceCart so
   // capturing it once at mount is safe.
-  const clearRef = React.useRef(cart.clear)
+  const clearRef = useRef(cart.clear)
   clearRef.current = cart.clear
   useEffect(() => {
     function onPageHide() { clearRef.current() }
@@ -1420,7 +1420,7 @@ function PlaceCartSheet({
 // Shell — solid white page so the global PageBackground doesn't bleed
 // through, plus the dev-toolbar hide rule. Mirrors beautician's Shell.
 // =============================================================================
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: import('react').ReactNode }) {
   return (
     <main className="relative min-h-[100dvh] bg-white text-[#0A0A0A]">
       <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
