@@ -186,6 +186,24 @@ export default function PlaceProfileShell({
   // Cart state — per-place localStorage cart for the WhatsApp handoff.
   const cart = usePlaceCart(place.id)
   const [cartOpen, setCartOpen] = useState(false)
+
+  // Auto-clear cart on unmount (founder direction: leaving the profile
+  // page resets the cart so a customer who navigates away never sees
+  // stale items on their next visit). The "Clear cart" button is gone;
+  // cleanup happens via unmount + a tab-hide listener so closing the
+  // tab also clears. `clear` is a stable useCallback in usePlaceCart so
+  // capturing it once at mount is safe.
+  const clearRef = React.useRef(cart.clear)
+  clearRef.current = cart.clear
+  useEffect(() => {
+    function onPageHide() { clearRef.current() }
+    window.addEventListener('pagehide', onPageHide)
+    return () => {
+      window.removeEventListener('pagehide', onPageHide)
+      clearRef.current()
+    }
+  }, [])
+
   // Lightweight toast — fires on "Add to cart" success and auto-dismisses.
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   useEffect(() => {
@@ -1287,64 +1305,40 @@ function PlaceCartSheet({
                   <div className="text-[13px] font-extrabold text-black leading-snug">
                     Bike delivery — estimate
                   </div>
-
-                  {/* State 1 — GPS not yet granted: "Tap to estimate" CTA. */}
-                  {geo.status !== 'granted' && (
-                    <div className="mt-1.5">
-                      <button
-                        type="button"
-                        onClick={handleTapToEstimate}
-                        disabled={geo.status === 'requesting'}
-                        className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-[13px] font-extrabold text-black active:scale-[0.98] transition disabled:opacity-60"
-                        style={{ background: BRAND_YELLOW, minHeight: 44 }}
-                      >
-                        {geo.status === 'requesting'
-                          ? 'Getting location…'
-                          : 'Tap to estimate delivery'}
-                      </button>
-                      {geo.status === 'denied' && (
-                        <p className="text-[12px] text-gray-500 mt-1 leading-snug">
-                          Location blocked — enable in your browser settings
-                          to see a delivery estimate.
-                        </p>
-                      )}
-                      <p className="text-[12px] text-gray-500 mt-1 leading-snug">
-                        Pay rider directly · agree fare in chat
-                      </p>
-                    </div>
-                  )}
-
-                  {/* State 2 — GPS granted, fetching or showing estimate. */}
-                  {geo.status === 'granted' && (
-                    <div className="mt-0.5">
-                      {estimateLoading && !estimateFetched ? (
-                        <div className="text-[12px] text-gray-500 leading-snug">
-                          Estimating…
+                  {/* Always-on display. When GPS is granted we show the
+                      precise haversine km + estimate; otherwise we fall
+                      back to a typical 3km city-trip assumption so the
+                      customer always sees a hint. No tap required. */}
+                  <div className="mt-0.5">
+                    {(() => {
+                      const TYPICAL_KM = 3
+                      const km =
+                        geo.status === 'granted' && distanceKm != null
+                          ? distanceKm
+                          : TYPICAL_KM
+                      const idr =
+                        geo.status === 'granted' && estimateIdr != null
+                          ? estimateIdr
+                          : Math.max(
+                              DEFAULT_MIN_FEE_IDR,
+                              Math.round((km * DEFAULT_BIKE_PER_KM) / 1000) * 1000,
+                            )
+                      const labelTail =
+                        geo.status === 'granted' && distanceKm != null
+                          ? `~${km.toFixed(1)} km from you`
+                          : 'typical short trip'
+                      return (
+                        <div className="text-[13px] text-black tabular-nums leading-snug">
+                          <span className="font-black">~{formatRpExact(idr)}</span>
+                          <span className="text-gray-500"> · </span>
+                          <span className="text-gray-700">{labelTail}</span>
                         </div>
-                      ) : estimateIdr != null && distanceKm != null ? (
-                        <>
-                          <div className="text-[13px] text-black tabular-nums leading-snug">
-                            <span className="font-black">
-                              ~{formatRpExact(estimateIdr)}
-                            </span>
-                            <span className="text-gray-500"> · </span>
-                            <span className="text-gray-700">
-                              ~{distanceKm.toFixed(1)} km from you
-                            </span>
-                          </div>
-                          <p className="text-[12px] text-gray-500 mt-1 leading-snug">
-                            Pay rider directly · agree fare in chat
-                          </p>
-                        </>
-                      ) : (
-                        <div className="text-[12px] text-gray-500 leading-snug">
-                          {estimateError
-                            ? `Could not fetch estimate · ${estimateError}`
-                            : 'Estimate unavailable — agree fare in chat.'}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      )
+                    })()}
+                    <p className="text-[12px] text-gray-500 mt-1 leading-snug">
+                      Pay rider directly · agree fare in chat
+                    </p>
+                  </div>
                 </div>
 
                 {/* Hide button — small text link on the right. Persists
@@ -1374,33 +1368,27 @@ function PlaceCartSheet({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={onClear}
-              disabled={empty}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-white text-[13px] font-extrabold active:scale-[0.98] transition disabled:opacity-40 disabled:active:scale-100"
-              style={{ minHeight: 44, background: '#B91C1C' }}
-            >
-              Clear cart
-            </button>
-            <button
-              type="button"
-              onClick={onSend}
-              disabled={sendDisabled}
-              title={sendDisabled ? sendDisabledReason : undefined}
-              aria-disabled={sendDisabled}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-[13px] font-extrabold shadow-md active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
-              style={{
-                background: BRAND_YELLOW,
-                color: BRAND_NAVY,
-                minHeight: 44,
-              }}
-            >
-              <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-              Send via WhatsApp
-            </button>
-          </div>
+          {/* "Clear cart" button removed per founder direction. The cart
+              auto-clears when the customer navigates away from the
+              place profile page (effect cleanup in PlaceProfileShell),
+              so manual clearing is no longer needed. Per-item trash
+              still works for editing on the way to checkout. */}
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={sendDisabled}
+            title={sendDisabled ? sendDisabledReason : undefined}
+            aria-disabled={sendDisabled}
+            className="inline-flex items-center justify-center gap-1.5 w-full px-4 py-3 rounded-xl text-[13px] font-extrabold shadow-md active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
+            style={{
+              background: BRAND_YELLOW,
+              color: BRAND_NAVY,
+              minHeight: 48,
+            }}
+          >
+            <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+            Send via WhatsApp
+          </button>
 
           {/* Re-enable link — only renders when the customer previously
               hid the estimate AND the venue doesn't offer free delivery.
