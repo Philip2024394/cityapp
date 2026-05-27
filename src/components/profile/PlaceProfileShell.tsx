@@ -76,6 +76,10 @@ export type PlaceProfileShellProps = {
     city:          string
     address:       string | null
     tags:          string[]
+    /** Self-listed cuisine tags ("Indonesian", "Japanese", "Halal",
+     *  "Cocktails", etc.). Rendered as small chips under the About
+     *  card. Empty array → cuisine row is hidden (non-food places). */
+    cuisineTypes:  string[]
     lat:           number
     lng:           number
     whatsappE164:  string | null
@@ -464,6 +468,32 @@ export default function PlaceProfileShell({
                   </p>
                 )}
               </div>
+
+              {/* Cuisine chips — self-listed cuisine tags. Hidden when the
+                  array is empty (non-food places). Small grey pills, brand
+                  yellow border + dark text, wrap to multiple lines when
+                  many cuisines are listed. */}
+              {place.cuisineTypes.length > 0 && (
+                <div className="pt-2">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 mb-1.5">
+                    Cuisine
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {place.cuisineTypes.map((c) => (
+                      <span
+                        key={c}
+                        className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold text-black"
+                        style={{
+                          background: '#FEF3C7',
+                          border: '1px solid #FDE68A',
+                        }}
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Offers carousel — category-aware heading. Hidden entirely

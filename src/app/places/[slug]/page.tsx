@@ -39,6 +39,7 @@ type Row = {
   rating:          number | null
   review_count:    number | null
   contact_enabled: boolean | null
+  cuisine_types:   string[] | null
 }
 
 type OfferRow = {
@@ -55,7 +56,7 @@ async function loadPlace(slug: string): Promise<Row | null> {
   if (!supabase) return null
   const { data } = await supabase
     .from('places')
-    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count, contact_enabled')
+    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count, contact_enabled, cuisine_types')
     .eq('slug', slug)
     .eq('status', 'approved')
     .maybeSingle()
@@ -171,6 +172,7 @@ export default async function PlaceDetailPage(
           city:          place.city,
           address:       place.address,
           tags:          place.tags ?? [],
+          cuisineTypes:  place.cuisine_types ?? [],
           lat:           place.lat,
           lng:           place.lng,
           whatsappE164:  place.whatsapp_e164,

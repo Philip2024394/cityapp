@@ -58,6 +58,7 @@ type PlaceRow = {
   verified: boolean | null
   owner_user_id: string | null
   tags: string[] | null
+  cuisine_types: string[] | null
   rating: number | null
   review_count: number | null
   created_at: string | null
@@ -134,7 +135,7 @@ export default function PlaceOwnerDashboardPage() {
       .select(
         'id, slug, name, category, description, image_urls, city, address, lat, lng, ' +
         'whatsapp_e164, hours_json, status, paid_until, verified, owner_user_id, ' +
-        'tags, rating, review_count, created_at, contact_enabled',
+        'tags, cuisine_types, rating, review_count, created_at, contact_enabled',
       )
       .eq('owner_user_id', user.id)
       .order('created_at', { ascending: false })
@@ -576,6 +577,7 @@ function BasicsSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void })
   const [description, setDescription] = useState(row.description ?? '')
   const [category,    setCategory]    = useState<PlaceCategory>(row.category)
   const [tagsText,    setTagsText]    = useState((row.tags ?? []).join(', '))
+  const [cuisineText, setCuisineText] = useState((row.cuisine_types ?? []).join(', '))
 
   // Re-sync if the parent flips to a different place via the switcher.
   useEffect(() => {
@@ -583,19 +585,29 @@ function BasicsSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void })
     setDescription(row.description ?? '')
     setCategory(row.category)
     setTagsText((row.tags ?? []).join(', '))
-  }, [row.id, row.name, row.description, row.category, row.tags])
+    setCuisineText((row.cuisine_types ?? []).join(', '))
+  }, [row.id, row.name, row.description, row.category, row.tags, row.cuisine_types])
 
   const parsedTags = tagsText
     .split(',')
     .map((t) => t.trim().toLowerCase())
     .filter((t) => t.length > 0)
   const initialTags = (row.tags ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean)
+  // Cuisines keep the user's casing — they're display tags ("Indonesian",
+  // "Japanese") not normalised search filters.
+  const parsedCuisines = cuisineText
+    .split(',')
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0)
+  const initialCuisines = (row.cuisine_types ?? []).map((c) => c.trim()).filter(Boolean)
   const dirty =
     name        !== (row.name ?? '') ||
     description !== (row.description ?? '') ||
     category    !== row.category ||
     parsedTags.length !== initialTags.length ||
-    parsedTags.some((t, i) => t !== initialTags[i])
+    parsedTags.some((t, i) => t !== initialTags[i]) ||
+    parsedCuisines.length !== initialCuisines.length ||
+    parsedCuisines.some((c, i) => c !== initialCuisines[i])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -604,6 +616,7 @@ function BasicsSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void })
       description: description.trim() || null,
       category,
       tags: parsedTags,
+      cuisine_types: parsedCuisines,
     })
   }
 
@@ -630,6 +643,23 @@ function BasicsSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void })
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Apa yang bikin tempatmu istimewa?"
           />
+        </label>
+        {/* Cuisine types — comma-separated, displayed as yellow pill chips
+            on the public profile under the About card. Hidden on the
+            profile when empty (non-food places like temples / shops just
+            leave it blank). Founder ask: "under the bio we need add
+            Cuisine type and the user can add what types of food cuisine". */}
+        <label className={labelCls}>
+          <span className={labelTextCls}>Cuisine types (comma-separated)</span>
+          <input
+            className={inputCls}
+            value={cuisineText}
+            onChange={(e) => setCuisineText(e.target.value)}
+            placeholder="Indonesian, Javanese, Halal, Vegetarian"
+          />
+          <span className="block text-[12px] text-black/55 mt-1">
+            What kind of food do you serve? Examples: Indonesian, Japanese, Chinese, Italian, Halal, Vegetarian, Seafood, Cocktails, Cafe. Leave blank if your place doesn't serve food.
+          </span>
         </label>
         <label className={labelCls}>
           <span className={labelTextCls}>Category</span>
