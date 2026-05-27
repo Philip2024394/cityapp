@@ -7,7 +7,10 @@ import { CheckCircle2, XCircle } from 'lucide-react'
 // SubscriptionReviewActions — approve/reject buttons + reject-notes modal
 // ----------------------------------------------------------------------------
 // Mounted on each pending row in /admin/subscriptions. Calls the two API
-// endpoints in /api/admin/subscriptions/[id]/{approve,reject}.
+// endpoints in /api/admin/subscription-payments/[id]/{approve,reject}.
+// (The path is namespaced under `subscription-payments` because
+// /api/admin/subscriptions/[driverId] already exists and operates on
+// the OLD bike-driver subscription model — different ID semantics.)
 //
 // Reject requires admin_notes (min 5 chars) per the founder spec — gives
 // the driver some context when admin re-renders the row in their dashboard
@@ -28,7 +31,7 @@ export default function SubscriptionReviewActions({ paymentId }: { paymentId: st
     setError(null)
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/admin/subscriptions/${paymentId}/approve`, {
+      const res = await fetch(`/api/admin/subscription-payments/${paymentId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -54,7 +57,7 @@ export default function SubscriptionReviewActions({ paymentId }: { paymentId: st
     setError(null)
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/admin/subscriptions/${paymentId}/reject`, {
+      const res = await fetch(`/api/admin/subscription-payments/${paymentId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: trimmed }),
