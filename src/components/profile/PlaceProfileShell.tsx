@@ -549,7 +549,7 @@ export default function PlaceProfileShell({
                   <PortfolioViewToggle
                     view={portfolioView}
                     onChange={setPortfolioView}
-                    themeColor={BRAND_NAVY}
+                    themeColor={BRAND_YELLOW}
                   />
                 </div>
                 <p className="text-[11px] text-gray-500 italic -mt-1">
