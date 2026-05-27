@@ -1,49 +1,64 @@
 'use client'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Search, MapPin, Plus, X, Landmark, Bike, Car as CarIcon } from 'lucide-react'
-import RiderMap from '@/components/map/RiderMapDynamic'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowRight,
+  ChevronRight,
+  MapPin,
+  Plus,
+  Search,
+  Star,
+  X,
+} from 'lucide-react'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import SavedPlacesChip from '@/components/cari/SavedPlacesChip'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
-import { haversineKm } from '@/lib/geo/haversine'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
-import { preloadBbox, bboxFromPoints } from '@/lib/map/preloadTiles'
+import { haversineKm } from '@/lib/geo/haversine'
 import { logNav } from '@/lib/perf/navTiming'
+import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import type { Rider, ServiceType } from '@/types/rider'
 
-// Per-service placeholder text — tailors the inputs to the picked service.
-// Service is picked on the LANDING page now (3 landscape tiles) and arrives
-// here via the ?service=<id> query param.
+// ============================================================================
+// /cari — Card-based booking page (full redesign 2026-05-27)
+// ----------------------------------------------------------------------------
+// REPLACES the fullscreen-map + bottom-sheet layout. The map became a static
+// image background; the active widget is a white container floating over it
+// with pickup/dropoff inputs, a vehicle toggle (Car/Bike), an inline driver
+// list, and the Citypass promo. The Find-my-ride CTA sits OUTSIDE the
+// container as a primary action terminus.
+//
+// Compliance posture: IndoCity is a software directory (PM 12/2019). The
+// driver cards label fares as "From Rp X" — never as a calculated trip
+// price. A persistent disclaimer sits under the CTA.
+// ============================================================================
+
+const BG_IMAGE = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png'
+
+// Per-service placeholder text — same dictionary as before so deep-links
+// from /places and other entry points still read naturally.
 const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
   person: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
-  parcel: { pickup: 'Where to pick up the package?',      dropoff: 'Destination address' },
-  food:   { pickup: 'Restaurant or warung name',           dropoff: 'Drop-off address' },
-  car:    { pickup: 'Where do you want to be picked up?',  dropoff: 'Where do you want to go?' },
-  bus:    { pickup: 'Group pickup location',               dropoff: 'Destination or tour itinerary' },
+  parcel: { pickup: 'Where to pick up the package?', dropoff: 'Destination address' },
+  food: { pickup: 'Restaurant or warung name', dropoff: 'Drop-off address' },
+  car: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
+  bus: { pickup: 'Group pickup location', dropoff: 'Destination or tour itinerary' },
 }
-
-// Nearby-rider scatter has been removed (audit 2026-05). The previous
-// `buildNearbyRiders` invented 24 fake pings on the map regardless of
-// real driver state and reported a fixed "42 nearby" badge. Replaced by:
-//   • Real driver count from /api/drivers/lowest-fare (with lat/lng)
-//   • Real driver markers rendered by the components that own them
-//     (the live marketplace on /cari/rider, not the trip-planner map)
 
 function parseService(raw: string | null): ServiceType {
-  // Default service is 'person' (Bike) — landing without a ?service=
-  // param resolves to Bike first per founder direction.
   if (raw === 'parcel' || raw === 'food' || raw === 'car' || raw === 'bus') return raw
-  return 'person'
+  // New layout defaults to 'car' per founder spec (Car tile shown active
+  // first in the vehicle toggle). Legacy entries still resolve correctly.
+  return 'car'
 }
 
-// Recently-used places — localStorage-backed quick-fill suggestions.
-// Stored under a versioned key so a future schema change can ignore old
-// shapes without crashing. Cap at 10 entries; UI surfaces the top 3.
-// Deduped by lowercased label so the same place doesn't accumulate.
+// Recent-places localStorage cache (same shape as the old /cari so the
+// store is shared and doesn't reset between deploys).
 const RECENT_PLACES_KEY = 'indocity:recent-places:v1'
 const RECENT_PLACES_CAP = 10
 
@@ -58,8 +73,6 @@ function useRecentPlaces() {
       if (!raw) return
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) {
-        // Defensive — drop entries that don't match the shape so a
-        // corrupted store can't crash render.
         const safe = parsed.filter(
           (p): p is RecentPlace =>
             typeof p?.lat === 'number' &&
@@ -112,16 +125,14 @@ function PlanTripPageInner() {
   const router = useRouter()
   const params = useSearchParams()
   // autoRequest=false — defer the browser GPS prompt until the user
-  // taps the "Use my location" pin button. Previously fired on mount,
-  // blocking first paint for 2-5s while the permission dialog was open.
+  // explicitly taps a control. Mirrors the old /cari behaviour.
   const geo = useGeolocation(false)
   const haptic = useHaptic()
   const { recents, addRecent } = useRecentPlaces()
 
-  // Optional ?dLat=&dLng=&dName= handoff from /places — pre-fills the
-  // destination so the customer only has to confirm/edit the pickup
-  // before tapping View drivers. Pickup pre-fill from URL is supported
-  // too for symmetry, but Places never passes one.
+  // Optional ?pLat=&pLng=&dLat=&dLng= handoff — pre-fills pickup +
+  // destination so deep-links from /places, /car, etc. land with values
+  // ready and the customer only has to confirm.
   const initialDropoffLat = parseFloat(params.get('dLat') ?? '')
   const initialDropoffLng = parseFloat(params.get('dLng') ?? '')
   const hasInitialDropoff =
@@ -142,70 +153,16 @@ function PlanTripPageInner() {
   const [pitstopOpen, setPitstopOpen] = useState(false)
   const [pitstopNote, setPitstopNote] = useState('')
 
-  // Live measurement of the bottom stack so the map's viewport padding
-  // exactly matches the obscured area — no more hardcoded 380/460 guesses
-  // that clipped the route on small phones or when the pit-stop expanded.
-  const bottomStackRef = useRef<HTMLDivElement>(null)
-  const headerRef = useRef<HTMLElement>(null)
-  // pickupBarRef wraps the pickup card that now lives BETWEEN the
-  // header and the map. Its measured height gets added to the map
-  // container's top inset so the map slides down out from under it.
-  const pickupBarRef = useRef<HTMLDivElement>(null)
-  const [bottomHeight, setBottomHeight] = useState(380)
-  const [headerHeight, setHeaderHeight] = useState(96)
-  const [pickupBarHeight, setPickupBarHeight] = useState(0)
-  // Soft-keyboard inset (iOS/Android). When the keyboard opens, the visual
-  // viewport shrinks — we add that delta to the bottom padding so the route
-  // re-fits into the still-visible map area above the keyboard.
-  const [keyboardOffset, setKeyboardOffset] = useState(0)
+  // service comes from the URL (?service=) and drives the vehicle toggle.
+  // New default is 'car' so the toggle lands on Car first per spec; the
+  // Bike legacy mappings (person/parcel/food → Bike side) still resolve.
+  const service: ServiceType = parseService(params.get('service'))
+  const vehicleType: 'car' | 'bike' = service === 'car' ? 'car' : 'bike'
 
-  // perf instrumentation — logs first useful client mount for the
-  // landing → /cari navigation pair. Paste console output into the
-  // perf audit doc to see the actual tap-to-paint delta.
+  // perf instrumentation
   useEffect(() => { logNav('cari:mount') }, [])
 
-  useEffect(() => {
-    const stack = bottomStackRef.current
-    const header = headerRef.current
-    const pickupBar = pickupBarRef.current
-    if (!stack || !header) return
-    const measure = () => {
-      setBottomHeight(stack.offsetHeight)
-      setHeaderHeight(header.offsetHeight)
-      setPickupBarHeight(pickupBar?.offsetHeight ?? 0)
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(stack)
-    ro.observe(header)
-    if (pickupBar) ro.observe(pickupBar)
-    window.addEventListener('orientationchange', measure)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('orientationchange', measure)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.visualViewport) return
-    const vv = window.visualViewport
-    const update = () => {
-      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-      setKeyboardOffset(offset)
-    }
-    update()
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
-    return () => {
-      vv.removeEventListener('resize', update)
-      vv.removeEventListener('scroll', update)
-    }
-  }, [])
-  // Service comes from the landing page via ?service=<id>. Defaults to
-  // parcel (the platform's primary focus + most common kurir use case).
-  const service: ServiceType = parseService(params.get('service'))
-
-  // Auto-fill pickup with customer GPS on grant
+  // Auto-fill pickup with customer GPS on grant (kept from old /cari).
   useEffect(() => {
     if (geo.coords && !pickup) {
       setPickup(geo.coords)
@@ -213,32 +170,9 @@ function PlanTripPageInner() {
     }
   }, [geo.coords, pickup, pickupLabel])
 
-  // Phase C — auto-warm the pickup→dropoff bbox once both ends are set.
-  // Fires only once per coord pair (state guard via JSON key), idle-
-  // scheduled so it never competes with the user typing. Cooperates
-  // with shouldSkipPreload() so 2G / Save-Data users are unaffected.
-  const [warmedKey, setWarmedKey] = useState<string | null>(null)
-  useEffect(() => {
-    if (!pickup || !dropoff) return
-    const key = `${pickup.lat.toFixed(3)},${pickup.lng.toFixed(3)}|${dropoff.lat.toFixed(3)},${dropoff.lng.toFixed(3)}`
-    if (warmedKey === key) return
-    const idle = (cb: () => void) => {
-      type RIC = (fn: () => void, opts?: { timeout?: number }) => number
-      const ric = (window as Window & { requestIdleCallback?: RIC }).requestIdleCallback
-      if (typeof ric === 'function') ric(cb, { timeout: 2500 })
-      else setTimeout(cb, 600)
-    }
-    idle(() => {
-      void preloadBbox(bboxFromPoints(pickup, dropoff, 5))
-        .then(() => setWarmedKey(key))
-        .catch(() => { /* best-effort */ })
-    })
-  }, [pickup, dropoff, warmedKey])
-
-  // Road-distance preview. Renders instantly with haversine × 1.3
-  // and upgrades to the OSRM real road km once the proxy responds, so
-  // the preview here matches what /cari/rider will show on the next
-  // step (same cache key).
+  // Road-distance preview — still useful for the driver-card ETA line
+  // even without a visible polyline. Renders instantly with haversine ×
+  // 1.3 then upgrades to the OSRM value when the proxy responds.
   const [tripRoute, setTripRoute] = useState<RoadDistance | null>(null)
   useEffect(() => {
     if (!pickup || !dropoff) {
@@ -255,96 +189,16 @@ function PlanTripPageInner() {
   const tripKm = tripRoute?.km ?? null
   const canSearch = !!pickup && !!dropoff
 
-  // Road-following polyline for the map. Fetched whenever pickup +
-  // dropoff are both set; falls back to a null state so RiderMap
-  // renders the legacy 2-point straight line until the network round
-  // trip lands. Endpoint caches for 24h per coord pair, so HMR /
-  // tab-switch re-renders don't re-fetch.
-  const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null)
-  useEffect(() => {
-    if (!pickup || !dropoff) {
-      setRoutePolyline(null)
-      return
-    }
-    let cancelled = false
-    const ctrl = new AbortController()
-    const params = new URLSearchParams({
-      fromLat: pickup.lat.toFixed(6),
-      fromLng: pickup.lng.toFixed(6),
-      toLat: dropoff.lat.toFixed(6),
-      toLng: dropoff.lng.toFixed(6),
-    })
-    fetch(`/api/route/polyline?${params}`, { signal: ctrl.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { coordinates: [number, number][] | null } | null) => {
-        if (cancelled) return
-        setRoutePolyline(d?.coordinates ?? null)
-      })
-      .catch(() => { /* silent — straight-line fallback already renders */ })
-    return () => { cancelled = true; ctrl.abort() }
-  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng])
-
-  // Demo journey simulation. Drives the progressFraction prop on
-  // RiderMap so the customer can WATCH the route's yellow remaining
-  // half shrink + the black completed half grow, simulating a driver
-  // moving from pickup to dropoff. Manually triggered via a button on
-  // the map so it doesn't auto-fire and consume battery. Run length
-  // ~12 seconds (visible enough to read, short enough to not bore).
-  const [demoProgress, setDemoProgress] = useState(0)
-  const [demoRunning, setDemoRunning] = useState(false)
-  useEffect(() => {
-    if (!demoRunning) return
-    const startedAt = performance.now()
-    const DURATION_MS = 12000
-    let raf = 0
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - startedAt) / DURATION_MS)
-      setDemoProgress(t)
-      if (t < 1) {
-        raf = requestAnimationFrame(tick)
-      } else {
-        setDemoRunning(false)
-      }
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [demoRunning])
-  function startDemo() {
-    setDemoProgress(0)
-    setDemoRunning(true)
-  }
-  function resetDemo() {
-    setDemoRunning(false)
-    setDemoProgress(0)
-  }
-
-  // Lowest published driver fare in the city — surfaced in the View
-  // drivers CTA so customers see the entry price before tapping. We only
-  // ever display what drivers themselves listed, never a calculation
-  // (PM 12/2019 safe-harbour — see TripPriceBanner for the full reasoning).
+  // Lowest published driver fare in the area + count (same /api/drivers/
+  // lowest-fare endpoint we used before — refetches on pickup change).
   const [lowestFareIdr, setLowestFareIdr] = useState<number | null>(null)
   const [nearbyCount, setNearbyCount] = useState<number | null>(null)
-
-  // Real driver count + lowest fare in the area, keyed on pickup coords.
-  // Refetches whenever the customer moves the pickup pin so the badge
-  // and "Starting from Rp X" reflect the actual marketplace.
   const queryCoords = pickup ?? geo.coords ?? null
   const queryLat = queryCoords?.lat ?? null
   const queryLng = queryCoords?.lng ?? null
   useEffect(() => {
     if (queryLat == null || queryLng == null) return
     const ctrl = new AbortController()
-    // vehicleType maps from the customer-facing service tab:
-    //   service='car' → vehicle_type='car'
-    //   service='bus' → vehicle_type='minibus'  (Hiace / Avanza / Innova)
-    //   service='person'|'parcel'|'food' → vehicle_type='bike'
-    // Bike is the default for the three motorbike-based services
-    // (person ride, parcel courier, food delivery — bike riders pick up
-    // food too, so a separate Food tile would be redundant).
-    const vehicleType =
-      service === 'car' ? 'car'
-      : service === 'bus' ? 'minibus'
-      : 'bike'
     const params = new URLSearchParams({
       lat: queryLat.toFixed(4),
       lng: queryLng.toFixed(4),
@@ -358,48 +212,54 @@ function PlanTripPageInner() {
         if (typeof d.lowestFareIdr === 'number') setLowestFareIdr(d.lowestFareIdr)
         if (typeof d.driverCount === 'number') setNearbyCount(d.driverCount)
       })
-      .catch(() => { /* silent — button gracefully omits price */ })
+      .catch(() => { /* silent — UI gracefully omits price */ })
     return () => ctrl.abort()
-  }, [queryLat, queryLng, service])
+  }, [queryLat, queryLng, vehicleType])
 
-  const mapCenter = pickup ?? geo.coords ?? { lat: -7.7928, lng: 110.3657, accuracyM: 0 }
+  // Inline driver list for the new layout. Fetched once per vehicleType
+  // flip; the list re-renders against the active toggle without needing
+  // a server round-trip beyond the initial pull.
+  const [drivers, setDrivers] = useState<Rider[]>([])
+  const [driversLoading, setDriversLoading] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    setDriversLoading(true)
+    fetchActiveDriversBrowser(vehicleType)
+      .then((rows) => {
+        if (cancelled) return
+        setDrivers(rows)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setDrivers([])
+      })
+      .finally(() => {
+        if (cancelled) return
+        setDriversLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [vehicleType])
 
-  // Detect the user's country from their GPS so the place autocomplete
-  // only surfaces local results. Null while GPS is pending or detection
-  // fails → autocomplete falls back to global search (no harm).
+  // Detect user country for the autocomplete bias (unchanged).
   const userCountry = useCountryFromCoords(geo.coords ?? null)
-  const countryCodes = userCountry ? [userCountry] : []
+  const countryCodes = useMemo(() => (userCountry ? [userCountry] : []), [userCountry])
 
-  // No more fabricated rider pings on the map (audit 2026-05). Real
-  // driver markers belong on /cari/rider, where the customer is choosing
-  // a specific rider. The trip-planner map stays clean.
-  const nearbyRiders: Rider[] = []
-
-  // Awaits the geolocation promise so we always set pickup with the
-  // freshest coords. The old version checked `geo.coords` synchronously
-  // after calling request() — that closure variable was stale, so on
-  // first tap nothing happened.
-  async function handleUseLocation() {
+  // Swap pickup ↔ dropoff — both coords and the typed labels swap so the
+  // visual order matches what the customer sees in the inputs.
+  function handleSwap() {
     haptic.tap()
-    const point = geo.coords ?? await geo.request()
-    if (point) {
-      setPickup(point)
-      setPickupLabel('My location')
-    }
+    setPickup(dropoff)
+    setDropoff(pickup)
+    setPickupLabel(dropoffLabel)
+    setDropoffLabel(pickupLabel)
   }
 
   function handleSearch() {
     if (!canSearch) return
     logNav('cari:view-drivers')
     haptic.impact()
-    // service → vehicleType mapping. /cari/rider filters its driver
-    // query by vehicleType (Bike picks → motorbike drivers; Car picks →
-    // car drivers). The Passenger/Parcel toggle on /cari/rider then
-    // filters within that pool by the driver's services array.
-    // Bus / minibus moved out of /cari entirely — those are browse
-    // flows on the landing page, not live ride-list bookings.
-    const vehicleTypeForRider = service === 'car' ? 'car' : 'bike'
-    const params = new URLSearchParams({
+    const vehicleTypeForRider = vehicleType
+    const sp = new URLSearchParams({
       pLat: pickup!.lat.toString(),
       pLng: pickup!.lng.toString(),
       pName: pickupLabel || 'My location',
@@ -407,172 +267,53 @@ function PlanTripPageInner() {
       dLng: dropoff!.lng.toString(),
       dName: dropoffLabel || 'Destination',
     })
-    if (pitstopOpen && pitstopNote.trim()) {
-      params.set('stop', pitstopNote.trim())
-    }
-    params.set('filter', service)
-    params.set('vehicleType', vehicleTypeForRider)
-    router.push(`/cari/rider?${params.toString()}`)
+    if (pitstopOpen && pitstopNote.trim()) sp.set('stop', pitstopNote.trim())
+    sp.set('filter', service)
+    sp.set('vehicleType', vehicleTypeForRider)
+    router.push(`/cari/rider?${sp.toString()}`)
   }
 
+  // ───────────────────────────────────────────────────────────────────────
+  // Render
+  // ───────────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* NAVY BACKDROP — /cari is map-first; the map needs dark surround
-          so it pops visually and the yellow Rent / B2B / Contact CTAs
-          read with high contrast. Replaced flat slate-900 with a soft
-          radial gradient (slate-800 highlight top-left → slate-900
-          deep-base bottom-right) so the page reads as a layered card
-          surface, not a flat wireframe. The highlight only adds ~5%
-          luminance — enough for depth, not enough to compete with the
-          yellow tiles. */}
+      {/* STATIC MAP BACKGROUND — fixed inset-0, cover-fit. Replaces the
+          interactive maplibre canvas. The image stays behind all chrome
+          and reads as visual context, not a working map (founder
+          approved trade-off: customers use the inputs, not the map). */}
       <div
         className="fixed inset-0 z-0"
         style={{
-          background:
-            'radial-gradient(circle at 15% 0%, #1E293B 0%, #0F172A 55%, #0B1120 100%)',
+          backgroundImage: `url("${BG_IMAGE}")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
         }}
+        aria-hidden
       />
+      {/* Soft dim so the white booking card pops against the photo. */}
+      <div className="fixed inset-0 z-[1] bg-black/30" aria-hidden />
 
-      {/* ACTIVE MAP — FULLSCREEN behind every card. The map container
-          fills the viewport (fixed inset-0) so the page reads as a
-          single immersive map surface with the pickup card, bottom
-          sheet, and floating buttons floating over it. The cards
-          themselves keep their existing z-indexes; the map sits at
-          z-[1] (above the radial backdrop, below all chrome).
-
-          fitBounds gets DYNAMIC padding values that mirror the
-          on-screen chrome — header + pickup bar at the top, bottom
-          sheet + keyboard offset at the bottom, edge-clearance on the
-          sides plus a wider right pad so the floating FAB column
-          (Rent / B2B / Places) doesn't obscure the route. This keeps
-          the trip pins + polyline framed inside the unobstructed
-          hero window even though the map tiles extend fullscreen. */}
-      <div className="fixed inset-0 z-[1]">
-        <RiderMap
-          center={mapCenter}
-          zoom={14}
-          riders={nearbyRiders}
-          markerStyle="ping"
-          pickup={pickup}
-          dropoff={dropoff}
-          showRoute={canSearch}
-          pitStop={canSearch && pitstopNote.trim().length > 0}
-          onDropoffSet={(c) => { setDropoff({ ...c, accuracyM: 0 }); haptic.tap() }}
-          height="100%"
-          // Road-following polyline + demo progress. routePolyline is
-          // fetched from /api/route/polyline once both pickup and
-          // dropoff are set. progressFraction drives the yellow→black
-          // colour split — manual demo button below toggles it.
-          routePolyline={routePolyline}
-          progressFraction={demoProgress}
-          // pitch flattens to 0 once a route is set so fitBounds can
-          // place the line cleanly in the hero band. Before route: a
-          // gentle 25° tilt for visual interest.
-          pitch={canSearch ? 0 : 25}
-          // Dynamic insets reserve the chrome's screen real estate so
-          // fitBounds frames the route inside the unblocked hero band.
-          // 12px breathing rows above + below the cards; 16px left
-          // for general edge clearance; 88px right to clear the
-          // floating FAB column (64px buttons + 12px right inset +
-          // 12px breathing gap).
-          viewportPadding={{
-            top: headerHeight + pickupBarHeight + 12,
-            bottom: bottomHeight + keyboardOffset + 12,
-            left: 16,
-            right: 88,
-          }}
-        />
-      </div>
-
-      {/* FLOATING ACTION COLUMN — only PLACES remains. Rent (bike
-          rental) and B2B (contract-driver hire) both moved to the
-          landing page per founder direction: those are planning /
-          browse flows, not live-booking actions, so cluttering the
-          live booking widget with them was wrong. Places is the
-          genuine in-trip use case ("where do I want to drop off?")
-          and stays. pointer-events-none on the wrapper so empty
-          space still falls through to the map for drop-off tap. */}
-      <div
-        className="fixed right-3 z-20 flex flex-col items-end justify-center gap-3 pointer-events-none"
-        style={{
-          top: `${headerHeight + pickupBarHeight + 12}px`,
-          bottom: `${bottomHeight + keyboardOffset + 12}px`,
-          transition: 'top 220ms ease, bottom 220ms ease',
-        }}
-      >
-        <Link
-          href="/places"
-          prefetch
-          onClick={() => haptic.tap()}
-          aria-label="Browse nearby places"
-          className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-brand bg-black/85 backdrop-blur-md border-2 border-brand/60 shadow-[0_10px_28px_rgba(0,0,0,0.55)] active:scale-95 transition"
-        >
-          <Landmark className="w-6 h-6" strokeWidth={2.5} />
-          <span className="text-[11px] font-extrabold uppercase tracking-wider">Places</span>
-        </Link>
-
-        {/* DEMO PLAY/RESET — visible only once a route exists (pickup +
-            dropoff both set). Drives the yellow→black progress
-            visualisation on the polyline so the customer can preview
-            what an in-progress trip would look like. ~12s animation.
-            Real live-tracking comes later when driver-side background
-            GPS is wired; until then this is the founder-requested
-            visual demo. */}
-        {canSearch && (
-          <button
-            type="button"
-            onClick={() => {
-              haptic.tap()
-              if (demoRunning) resetDemo()
-              else if (demoProgress >= 1) resetDemo()
-              else startDemo()
-            }}
-            aria-label={demoRunning ? 'Stop demo journey' : 'Play demo journey'}
-            className="pointer-events-auto flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl text-bg bg-brand backdrop-blur-md border-2 border-bg shadow-[0_10px_28px_rgba(250,204,21,0.45)] active:scale-95 transition"
-          >
-            <span className="text-[20px] leading-none font-black" aria-hidden>
-              {demoRunning ? '⏸' : demoProgress >= 1 ? '↻' : '▶'}
-            </span>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider">
-              {demoRunning ? 'Stop' : demoProgress >= 1 ? 'Reset' : 'Demo'}
-            </span>
-          </button>
-        )}
-      </div>
-
-      {/* HEADER — transparent, sits over the map. Logo + brand on the
-          left, "42 nearby" black badge with yellow text + green dot
-          (pink satellite ping ring) on the right. Text shadow keeps
-          the brand legible over any map content underneath. */}
-      <header ref={headerRef} className="relative z-30 pt-safe">
+      {/* HEADER — wordmark on the left, nearby pill on the right. */}
+      <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
             className="inline-flex items-center hover:opacity-85 transition"
             aria-label="IndoCity home"
           >
-            {/* Two-tone wordmark: "Ind" white + map-pin icon as the
-                "O" of Indo + "City" brand-yellow. The MapPin substitutes
-                visually for the O so the wordmark reads "Ind📍 City".
-                Single PNG cannot deliver this layout, so the wordmark
-                is composed inline here. */}
             <span
-              className="font-black tracking-tight text-[26px] sm:text-[32px] leading-none"
+              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
               style={{ color: '#FFFFFF', letterSpacing: '-0.02em' }}
             >
               Ind
             </span>
-            {/* Custom map-pin SVG so the outer teardrop fills yellow
-                while the inner circle stays WHITE (lucide's <MapPin>
-                flattens both shapes to one color). translate-y-[4px]
-                drops the pin below the cap-line so it sits lower
-                than the surrounding letters — reads as the "o" hanging
-                slightly below the baseline. */}
             <svg
               aria-hidden
               viewBox="0 0 24 24"
               fill="none"
-              className="w-[22px] h-[22px] sm:w-[28px] sm:h-[28px] mx-[1px] translate-y-[4px]"
+              className="w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] mx-[1px] translate-y-[3px]"
             >
               <path
                 d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
@@ -581,26 +322,23 @@ function PlanTripPageInner() {
               <circle cx="12" cy="10" r="3" fill="#FFFFFF" />
             </svg>
             <span
-              className="font-black tracking-tight text-[26px] sm:text-[32px] leading-none"
+              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
               style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
             >
               City
             </span>
           </Link>
 
-          {/* RIDERS-NEARBY BADGE — solid black pill, brand-yellow text,
-              green dot wrapped in a pink satellite-pulse ring (reuses
-              the ridePing keyframe with a pink colour override). */}
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
             style={{
               background: '#000',
               border: '1px solid rgba(250,204,21,0.30)',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.4)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.55)',
+              minHeight: 32,
             }}
           >
             <span className="relative inline-flex items-center justify-center" style={{ width: 10, height: 10 }}>
-              {/* Pink satellite ping ring */}
               <span
                 aria-hidden
                 className="absolute inset-0 rounded-full"
@@ -609,7 +347,6 @@ function PlanTripPageInner() {
                   animation: 'ridePing 2.2s ease-out infinite',
                 }}
               />
-              {/* Solid green dot at the centre */}
               <span
                 aria-hidden
                 className="absolute rounded-full"
@@ -620,7 +357,7 @@ function PlanTripPageInner() {
                 }}
               />
             </span>
-            <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider">
+            <span className="text-[13px] font-extrabold text-brand uppercase tracking-wider">
               {nearbyCount == null
                 ? 'Cek nearby…'
                 : nearbyCount === 0
@@ -631,407 +368,325 @@ function PlanTripPageInner() {
         </div>
       </header>
 
-      {/* PICKUP BAR — moved out of the bottom sheet to sit directly
-          between the header and the map. Founder direction: pickup
-          deserves first-glance prominence since it's the trip's
-          starting point. The ResizeObserver up-top tracks this bar's
-          height so the map's top inset accommodates it dynamically
-          (e.g. when the recent-places chip row appears). z-20 keeps
-          it above the map tiles but under the bottom sheet (z-40)
-          and floating buttons (z-20 sibling). */}
-      <div
-        ref={pickupBarRef}
-        className="fixed left-0 right-0 z-20"
-        style={{ top: `${headerHeight}px` }}
-      >
-        <div className="mx-auto max-w-xl px-3 pt-2">
-          <div
-            className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
-          >
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Pick up</span>
-              <SavedPlacesChip
-                kind="pickup"
-                currentLocation={pickup}
-                currentLocationLabel={pickupLabel}
-                onSelect={(p) => {
-                  setPickup({ lat: p.lat, lng: p.lng, accuracyM: 0 })
-                  setPickupLabel(p.label)
-                  addRecent(p)
-                  haptic.tap()
+      {/* BOOKING CONTAINER — white card floating ~15px from screen edges,
+          70vh tall, rounded-3xl with shadow-2xl. Contains the whole
+          trip-planning form + the inline driver list. */}
+      <div className="relative z-20" style={{ paddingLeft: 15, paddingRight: 15 }}>
+        <div
+          className="mx-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          style={{ height: '70vh', maxWidth: 640 }}
+        >
+          <div className="flex flex-col h-full p-4 sm:p-5">
+            {/* ROW 1 — Header bar: "Where to?" + Add Stop button */}
+            <div className="flex items-center justify-between gap-2 shrink-0">
+              <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg">
+                Where to?
+              </h1>
+              <button
+                type="button"
+                onClick={() => { setPitstopOpen((v) => !v); haptic.tap() }}
+                aria-label={pitstopOpen ? 'Remove stop' : 'Add stop'}
+                aria-pressed={pitstopOpen}
+                className="inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full text-bg font-extrabold text-[13px] active:scale-95 transition"
+                style={{
+                  background: '#FACC15',
+                  boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
+                  minHeight: 32,
                 }}
-              />
-            </div>
-            <PlaceAutocomplete
-              value={pickupLabel}
-              onChange={setPickupLabel}
-              onSelect={(s) => {
-                setPickup({ lat: s.lat, lng: s.lng, accuracyM: 0 })
-                setPickupLabel(s.label)
-                addRecent({ lat: s.lat, lng: s.lng, label: s.label })
-                haptic.tap()
-              }}
-              placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
-              className="flex-1 min-w-0 bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
-              near={geo.coords ?? null}
-              countryCodes={countryCodes}
-              ariaLabel="Pick up location"
-              clearOnFocus
-              // Pickup now sits near the top of the page, so the
-              // suggestions drop DOWN. Dropoff stays default ('up'),
-              // since it's still in the bottom sheet.
-              dropdownDirection="down"
-              leftSlot={
-                <button
-                  onClick={handleUseLocation}
-                  aria-label="Auto-set my GPS location"
-                  className="shrink-0 w-12 rounded-xl flex items-center justify-center text-white transition active:scale-95"
-                  style={{
-                    background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)',
-                    boxShadow:
-                      '0 4px 12px rgba(127,29,29,0.55), 0 0 0 2px rgba(0,0,0,0.18) inset',
-                  }}
+              >
+                <span
+                  className="w-5 h-5 rounded-full inline-flex items-center justify-center"
+                  style={{ background: 'rgba(0,0,0,0.10)' }}
                 >
-                  <MapPin className={`w-5 h-5 ${geo.status === 'requesting' ? 'animate-pulse' : ''}`} strokeWidth={2.5} />
-                </button>
-              }
-            />
-            {!pickup && recents.length > 0 && (
-              <div className="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar -mx-0.5 px-0.5">
-                {recents.slice(0, 3).map((r) => (
-                  <button
-                    key={r.usedAt}
-                    type="button"
-                    onClick={() => {
-                      setPickup({ lat: r.lat, lng: r.lng, accuracyM: 0 })
-                      setPickupLabel(r.label)
-                      addRecent(r)
+                  <Plus className="w-3.5 h-3.5" strokeWidth={3} />
+                </span>
+                <span>{pitstopOpen ? 'Stop' : 'Add Stop'}</span>
+              </button>
+            </div>
+
+            {/* ROW 2 — Pickup/Dropoff stack with connector column + saved
+                + swap controls. 4 columns: connector dots, inputs,
+                saved-place chip, swap arrows. */}
+            <div className="mt-3 shrink-0">
+              <div className="flex items-stretch gap-2">
+                {/* Connector column — black ring at top, dotted line, yellow filled circle */}
+                <div className="flex flex-col items-center justify-between py-2.5 shrink-0" style={{ width: 16 }}>
+                  <div
+                    className="w-3 h-3 rounded-full border-2"
+                    style={{ borderColor: '#0A0A0A', background: 'transparent' }}
+                    aria-hidden
+                  />
+                  <div
+                    className="flex-1 my-1"
+                    style={{
+                      width: 2,
+                      backgroundImage: 'repeating-linear-gradient(to bottom, #0A0A0A 0 3px, transparent 3px 6px)',
+                    }}
+                    aria-hidden
+                  />
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ background: '#FACC15', boxShadow: '0 0 0 2px #0A0A0A inset' }}
+                    aria-hidden
+                  />
+                </div>
+
+                {/* Inputs column */}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <PlaceAutocomplete
+                    value={pickupLabel}
+                    onChange={setPickupLabel}
+                    onSelect={(s) => {
+                      setPickup({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                      setPickupLabel(s.label)
+                      addRecent({ lat: s.lat, lng: s.lng, label: s.label })
                       haptic.tap()
                     }}
-                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold text-white active:scale-95 transition truncate max-w-[150px]"
-                    style={{ background: '#0A0A0A', border: '1px solid rgba(255,255,255,0.10)' }}
-                  >
-                    <MapPin className="w-3 h-3 shrink-0 text-brand" strokeWidth={2.5} />
-                    <span className="truncate">{r.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* BOTTOM SHEET — glass panel anchored to the bottom of the viewport.
-          Holds the entire trip-planning form + the Find driver CTA. The
-          map is interactive above it; user taps the visible map area to
-          set drop-off.
-
-          YELLOW ACCENT: 3px brand-yellow top border + brand-yellow glow
-          shadow above the sheet + brand-gradient drag handle. Carries
-          the landing's bold yellow energy into the booking page without
-          sacrificing form-input legibility (the sheet body stays dark
-          glass, the CTA keeps its primary-yellow standout). */}
-      {/* BOTTOM STACK — three separate brand-yellow tile cards (Pickup,
-          Pit stop, Drop off), styled like the landing's service tiles
-          so the booking page carries the same bold visual language.
-          The CTA flips to a DARK tile so it stands out as the action
-          terminus against the three yellow controls. */}
-      <div ref={bottomStackRef} className="fixed bottom-0 left-0 right-0 z-40 pb-safe">
-        <div className="mx-auto max-w-xl px-3 pb-2 space-y-2">
-          {/* PIT STOP TILE — 3 states driven by (pitstopOpen, pitstopNote):
-              1. collapsed + empty  → "+ Add a pit stop" CTA tile
-              2. collapsed + text   → "✓ Pit stop set: …" compact tile (tap to edit)
-              3. expanded           → textarea + dynamic close/save button */}
-          {(() => {
-            const hasNote = pitstopNote.trim().length > 0
-            if (!pitstopOpen && !hasNote) {
-              return (
-                <button
-                  onClick={() => { setPitstopOpen(true); haptic.tap() }}
-                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-white border border-white/10 shadow-[0_8px_22px_rgba(0,0,0,0.40)] hover:border-white/20 transition"
-                  style={{ background: '#0A0A0A' }}
-                >
-                  <span
-                    className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
-                    style={{ background: '#FACC15', boxShadow: '0 0 0 2px rgba(0,0,0,0.18) inset' }}
-                  >
-                    <Plus className="w-4 h-4 text-bg" strokeWidth={3} />
-                  </span>
-                  <span className="flex-1 text-left text-[13px] font-extrabold uppercase tracking-wider">Add a pit stop</span>
-                  <img
-                    src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2007_57_14%20PM.png"
-                    alt=""
-                    aria-hidden
-                    loading="lazy"
-                    className="h-10 w-auto shrink-0"
-                    style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+                    placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
+                    className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
+                    near={geo.coords ?? null}
+                    countryCodes={countryCodes}
+                    ariaLabel="Pick up location"
+                    clearOnFocus
+                    dropdownDirection="down"
                   />
-                </button>
-              )
-            }
-            if (!pitstopOpen && hasNote) {
-              return (
-                <button
-                  onClick={() => { setPitstopOpen(true); haptic.tap() }}
-                  aria-label="Edit pit stop"
-                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl text-white border border-white/10 shadow-[0_8px_22px_rgba(0,0,0,0.40)] hover:border-white/20 transition"
-                  style={{ background: '#0A0A0A' }}
-                >
-                  <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.18)', boxShadow: '0 0 10px rgba(249,115,22,0.55)' }}>
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#F97316' }} />
-                  </span>
-                  <span className="flex-1 text-left min-w-0">
-                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-brand opacity-90">Pit stop set · tap to edit</span>
-                    <span className="block text-[13px] font-extrabold truncate">{pitstopNote.trim()}</span>
-                  </span>
-                  <img
-                    src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2007_57_14%20PM.png"
-                    alt=""
-                    aria-hidden
-                    loading="lazy"
-                    className="h-10 w-auto shrink-0"
-                    style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
+                  <PlaceAutocomplete
+                    value={dropoffLabel}
+                    onChange={setDropoffLabel}
+                    onSelect={(s) => {
+                      setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
+                      setDropoffLabel(s.label)
+                      addRecent({ lat: s.lat, lng: s.lng, label: s.label })
+                      haptic.tap()
+                    }}
+                    placeholder={PLACEHOLDERS[service].dropoff}
+                    className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
+                    near={pickup ?? geo.coords ?? null}
+                    countryCodes={countryCodes}
+                    ariaLabel="Drop off location"
+                    clearOnFocus
+                    dropdownDirection="down"
                   />
-                </button>
-              )
-            }
-            // expanded
-            return (
-              <div
-                className="rounded-2xl p-2.5 text-white border border-white/10 shadow-[0_8px_22px_rgba(0,0,0,0.40)] animate-[fadeUp_0.3s_ease-out_both] space-y-2"
-                style={{ background: '#0A0A0A' }}
-              >
-                <div className="mb-1">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand">Pit stop</span>
                 </div>
-                <div className="relative">
+
+                {/* Saved-places column — SavedPlacesChip for pickup (top)
+                    and dropoff (bottom). Per founder spec these are the
+                    compass / star slots; the chip itself renders a star-
+                    icon button that opens the saved-places picker. */}
+                <div className="flex flex-col gap-1.5 justify-between items-center shrink-0">
+                  <div className="h-[42px] flex items-center">
+                    <SavedPlacesChip
+                      kind="pickup"
+                      currentLocation={pickup}
+                      currentLocationLabel={pickupLabel}
+                      onSelect={(p) => {
+                        setPickup({ lat: p.lat, lng: p.lng, accuracyM: 0 })
+                        setPickupLabel(p.label)
+                        addRecent(p)
+                        haptic.tap()
+                      }}
+                    />
+                  </div>
+                  <div className="h-[42px] flex items-center">
+                    <SavedPlacesChip
+                      kind="dropoff"
+                      currentLocation={dropoff}
+                      currentLocationLabel={dropoffLabel}
+                      onSelect={(p) => {
+                        setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
+                        setDropoffLabel(p.label)
+                        addRecent(p)
+                        haptic.tap()
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Swap arrows column — single button with stacked up/down
+                    arrows. Tapping swaps pickup ↔ dropoff (coords + labels). */}
+                <button
+                  type="button"
+                  onClick={handleSwap}
+                  aria-label="Swap pickup and dropoff"
+                  className="shrink-0 flex flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 active:scale-95 transition"
+                  style={{
+                    background: '#F4F4F5',
+                    border: '1px solid #E4E4E7',
+                    minWidth: 36,
+                    minHeight: 44,
+                  }}
+                >
+                  <ArrowUp className="w-3.5 h-3.5 text-bg" strokeWidth={3} />
+                  <ArrowDown className="w-3.5 h-3.5 text-bg" strokeWidth={3} />
+                </button>
+              </div>
+
+              {/* PIT-STOP inline textarea — collapses by default; expanded
+                  when the Add Stop button is pressed. Kept lightweight
+                  inside the same row so the layout doesn't reflow much. */}
+              {pitstopOpen && (
+                <div className="mt-2 relative">
                   <textarea
                     rows={2}
                     maxLength={140}
-                    className="w-full bg-white/[0.06] border border-white/15 text-white placeholder:text-white/40 rounded-xl pl-3 pr-14 py-2.5 text-[13px] font-bold focus:outline-none focus:bg-white/[0.10] focus:border-brand/50 transition resize-none"
-                    placeholder='e.g. "Stop at warung, buy 1 pack Marlboro"'
+                    placeholder='Add a pit stop (e.g. "Stop at warung")'
                     value={pitstopNote}
-                    onChange={e => setPitstopNote(e.target.value)}
-                    autoFocus
+                    onChange={(e) => setPitstopNote(e.target.value)}
+                    className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl px-3 py-2 text-[13px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition resize-none"
                   />
-                  <img
-                    src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2020,%202026,%2007_57_14%20PM.png"
-                    alt=""
-                    aria-hidden
-                    loading="lazy"
-                    className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-auto pointer-events-none"
-                    style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.35))' }}
-                  />
+                  {pitstopNote.trim().length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setPitstopNote(''); haptic.tap() }}
+                      aria-label="Clear pit stop"
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#71717A] hover:text-bg transition"
+                    >
+                      <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    </button>
+                  )}
                 </div>
-                {/* Button label flips based on text state: cancel when
-                    empty, save (keeps text + closes tile) when present. */}
-                {hasNote ? (
-                  <button
-                    onClick={() => { setPitstopOpen(false); haptic.tap() }}
-                    aria-label="Save pit stop"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[12px] uppercase tracking-wider hover:from-brand2 hover:to-brand transition"
-                  >
-                    <Plus className="w-4 h-4" strokeWidth={2.5} />
-                    Add pit stop
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { setPitstopOpen(false); setPitstopNote(''); haptic.tap() }}
-                    aria-label="Close pit stop"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-white font-extrabold text-[12px] uppercase tracking-wider hover:bg-white/[0.10] transition"
-                  >
-                    <X className="w-4 h-4" strokeWidth={2.5} />
-                    Close pit stop
-                  </button>
-                )}
-              </div>
-            )
-          })()}
+              )}
 
-          {/* DROP OFF TILE — same autocomplete pattern as pickup, but
-              without a GPS button (drop-off is wherever the customer is
-              going, not where they are). Tap-map still works as a
-              fallback for setting drop-off coords. */}
-          <div
-            className="rounded-2xl p-2.5 text-bg bg-gradient-to-r from-brand to-brand2 shadow-[0_8px_22px_rgba(250,204,21,0.30)]"
-          >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Drop off</span>
-              <SavedPlacesChip
-                kind="dropoff"
-                currentLocation={dropoff}
-                currentLocationLabel={dropoffLabel}
-                onSelect={(p) => {
-                  setDropoff({ lat: p.lat, lng: p.lng, accuracyM: 0 })
-                  setDropoffLabel(p.label)
-                  addRecent(p)
-                  haptic.tap()
-                }}
-              />
+              {/* RECENT PLACES — surfaces 3 most recent ONLY when neither
+                  field is fully set, so the user can one-tap fill. */}
+              {!pickup && !dropoff && recents.length > 0 && (
+                <div className="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar -mx-0.5 px-0.5">
+                  {recents.slice(0, 3).map((r) => (
+                    <button
+                      key={r.usedAt}
+                      type="button"
+                      onClick={() => {
+                        setDropoff({ lat: r.lat, lng: r.lng, accuracyM: 0 })
+                        setDropoffLabel(r.label)
+                        addRecent(r)
+                        haptic.tap()
+                      }}
+                      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[12px] font-extrabold text-bg active:scale-95 transition truncate max-w-[150px]"
+                      style={{
+                        background: '#FEF3C7',
+                        border: '1px solid #FACC15',
+                        minHeight: 28,
+                      }}
+                    >
+                      <MapPin className="w-3 h-3 shrink-0" strokeWidth={2.5} />
+                      <span className="truncate">{r.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <PlaceAutocomplete
-              value={dropoffLabel}
-              onChange={setDropoffLabel}
-              onSelect={(s) => {
-                setDropoff({ lat: s.lat, lng: s.lng, accuracyM: 0 })
-                setDropoffLabel(s.label)
-                addRecent({ lat: s.lat, lng: s.lng, label: s.label })
-                haptic.tap()
-              }}
-              placeholder={PLACEHOLDERS[service].dropoff}
-              className="w-full bg-bg/75 border border-bg/30 text-ink placeholder:text-white/50 rounded-xl px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-bg/90 transition"
-              near={pickup ?? geo.coords ?? null}
-              countryCodes={countryCodes}
-              ariaLabel="Drop off location"
-              clearOnFocus
-            />
-            {/* RECENT PLACES CHIPS — same hook as the pickup tile, shown
-                only when no dropoff is set yet. One tap fills the
-                destination + re-adds the place to recents (so re-use
-                bubbles it back to the top of the list). */}
-            {!dropoff && recents.length > 0 && (
-              <div className="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar -mx-0.5 px-0.5">
-                {recents.slice(0, 3).map((r) => (
-                  <button
-                    key={r.usedAt}
-                    type="button"
-                    onClick={() => {
-                      setDropoff({ lat: r.lat, lng: r.lng, accuracyM: 0 })
-                      setDropoffLabel(r.label)
-                      addRecent(r)
-                      haptic.tap()
-                    }}
-                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold text-white active:scale-95 transition truncate max-w-[150px]"
-                    style={{ background: '#0A0A0A', border: '1px solid rgba(255,255,255,0.10)' }}
-                  >
-                    <MapPin className="w-3 h-3 shrink-0 text-brand" strokeWidth={2.5} />
-                    <span className="truncate">{r.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {/* SERVICE SQUARES — Bike / Parcel / Food as square tiles
-                sitting directly under the dropoff field. Replaces the
-                slim top row. Active tile = solid black with yellow icon
-                + label (high contrast against the yellow dropoff tile).
-                Inactive tiles = translucent black so the eye reads them
-                as alternates to the current mode. */}
-            {/* Service squares — only 2 vehicle selectors (Bike / Car)
-                for the live booking flow. Bus charter and Bike rental
-                are PLANNING flows (compare daily rates, browse ahead)
-                not live "I need transport now" — they live as entry
-                points on the landing page, not crammed into this
-                booking widget. Gojek + Grab do the same split.
-                The Passenger ↔ Parcel choice appears as a sub-toggle
-                on /cari/rider AFTER "View drivers", since the same
-                Bike rider / Car driver can offer either service.
-                Food and Parcel ServiceType values still exist for
-                backwards-compat deep-links:
-                  /cari?service=parcel → Bike tile active, /cari/rider
-                  toggle pre-selected to Parcel. */}
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <ServiceSquare
-                href="/cari?service=person"
-                active={service === 'person' || service === 'parcel' || service === 'food'}
-                icon={<Bike className="w-6 h-6" strokeWidth={2.5} />}
-                label="Bike"
-              />
-              <ServiceSquare
+
+            {/* ROW 3 — Vehicle toggle (Car / Bike). Drives the inline
+                driver list + the vehicleType URL param when CTA is tapped. */}
+            <div className="mt-3 shrink-0 grid grid-cols-2 gap-2">
+              <VehicleToggleButton
                 href="/cari?service=car"
-                active={service === 'car'}
-                icon={<CarIcon className="w-6 h-6" strokeWidth={2.5} />}
+                active={vehicleType === 'car'}
                 label="Car"
               />
+              <VehicleToggleButton
+                href="/cari?service=person"
+                active={vehicleType === 'bike'}
+                label="Bike"
+              />
             </div>
-            {/* INLINE PRICE READOUT — reverted to directory-safe-harbour
-                copy. IndoCity is a software directory, NOT a transport
-                operator (PM 12/2019). We can only surface a driver's
-                OWN published minimum fare — never "trip price" or
-                "total fare" wording that would imply we set or
-                calculate the price. Customers SELECT drivers; we
-                never appoint or match orders. */}
-            <div className="mt-2 pt-2 border-t border-bg/25">
-              <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                {canSearch && tripKm != null && lowestFareIdr != null ? (
-                  <span className="text-[13px] font-extrabold tracking-tight text-bg">
-                    From Rp {lowestFareIdr.toLocaleString('en-US')}
-                  </span>
-                ) : (
-                  <span className="text-[13px] font-extrabold tracking-tight text-bg/85">
-                    Set destination to see published rates
-                  </span>
-                )}
-                {canSearch && tripKm != null && (
-                  <span className="text-[11px] font-bold tracking-tight text-bg/80">
-                    {/* ETA hint = distance / avg urban motorbike speed
-                        (~25 km/h — Yogya/Bali, traffic-adjusted).
-                        Floor at 2 min so short trips never read "0 min".
-                        Labelled as an ESTIMATE only — the driver agrees
-                        the actual time, IndoCity does not compute it. */}
-                    {tripKm.toFixed(1)} km · ~{Math.max(2, Math.round((tripKm / 25) * 60))} min
-                  </span>
-                )}
-              </div>
-              <div className="text-[9px] uppercase tracking-wider text-bg/55 mt-0.5">
-                Published by driver · you agree the fare directly
-              </div>
-            </div>
-          </div>
 
-          {/* CTA TILE — black infill with brand-yellow edge line. Under
-              the three yellow tiles, this dark fill creates the contrast
-              terminus. !mt-6 forces a clear gap above (parent's
-              space-y-2 has higher specificity than plain mt-N, so we
-              use Tailwind's ! prefix to win). Always reads "View
-              drivers". */}
+            {/* ROW 4 — Scrollable driver list. Filtered by vehicleType. */}
+            <div
+              className="mt-3 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2 -mx-1 px-1"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {driversLoading && drivers.length === 0 && (
+                <div className="py-6 text-center text-[13px] font-bold text-[#71717A]">
+                  Loading drivers…
+                </div>
+              )}
+              {!driversLoading && drivers.length === 0 && (
+                <div className="py-6 text-center text-[13px] font-bold text-[#71717A]">
+                  No {vehicleType === 'car' ? 'car' : 'bike'} drivers online right now.
+                </div>
+              )}
+              {drivers.map((d) => (
+                <DriverCard
+                  key={d.id}
+                  driver={d}
+                  vehicleType={vehicleType}
+                  pickup={pickup}
+                />
+              ))}
+            </div>
+
+            {/* ROW 5 — Citypass promo banner. Yellow shaded card with a
+                bright yellow Explore button on the right. Routes to /places. */}
+            <Link
+              href="/places"
+              prefetch
+              onClick={() => haptic.tap()}
+              className="mt-3 shrink-0 flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 active:scale-[0.99] transition"
+              style={{
+                background: 'rgba(250,204,21,0.15)',
+                border: '1px solid rgba(250,204,21,0.45)',
+              }}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-black text-bg leading-tight">Citypass</div>
+                <div className="text-[11px] font-bold text-bg/65 leading-tight mt-0.5">
+                  Browse places worth visiting in your city
+                </div>
+              </div>
+              <span
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-bg font-extrabold text-[12px]"
+                style={{ background: '#FACC15', minHeight: 32 }}
+              >
+                Explore
+                <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
+              </span>
+            </Link>
+          </div>
+        </div>
+
+        {/* FIND MY RIDE — OUTSIDE the white container. Yellow gradient
+            primary CTA. Below it sits the directory-safe-harbour
+            disclaimer so it stays visible at the action terminus. */}
+        <div className="mx-auto mt-3 mb-4" style={{ maxWidth: 640 }}>
           <button
+            type="button"
             onClick={handleSearch}
             disabled={!canSearch}
-            className="w-full flex items-center justify-center gap-2 p-3.5 !mt-6 rounded-2xl text-brand font-extrabold text-[15px] bg-gradient-to-r from-bg to-[#1a1a1a] border-2 border-brand hover:border-brand2 active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_0_1px_rgba(250,204,21,0.18)] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-bg font-black text-[15px] tracking-tight bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(250,204,21,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ minHeight: 48 }}
           >
-            <Search className="w-4 h-4" />
-            {/* Driver count + price get prefixed to "View drivers" so the
-                CTA reads with the supply signal up-front. Layout:
-                  [12 drivers · from Rp 12,000]  View drivers  →
-                The count pill uses a small inline chip so it stays
-                glanceable even with the trip-price prefix. Empty state
-                still reads plain "View drivers". */}
-            {canSearch && nearbyCount != null && nearbyCount > 0 && (
-              <span
-                className="text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
-                style={{ background: 'rgba(250,204,21,0.18)', color: '#FACC15' }}
-              >
-                {nearbyCount}
-              </span>
-            )}
-            <span>View drivers</span>
+            <Search className="w-4 h-4" strokeWidth={3} />
+            <span>Find my ride</span>
             {canSearch && lowestFareIdr != null && (
-              <span className="text-[12px] font-bold text-dim ml-1">
+              <span className="text-[13px] font-bold opacity-80 ml-1">
                 · from Rp {lowestFareIdr.toLocaleString('en-US')}
               </span>
             )}
-            <ChevronLeft className="w-4 h-4 rotate-180" />
+            <ArrowRight className="w-4 h-4" strokeWidth={3} />
           </button>
+          <p className="mt-2 text-center text-[11px] text-white/85 font-bold leading-snug px-2">
+            Self-published rates · IndoCity is a software directory.
+            You agree the fare directly with the driver.
+          </p>
         </div>
       </div>
     </>
   )
 }
 
-// Service-square tile used inside the dropoff card on /cari. Renders
-// as a 1:1 aspect-ratio black tile with a stacked icon + label. Active
-// state inverts to a solid yellow-on-black with shadow lift so it
-// stands out against the surrounding yellow dropoff tile. Prefetches
-// the ?service= URL flip so the tile swap is instant.
-function ServiceSquare({
+// ─────────────────────────────────────────────────────────────────────────────
+// Vehicle toggle button — equal-width row. Active = yellow with bold text;
+// inactive = light gray with muted text. Uses prefetched Link so the URL
+// flip (which carries service into the page state) is instant.
+// ─────────────────────────────────────────────────────────────────────────────
+function VehicleToggleButton({
   href,
   active,
-  icon,
   label,
 }: {
   href: string
   active: boolean
-  icon: React.ReactNode
   label: string
 }) {
   return (
@@ -1039,22 +694,126 @@ function ServiceSquare({
       href={href}
       prefetch
       aria-current={active ? 'page' : undefined}
-      className="aspect-square flex flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition active:scale-95"
+      className="flex items-center justify-center py-2.5 rounded-xl font-extrabold text-[14px] tracking-tight transition active:scale-95"
       style={{
-        // Both states share the slate-900 page-background blue so the
-        // tiles read as inset chips against the yellow dropoff card.
-        // The only difference between active and inactive is the
-        // icon + label color: white for inactive, brand yellow for
-        // selected — same brand colour pair used everywhere else on
-        // the page.
-        background: '#0F172A',
-        color: active ? '#FACC15' : '#FFFFFF',
-        boxShadow: '0 6px 18px rgba(0,0,0,0.30)',
+        background: active ? '#FACC15' : '#F4F4F5',
+        color: active ? '#0A0A0A' : '#52525B',
+        border: active ? '1px solid #FACC15' : '1px solid #E4E4E7',
+        boxShadow: active ? '0 4px 12px rgba(250,204,21,0.35)' : 'none',
+        minHeight: 44,
       }}
     >
-      {icon}
       {label}
     </Link>
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Driver card — landscape layout per spec. Image left, title + subtitle +
+// rating in the middle, price + ETA on the right. Tap routes to /car/[slug]
+// or /r/[slug] depending on vehicle type.
+// ─────────────────────────────────────────────────────────────────────────────
+function DriverCard({
+  driver,
+  vehicleType,
+  pickup,
+}: {
+  driver: Rider
+  vehicleType: 'car' | 'bike'
+  pickup: GeoPoint | null
+}) {
+  // Image: prefer brand_logo_url (drivers upload a photo of their vehicle
+  // for their own profile page) — the legacy Rider shape exposes this as
+  // `photoUrl`. Fallback is the pravatar URL generated in queries.ts.
+  const imgSrc = driver.photoUrl
+
+  // Title: vehicle make + model when set, otherwise business name. The
+  // Rider shape stores the vehicle on `bike` (legacy name — table covers
+  // car + bike via the vehicle_type discriminator).
+  const make = driver.bike?.make?.trim()
+  const model = driver.bike?.model?.trim()
+  const vehicleLabel = make || model ? `${make ?? ''} ${model ?? ''}`.trim() : driver.name
+
+  // Subtitle: year + color when set, otherwise area/city.
+  const year = driver.bike?.year
+  const color = driver.bike?.color?.trim()
+  let subtitle = ''
+  if (year && color) subtitle = `${color} ${year}`
+  else if (year) subtitle = `${year}`
+  else if (color) subtitle = color
+  else subtitle = driver.area || driver.city || ''
+
+  // ETA estimate — distance / 25 km/h, surfaced only when pickup is set.
+  // Uses haversine to the driver's last-known location. Floored at 2 min
+  // so a driver next door doesn't read "0 min away".
+  let etaLabel: string | null = null
+  if (pickup && driver.lat && driver.lng) {
+    const km = haversineKm({ lat: pickup.lat, lng: pickup.lng }, { lat: driver.lat, lng: driver.lng })
+    if (Number.isFinite(km)) {
+      const minutes = Math.max(2, Math.round((km / 25) * 60))
+      etaLabel = `${minutes} min away`
+    }
+  }
+
+  // Price label — "From Rp X" or "Rp X". Never "trip price" / "total fare"
+  // (PM 12/2019 safe-harbour copy).
+  const fee = driver.minFee ?? driver.pricePerKm ?? null
+  const priceLabel = fee != null ? `Rp ${fee.toLocaleString('en-US')}` : null
+
+  const href = vehicleType === 'car' ? `/car/${driver.slug}` : `/r/${driver.slug}`
+
+  return (
+    <Link
+      href={href}
+      prefetch
+      className="flex items-center gap-3 p-2.5 rounded-xl border border-[#E4E4E7] bg-white hover:border-[#FACC15] active:scale-[0.99] transition"
+      style={{ minHeight: 64 }}
+    >
+      {/* Vehicle / brand image */}
+      <div
+        className="shrink-0 rounded-lg overflow-hidden bg-[#F4F4F5]"
+        style={{ width: 64, height: 64 }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imgSrc}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      </div>
+
+      {/* Middle column — title + subtitle + rating */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[14px] font-black text-bg truncate">{vehicleLabel}</span>
+        </div>
+        {subtitle && (
+          <div className="text-[12px] font-bold text-[#52525B] truncate leading-tight">
+            {subtitle}
+          </div>
+        )}
+        {driver.rating !== undefined && (
+          <div className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-extrabold text-bg">
+            <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} />
+            {driver.rating.toFixed(1)}
+          </div>
+        )}
+      </div>
+
+      {/* Right column — price + ETA */}
+      <div className="shrink-0 text-right">
+        {priceLabel && (
+          <div className="text-[13px] font-black text-bg tracking-tight">
+            {priceLabel}
+          </div>
+        )}
+        {etaLabel && (
+          <div className="text-[11px] font-bold text-[#52525B] mt-0.5">
+            {etaLabel}
+          </div>
+        )}
+      </div>
+    </Link>
+  )
+}
