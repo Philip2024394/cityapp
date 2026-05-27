@@ -254,6 +254,40 @@ function PlanTripPageInner() {
     setDropoffLabel(pickupLabel)
   }
 
+  // Selected-driver state. Customer taps a card in the inline list → that
+  // driver is highlighted; the Book Driver CTA at the bottom activates.
+  // No navigation to a separate list page (founder direction: inline
+  // scrolling list IS the action path).
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null)
+  const selectedDriver = useMemo(
+    () => drivers.find((d) => d.id === selectedDriverId) ?? null,
+    [drivers, selectedDriverId],
+  )
+
+  // Book Driver — opens WhatsApp to the selected driver with a pre-filled
+  // Indonesian starter message that names the trip ends. Customer + driver
+  // agree the fare directly there. IndoCity does not handle the booking
+  // itself (PM 12/2019 directory safe-harbour: discovery + WhatsApp
+  // hand-off only).
+  function handleBookDriver() {
+    if (!selectedDriver) return
+    haptic.impact()
+    logNav('cari:book-driver')
+    const phone = selectedDriver.whatsappE164?.replace(/[^0-9]/g, '') ?? ''
+    if (!phone) return
+    const lines: string[] = ['Halo, saya tertarik booking via IndoCity.']
+    if (pickupLabel) lines.push(`Pickup: ${pickupLabel}`)
+    if (dropoffLabel) lines.push(`Drop-off: ${dropoffLabel}`)
+    if (pitstopOpen && pitstopNote.trim()) lines.push(`Pit stop: ${pitstopNote.trim()}`)
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`
+    if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  // Legacy "View drivers" navigation is kept available for deep-link
+  // compatibility with anything that still POSTs `/cari?p..&d..` and
+  // expects the rider-list page to follow — not wired to a visible CTA
+  // in the new layout, but preserved so /cari/rider deep-links don't
+  // break.
   function handleSearch() {
     if (!canSearch) return
     logNav('cari:view-drivers')
@@ -272,6 +306,7 @@ function PlanTripPageInner() {
     sp.set('vehicleType', vehicleTypeForRider)
     router.push(`/cari/rider?${sp.toString()}`)
   }
+  void handleSearch // referenced for future deep-link wiring; quietens unused-fn lint
 
   // ───────────────────────────────────────────────────────────────────────
   // Render
@@ -368,15 +403,19 @@ function PlanTripPageInner() {
         </div>
       </header>
 
-      {/* BOOKING CONTAINER — white card floating ~15px from screen edges,
-          70vh tall, rounded-3xl with shadow-2xl. Contains the whole
-          trip-planning form + the inline driver list. */}
-      <div className="relative z-20" style={{ paddingLeft: 15, paddingRight: 15 }}>
+      {/* BOOKING CONTAINER — white card attached to the screen footer.
+          Sits 15px from the left + right edges, fills the remaining
+          vertical space below the header, and bleeds flush to the
+          bottom of the viewport (rounded ONLY on the top corners so it
+          reads as a panel that emerges from the page footer). The
+          customer's path-to-action is the inline scrolling driver
+          list itself — no Find-my-ride redirect button is needed. */}
+      <div className="relative z-20 flex-1 flex flex-col" style={{ paddingLeft: 15, paddingRight: 15 }}>
         <div
-          className="mx-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-          style={{ height: '70vh', maxWidth: 640 }}
+          className="mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden flex-1 w-full"
+          style={{ maxWidth: 640 }}
         >
-          <div className="flex flex-col h-full p-4 sm:p-5">
+          <div className="flex flex-col h-full p-4 sm:p-5 pb-safe">
             {/* ROW 1 — Header bar: "Where to?" + Add Stop button */}
             <div className="flex items-center justify-between gap-2 shrink-0">
               <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg">
@@ -612,6 +651,11 @@ function PlanTripPageInner() {
                   driver={d}
                   vehicleType={vehicleType}
                   pickup={pickup}
+                  selected={selectedDriverId === d.id}
+                  onSelect={() => {
+                    haptic.tap()
+                    setSelectedDriverId((prev) => (prev === d.id ? null : d.id))
+                  }}
                 />
               ))}
             </div>
@@ -642,33 +686,38 @@ function PlanTripPageInner() {
                 <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
               </span>
             </Link>
-          </div>
-        </div>
 
-        {/* FIND MY RIDE — OUTSIDE the white container. Yellow gradient
-            primary CTA. Below it sits the directory-safe-harbour
-            disclaimer so it stays visible at the action terminus. */}
-        <div className="mx-auto mt-3 mb-4" style={{ maxWidth: 640 }}>
-          <button
-            type="button"
-            onClick={handleSearch}
-            disabled={!canSearch}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-bg font-black text-[15px] tracking-tight bg-gradient-to-r from-brand to-brand2 hover:from-brand2 hover:to-brand active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(250,204,21,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ minHeight: 48 }}
-          >
-            <Search className="w-4 h-4" strokeWidth={3} />
-            <span>Find my ride</span>
-            {canSearch && lowestFareIdr != null && (
-              <span className="text-[13px] font-bold opacity-80 ml-1">
-                · from Rp {lowestFareIdr.toLocaleString('en-US')}
-              </span>
-            )}
-            <ArrowRight className="w-4 h-4" strokeWidth={3} />
-          </button>
-          <p className="mt-2 text-center text-[11px] text-white/85 font-bold leading-snug px-2">
-            Self-published rates · IndoCity is a software directory.
-            You agree the fare directly with the driver.
-          </p>
+            {/* BOOK DRIVER — primary CTA sitting INSIDE the booking
+                container at the very bottom. Solid brand-yellow (no
+                gradient) per founder direction. Disabled until the
+                customer has tapped a driver in the inline list; then
+                activates and opens WhatsApp to that driver with a
+                pre-filled Indonesian starter message. IndoCity's
+                involvement ends at the handoff — fare is agreed
+                between customer and driver directly. */}
+            <div className="mt-3 shrink-0">
+              <button
+                type="button"
+                onClick={handleBookDriver}
+                disabled={!selectedDriver}
+                aria-label={selectedDriver ? `Book ${selectedDriver.name}` : 'Select a driver first'}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-bg font-black text-[15px] tracking-tight active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(250,204,21,0.45)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                style={{ background: '#FACC15', minHeight: 48 }}
+              >
+                <Search className="w-4 h-4" strokeWidth={3} />
+                <span>
+                  {selectedDriver
+                    ? `Book Driver · ${selectedDriver.name.split(' ').slice(0, 2).join(' ')}`
+                    : 'Book Driver'}
+                </span>
+                <ArrowRight className="w-4 h-4" strokeWidth={3} />
+              </button>
+              <p className="mt-2 text-center text-[11px] text-[#52525B] font-bold leading-snug px-2">
+                Self-published rates · IndoCity is a software directory.
+                You agree the fare directly with the driver.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </>
@@ -717,10 +766,14 @@ function DriverCard({
   driver,
   vehicleType,
   pickup,
+  selected,
+  onSelect,
 }: {
   driver: Rider
   vehicleType: 'car' | 'bike'
   pickup: GeoPoint | null
+  selected: boolean
+  onSelect: () => void
 }) {
   // Image: prefer brand_logo_url (drivers upload a photo of their vehicle
   // for their own profile page) — the legacy Rider shape exposes this as
@@ -760,13 +813,24 @@ function DriverCard({
   const fee = driver.minFee ?? driver.pricePerKm ?? null
   const priceLabel = fee != null ? `Rp ${fee.toLocaleString('en-US')}` : null
 
-  const href = vehicleType === 'car' ? `/car/${driver.slug}` : `/r/${driver.slug}`
+  // Cards no longer navigate — they SELECT (highlight). The container's
+  // Book Driver CTA at the bottom takes the selected driver to WhatsApp.
+  // vehicleType is no longer needed for routing but retained for any
+  // future per-vehicle card variations.
+  void vehicleType
 
   return (
-    <Link
-      href={href}
-      prefetch
-      className="flex items-center gap-3 p-2.5 rounded-xl border border-[#E4E4E7] bg-white hover:border-[#FACC15] active:scale-[0.99] transition"
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      aria-label={`${selected ? 'Deselect' : 'Select'} ${driver.name}`}
+      className={
+        'w-full text-left flex items-center gap-3 p-2.5 rounded-xl active:scale-[0.99] transition ' +
+        (selected
+          ? 'border-2 border-brand bg-[#FFFDF5] shadow-[0_4px_14px_rgba(250,204,21,0.30)]'
+          : 'border border-[#E4E4E7] bg-white hover:border-[#FACC15]')
+      }
       style={{ minHeight: 64 }}
     >
       {/* Vehicle / brand image */}
@@ -814,6 +878,6 @@ function DriverCard({
           </div>
         )}
       </div>
-    </Link>
+    </button>
   )
 }
