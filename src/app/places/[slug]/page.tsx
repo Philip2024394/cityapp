@@ -24,7 +24,7 @@ async function loadPlace(slug: string) {
   if (!supabase) return null
   const { data } = await supabase
     .from('places')
-    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, opening_hours, rating, review_count')
+    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count')
     .eq('slug', slug)
     .eq('status', 'approved')
     .maybeSingle()
@@ -73,7 +73,7 @@ type Row = {
   lat: number
   lng: number
   whatsapp_e164: string | null
-  opening_hours: Record<string, unknown> | null
+  hours_json: Record<string, unknown> | null
   rating: number | null
   review_count: number | null
 }
