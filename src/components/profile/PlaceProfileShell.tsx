@@ -2,15 +2,17 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  Star, MapPin, Bike, Car as CarIcon,
+  Star, BadgeCheck, Award, MapPin, Bike, Car as CarIcon,
   Share2, Link2, X, ChevronLeft, MessageCircle,
-  ShoppingBag, Minus, Plus, Trash2, Heart,
+  ShoppingBag, Minus, Plus, Trash2,
 } from 'lucide-react'
-import {
+import RunningMarquee from '@/components/profile/RunningMarquee'
+import PortfolioCarousel, {
   PortfolioDetailPopup,
   type PortfolioPhoto,
 } from '@/components/profile/PortfolioCarousel'
-import {
+import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
+import VisitUsPanel, {
   SocialInstagramIcon,
   SocialTikTokIcon,
   SocialFacebookIcon,
@@ -20,34 +22,32 @@ import type { PlaceCategory } from '@/lib/places/types'
 import { usePlaceCart, type PlaceCartItem } from '@/components/profile/usePlaceCart'
 
 // =============================================================================
-// PlaceProfileShell — SINGLE-VIEWPORT no-scroll place profile.
+// PlaceProfileShell — 1:1 visual + functional mirror of
+// /beautician/[slug] adapted for self-listed venues.
 // -----------------------------------------------------------------------------
-// Composition (100dvh root, overflow-hidden):
-//   • Top chrome (absolute over hero): back · heart · share · cart icons
-//   • Hero+thumbs row (~60dvh): 4 thumbnails left rail + cover photo + maps
-//     badge bottom-right of hero · place name + slogan overlay top-left
-//   • Compact info row (~15dvh): Category · ★ rating · city — single line
-//   • Sticky footer (~15dvh): Bike (yellow) + Car (navy) "Take me there"
-//   • Bottom 3px brand-yellow accent bar at the viewport edge
+// Sections rendered, in order (same as beautician):
+//   1. Hero cover + sparkle headline + back/share chrome
+//   2. Reviews toggle pill (only when rating + reviewCount > 0)
+//   3. Floating info card — icon, name (with verified tick), category/city,
+//      rating summary, "Top Listed" award badge
+//   4. About card with optional Visit Us launcher
+//   5. Offers carousel (category-aware heading: Menu / Tickets & highlights /
+//      Rooms & packages / Featured offers / Services / Highlights)
+//   6. RunningMarquee (derived from tags)
+//   7. Sticky bottom CTA — Bike + Car "Take me there" buttons + optional
+//      "Contact venue" link when contactEnabled && whatsappE164
+//   8. Compliance disclaimer ("Self-listed venue · …")
+//   9. Right-edge vertical Back button (same as beautician)
+//  10. Bottom accent bar (yellow, fixed)
 //
-// What was DROPPED from the previous beautician-mirror version (founder
-// confirmed for the third time — this is a no-scroll page):
-//   - Reviews toggle pill + Reviews panel swap
-//   - Visit Us launcher + Visit Us panel swap
-//   - About card (description -> slogan inline)
-//   - Cuisine chips row
-//   - Offers carousel section (folded into the 4 left thumbnails)
-//   - RunningMarquee tag ribbon
-//   - Inline Start-from / Contact footer row
-//   - Right-edge vertical Back button (back-arrow lives in top chrome)
-//   - "Self-listed venue · IndoCity is a software directory" disclaimer
-//
-// What was KEPT (must work in the new layout):
-//   - usePlaceCart hook + cart icon top-right with yellow totalQty badge
-//   - PlaceCartSheet (full WhatsApp checkout)
-//   - "Added to cart" toast
-//   - Thumbnail tap -> PortfolioDetailPopup with cart-UI wired in
-//   - Bike/Car CTAs in the sticky footer, prefilled /cari destination
+// Deliberate deviations from beautician:
+//   - No standalone "Services Provided" chips section (offers cover this)
+//   - No standalone "Services + pricing" block (offers carousel covers this)
+//   - Reviews panel is hidden when no rating data exists (places have no
+//     write endpoint yet)
+//   - Sticky CTA replaces ContactBookingPopup with transport-first
+//     Bike/Car buttons; WhatsApp contact is the secondary link, gated on
+//     contactEnabled + whatsappE164
 // =============================================================================
 
 const BRAND_YELLOW = '#FACC15'
@@ -78,9 +78,9 @@ export type PlaceProfileShellProps = {
     city:          string
     address:       string | null
     tags:          string[]
-    /** Self-listed cuisine tags. Unused in this no-scroll layout but
-     *  kept in the API so the server fetch / dashboard editor stay
-     *  unchanged. */
+    /** Self-listed cuisine tags ("Indonesian", "Japanese", "Halal",
+     *  "Cocktails", etc.). Rendered as small chips under the About
+     *  card. Empty array → cuisine row is hidden (non-food places). */
     cuisineTypes:  string[]
     lat:           number
     lng:           number
@@ -92,24 +92,70 @@ export type PlaceProfileShellProps = {
     offers:        PlaceOffer[]
   }
   /**
-   * Owner-controlled flag. When false, the popup's Contact button is
-   * hidden even if the venue has a whatsapp_e164. Transport CTAs always
-   * render.
+   * Owner-controlled flag. When false, the secondary "Contact venue"
+   * WhatsApp button is hidden even if the venue has a whatsapp_e164.
+   * Transport CTAs always render.
    */
   contactEnabled?: boolean
+}
+
+// Map a PlaceCategory to the offers-section heading. Mirrors the
+// beautician page's "Portfolio" / "Services Provided" headings.
+function offersHeading(category: PlaceCategory): string {
+  switch (category) {
+    case 'restaurant':
+    case 'cafe':
+    case 'bar':
+    case 'club':
+      return 'Menu'
+    case 'attraction':
+    case 'temple':
+    case 'beach':
+      return 'Tickets & highlights'
+    case 'hotel':
+      return 'Rooms & packages'
+    case 'mall':
+      return 'Featured offers'
+    default:
+      return 'Highlights'
+  }
+}
+
+// Compose the marquee text from tags. Falls back to a generic prompt so
+// the ribbon never reads empty.
+function buildMarqueeText(name: string, tags: string[]): string {
+  const clean = tags.map((t) => t.trim()).filter(Boolean)
+  if (clean.length > 0) return clean.join(' · ')
+  return `Discover ${name} on IndoCity — self-listed venue, agree price directly when you visit.`
+}
+
+// Cast hours_json (unknown record) to the string-per-day shape VisitUsPanel
+// expects. Places store hours as { mon: "08:00-22:00", ... } in dashboard
+// editor, but the column type is jsonb so we runtime-filter.
+function coerceHoursForPanel(raw: Record<string, unknown> | null): Record<string, string> | null {
+  if (!raw) return null
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v === 'string' && v.trim()) out[k] = v.trim()
+  }
+  return Object.keys(out).length > 0 ? out : null
 }
 
 export default function PlaceProfileShell({
   place, contactEnabled = true,
 }: PlaceProfileShellProps) {
-  // Brand-yellow accent for the whole place template (no per-venue
-  // theming yet). The popup top edge also uses this so the popup
-  // matches the profile page accent.
+  // Beautician uses a per-profile theme_color; places share the brand
+  // yellow until per-venue theming ships, so the accent stays consistent.
   const theme = BRAND_YELLOW
 
   const [shareOpen,   setShareOpen]   = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
-  // Selected offer/photo — opens the PortfolioDetailPopup (cart-enabled).
+  // Reviews + Visit Us panels swap the content area, same as beautician.
+  const [showReviews, setShowReviews] = useState(false)
+  const [showVisitUs, setShowVisitUs] = useState(false)
+  // Portfolio layout — same flip toggle used on every beautician page.
+  const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
+  // Selected offer card — opens the View Details popup when set.
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
   // Cart state — per-place localStorage cart for the WhatsApp handoff.
   const cart = usePlaceCart(place.id)
@@ -125,6 +171,7 @@ export default function PlaceProfileShell({
   const photos    = place.imageUrls
   const heroSrc   = photos[0] || DEFAULT_PLACE_HERO
   const offers    = place.offers ?? []
+  const hasOffers = offers.length > 0
   const CategoryIcon = CATEGORIES[place.category]?.Icon ?? null
   const categoryGradient = CATEGORIES[place.category]?.gradient ?? 'linear-gradient(135deg, #92400E, #B45309)'
 
@@ -132,33 +179,38 @@ export default function PlaceProfileShell({
   const reviewCount = place.reviewCount ?? 0
   const hasReviews  = ratingVal > 0 && reviewCount > 0
 
-  // ─────────────────────────────────────────────────────────────────
-  // 4-thumbnail left rail. Priority: first 4 offers WITH images. If
-  // fewer than 4 offer-images exist, top up from place.imageUrls
-  // (skipping index 0 which is the hero). Each thumbnail tap opens
-  // the PortfolioDetailPopup mapped to the offer (or, for photo
-  // fallbacks, a name-less PortfolioPhoto with no price = no cart UI).
-  // ─────────────────────────────────────────────────────────────────
-  type ThumbItem = {
-    key:    string
-    url:    string
-    offer:  PlaceOffer | null // null = photo fallback (no cart UI)
-  }
-  const offerThumbs: ThumbItem[] = offers
-    .filter((o) => Boolean(o.image_url))
-    .slice(0, 4)
-    .map((o) => ({ key: `o-${o.id}`, url: o.image_url as string, offer: o }))
-  const fillerPhotos = photos.slice(1, 5)
-  let fillerIdx = 0
-  while (offerThumbs.length < 4 && fillerIdx < fillerPhotos.length) {
-    offerThumbs.push({
-      key: `p-${fillerIdx}`,
-      url: fillerPhotos[fillerIdx],
-      offer: null,
-    })
-    fillerIdx += 1
-  }
-  const thumbs = offerThumbs // already capped at 4
+  // Cheapest priced offer — surfaces as "Start from Rp X" on the info
+  // card so customers instantly see the entry price (drinks-from / menu-
+  // from / ticket-from / product-from per category). null = no priced
+  // offers → pill is hidden. Lower-bound only — the venue self-publishes
+  // each offer's individual price, IndoCity never computes a total.
+  const minOfferPriceIdr: number | null = (() => {
+    const prices = offers
+      .map(o => o.price_idr)
+      .filter((p): p is number => typeof p === 'number' && p > 0)
+    return prices.length === 0 ? null : Math.min(...prices)
+  })()
+  const startFromLabel: string | null = (() => {
+    if (minOfferPriceIdr == null) return null
+    if (minOfferPriceIdr >= 1_000_000) {
+      const jt = minOfferPriceIdr / 1_000_000
+      return `Rp ${Number.isInteger(jt) ? jt : jt.toFixed(1)}jt`
+    }
+    if (minOfferPriceIdr >= 1000) {
+      const k = minOfferPriceIdr / 1000
+      return `Rp ${Number.isInteger(k) ? k : k.toFixed(0)}k`
+    }
+    return `Rp ${minOfferPriceIdr.toLocaleString('id-ID')}`
+  })()
+
+  // Map offers → PortfolioPhoto shape so the shared carousel + detail
+  // popup renders identically to the beautician variant.
+  const portfolioPhotos: PortfolioPhoto[] = offers.map((o) => ({
+    url:         o.image_url || photos[0] || DEFAULT_PLACE_HERO,
+    name:        o.name,
+    description: o.description,
+    price_idr:   o.price_idr,
+  }))
 
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/places/${place.slug}`
@@ -174,14 +226,7 @@ export default function PlaceProfileShell({
     return `/cari?${sp.toString()}`
   }
 
-  // External Google Maps deep link for the small bottom-right pill on
-  // the hero. Opens "search by lat/lng" so the user can hand off
-  // navigation to their preferred map app from the OS share sheet.
-  const mapsHref = (Number.isFinite(place.lat) && Number.isFinite(place.lng))
-    ? `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`
-    : null
-
-  // Pre-filled Indonesian WhatsApp greeting for the popup contact path.
+  // Pre-filled Indonesian WhatsApp greeting for the optional secondary CTA.
   const waHref = place.whatsappE164
     ? `https://wa.me/${place.whatsappE164.replace(/[^\d]/g, '')}?text=${encodeURIComponent(
         `Halo, saya tertarik dengan ${place.name} dari IndoCity`,
@@ -189,76 +234,23 @@ export default function PlaceProfileShell({
     : null
   const showContact = contactEnabled && Boolean(waHref)
 
-  // Map a thumb tap → PortfolioPhoto for the popup. Offer-backed
-  // thumbs carry price + description so the popup renders the cart UI
-  // (when price > 0). Filler-photo thumbs open the popup as a plain
-  // image (no cart, no contact data — just a bigger view).
-  function openThumb(t: ThumbItem) {
-    if (t.offer) {
-      setDetailPhoto({
-        url:         t.offer.image_url || photos[0] || DEFAULT_PLACE_HERO,
-        name:        t.offer.name,
-        description: t.offer.description,
-        price_idr:   t.offer.price_idr,
-      })
-    } else {
-      setDetailPhoto({ url: t.url, name: place.name, description: null, price_idr: null })
-    }
-  }
+  const panelHours = coerceHoursForPanel(place.hoursJson)
 
   return (
     <Shell>
-      {/* ============================================================
-          HERO + THUMBS ROW  (~60dvh)
-          - 4-thumbnail rail on the LEFT (~22% width)
-          - Hero cover photo / category-gradient on the right
-          - Floating top chrome (absolute): back · heart · share · cart
-          - Place name + slogan top-left overlay
-          - Maps badge bottom-right
-          ============================================================ */}
-      <div className="relative w-full" style={{ height: '60dvh', flex: '0 0 60dvh' }}>
-        {/* TOP CHROME — floating, absolute over the hero. Left: back.
-            Right: heart (visual placeholder) · share · cart. The cart
-            button is always visible so customers can find their cart
-            even when empty. */}
-        <div className="absolute top-3 left-3 z-30">
-          <Link
-            href="/places"
-            aria-label="Back to IndoCity places"
-            className="w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-[0.96] transition"
-            style={{
-              background: 'rgba(255,255,255,0.92)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              color: BRAND_NAVY,
-              minWidth: 44, minHeight: 44,
-            }}
-          >
-            <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
-          </Link>
-        </div>
-
+      {/* HERO — 16/9 cover with optional sparkle overlay + share button. */}
+      <div className="relative pb-2">
+        {/* Top-right floating row — share + cart icons. Always rendered
+            (regardless of cart count) so the cart entry point is
+            visible the moment a customer adds anything. White-glass
+            cart pill matches the hero share chip visually. */}
         <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
-          <button
-            type="button"
-            aria-label="Save place"
-            className="w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-[0.96] transition"
-            style={{
-              background: 'rgba(255,255,255,0.92)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              color: BRAND_NAVY,
-              minWidth: 44, minHeight: 44,
-            }}
-          >
-            <Heart className="w-4 h-4" strokeWidth={2.5} />
-          </button>
           <button
             type="button"
             onClick={() => setShareOpen(true)}
             aria-label="Share place"
             className="w-10 h-10 rounded-full flex items-center justify-center text-black shadow-md active:scale-[0.96] transition"
-            style={{ background: theme, minWidth: 44, minHeight: 44 }}
+            style={{ background: theme }}
           >
             <Share2 className="w-4 h-4" strokeWidth={2.5} />
           </button>
@@ -289,230 +281,330 @@ export default function PlaceProfileShell({
           </button>
         </div>
 
-        {/* Hero + thumb-rail composition. Thumbs sit on the LEFT at a
-            fixed ~22% column, hero fills the rest. */}
-        <div className="absolute inset-0 flex">
-          {/* THUMBNAIL RAIL (LEFT) */}
+        <div
+          className="relative w-full overflow-hidden bg-black"
+          style={{ aspectRatio: '16 / 9' }}
+        >
+          {photos.length > 0 ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroSrc}
+              alt={place.name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: categoryGradient }}
+              aria-hidden
+            >
+              {CategoryIcon ? (
+                <CategoryIcon className="w-24 h-24 text-white/85" strokeWidth={1.5} />
+              ) : (
+                <MapPin className="w-20 h-20 text-white/85" strokeWidth={1.5} />
+              )}
+            </div>
+          )}
+          {/* Soft top fade so the share chip stays readable on bright photos. */}
           <div
-            className="h-full flex flex-col gap-1.5 p-1.5 bg-white"
-            style={{ width: '22%', minWidth: 84 }}
-          >
-            {thumbs.length > 0 ? (
-              thumbs.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => openThumb(t)}
-                  aria-label={t.offer ? `View ${t.offer.name}` : 'View photo'}
-                  className="relative flex-1 min-h-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 active:scale-[0.97] transition"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={t.url}
-                    alt={t.offer?.name || ''}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </button>
-              ))
-            ) : (
-              // No offers + no extra photos — render 4 placeholder
-              // tiles so the rail still composes correctly at 60dvh.
-              Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={`empty-${i}`}
-                  className="flex-1 min-h-0 rounded-lg border border-dashed border-gray-200 bg-gray-50"
-                  aria-hidden
-                />
-              ))
+            className="absolute inset-x-0 top-0 h-28 pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.10) 70%, transparent 100%)',
+            }}
+            aria-hidden
+          />
+
+          {/* Place name (top-left overlay) + slogan (first sentence of the
+              description). White text + drop shadow so it stays readable
+              over photo + the fade above. Truncated long descriptions to
+              ~80 chars so the slogan line wraps cleanly. */}
+          <div className="absolute top-3 left-3 right-20 pointer-events-none">
+            <h1
+              className="text-white font-black tracking-tight leading-[1.1] text-[20px] sm:text-[24px]"
+              style={{ textShadow: '0 2px 10px rgba(0,0,0,0.55)' }}
+            >
+              {place.name}
+            </h1>
+            {place.description && (
+              <p
+                className="text-white/95 font-semibold leading-snug mt-1 text-[12px] sm:text-[13px] line-clamp-2"
+                style={{ textShadow: '0 2px 8px rgba(0,0,0,0.55)' }}
+              >
+                {(() => {
+                  // Slogan = first sentence of the description (clipped at
+                  // ~80 chars so it never crowds the hero). Falls back to
+                  // the full string when there's no sentence boundary.
+                  const d = place.description.trim()
+                  const firstSentence = d.split(/(?<=[.!?])\s/)[0] ?? d
+                  return firstSentence.length > 80
+                    ? firstSentence.slice(0, 80).trimEnd() + '…'
+                    : firstSentence
+                })()}
+              </p>
             )}
           </div>
+        </div>
 
-          {/* HERO COVER (RIGHT) */}
-          <div className="relative flex-1 h-full overflow-hidden bg-black">
-            {photos.length > 0 ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={heroSrc}
-                alt={place.name}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ background: categoryGradient }}
-                aria-hidden
-              >
-                {CategoryIcon ? (
-                  <CategoryIcon className="w-24 h-24 text-white/85" strokeWidth={1.5} />
-                ) : (
-                  <MapPin className="w-20 h-20 text-white/85" strokeWidth={1.5} />
-                )}
-              </div>
-            )}
-            {/* Soft top fade so the chrome stays readable on bright photos. */}
-            <div
-              className="absolute inset-x-0 top-0 h-28 pointer-events-none"
-              style={{
-                background:
-                  'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.10) 70%, transparent 100%)',
-              }}
-              aria-hidden
-            />
-            {/* Soft bottom fade so the name+slogan overlay stays readable. */}
-            <div
-              className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
-              style={{
-                background:
-                  'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)',
-              }}
-              aria-hidden
-            />
+        {/* Reviews toggle — only renders when we actually have review data,
+            since places have no review-write endpoint yet. */}
+        {hasReviews && (
+          <div className="px-4 relative z-20 flex justify-end" style={{ marginTop: -56 }}>
+            <button
+              type="button"
+              onClick={() => { setShowReviews((v) => !v); setShowVisitUs(false) }}
+              aria-pressed={showReviews}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-black text-[11px] font-extrabold shadow-md active:scale-[0.97] transition"
+              style={{ background: theme }}
+            >
+              <Star className="w-3.5 h-3.5" strokeWidth={0} fill="#000000" />
+              {showReviews ? 'Hide reviews' : 'Reviews'}
+            </button>
+          </div>
+        )}
 
-            {/* Place name + slogan (bottom-left overlay on the hero) */}
-            <div className="absolute bottom-3 left-3 right-24 pointer-events-none">
-              <h1
-                className="text-white font-black tracking-tight leading-[1.1] text-[20px] sm:text-[24px]"
-                style={{ textShadow: '0 2px 10px rgba(0,0,0,0.55)' }}
-              >
-                {place.name}
-              </h1>
-              {place.description && (
-                <p
-                  className="text-white/95 font-semibold leading-snug mt-1 text-[13px] sm:text-[14px] line-clamp-2"
-                  style={{ textShadow: '0 2px 8px rgba(0,0,0,0.55)' }}
-                >
-                  {(() => {
-                    // Slogan = first sentence of the description (clipped
-                    // at ~80 chars). Falls back to the full string if
-                    // there's no sentence boundary.
-                    const d = place.description.trim()
-                    const firstSentence = d.split(/(?<=[.!?])\s/)[0] ?? d
-                    return firstSentence.length > 80
-                      ? firstSentence.slice(0, 80).trimEnd() + '…'
-                      : firstSentence
-                  })()}
-                </p>
+        {/* Floating info card — overlaps the bottom edge of the cover. */}
+        <div className="px-4 relative z-20" style={{ marginTop: hasReviews ? 12 : -56 }}>
+          <div
+            className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
+            style={{ borderRadius: 15 }}
+          >
+            {/* Square category icon tile in place of the beautician avatar. */}
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-white shrink-0 border-2 border-white shadow overflow-hidden"
+              style={{ background: categoryGradient }}
+              aria-hidden
+            >
+              {CategoryIcon ? (
+                <CategoryIcon className="w-7 h-7" strokeWidth={2} />
+              ) : (
+                <MapPin className="w-7 h-7" strokeWidth={2} />
               )}
             </div>
 
-            {/* Maps badge — small dark pill bottom-right. External
-                Google Maps link, opens in a new tab. */}
-            {mapsHref && (
-              <a
-                href={mapsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open in Google Maps"
-                className="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-white text-[11px] font-extrabold shadow-md active:scale-[0.97] transition"
-                style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(4px)', minHeight: 32 }}
-              >
-                <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                Maps
-              </a>
-            )}
+            {/* Name + category/city + rating */}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[16px] sm:text-[18px] font-black text-black truncate leading-tight flex items-center gap-1">
+                <span className="truncate">{place.name}</span>
+                {place.verified && (
+                  <BadgeCheck
+                    className="w-4 h-4 shrink-0"
+                    strokeWidth={2.5}
+                    fill={theme}
+                    style={{ color: '#FFFFFF' }}
+                    aria-label="Verified"
+                  />
+                )}
+              </h1>
+              <p className="text-[12px] text-gray-500 truncate mt-0.5">
+                <span className="font-extrabold text-gray-700">{place.categoryLabel}</span>
+                {place.city ? <> · <span className="capitalize">{place.city}</span></> : null}
+              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <Star
+                  className="w-3.5 h-3.5 shrink-0"
+                  style={{ color: BRAND_YELLOW }}
+                  fill={BRAND_YELLOW}
+                  strokeWidth={0}
+                />
+                <span className="text-[12px] font-extrabold text-black">
+                  {hasReviews ? ratingVal.toFixed(1) : '—'}
+                </span>
+                <span className="text-[11px] text-gray-500">
+                  ({reviewCount} review{reviewCount === 1 ? '' : 's'})
+                </span>
+              </div>
+            </div>
+
+            {/* "Top Listed" award badge — neutral gray pill with themed icon
+                + text, mirroring the beautician "Top Rated Seller" chip. */}
+            <div
+              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
+              style={{ background: '#F3F4F6' }}
+            >
+              <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: BRAND_NAVY }} />
+              <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: BRAND_NAVY }}>
+                Top Listed
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ============================================================
-          COMPACT INFO ROW  (~15dvh)
-          Single inline row: Category · ★ rating · city. NO scrolling.
-          ============================================================ */}
-      <div
-        className="flex items-center px-4"
-        style={{ height: '15dvh', flex: '0 0 15dvh' }}
-      >
-        <div className="w-full flex items-center gap-2 flex-wrap text-[13px]">
-          <span className="font-extrabold text-black">
-            {place.categoryLabel}
-          </span>
-          <span className="text-gray-400" aria-hidden>·</span>
-          <span className="inline-flex items-center gap-1">
-            <Star
-              className="w-3.5 h-3.5 shrink-0"
-              style={{ color: BRAND_YELLOW }}
-              fill={BRAND_YELLOW}
-              strokeWidth={0}
+      <div className="px-4 pb-40 max-w-2xl mx-auto space-y-3 pt-3">
+        {showVisitUs ? (
+          <VisitUsPanel
+            displayName={place.name}
+            address={place.address}
+            city={place.city ?? null}
+            lat={Number.isFinite(place.lat) ? place.lat : null}
+            lng={Number.isFinite(place.lng) ? place.lng : null}
+            hours={panelHours}
+            busyDates={[]}
+            themeColor={theme}
+            onClose={() => setShowVisitUs(false)}
+            noLocationCopy="Lokasi belum di-pin oleh venue."
+            bottomCtas={
+              (Number.isFinite(place.lat) && Number.isFinite(place.lng))
+                ? [
+                    {
+                      label: 'Bike',
+                      icon: Bike,
+                      variant: 'yellow',
+                      onClick: () => { window.location.href = takeMeThereHref('bike') },
+                      note: `We'll use your location for pickup and ${place.name}'s for drop-off — fare shows on the next screen.`,
+                    },
+                    {
+                      label: 'Car',
+                      icon: CarIcon,
+                      variant: 'navy',
+                      onClick: () => { window.location.href = takeMeThereHref('car') },
+                    },
+                  ]
+                : undefined
+            }
+          />
+        ) : showReviews ? (
+          <PlaceReviewsPanel
+            rating={ratingVal}
+            count={reviewCount}
+            theme={theme}
+            onClose={() => setShowReviews(false)}
+          />
+        ) : (
+          <>
+            {/* About — bio-style 5-line clamp + optional Visit Us launcher. */}
+            <section className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                  About {place.name}
+                </h2>
+                {(Number.isFinite(place.lat) && Number.isFinite(place.lng)) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVisitUs(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+                    style={{ color: BRAND_NAVY }}
+                  >
+                    <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    Visit Us
+                  </button>
+                )}
+              </div>
+              <div className="flex items-start gap-3">
+                {place.description?.trim() ? (
+                  <p
+                    className="text-[13px] text-gray-600 leading-snug flex-1 min-w-0"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {place.description.replace(/\s*\n\s*/g, ' ')}
+                  </p>
+                ) : (
+                  <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">
+                    No description yet.
+                  </p>
+                )}
+              </div>
+
+              {/* Cuisine chips — self-listed cuisine tags. Hidden when the
+                  array is empty (non-food places). Small grey pills, brand
+                  yellow border + dark text, wrap to multiple lines when
+                  many cuisines are listed. */}
+              {place.cuisineTypes.length > 0 && (
+                <div className="pt-2">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 mb-1.5">
+                    Cuisine
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {place.cuisineTypes.map((c) => (
+                      <span
+                        key={c}
+                        className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold text-black"
+                        style={{
+                          background: '#FEF3C7',
+                          border: '1px solid #FDE68A',
+                        }}
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Offers carousel — category-aware heading. Hidden entirely
+                when the venue hasn't published any offers. */}
+            {hasOffers && (
+              <section className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                    {offersHeading(place.category)}
+                  </h2>
+                  <PortfolioViewToggle
+                    view={portfolioView}
+                    onChange={setPortfolioView}
+                    themeColor={BRAND_NAVY}
+                  />
+                </div>
+                <p className="text-[11px] text-gray-500 italic -mt-1">
+                  Offers self-published by venue · agree price directly when you visit
+                </p>
+                <PortfolioCarousel
+                  photos={portfolioPhotos}
+                  onViewDetails={(ph) => setDetailPhoto(ph)}
+                  themeColor={BRAND_NAVY}
+                  view={portfolioView}
+                />
+              </section>
+            )}
+
+            {/* Running marquee — tags as the scrolling ribbon copy. */}
+            <RunningMarquee
+              text={buildMarqueeText(place.name, place.tags)}
+              background="#FEF3C7"
+              color="#78350F"
             />
-            <span className="font-extrabold text-black">
-              {hasReviews ? ratingVal.toFixed(1) : '—'}
-            </span>
-            <span className="text-gray-500 text-[12px]">
-              ({reviewCount} review{reviewCount === 1 ? '' : 's'})
-            </span>
-          </span>
-          {place.city && (
-            <>
-              <span className="text-gray-400" aria-hidden>·</span>
-              <span className="capitalize text-gray-700 font-semibold">
-                {place.city}
-              </span>
-            </>
-          )}
-        </div>
+
+            {/* PRICE + CONTACT FOOTER ROW — mirrors the beautician profile
+                exact pattern (page.tsx lines 595-614): large Rp price on the
+                left with the "Start from" caption underneath, themed Contact
+                button (square w/ rounded corners) on the right. Sits inside
+                the content scroll, not a sticky overlay. */}
+            <div className="flex items-end justify-between gap-3 pb-4">
+              <div className="leading-none pb-3">
+                <div className="text-[24px] sm:text-[28px] font-black text-black">
+                  {startFromLabel ?? '—'}
+                </div>
+                <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
+                  Start from
+                </div>
+              </div>
+              {showContact && waHref && (
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
+                  style={{ background: theme }}
+                >
+                  <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  Contact
+                </a>
+              )}
+            </div>
+
+          </>
+        )}
       </div>
 
-      {/* ============================================================
-          STICKY FOOTER  (~15dvh)
-          Two-button grid: Bike (yellow) + Car (navy) "Take me there".
-          Sits above the 6px brand-yellow accent bar at the viewport
-          edge. Disabled visually if the venue has no lat/lng.
-          ============================================================ */}
-      <div
-        className="px-4 pb-3 pt-1 grid grid-cols-2 gap-2"
-        style={{ flex: '0 0 15dvh' }}
-      >
-        {(['bike', 'car'] as const).map((v) => {
-          const isBike = v === 'bike'
-          const enabled = Number.isFinite(place.lat) && Number.isFinite(place.lng)
-          const bg     = isBike ? BRAND_YELLOW : BRAND_NAVY
-          const color  = isBike ? BRAND_NAVY : '#FFFFFF'
-          const Icon   = isBike ? Bike : CarIcon
-          const label  = isBike ? 'Bike' : 'Car'
-          if (!enabled) {
-            return (
-              <button
-                key={v}
-                type="button"
-                disabled
-                className="inline-flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl text-[13px] font-extrabold shadow-md opacity-50 cursor-not-allowed"
-                style={{ background: bg, color, minHeight: 56 }}
-              >
-                <Icon className="w-5 h-5" strokeWidth={2.5} />
-                <span>{label} — Take me there</span>
-              </button>
-            )
-          }
-          return (
-            <a
-              key={v}
-              href={takeMeThereHref(v)}
-              className="inline-flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl text-[13px] font-extrabold shadow-md active:scale-[0.98] transition"
-              style={{ background: bg, color, minHeight: 56 }}
-            >
-              <Icon className="w-5 h-5" strokeWidth={2.5} />
-              <span>{label} — Take me there</span>
-            </a>
-          )
-        })}
-      </div>
-
-      {/* Bottom accent bar — fixed to the visible viewport edge. 6px
-          to keep visual parity with the older design; founder spec
-          says "3px" but the existing system uses 6px so the bar reads
-          on retina without disappearing. */}
-      <div
-        className="fixed left-0 right-0 z-10"
-        style={{ bottom: 0, height: 6, background: theme }}
-        aria-hidden
-      />
-
-      {/* ============================================================
-          SHARE SHEET — unchanged from the previous version. Identical
-          hand-off to Copy link / WhatsApp / Facebook / Instagram /
-          TikTok so the beautician + place share modals stay 1:1.
-          ============================================================ */}
+      {/* SHARE SHEET — identical to the beautician share modal so customers
+          have the same hand-off to WhatsApp / Facebook / IG / TikTok. */}
       {shareOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -633,12 +725,64 @@ export default function PlaceProfileShell({
         </div>
       )}
 
-      {/* ============================================================
-          OFFER DETAIL POPUP — opens on thumbnail tap. Cart UI is wired
-          via onAddToCart when the source thumb resolves back to a
-          priced offer. themeColor=BRAND_YELLOW so the popup's top
-          accent matches the brand-yellow profile theme.
-          ============================================================ */}
+      {/* Right-edge vertical Back button — same as beautician. */}
+      <Link
+        href="/places"
+        aria-label="Back to IndoCity places"
+        className="fixed z-40 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
+        style={{
+          right: 0,
+          top: '35%',
+          transform: 'translateY(-50%)',
+          width: 34,
+          height: 110,
+          background: BRAND_YELLOW,
+          color: '#0A0A0A',
+          borderTopLeftRadius: 14,
+          borderBottomLeftRadius: 14,
+          boxShadow: '-4px 4px 14px rgba(0,0,0,0.22)',
+        }}
+      >
+        <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+        <span
+          className="font-extrabold uppercase"
+          style={{
+            writingMode: 'vertical-rl',
+            transform: 'rotate(180deg)',
+            fontSize: 11,
+            letterSpacing: '0.18em',
+          }}
+        >
+          Back
+        </span>
+      </Link>
+
+      {/* STICKY BOTTOM CTA — optional WhatsApp contact only. The Bike +
+          Car transport buttons have moved INSIDE the Visit Us panel
+          (founder direction: transport CTAs sit under the map, where
+          the destination is the user's actual context). When
+          contact_enabled=false OR no whatsapp_e164, this row is empty
+          and the bottom accent bar sits flush with the viewport. */}
+      {/* Sticky "Contact venue" yellow pill removed per founder direction —
+          the inline Contact button in the beautician-style footer row
+          (next to the Start-from price) is now the single contact path. */}
+
+      {/* Bottom accent bar — fixed to visible viewport edge, same as beautician. */}
+      <div
+        className="fixed left-0 right-0 z-10"
+        style={{ bottom: 0, height: 6, background: theme }}
+        aria-hidden
+      />
+
+      {/* Offer "View Details" popup — full image + description + price.
+          Reuses the beautician PortfolioDetailPopup; contact CTA is
+          enabled only when contactEnabled && whatsappE164 so the popup
+          mirrors the privacy posture of the sticky CTA.
+
+          For priced offers we additionally pass onAddToCart so the
+          popup renders the quantity stepper + "Add to cart" CTA below
+          the price block. Resolving back from PortfolioPhoto → offer
+          uses name match (offers carry no id in PortfolioPhoto). */}
       {detailPhoto && (() => {
         const matchedOffer = offers.find((o) => o.name === detailPhoto.name) ?? null
         const canAddToCart = Boolean(
@@ -650,7 +794,7 @@ export default function PlaceProfileShell({
         return (
           <PortfolioDetailPopup
             photo={detailPhoto}
-            themeColor={BRAND_YELLOW}
+            themeColor={BRAND_NAVY}
             canContact={showContact}
             onClose={() => setDetailPhoto(null)}
             onContact={() => {
@@ -677,9 +821,11 @@ export default function PlaceProfileShell({
         )
       })()}
 
-      {/* ============================================================
-          CART SHEET — full WhatsApp checkout. Unchanged behaviour.
-          ============================================================ */}
+      {/* CART SHEET — bottom-sheet style modal listing every line in
+          the cart. Total is a simple sum of offer.price_idr × qty —
+          IndoCity never adds delivery, service, or platform fees. The
+          primary CTA builds an Indonesian WhatsApp message and hands
+          off to the venue's WhatsApp; we never see the conversation. */}
       {cartOpen && (
         <PlaceCartSheet
           placeName={place.name}
@@ -694,6 +840,10 @@ export default function PlaceProfileShell({
           onClear={() => { cart.clear() }}
           onClose={() => setCartOpen(false)}
           onSend={() => {
+            // Build the order body. Each line: "• Name ×qty (Rp price) — Rp lineTotal"
+            // The trailing "Alamat saya" / "Catatan" lines are blank so
+            // the customer fills them in inside WhatsApp itself — no
+            // address auto-detection per spec.
             const linesArr = cart.items.map((it) => {
               const unit  = formatRpExact(it.price_idr)
               const line  = formatRpExact(it.price_idr * it.qty)
@@ -712,14 +862,17 @@ export default function PlaceProfileShell({
             if (!digits) return
             const url = `https://wa.me/${digits}?text=${encodeURIComponent(body)}`
             window.open(url, '_blank', 'noopener,noreferrer')
+            // Keep the cart populated so the customer can re-send if
+            // WhatsApp eats the prefill on some Android builds. They
+            // can hit Clear cart manually when they're done.
             setCartOpen(false)
           }}
         />
       )}
 
       {/* Toast — confirms "Added to cart". Auto-dismisses after ~1.8s
-          via the useEffect on toastMsg. Sits just above the bottom
-          accent bar so it doesn't crowd the footer buttons. */}
+          via the useEffect on toastMsg. Stays out of the way of the
+          fixed bottom accent bar by sitting just above it. */}
       {toastMsg && (
         <div
           className="fixed left-1/2 z-50 px-4 py-2.5 rounded-full shadow-lg text-[13px] font-extrabold pointer-events-none"
@@ -748,6 +901,63 @@ export default function PlaceProfileShell({
 function formatRpExact(amount: number): string {
   if (!Number.isFinite(amount) || amount <= 0) return 'Rp 0'
   return `Rp ${Math.round(amount).toLocaleString('id-ID')}`
+}
+
+// =============================================================================
+// PlaceReviewsPanel — read-only summary. Places have no review-write
+// endpoint yet, so we mirror beautician's ReviewsPanel structure but only
+// render the aggregate (no submission form, no list iteration). When this
+// component is shown the parent has already verified rating + count > 0.
+// =============================================================================
+function PlaceReviewsPanel({
+  rating, count, theme, onClose,
+}: {
+  rating: number
+  count:  number
+  theme:  string
+  onClose: () => void
+}) {
+  return (
+    <section className="space-y-3" style={{ marginTop: 4 }}>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+          Reviews
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close reviews"
+          className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+          style={{ color: theme }}
+        >
+          <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+          Close
+        </button>
+      </div>
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 flex items-center gap-3">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+          style={{ background: '#FFFFFF', border: `1.5px solid ${theme}55` }}
+        >
+          <Star className="w-7 h-7" strokeWidth={0} fill={BRAND_YELLOW} style={{ color: BRAND_YELLOW }} />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[24px] font-black text-black leading-none">
+            {rating.toFixed(1)}
+            <span className="text-[14px] font-bold text-gray-500"> / 5</span>
+          </div>
+          <div className="text-[12px] text-gray-600 mt-1">
+            Based on {count} review{count === 1 ? '' : 's'}
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] text-gray-500 leading-snug">
+        Reviews shown here are aggregated from IndoCity visits. Submitting
+        a review for a venue isn&apos;t open yet — agree price + experience
+        directly with the venue when you visit.
+      </p>
+    </section>
+  )
 }
 
 // =============================================================================
@@ -956,16 +1166,12 @@ function PlaceCartSheet({
 }
 
 // =============================================================================
-// Shell — fixed 100dvh root with overflow-hidden so the page never
-// scrolls. Flex column so the hero/info/footer rows compose to 100dvh
-// without overflowing the viewport (iOS-safe dvh, not vh).
+// Shell — solid white page so the global PageBackground doesn't bleed
+// through, plus the dev-toolbar hide rule. Mirrors beautician's Shell.
 // =============================================================================
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main
-      className="relative w-full bg-white text-[#0A0A0A] flex flex-col overflow-hidden"
-      style={{ height: '100dvh' }}
-    >
+    <main className="relative min-h-[100dvh] bg-white text-[#0A0A0A]">
       <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
       {children}
     </main>
