@@ -1,9 +1,9 @@
 'use client'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   ChevronLeft, MapPin, MessageCircle, Star,
-  Share2, Link2, X, Clock, Bike, Car,
+  Share2, Link2, X, Clock, Bike, Car, Heart, Grid3X3,
 } from 'lucide-react'
 import ProfileGallery from './ProfileGallery'
 import RunningMarquee from './RunningMarquee'
@@ -115,6 +115,10 @@ export default function PlaceProfileShell({ place, contactEnabled = true }: Plac
   const [shareOpen,   setShareOpen]   = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [openOffer,   setOpenOffer]   = useState<PlaceOffer | null>(null)
+  // Reference to the secondary photo strip so "View all photos" can scroll
+  // smoothly to it (we deliberately reuse the existing strip instead of
+  // building a fullscreen lightbox — that scope-creeps the hero upgrade).
+  const photoStripRef = useRef<HTMLDivElement | null>(null)
 
   const photos    = place.imageUrls
   const hasPhotos = photos.length > 0
@@ -179,144 +183,219 @@ export default function PlaceProfileShell({ place, contactEnabled = true }: Plac
 
   return (
     <main className="relative min-h-[100dvh] bg-white text-[#0A0A0A] pb-28">
-      {/* HEADER — IndoCity wordmark + back-arrow to /places. Mirrors the
-          /places listing wordmark so the customer doesn't lose context. */}
-      <header className="relative z-30 pt-safe">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/places"
-              aria-label="Back to Places"
-              className="inline-flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:scale-[0.96] transition"
-              style={{ width: 36, height: 36 }}
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-800" strokeWidth={2.5} />
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center hover:opacity-85 transition"
-              aria-label="IndoCity home"
-            >
-              <span
-                className="font-black tracking-tight text-[22px] sm:text-[26px] leading-none"
-                style={{ color: BRAND_NAVY, letterSpacing: '-0.02em' }}
-              >
-                Ind
-              </span>
-              <svg
-                aria-hidden
-                viewBox="0 0 24 24"
-                fill="none"
-                className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] mx-[1px] translate-y-[3px]"
-              >
-                <path
-                  d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
-                  fill={BRAND_YELLOW}
-                />
-                <circle cx="12" cy="10" r="3" fill="#FFFFFF" />
-              </svg>
-              <span
-                className="font-black tracking-tight text-[22px] sm:text-[26px] leading-none"
-                style={{ color: BRAND_NAVY, letterSpacing: '-0.02em' }}
-              >
-                City
-              </span>
-            </Link>
-          </div>
-
-          {/* Share — opens a small bottom sheet with copy/WhatsApp/Facebook. */}
-          <button
-            type="button"
-            onClick={() => setShareOpen(true)}
-            aria-label="Share place"
-            className="inline-flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:scale-[0.96] transition"
-            style={{ width: 36, height: 36 }}
-          >
-            <Share2 className="w-4 h-4 text-gray-800" strokeWidth={2.5} />
-          </button>
-        </div>
-      </header>
-
-      <div className="max-w-2xl mx-auto px-4 pt-2 space-y-5">
-        {/* HERO — image carousel via ProfileGallery. Cover (first image)
-            takes the headline 16:10 slot; remaining photos drop into the
-            horizontal scroll strip below. Placeholder when no images. */}
+      {/* PREMIUM HERO — full-bleed cover image with overlaid floating
+          controls (back, share, favourite) and the venue's name/rating
+          rendered on top of a bottom-up dark gradient. This is the
+          customer's first ~half-screen — Airbnb / Google Maps pattern.
+          Breaks out of the page's max-w-2xl container so the image runs
+          edge-to-edge on every viewport. */}
+      <section
+        className="relative w-full overflow-hidden bg-gray-900 pt-safe"
+        style={{
+          // 60vh mobile, 55vh ≥ sm, capped at 540px. Inline style keeps
+          // the responsive max-height without a custom Tailwind config.
+          height: 'min(60vh, 540px)',
+        }}
+      >
+        {/* Cover image fills the hero. Falls back to a yellow gradient
+            with a category icon when the venue has no photos. */}
         {hasPhotos ? (
-          <section className="space-y-3">
-            <div className="rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
-              <img
-                src={photos[0]}
-                alt={place.name}
-                className="w-full aspect-[16/10] object-cover"
-              />
-            </div>
-            {photos.length > 1 && (
-              <ProfileGallery
-                photos={photos.slice(1)}
-                title=""
-                variant="carousel"
-                titleClassName="hidden"
-              />
-            )}
-          </section>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photos[0]}
+            alt={place.name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
           <div
-            className="rounded-2xl overflow-hidden flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center"
             style={{
-              aspectRatio: '16 / 10',
               background: `linear-gradient(135deg, ${BRAND_YELLOW} 0%, #EAB308 100%)`,
             }}
+            aria-hidden
           >
-            <MapPin className="w-16 h-16 text-white/85" strokeWidth={1.5} />
+            {CategoryIcon ? (
+              <CategoryIcon className="w-24 h-24 text-white/80" strokeWidth={1.5} />
+            ) : (
+              <MapPin className="w-20 h-20 text-white/85" strokeWidth={1.5} />
+            )}
           </div>
         )}
 
-        {/* TITLE BLOCK — category chip, business name, rating + address.
-            Sits directly under the hero, no card wrapper so it reads as the
-            page's H1 surface. */}
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-extrabold"
-              style={{ background: '#FEF3C7', color: '#92400E' }}
+        {/* Bottom-up dark gradient — readability layer for the white text
+            and chips overlaid below. Top stays clear so the floating
+            buttons sit on the original image. */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(to top, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.45) 30%, transparent 65%)',
+          }}
+          aria-hidden
+        />
+
+        {/* Floating top-left — back to /places. White glass button with
+            44px tap target. Preserves the original navigation behaviour. */}
+        <div className="absolute top-0 left-0 right-0 pt-safe">
+          <div className="max-w-3xl mx-auto px-4 pt-3 flex items-center justify-between">
+            <Link
+              href="/places"
+              aria-label="Back to Places"
+              className="inline-flex items-center justify-center rounded-full active:scale-[0.96] transition"
+              style={{
+                width: 44,
+                height: 44,
+                background: 'rgba(255,255,255,0.92)',
+                backdropFilter: 'blur(6px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              }}
             >
-              {CategoryIcon && (
-                <CategoryIcon className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
-              )}
-              {place.categoryLabel}
-            </span>
-            {hasReviews && (
-              <span className="inline-flex items-center gap-1 text-[13px] font-extrabold text-black">
-                <Star
-                  className="w-3.5 h-3.5"
-                  strokeWidth={0}
-                  fill={BRAND_YELLOW}
-                  style={{ color: BRAND_YELLOW }}
-                />
-                {ratingVal.toFixed(1)}
-                <span className="text-[12px] font-medium text-gray-500">
-                  · {reviewCount} review{reviewCount === 1 ? '' : 's'}
-                </span>
-              </span>
-            )}
+              <ChevronLeft className="w-5 h-5 text-gray-900" strokeWidth={2.5} />
+            </Link>
+
+            {/* Floating top-right — heart (visual placeholder, no logic)
+                + share. Same glass treatment. */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Save to favourites"
+                className="inline-flex items-center justify-center rounded-full active:scale-[0.96] transition"
+                style={{
+                  width: 44,
+                  height: 44,
+                  background: 'rgba(255,255,255,0.92)',
+                  backdropFilter: 'blur(6px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                }}
+              >
+                <Heart className="w-5 h-5 text-gray-900" strokeWidth={2.5} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShareOpen(true)}
+                aria-label="Share place"
+                className="inline-flex items-center justify-center rounded-full active:scale-[0.96] transition"
+                style={{
+                  width: 44,
+                  height: 44,
+                  background: 'rgba(255,255,255,0.92)',
+                  backdropFilter: 'blur(6px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                }}
+              >
+                <Share2 className="w-5 h-5 text-gray-900" strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
-          <h1 className="text-[26px] sm:text-[30px] font-black leading-tight" style={{ color: BRAND_NAVY }}>
-            {place.name}
-          </h1>
-          {(place.address || place.city) && (
-            <a
-              href={mapsLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-start gap-1.5 text-[13px] text-gray-600 leading-snug active:opacity-70 transition"
-            >
-              <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: BRAND_YELLOW }} strokeWidth={2.5} />
-              <span className="underline-offset-2 hover:underline">
-                {place.address ?? place.city}
+        </div>
+
+        {/* Overlaid hero content — bottom-left. Category chip + name +
+            rating row, all white on the dark gradient. */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <div className="max-w-3xl mx-auto px-4 pb-5 sm:pb-6">
+            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-extrabold backdrop-blur-sm"
+                style={{ background: 'rgba(250,204,21,0.92)', color: '#1F2937' }}
+              >
+                {CategoryIcon && (
+                  <CategoryIcon className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden />
+                )}
+                {place.categoryLabel}
               </span>
-            </a>
-          )}
-        </section>
+            </div>
+            <h1
+              className="text-white font-black tracking-tight leading-[1.05] text-[36px] sm:text-[44px]"
+              style={{ textShadow: '0 2px 12px rgba(0,0,0,0.45)', letterSpacing: '-0.015em' }}
+            >
+              {place.name}
+            </h1>
+            <div
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-[14px] text-white/95"
+              style={{ textShadow: '0 1px 6px rgba(0,0,0,0.45)' }}
+            >
+              {hasReviews && (
+                <span className="inline-flex items-center gap-1 font-extrabold">
+                  <Star
+                    className="w-4 h-4"
+                    strokeWidth={0}
+                    fill={BRAND_YELLOW}
+                    style={{ color: BRAND_YELLOW }}
+                  />
+                  {ratingVal.toFixed(1)}
+                  <span className="text-white/85 font-medium">
+                    · {reviewCount} review{reviewCount === 1 ? '' : 's'}
+                  </span>
+                </span>
+              )}
+              {hasReviews && place.city && <span className="text-white/60">·</span>}
+              {place.city && (
+                <span className="inline-flex items-center gap-1 capitalize">
+                  <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  {place.city}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Floating bottom-right — "View all photos" pill. Scrolls to the
+            secondary photo strip below the hero. Hidden when there's only
+            a single image (nothing more to show). */}
+        {photos.length > 1 && (
+          <button
+            type="button"
+            onClick={() => {
+              photoStripRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+            className="absolute right-4 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-extrabold active:scale-[0.97] transition"
+            style={{
+              bottom: 16,
+              background: 'rgba(255,255,255,0.95)',
+              color: '#0A0A0A',
+              backdropFilter: 'blur(6px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+            }}
+            aria-label="View all photos"
+          >
+            <Grid3X3 className="w-3.5 h-3.5" strokeWidth={2.5} />
+            View all photos
+          </button>
+        )}
+      </section>
+
+      <div className="max-w-2xl mx-auto px-4 pt-5 space-y-5">
+        {/* SECONDARY PHOTO STRIP — remaining gallery shots below the hero
+            so customers who want more visuals can swipe through them. Only
+            renders when the venue has 2+ photos. The hero already owns
+            photos[0]; we hand the rest to ProfileGallery in carousel mode. */}
+        {photos.length > 1 && (
+          <section ref={photoStripRef} className="space-y-2 scroll-mt-4">
+            <ProfileGallery
+              photos={photos.slice(1)}
+              title=""
+              variant="carousel"
+              titleClassName="hidden"
+            />
+          </section>
+        )}
+
+        {/* Tap-to-Maps address row — preserves the original behaviour from
+            the title block (the hero shows city only; full street address
+            still needs a Maps deep-link). Skipped when no address. */}
+        {place.address && (
+          <a
+            href={mapsLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-start gap-1.5 text-[13px] text-gray-600 leading-snug active:opacity-70 transition"
+          >
+            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: BRAND_YELLOW }} strokeWidth={2.5} />
+            <span className="underline-offset-2 hover:underline">
+              {place.address}
+            </span>
+          </a>
+        )}
 
         {/* TAG MARQUEE — running ribbon of tags below the headline. Only
             renders when tags are present so empty venues don't get a stray
@@ -414,47 +493,64 @@ export default function PlaceProfileShell({ place, contactEnabled = true }: Plac
                   key={offer.id}
                   type="button"
                   onClick={() => setOpenOffer(offer)}
-                  className="snap-start shrink-0 w-[180px] rounded-2xl border border-gray-200 bg-white text-left overflow-hidden active:scale-[0.98] transition"
-                  style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
+                  className="snap-start shrink-0 relative w-[170px] h-[240px] sm:w-[180px] sm:h-[260px] rounded-2xl overflow-hidden bg-gray-100 text-left active:scale-[0.98] transition will-change-transform"
+                  style={{
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.10)',
+                  }}
                   aria-label={`Open details for ${offer.name}`}
                 >
-                  <div className="aspect-square bg-gray-100 relative">
-                    {offer.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={offer.image_url}
-                        alt={offer.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center"
-                        style={{
-                          background: `linear-gradient(135deg, ${BRAND_YELLOW} 0%, #EAB308 100%)`,
-                        }}
-                        aria-hidden
-                      >
+                  {/* Image — fills the whole card. The bottom gradient
+                      + caption sit on top via absolute positioning so we
+                      get the GoFood / Airbnb-shop portrait look. */}
+                  {offer.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={offer.image_url}
+                      alt={offer.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{
+                        background: `linear-gradient(135deg, ${BRAND_YELLOW} 0%, #EAB308 100%)`,
+                      }}
+                      aria-hidden
+                    >
+                      {CategoryIcon ? (
+                        <CategoryIcon className="w-12 h-12 text-white/85" strokeWidth={1.5} />
+                      ) : (
                         <span className="text-white/90 text-[11px] font-extrabold uppercase tracking-wider">
                           {place.categoryLabel}
                         </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3 space-y-1">
-                    <div className="text-[13px] font-extrabold text-black leading-snug line-clamp-2">
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bottom dark gradient — only the lower portion so the
+                      product photo stays the hero. */}
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none"
+                    style={{
+                      background:
+                        'linear-gradient(to top, rgba(10,10,10,0.92) 0%, rgba(10,10,10,0.55) 55%, transparent 100%)',
+                    }}
+                    aria-hidden
+                  />
+
+                  {/* Name + price — anchored to the bottom of the card.
+                      Description deliberately omitted — it lives in the
+                      OfferDetailModal popup. */}
+                  <div className="absolute inset-x-0 bottom-0 p-3 space-y-0.5">
+                    <div className="text-[13px] font-black text-white leading-snug line-clamp-1" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
                       {offer.name}
                     </div>
                     {offer.price_idr != null && (
                       <div
-                        className="text-[12px] font-extrabold"
-                        style={{ color: BRAND_NAVY }}
+                        className="text-[14px] font-extrabold"
+                        style={{ color: BRAND_YELLOW, textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}
                       >
                         Rp {offer.price_idr.toLocaleString('id-ID')}
-                      </div>
-                    )}
-                    {offer.description?.trim() && (
-                      <div className="text-[11px] text-gray-600 leading-snug line-clamp-2">
-                        {offer.description}
                       </div>
                     )}
                   </div>
