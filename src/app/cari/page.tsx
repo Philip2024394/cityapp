@@ -403,17 +403,20 @@ function PlanTripPageInner() {
         </div>
       </header>
 
-      {/* BOOKING CONTAINER — white card attached to the screen footer.
-          Sits 15px from the left + right edges, fills the remaining
-          vertical space below the header, and bleeds flush to the
-          bottom of the viewport (rounded ONLY on the top corners so it
-          reads as a panel that emerges from the page footer). The
-          customer's path-to-action is the inline scrolling driver
-          list itself — no Find-my-ride redirect button is needed. */}
-      <div className="relative z-20 flex-1 flex flex-col" style={{ paddingLeft: 15, paddingRight: 15 }}>
+      {/* BOOKING CONTAINER — white card sized at 70% of the viewport
+          height, FIXED to the bottom edge of the screen. The ~30% gap
+          above is the HERO area where the static map image (page
+          background) shows through under the header. Container bleeds
+          flush to the bottom and rounds only on the top corners so it
+          reads as a panel emerging from the footer. 15px horizontal
+          insets from the screen edges. */}
+      <div
+        className="fixed left-0 right-0 bottom-0 z-20"
+        style={{ paddingLeft: 15, paddingRight: 15 }}
+      >
         <div
-          className="mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden flex-1 w-full"
-          style={{ maxWidth: 640 }}
+          className="mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden w-full"
+          style={{ height: '70vh', maxWidth: 640 }}
         >
           <div className="flex flex-col h-full p-4 sm:p-5 pb-safe">
             {/* ROW 1 — Header bar: "Where to?" + Add Stop button */}
