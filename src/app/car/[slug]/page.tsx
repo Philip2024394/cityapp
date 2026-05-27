@@ -31,7 +31,7 @@ const SITE_URL    = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 const BRAND_YELLOW = '#FACC15'
 const BRAND_NAVY   = '#0F172A'
 const WORDMARK_URL =
-  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718'
+  'https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png'
 
 // -----------------------------------------------------------------------------
 // Loader — checks `drivers` first (real) then falls back to `mock_drivers`.

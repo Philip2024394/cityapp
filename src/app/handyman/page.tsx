@@ -1,64 +1,120 @@
 'use client'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { Wrench, Search, Menu, X, DollarSign, Clock } from 'lucide-react'
-import UniversalProviderCard, { type UniversalProviderCardBottomItem } from '@/components/marketplace/UniversalProviderCard'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ChevronRight, Plus, Search, Star, X } from 'lucide-react'
+import { useHaptic } from '@/hooks/useHaptic'
 import {
-  SPECIALTY_LABELS, ALL_SPECIALTIES,
+  SPECIALTY_LABELS, SPECIALTY_SHORT, ALL_SPECIALTIES,
   type HandymanProviderPublic, type HandymanSpecialty,
 } from '@/lib/handyman/types'
 
-const HANDYMAN_CARD_BG = 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png'
+// ============================================================================
+// /handyman — Marketplace ported to the shared marketplace shell (2026-05-28).
+// White wordmark header → centered rounded card → title + List pill,
+// search input, scrollable chip filter row, landscape row cards (112px tall).
+// Mirrors /beautician exactly so all verticals feel like one product.
+// ============================================================================
+
+const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'] as const
+
+function isWithinOperatingHours(hours: Record<string, string> | null | undefined): boolean {
+  if (!hours) return true
+  const today = DAY_KEYS[new Date().getDay()]
+  const range = hours[today]
+  if (!range) return false
+  const [start, end] = range.split('-').map((s) => s.trim())
+  if (!start || !end) return true
+  const [sh, sm] = start.split(':').map(Number)
+  const [eh, em] = end.split(':').map(Number)
+  if (!Number.isFinite(sh) || !Number.isFinite(eh)) return true
+  const now = new Date()
+  const nowMin   = now.getHours() * 60 + now.getMinutes()
+  const startMin = sh * 60 + (sm || 0)
+  const endMin   = eh * 60 + (em || 0)
+  return nowMin >= startMin && nowMin < endMin
+}
+
+function effectiveAvailability(p: HandymanProviderPublic): 'online' | 'busy' | 'offline' {
+  if (p.availability !== 'online') return p.availability
+  return isWithinOperatingHours(p.operating_hours) ? 'online' : 'busy'
+}
+
+function format12h(time: string): string {
+  const h = parseInt((time.split(':')[0] || '0'), 10)
+  if (h === 0)  return '12am'
+  if (h === 12) return '12pm'
+  if (h < 12)   return `${h}am`
+  return `${h - 12}pm`
+}
+
+function todayHoursLabel(hours: Record<string, string> | null | undefined): string | null {
+  if (!hours) return null
+  const today = DAY_KEYS[new Date().getDay()]
+  const range = hours[today]
+  if (!range) return null
+  const [start, end] = range.split('-').map((s) => s.trim())
+  if (!start || !end) return null
+  return `${format12h(start)} – ${format12h(end)}`
+}
+
+// Deterministic placeholder rating per provider (4.3 – 4.9). Used only
+// when the row has no real rating yet.
+function placeholderRating(seed: string): number {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) {
+    h = ((h << 5) - h) + seed.charCodeAt(i)
+    h |= 0
+  }
+  return 4.3 + ((Math.abs(h) % 70) / 100)
+}
+
+type ChipDef = { id: 'all' | HandymanSpecialty; label: string }
+const PRIMARY_CHIPS: ChipDef[] = [
+  { id: 'all',        label: 'All'      },
+  { id: 'electrical', label: 'Listrik'  },
+  { id: 'plumbing',   label: 'Pipa'     },
+  { id: 'ac_service', label: 'AC'       },
+  { id: 'carpentry',  label: 'Kayu'     },
+  { id: 'painting',   label: 'Cat'      },
+]
+const PRIMARY_IDS = new Set<HandymanSpecialty>(['electrical','plumbing','ac_service','carpentry','painting'])
+const SECONDARY_IDS: HandymanSpecialty[] = ALL_SPECIALTIES.filter((s) => !PRIMARY_IDS.has(s))
 
 export default function HandymanMarketplacePage() {
   return (
-    <Suspense fallback={<Shell><div className="px-4 pt-6 text-ink/50 text-[13px]">Loading…</div></Shell>}>
-      <Inner />
+    <Suspense fallback={<Shell><div className="px-4 pt-6 text-[#71717A] text-[13px]">Loading…</div></Shell>}>
+      <MarketplaceInner />
     </Suspense>
   )
 }
 
-function Inner() {
-  const search = useSearchParams()
-  const cityLabel = (search?.get('city')?.trim() || 'Yogyakarta')
+function MarketplaceInner() {
+  const router    = useRouter()
+  const haptic    = useHaptic()
+  const search    = useSearchParams()
+  const cityLabel = search?.get('city')?.trim() || 'Yogyakarta'
+
   const [providers, setProviders] = useState<HandymanProviderPublic[]>([])
-  const [specialty, setSpecialty] = useState<'all' | HandymanSpecialty>('all')
-  const [searchText, setSearchText] = useState('')
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [query, setQuery]         = useState('')
+  const [specialty, setSpecialty] = useState<HandymanSpecialty | null>(null)
+  const [loading, setLoading]     = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     const qs = new URLSearchParams()
-    if (specialty !== 'all') qs.set('specialty', specialty)
+    if (specialty)         qs.set('specialty', specialty)
+    if (cityLabel.trim())  qs.set('city', cityLabel.trim())
     const r = await fetch(`/api/handyman/marketplace${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' })
     const j = await r.json() as { providers: HandymanProviderPublic[] }
     setProviders(j.providers || [])
     setLoading(false)
-  }, [specialty])
+  }, [specialty, cityLabel])
+
   useEffect(() => { load() }, [load])
 
-  // Close burger menu on outside-click / Escape
-  useEffect(() => {
-    if (!menuOpen) return
-    function onDown(e: MouseEvent) {
-      if (!menuRef.current) return
-      if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false)
-    }
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setMenuOpen(false) }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [menuOpen])
-
-  // Client-side text search over the server-filtered set.
-  const visible = useMemo(() => {
-    const q = searchText.trim().toLowerCase()
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
     if (!q) return providers
     return providers.filter((p) => {
       const hay = [
@@ -66,212 +122,350 @@ function Inner() {
         p.bio,
         p.city ?? '',
         p.service_area_notes ?? '',
-        ...p.specialties.map((s) => SPECIALTY_LABELS[s]),
+        ...(p.specialties ?? []).map((s) => SPECIALTY_LABELS[s]),
       ].join(' ').toLowerCase()
       return hay.includes(q)
     })
-  }, [providers, searchText])
+  }, [providers, query])
+
+  function handleOpen(slug: string) {
+    haptic.tap()
+    router.push(`/handyman/${slug}`)
+  }
 
   return (
     <Shell>
-      <div className="px-4 pt-4 pb-24 max-w-4xl mx-auto">
-        <div className="mb-3 text-center">
-          <div className="text-[11px] uppercase tracking-[0.18em] font-extrabold text-black/55">
-            Tukang in
-          </div>
-          <div className="text-[20px] font-black text-black mt-0.5">
-            {cityLabel} City
-          </div>
-          <div className="inline-flex items-center gap-1 text-[12px] text-black/70 mt-1">
-            <Wrench className="w-3.5 h-3.5" />
-            Listrik · Plumbing · AC · Tukang · 20+ trades
-          </div>
-        </div>
-
-        {/* Search bar + burger button */}
-        <div className="flex items-center gap-2 mb-3" ref={menuRef}>
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40 pointer-events-none" />
-            <input
-              type="search"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Cari tukang — nama, area, jenis layanan…"
-              className="w-full rounded-full bg-gray-100 border border-gray-200 pl-10 pr-3 py-2.5 text-[13px] text-black placeholder:text-black/45 focus:outline-none focus:border-brand"
-            />
-          </div>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-bg bg-brand hover:bg-brand2 active:scale-95 transition border border-black/40 shadow-[0_4px_12px_rgba(250,204,21,0.30)]"
-              aria-label="Filter by specialty"
-              title="Filter by specialty"
-            >
-              <Menu className="w-5 h-5" strokeWidth={2.75} />
-            </button>
-            {menuOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full mt-2 z-50 w-[280px] max-h-[70vh] overflow-y-auto rounded-2xl p-2"
-                style={{
-                  background: '#1E3A8A',                       // navy — matches specialty pill + CTA
-                  border: '1px solid rgba(250,204,21,0.45)',
-                  boxShadow: '0 20px 48px rgba(0,0,0,0.35)',
-                }}
-              >
-                <div className="flex items-center justify-between px-2 py-1 mb-1">
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-ink/55">Filter trade</span>
-                  <button onClick={() => setMenuOpen(false)} className="text-ink/50 hover:text-ink"><X className="w-4 h-4" /></button>
-                </div>
-                <button
-                  onClick={() => { setSpecialty('all'); setMenuOpen(false) }}
-                  className={`flex items-center w-full px-2 py-2 rounded-lg text-[13px] font-bold transition ${
-                    specialty === 'all' ? 'bg-brand text-bg' : 'text-ink hover:bg-brand/15 hover:text-brand'
-                  }`}
-                >
-                  All trades
-                </button>
-                {ALL_SPECIALTIES.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => { setSpecialty(s); setMenuOpen(false) }}
-                    className={`flex items-center w-full px-2 py-2 rounded-lg text-[13px] font-bold transition ${
-                      specialty === s ? 'bg-brand text-bg' : 'text-ink hover:bg-brand/15 hover:text-brand'
-                    }`}
-                  >
-                    {SPECIALTY_LABELS[s]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {specialty !== 'all' && (
-          <div className="mb-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/15 border border-brand/40 text-[12px] font-extrabold text-brand">
-            <Wrench className="w-3.5 h-3.5" />
-            {SPECIALTY_LABELS[specialty]}
-            <button onClick={() => setSpecialty('all')} className="hover:text-ink"><X className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[0,1,2,3].map((i) => <div key={i} className="h-40 bg-white/5 rounded-2xl animate-pulse" />)}
-          </div>
-        ) : visible.length === 0 ? (
-          <div
-            className="rounded-2xl p-8 text-center text-white/85 text-[13px]"
-            style={{
-              background: '#1E3A8A',                       // navy — matches the rest of the page
-              border: '1px solid rgba(250,204,21,0.45)',
-            }}
-          >
-            {searchText ? `No tukang match "${searchText}".` : 'No tukang listed in this trade yet.'}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {visible.map((p) => (
-              <ProviderCard key={p.slug} provider={p} demo={p.is_mock === true} />
-            ))}
-          </div>
-        )}
-
+      <div className="px-[15px] pb-10">
         <div
-          className="mt-10 rounded-2xl p-5 text-center"
+          className="mx-auto bg-white rounded-3xl shadow-2xl w-full overflow-hidden"
           style={{
-            background: '#1E3A8A',                       // same navy as the specialty pill
-            border: '1px solid rgba(250,204,21,0.45)',   // soft yellow border
+            maxWidth: 640,
+            boxShadow: '0 20px 60px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.04)',
           }}
         >
-          <div className="text-[13px] font-bold text-white/85 mb-3">Are you a tukang?</div>
-          <Link href="/handyman/signup" className="inline-flex items-center gap-2 rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider hover:brightness-105">
-            List your profile · Rp 38.000/month
-          </Link>
+          <div className="flex flex-col p-4 sm:p-5">
+            {/* ROW 1 — Header: title + small "List" yellow pill */}
+            <div className="flex items-center justify-between gap-2 shrink-0">
+              <div className="min-w-0">
+                <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg leading-tight">
+                  Tukang in {cityLabel}
+                </h1>
+                <p className="text-[12px] font-bold text-[#71717A] leading-tight mt-0.5 truncate">
+                  Skilled tukang in {cityLabel} · Listrik · AC · Pipa · Kayu
+                </p>
+              </div>
+              <Link
+                href="/handyman/signup"
+                onClick={() => haptic.tap()}
+                aria-label="List your tukang business"
+                className="shrink-0 inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full text-bg font-extrabold text-[13px] active:scale-95 transition"
+                style={{
+                  background: '#FACC15',
+                  boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
+                  minHeight: 32,
+                }}
+              >
+                <span
+                  className="w-5 h-5 rounded-full inline-flex items-center justify-center"
+                  style={{ background: 'rgba(0,0,0,0.10)' }}
+                >
+                  <Plus className="w-3.5 h-3.5" strokeWidth={3} />
+                </span>
+                <span>List</span>
+              </Link>
+            </div>
+
+            {/* ROW 2 — Search input */}
+            <div className="mt-3 relative shrink-0">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cari tukang — nama, area, jenis layanan…"
+                aria-label="Search tukang"
+                className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
+                style={{ minHeight: 44 }}
+              />
+              {query ? (
+                <button
+                  type="button"
+                  onClick={() => { setQuery(''); haptic.tap() }}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full inline-flex items-center justify-center text-[#71717A] hover:text-bg transition"
+                >
+                  <X className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+              ) : (
+                <span
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
+                  aria-hidden
+                >
+                  <Search className="w-[18px] h-[18px] text-[#52525B]" strokeWidth={2.4} />
+                </span>
+              )}
+            </div>
+
+            {/* ROW 3 — Horizontal scrollable specialty chip row */}
+            <div
+              className="mt-3 -mx-1 px-1 flex gap-2 overflow-x-auto overscroll-contain shrink-0"
+              style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+              role="tablist"
+              aria-label="Filter tukang by trade"
+            >
+              {PRIMARY_CHIPS.map((chip) => {
+                const active = chip.id === 'all' ? specialty === null : specialty === chip.id
+                return (
+                  <ChipButton
+                    key={chip.id}
+                    label={chip.label}
+                    active={active}
+                    onClick={() => { setSpecialty(chip.id === 'all' ? null : chip.id); haptic.tap() }}
+                  />
+                )
+              })}
+              {SECONDARY_IDS.map((sid) => {
+                const label = SPECIALTY_SHORT[sid]
+                const active = specialty === sid
+                return (
+                  <ChipButton
+                    key={sid}
+                    label={label}
+                    active={active}
+                    onClick={() => { setSpecialty(active ? null : sid); haptic.tap() }}
+                  />
+                )
+              })}
+            </div>
+
+            {/* ROW 4 — Card list */}
+            <div
+              className="mt-3 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2 -mx-1 px-1"
+              style={{ maxHeight: '62vh', scrollbarWidth: 'thin' }}
+            >
+              {loading && (
+                <>
+                  {[0,1,2,3].map((i) => (
+                    <div key={i} className="h-[112px] bg-gray-100 rounded-xl animate-pulse" />
+                  ))}
+                </>
+              )}
+              {!loading && filtered.length === 0 && (
+                <div className="py-10 text-center">
+                  <p className="text-[13px] font-bold text-[#71717A] leading-snug">
+                    {query.trim()
+                      ? `No results for "${query.trim()}". Try a different keyword.`
+                      : 'No tukang in this trade yet. Try a different filter.'}
+                  </p>
+                </div>
+              )}
+              {!loading && filtered.map((p) => (
+                <HandymanRowCard
+                  key={p.slug}
+                  provider={p}
+                  onOpen={() => handleOpen(p.slug)}
+                />
+              ))}
+            </div>
+
+            {/* ROW 5 — Compliance footer */}
+            <p className="mt-3 text-center text-[12px] text-[#52525B] font-bold leading-snug px-2 shrink-0">
+              Book direct via WhatsApp · No commissions, no platform fees
+              — you pay your tukang directly.
+            </p>
+          </div>
         </div>
       </div>
     </Shell>
   )
 }
 
-function ProviderCard({ provider: p }: { provider: HandymanProviderPublic; demo?: boolean }) {
-  // Adapter — folds the handyman shape into the shared
-  // UniversalProviderCard. Marketplace cards use the brand-yellow
-  // accent uniformly across verticals; per-provider theme_color
-  // lives on the public profile page only.
-  const primary = p.specialties?.[0] ?? null
-  const specialtyLabel = primary ? SPECIALTY_LABELS[primary] : null
-  const portfolioThumbs = (p.gallery_image_urls ?? []).slice(0, 3)
-
-  // Subline summarises the credibility signals in one line — years
-  // of experience + city + "own tools" badge when applicable.
-  const sublineBits: string[] = []
-  if (p.years_experience > 0) sublineBits.push(`${p.years_experience} yrs`)
-  if (p.has_own_tools) sublineBits.push('Own tools')
-
-  const bottomItems: UniversalProviderCardBottomItem[] = []
-  if (p.hourly_rate_idr != null) {
-    bottomItems.push({
-      key: 'hour', icon: 'clock',
-      label: `Rp ${p.hourly_rate_idr.toLocaleString('id-ID')}/h`,
-    })
-  }
-  if (p.day_rate_idr != null && bottomItems.length < 2) {
-    // No icon — the "Rp X/day" label is self-explanatory and the
-    // DollarSign icon read as a USD symbol on an IDR card.
-    bottomItems.push({
-      key: 'day',
-      label: `Rp ${p.day_rate_idr.toLocaleString('id-ID')}/day`,
-    })
-  }
-
+function ChipButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <UniversalProviderCard
-      href={`/handyman/${p.slug}`}
-      displayName={p.display_name}
-      city={p.city ?? null}
-      subline={sublineBits.length ? sublineBits.join(' · ') : null}
-      bio={p.bio?.replace(/\s*\n\s*/g, ' ') ?? null}
-      coverImageUrl={p.cover_image_url ?? null}
-      profileImageUrl={p.profile_image_url ?? null}
-      availabilityDot={(p.availability === 'busy' || p.availability === 'offline') ? p.availability : 'online'}
-      rating={p.rating ?? null}
-      specialtyLabel={specialtyLabel}
-      portfolioThumbs={portfolioThumbs}
-      bottomItems={bottomItems}
-      ctaLabel="Profile"
-      variant="light"
-    />
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className="shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-extrabold tracking-tight transition active:scale-95"
+      style={{
+        background: active ? '#FACC15' : '#F4F4F5',
+        color: active ? '#0A0A0A' : '#52525B',
+        border: active ? '1px solid #FACC15' : '1px solid #E4E4E7',
+        boxShadow: active ? '0 4px 12px rgba(250,204,21,0.35)' : 'none',
+        minHeight: 34,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </button>
   )
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  // Themed scene background for the /handyman marketplace. Light scrim
-  // on top (white at 78%) keeps the city heading + light cards
-  // readable regardless of where the image's tonal values land.
+// ─────────────────────────────────────────────────────────────────────────────
+// HandymanRowCard — landscape card, 112px tall to match /beautician.
+// 88px tukang photo left, name + primary trade + today's hours middle,
+// online dot + credibility pills (years / own tools / pricing) below,
+// rating + chevron right.
+// ─────────────────────────────────────────────────────────────────────────────
+function HandymanRowCard({
+  provider: p,
+  onOpen,
+}: {
+  provider: HandymanProviderPublic
+  onOpen: () => void
+}) {
+  const eff      = effectiveAvailability(p)
+  const rating   = (p.rating ?? placeholderRating(p.slug)).toFixed(1)
+  const hours    = todayHoursLabel(p.operating_hours) ?? 'On-call'
+
+  const primary       = p.specialties?.[0] ?? null
+  const primaryLabel  = primary ? SPECIALTY_LABELS[primary] : null
+
+  // Credibility pills — favour pricing (most useful) then experience
+  // then "Own Tools". Same text-only pill style as beautician (no icons).
+  const pills: Array<{ key: string; label: string }> = []
+  if (p.hourly_rate_idr != null) {
+    pills.push({ key: 'hour', label: `Rp ${p.hourly_rate_idr.toLocaleString('id-ID')}/h` })
+  }
+  if (p.day_rate_idr != null && pills.length < 2) {
+    pills.push({ key: 'day', label: `Rp ${p.day_rate_idr.toLocaleString('id-ID')}/day` })
+  }
+  if (p.years_experience != null && p.years_experience > 0 && pills.length < 3) {
+    pills.push({ key: 'yrs', label: `${p.years_experience} yrs` })
+  }
+  if (p.has_own_tools && pills.length < 3) {
+    pills.push({ key: 'tools', label: 'Own Tools' })
+  }
+
+  const profileImg = p.profile_image_url || p.cover_image_url || null
+  const dotColor   = eff === 'online' ? '#22C55E' : eff === 'busy' ? '#F59E0B' : '#A1A1AA'
+  const dotText    = eff === 'online' ? '#15803D' : eff === 'busy' ? '#A16207' : '#71717A'
+  const dotLabel   = eff === 'online' ? 'Online'  : eff === 'busy' ? 'Busy'    : 'Offline'
+
   return (
-    <main
-      className="relative min-h-[100dvh] text-black"
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Open ${p.display_name}`}
+      className="w-full text-left flex items-center gap-3 p-2.5 rounded-xl bg-white border border-[#E4E4E7] hover:border-[#FACC15] active:scale-[0.99] transition"
       style={{
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.78), rgba(255,255,255,0.78)), url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2001_17_23%20AM.png')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
+        minHeight: 112,
+        boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
       }}
     >
-      <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
-        <Link href="/" aria-label="Home" className="inline-block">
+      {/* Image — 88px square */}
+      <div className="shrink-0 rounded-lg overflow-hidden bg-[#F4F4F5]" style={{ width: 88, height: 88 }}>
+        {profileImg ? (
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
-            alt="IndoCity"
-            className="h-8 sm:h-10 w-auto"
+            src={profileImg}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
-        </Link>
+        ) : (
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)' }}
+            aria-hidden
+          >
+            <span className="text-bg font-black text-[24px]">
+              {p.display_name?.[0]?.toUpperCase() ?? '?'}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Middle column */}
+      <div className="min-w-0 flex-1">
+        <span className="block text-[14px] font-black text-bg truncate leading-tight">
+          {p.display_name}
+        </span>
+        <div className="mt-1 flex items-center gap-1.5 text-[12px] font-bold text-[#52525B] leading-tight">
+          {primaryLabel && <span className="truncate">{primaryLabel}</span>}
+          {primaryLabel && <span className="text-[#A1A1AA]">·</span>}
+          <span className="truncate">{hours}</span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-1">
+          <span
+            className="inline-flex items-center gap-1 text-[12px] font-extrabold"
+            style={{ color: dotText }}
+          >
+            <span
+              aria-hidden
+              className="inline-block w-1.5 h-1.5 rounded-full"
+              style={{
+                background: dotColor,
+                boxShadow: eff === 'online' ? '0 0 4px rgba(34,197,94,0.65)' : 'none',
+              }}
+            />
+            {dotLabel}
+          </span>
+        </div>
+        {pills.length > 0 && (
+          <div className="mt-1.5 flex items-center gap-1 overflow-hidden">
+            {pills.slice(0, 3).map((pill) => (
+              <span
+                key={pill.key}
+                className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 bg-[#FEF9C3] border border-[#FDE68A] text-[#854D0E] text-[12px] font-extrabold leading-none whitespace-nowrap"
+              >
+                {pill.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Right column — rating top, chevron bottom */}
+      <div className="shrink-0 flex flex-col items-end justify-between h-[88px] py-0.5">
+        <span className="inline-flex items-center gap-0.5 text-[12px] font-extrabold text-bg">
+          <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} aria-hidden />
+          {rating}
+        </span>
+        <ChevronRight className="w-5 h-5" strokeWidth={2.75} aria-hidden style={{ color: '#FACC15' }} />
+      </div>
+    </button>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shell — wordmark header matching /beautician + /places.
+// ─────────────────────────────────────────────────────────────────────────────
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main
+      className="relative min-h-[100dvh]"
+      style={{ color: '#0A0A0A' }}
+    >
+      {/* Backdrop image — same one used on /explore + landing for brand continuity */}
+      <div
+        aria-hidden
+        className="fixed inset-0 -z-10 pointer-events-none"
+        style={{
+          backgroundImage: `url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2011_47_55%20PM.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+      {/* Soft white scrim at the top so the dark wordmark stays readable on any image */}
+      <div
+        aria-hidden
+        className="fixed inset-x-0 top-0 h-32 -z-10 pointer-events-none bg-gradient-to-b from-white/65 to-transparent"
+      />
+
+      <header className="relative z-30 pt-safe">
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" aria-label="IndoCity home" className="inline-block hover:opacity-85 transition">
+            <img
+              src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
+              alt="IndoCity"
+              className="h-8 sm:h-10 w-auto"
+            />
+          </Link>
+        </div>
       </header>
+
       {children}
     </main>
   )

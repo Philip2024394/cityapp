@@ -206,7 +206,7 @@ export default function AppDrawer({
         aria-hidden
         className="fixed inset-0 z-[60] transition-opacity"
         style={{
-          background: 'rgba(0,0,0,0.55)',
+          background: 'rgba(0,0,0,0.40)',
           backdropFilter: 'blur(2px)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
@@ -220,32 +220,31 @@ export default function AppDrawer({
         aria-label={VARIANT_LABEL[variant]}
         className="fixed top-0 right-0 bottom-0 z-[70] w-[82%] max-w-[340px] flex flex-col transition-transform"
         style={{
-          background: 'rgba(15,15,20,0.97)',
-          borderLeft: '1px solid rgba(255,255,255,0.10)',
-          boxShadow: '-20px 0 60px rgba(0,0,0,0.55)',
-          backdropFilter: 'blur(12px)',
+          background: '#ffffff',
+          borderLeft: '1px solid rgb(229,231,235)',
+          boxShadow: '-20px 0 60px rgba(0,0,0,0.18)',
           transform: open ? 'translateX(0)' : 'translateX(100%)',
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 px-4 pt-safe h-14 shrink-0 border-b border-white/08">
-          <div className="text-[13px] uppercase tracking-wider font-extrabold text-brand">
+        <div className="flex items-center justify-between gap-3 px-4 pt-safe h-14 shrink-0 border-b border-gray-200">
+          <div className="text-[13px] uppercase tracking-wider font-extrabold text-[#0F172A]">
             {VARIANT_TITLE[variant]}
           </div>
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-muted hover:text-ink transition"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-gray-600 hover:text-[#0F172A] transition"
+            style={{ background: 'rgb(243,244,246)', border: '1px solid rgb(229,231,235)' }}
           >
             <XIcon className="w-4 h-4" strokeWidth={2.5} />
           </button>
         </div>
 
         {/* Auth chip */}
-        <div className="px-4 py-3 border-b border-white/08 shrink-0">
-          <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">Signed in as</div>
-          <div className="text-[13px] font-bold mt-0.5 truncate">
+        <div className="px-4 py-3 border-b border-gray-200 shrink-0">
+          <div className="text-[12px] uppercase tracking-wider font-extrabold text-gray-500">Signed in as</div>
+          <div className="text-[13px] font-bold mt-0.5 truncate text-[#0F172A]">
             {email ?? 'Not signed in'}
           </div>
         </div>
@@ -327,14 +326,14 @@ export default function AppDrawer({
 
         {/* Sign out at the bottom (only when signed in) */}
         {email && (
-          <div className="px-3 py-3 border-t border-white/08 shrink-0 pb-safe">
+          <div className="px-3 py-3 border-t border-gray-200 shrink-0 pb-safe">
             <button
               onClick={signOut}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition active:scale-[0.99]"
               style={{
-                background: 'rgba(239,68,68,0.10)',
+                background: 'rgba(239,68,68,0.08)',
                 border: '1px solid rgba(239,68,68,0.30)',
-                color: '#F87171',
+                color: '#DC2626',
                 minHeight: 44,
               }}
             >
@@ -370,7 +369,7 @@ export function AppDrawerTrigger({
     <button
       onClick={onClick}
       aria-label={label}
-      className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-ink hover:bg-white/5 active:scale-95 transition"
+      className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-[#0F172A] hover:bg-gray-100 active:scale-95 transition"
     >
       <Menu className="w-5 h-5" strokeWidth={2.5} />
     </button>

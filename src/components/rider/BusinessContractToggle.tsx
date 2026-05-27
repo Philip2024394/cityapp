@@ -76,7 +76,7 @@ export default function BusinessContractToggle() {
   }
 
   if (loading) {
-    return <div className="card-dark h-24 shimmer" />
+    return <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm h-24 shimmer" />
   }
 
   return (
@@ -85,9 +85,9 @@ export default function BusinessContractToggle() {
         type="button"
         onClick={toggle}
         disabled={pending}
-        className="w-full card-dark p-4 flex items-center gap-3 text-left transition active:scale-[0.99] disabled:opacity-60"
+        className="w-full rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center gap-3 text-left transition active:scale-[0.99] disabled:opacity-60"
         style={{
-          borderColor: enabled ? 'rgba(250,204,21,0.35)' : 'rgba(255,255,255,0.08)',
+          borderColor: enabled ? 'rgba(250,204,21,0.35)' : undefined,
           background:  enabled ? 'rgba(250,204,21,0.05)' : undefined,
           minHeight: 64,
         }}
@@ -95,18 +95,18 @@ export default function BusinessContractToggle() {
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
           style={{
-            background: enabled ? 'rgba(250,204,21,0.18)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${enabled ? 'rgba(250,204,21,0.35)' : 'rgba(255,255,255,0.10)'}`,
-            color: enabled ? '#FACC15' : 'rgba(255,255,255,0.55)',
+            background: enabled ? 'rgba(250,204,21,0.18)' : 'rgba(15,23,42,0.05)',
+            border: `1px solid ${enabled ? 'rgba(250,204,21,0.35)' : 'rgba(15,23,42,0.10)'}`,
+            color: enabled ? '#CA8A04' : '#6B7280',
           }}
         >
           <Briefcase className="w-5 h-5" strokeWidth={2.25} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-extrabold text-[14px]">
+          <div className="font-extrabold text-[14px] text-[#0F172A]">
             Available for business contracts
           </div>
-          <div className="text-[12px] text-muted mt-0.5 leading-relaxed">
+          <div className="text-[12px] text-gray-600 mt-0.5 leading-relaxed">
             {enabled
               ? 'Listed on /business — Shopee sellers, restaurants, warungs can message you for regular delivery contracts'
               : 'Get steady work — small businesses (Shopee/TikTok sellers, restaurants) message you directly for daily parcel runs'}
@@ -114,31 +114,31 @@ export default function BusinessContractToggle() {
         </div>
         <div
           className="w-12 h-7 rounded-full p-0.5 transition shrink-0"
-          style={{ background: enabled ? '#22C55E' : 'rgba(255,255,255,0.12)' }}
+          style={{ background: enabled ? '#22C55E' : 'rgba(15,23,42,0.15)' }}
         >
           <div
-            className="w-6 h-6 rounded-full bg-white transition-transform flex items-center justify-center"
+            className="w-6 h-6 rounded-full bg-white transition-transform flex items-center justify-center shadow-sm"
             style={{ transform: enabled ? 'translateX(20px)' : 'translateX(0)' }}
           >
-            {pending && <Loader2 className="w-3.5 h-3.5 text-muted animate-spin" />}
+            {pending && <Loader2 className="w-3.5 h-3.5 text-gray-600 animate-spin" />}
           </div>
         </div>
       </button>
 
       {enabled && (
         <div
-          className="card-dark p-3 flex items-center gap-3 text-[12px]"
+          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex items-center gap-3 text-[12px] text-[#0F172A]"
           style={{ borderColor: 'rgba(34,197,94,0.30)', background: 'rgba(34,197,94,0.06)' }}
         >
-          <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#22C55E' }} />
+          <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#16A34A' }} />
           <div className="flex-1 min-w-0 leading-relaxed">
-            You&apos;re live on the business directory{city ? <> for <strong className="text-ink">{city}</strong></> : ''}. Edit capacity + services any time below.
+            You&apos;re live on the business directory{city ? <> for <strong className="text-[#0F172A]">{city}</strong></> : ''}. Edit capacity + services any time below.
           </div>
           <Link
             href="/business"
             target="_blank"
-            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-extrabold text-[12px] text-ink hover:text-brand transition"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', minHeight: 36 }}
+            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-extrabold text-[12px] text-[#0F172A] hover:text-brand transition bg-gray-50 border border-gray-200"
+            style={{ minHeight: 36 }}
           >
             View
             <ArrowRight className="w-3 h-3" />
@@ -151,8 +151,8 @@ export default function BusinessContractToggle() {
           className="rounded-xl p-3 flex items-start gap-2 text-[12px] leading-relaxed"
           style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)' }}
         >
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#EF4444' }} />
-          <span className="text-ink/90">{error}</span>
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
+          <span className="text-[#0F172A]">{error}</span>
         </div>
       )}
     </div>

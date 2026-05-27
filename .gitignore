@@ -7,3 +7,5 @@ dist
 *.tsbuildinfo
 next-env.d.ts.bak
 supabase/.temp
+
+.vercel

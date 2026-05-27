@@ -119,11 +119,11 @@ export default function DriverInboxWidget() {
 
   return (
     <div
-      className="card p-4 space-y-2.5"
+      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 space-y-2.5"
       style={{
         background: 'rgba(34,197,94,0.06)',
         border: '1px solid rgba(34,197,94,0.40)',
-        boxShadow: '0 0 0 1px rgba(34,197,94,0.18), 0 8px 24px rgba(0,0,0,0.30)',
+        boxShadow: '0 0 0 1px rgba(34,197,94,0.18), 0 8px 24px rgba(15,23,42,0.08)',
       }}
     >
       <div className="flex items-center gap-2">
@@ -134,12 +134,12 @@ export default function DriverInboxWidget() {
           <Bell className="w-4 h-4" style={{ color: '#22C55E' }} strokeWidth={2.5} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-extrabold leading-tight" style={{ color: '#22C55E' }}>
+          <div className="text-[15px] font-extrabold leading-tight" style={{ color: '#16A34A' }}>
             {pings.length === 1
               ? '1 customer menunggu balasan'
               : `${pings.length} customer menunggu balasan`}
           </div>
-          <div className="text-[12px] text-muted mt-0.5">
+          <div className="text-[12px] text-gray-600 mt-0.5">
             Buka WhatsApp untuk reply — atau tap "Got it" untuk stop alert.
           </div>
         </div>
@@ -151,17 +151,13 @@ export default function DriverInboxWidget() {
           return (
             <li
               key={p.id}
-              className="rounded-xl p-2.5 flex items-center gap-2"
-              style={{
-                background: 'rgba(0,0,0,0.45)',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
+              className="rounded-xl p-2.5 flex items-center gap-2 bg-gray-50 border border-gray-200"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-extrabold truncate">
+                <div className="text-[13px] font-extrabold truncate text-[#0F172A]">
                   {SOURCE_LABEL[p.source_page ?? 'other'] ?? 'Customer tap'}
                 </div>
-                <div className="text-[12px] text-muted mt-0.5">
+                <div className="text-[12px] text-gray-600 mt-0.5">
                   {timeAgo(p.pinged_at)} yang lalu
                 </div>
               </div>
@@ -181,7 +177,7 @@ export default function DriverInboxWidget() {
                 type="button"
                 onClick={() => onAck(p.id)}
                 disabled={isAcking}
-                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-bg text-[12px] font-extrabold active:scale-95 transition disabled:opacity-60"
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#0F172A] text-[12px] font-extrabold active:scale-95 transition disabled:opacity-60"
                 style={{
                   background: 'linear-gradient(135deg, #FACC15, #EAB308)',
                   border: '1px solid rgba(0,0,0,0.85)',

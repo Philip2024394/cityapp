@@ -108,7 +108,7 @@ function LoginInner() {
         <div className="w-full max-w-md card-dark p-6 space-y-5 mt-4">
           <div>
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+              src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
               alt="IndoCity"
               className="h-10 sm:h-12 w-auto mb-3"
               loading="eager"

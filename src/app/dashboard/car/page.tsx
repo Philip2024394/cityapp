@@ -156,7 +156,7 @@ export default function CarDriverDashboardPage() {
           <h1 className="text-[20px] font-black mb-2">Sign in required</h1>
           <Link
             href="/login?next=/dashboard/car"
-            className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+            className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
           >
             Sign in
           </Link>
@@ -174,7 +174,7 @@ export default function CarDriverDashboardPage() {
           </p>
           <Link
             href="/signup"
-            className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+            className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
           >
             Go to sign up
           </Link>
@@ -194,7 +194,7 @@ export default function CarDriverDashboardPage() {
           <div className="flex flex-col gap-2 items-center">
             <Link
               href="/signup"
-              className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+              className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
             >
               Sign up as Car driver
             </Link>
@@ -214,7 +214,7 @@ export default function CarDriverDashboardPage() {
           <p className="text-[13px] text-black/70 mb-4">{state.message}</p>
           <button
             onClick={reload}
-            className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+            className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
           >
             Retry
           </button>
@@ -265,7 +265,7 @@ function Dashboard({ row, onReload }: { row: CarDriverRow; onReload: () => void 
 
         <SubscriptionBanner sub={sub} onPay={() => setPayOpen(true)} />
 
-        <header className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
+        <header className="rounded-2xl bg-gray-100 border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{row.business_name || 'Car driver'}</h1>
           <div className="text-[13px] text-black/60">
             Car driver dashboard · IndoCity is software — you set every price below.
@@ -363,7 +363,7 @@ function SubscriptionBanner({ sub, onPay }: { sub: SubStatus; onPay: () => void 
 // ============================================================================
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
+    <section className="rounded-2xl bg-gray-100 border border-gray-200 p-5 shadow-sm space-y-3">
       <h2 className="text-[14px] font-extrabold uppercase tracking-wider">{title}</h2>
       {children}
     </section>
@@ -375,7 +375,7 @@ function SaveButton({ saving, dirty }: { saving: boolean; dirty: boolean }) {
     <button
       type="submit"
       disabled={saving || !dirty}
-      className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
+      className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
     >
       {saving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
     </button>
@@ -452,7 +452,7 @@ function AvailabilitySection({ row, onSaved }: { row: CarDriverRow; onSaved: () 
               onClick={() => set(a)}
               className={`rounded-xl px-3 py-3 text-[13px] font-extrabold uppercase tracking-wider transition border min-h-[44px] ${
                 active
-                  ? 'bg-brand text-bg border-brand'
+                  ? 'bg-brand text-[#0F172A] border-brand'
                   : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
               }`}
               aria-pressed={active}

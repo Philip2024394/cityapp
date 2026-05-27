@@ -119,7 +119,7 @@ export default function LandingPage() {
         aria-hidden
         className="fixed inset-0 -z-10 pointer-events-none"
         style={{
-          backgroundImage: `url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2001_41_12%20AM.png')`,
+          backgroundImage: `url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2011_47_55%20PM.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
@@ -133,7 +133,7 @@ export default function LandingPage() {
         <div className="max-w-md mx-auto text-center space-y-6 w-full">
           <h1 className="text-[36px] sm:text-[48px] md:text-[56px] font-extrabold leading-[1.05] tracking-tight">
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+              src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
               alt={t.h1Line1}
               className="block mx-auto h-14 sm:h-20 md:h-24 w-auto"
             />

@@ -118,7 +118,7 @@ export default function B2BScoreCard() {
     return () => { cancelled = true }
   }, [])
 
-  if (loading) return <div className="card-dark h-24 shimmer" />
+  if (loading) return <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm h-24 shimmer" />
   if (!enabled || !result) return null
 
   const tierMeta = TIER_META[result.tier]
@@ -133,7 +133,7 @@ export default function B2BScoreCard() {
 
   return (
     <div
-      className="card-dark p-4 space-y-3"
+      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 space-y-3"
       style={{ borderColor: tierMeta.border, background: tierMeta.bg }}
     >
       {/* Header — rank + score */}
@@ -152,12 +152,12 @@ export default function B2BScoreCard() {
           <div className="text-[12px] uppercase tracking-wider font-extrabold" style={{ color: tierMeta.color }}>
             Your B2B rank — {tierMeta.label}
           </div>
-          <div className="text-[16px] font-extrabold mt-0.5 leading-tight">
-            {rank ? <>#{rank.position} <span className="text-muted font-bold">of {rank.total}</span></> : 'Listed'}
+          <div className="text-[16px] font-extrabold mt-0.5 leading-tight text-[#0F172A]">
+            {rank ? <>#{rank.position} <span className="text-gray-600 font-bold">of {rank.total}</span></> : 'Listed'}
           </div>
-          <div className="text-[12px] text-muted mt-0.5">
-            Score <span className="text-ink font-extrabold">{result.score}/100</span>
-            {result.inGracePeriod && <> · <span style={{ color: '#22C55E' }}>30-day grace</span></>}
+          <div className="text-[12px] text-gray-600 mt-0.5">
+            Score <span className="text-[#0F172A] font-extrabold">{result.score}/100</span>
+            {result.inGracePeriod && <> · <span style={{ color: '#16A34A' }}>30-day grace</span></>}
           </div>
         </div>
       </div>
@@ -170,12 +170,12 @@ export default function B2BScoreCard() {
           return (
             <div key={label}>
               <div className="flex items-center justify-between text-[12px] font-bold mb-1">
-                <span className="text-muted">{label}</span>
-                <span className={isMaxed ? 'text-online' : 'text-ink'}>
-                  {got}<span className="text-dim">/{max}</span>
+                <span className="text-gray-600">{label}</span>
+                <span className={isMaxed ? 'text-online' : 'text-[#0F172A]'}>
+                  {got}<span className="text-gray-500">/{max}</span>
                 </span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(15,23,42,0.08)' }}>
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -193,14 +193,14 @@ export default function B2BScoreCard() {
 
       {/* How to climb — actionable hints from the algorithm */}
       {result.notes.length > 0 && (
-        <div className="pt-2 border-t border-white/08 space-y-1.5">
+        <div className="pt-2 border-t border-gray-200 space-y-1.5">
           <div className="flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-brand" />
-            <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">
+            <div className="text-[12px] uppercase tracking-wider font-extrabold text-gray-500">
               How to climb
             </div>
           </div>
-          <ul className="space-y-1 text-[12px] text-ink/85 leading-relaxed">
+          <ul className="space-y-1 text-[12px] text-[#0F172A] leading-relaxed">
             {result.notes.slice(0, 3).map((n, i) => (
               <li key={i} className="flex items-start gap-1.5">
                 <span className="text-brand mt-0.5">·</span>
@@ -218,9 +218,9 @@ export default function B2BScoreCard() {
 // the dashboard might want to render its own skeleton.
 export function B2BScoreCardLoader() {
   return (
-    <div className="card-dark p-4 flex items-center gap-3">
-      <Loader2 className="w-4 h-4 animate-spin text-muted" />
-      <span className="text-[13px] text-muted">Loading your B2B score…</span>
+    <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center gap-3">
+      <Loader2 className="w-4 h-4 animate-spin text-gray-600" />
+      <span className="text-[13px] text-gray-600">Loading your B2B score…</span>
     </div>
   )
 }

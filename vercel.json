@@ -3,45 +3,13 @@
   "framework": "nextjs",
   "regions": ["sin1"],
   "crons": [
-    {
-      "comment": "Weekly affiliate-payout aggregation — Mondays 1am UTC = 8am WIB. Requires CRON_SECRET env var; route returns 403 without it.",
-      "path": "/api/admin/payouts/aggregate?secret=$CRON_SECRET",
-      "schedule": "0 1 * * 1"
-    },
-    {
-      "comment": "Daily subscription-expiry sweep — flips lapsed trials/active subs to past_due, and flips affected drivers to availability=offline so they drop off the marketplace. 18:00 UTC = 01:00 WIB next day.",
-      "path": "/api/admin/subscriptions/expire?secret=$CRON_SECRET",
-      "schedule": "0 18 * * *"
-    },
-    {
-      "comment": "Daily retention sweep — enforces privacy policy retention windows. Purges drivers cancelled > 30 days ago, audit_log rows > 90 days. 19:00 UTC = 02:00 WIB next day (runs after subscription expiry).",
-      "path": "/api/admin/retention/sweep?secret=$CRON_SECRET",
-      "schedule": "0 19 * * *"
-    },
-    {
-      "comment": "Nightly B2B reliability score recompute — ranks /business directory drivers by activity, rating, trips, tenure, subscription health. Top 10 per city get 'Top driver' badge. 20:00 UTC = 03:00 WIB next day.",
-      "path": "/api/admin/b2b/recompute-scores?secret=$CRON_SECRET",
-      "schedule": "0 20 * * *"
-    },
-    {
-      "comment": "Daily payment-intents expiry sweep — flips payment_intents.status from 'pending' to 'expired' for rows older than 24h. Snap popup dismissed before payment leaves orphan pending rows that otherwise accumulate forever. 21:00 UTC = 04:00 WIB next day.",
-      "path": "/api/admin/payment-intents/expire?secret=$CRON_SECRET",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "comment": "Daily payment-reminder sweep — emails drivers + rental_company owners at T-7/T-3/T-1/T+1/T+7 of subscription expiry, plus anyone with a payment_intent stuck pending > 24h. Idempotent via payment_reminders_log. 01:00 UTC = 08:00 WIB (morning send).",
-      "path": "/api/admin/reminders/payments?secret=$CRON_SECRET",
-      "schedule": "0 1 * * *"
-    },
-    {
-      "comment": "Daily PDP overdue sweep — reads streetlocal Supabase data_deletion_requests via service-role cross-Supabase client, emails streetlocallive@gmail.com if any are past 30-day SLA. Requires STREETLOCAL_SUPABASE_URL + STREETLOCAL_SUPABASE_SERVICE_KEY env vars on this Vercel project. 02:00 UTC = 09:00 WIB (morning send, runs after payment reminders).",
-      "path": "/api/admin/pdp/overdue?secret=$CRON_SECRET",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "comment": "Weekly partner-program delinquency sweep — calls suspend_delinquent_partner_drivers() (0044). Any driver with a pending partner_booking past its 7-day due_at gets partner_program_status='suspended' until the partner marks paid in /dashboard/partner. Mondays 03:00 UTC = 10:00 WIB.",
-      "path": "/api/cron/partner-suspend?secret=$CRON_SECRET",
-      "schedule": "0 3 * * 1"
-    }
+    { "path": "/api/admin/payouts/aggregate?secret=$CRON_SECRET",      "schedule": "0 1 * * 1" },
+    { "path": "/api/admin/subscriptions/expire?secret=$CRON_SECRET",   "schedule": "0 18 * * *" },
+    { "path": "/api/admin/retention/sweep?secret=$CRON_SECRET",        "schedule": "0 19 * * *" },
+    { "path": "/api/admin/b2b/recompute-scores?secret=$CRON_SECRET",   "schedule": "0 20 * * *" },
+    { "path": "/api/admin/payment-intents/expire?secret=$CRON_SECRET", "schedule": "0 21 * * *" },
+    { "path": "/api/admin/reminders/payments?secret=$CRON_SECRET",     "schedule": "0 1 * * *" },
+    { "path": "/api/admin/pdp/overdue?secret=$CRON_SECRET",            "schedule": "0 2 * * *" },
+    { "path": "/api/cron/partner-suspend?secret=$CRON_SECRET",         "schedule": "0 3 * * 1" }
   ]
 }

@@ -167,7 +167,7 @@ export default function LocationPermissionPrompt({ open, onComplete }: Props) {
 
       {/* Sheet — bottom-sheet on mobile, centered card on >= sm. */}
       <div
-        className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white shadow-2xl px-5 pt-6 pb-6 sm:pb-7 animate-[slideUp_0.25s_ease-out]"
+        className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white shadow-2xl px-5 pt-6 pb-6 sm:pb-7 animate-[slideUp_0.25s_ease-out] border-2 border-[#FACC15]"
         style={{
           paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)',
         }}

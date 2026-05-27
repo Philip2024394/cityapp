@@ -58,7 +58,7 @@ export default function RentalsHubPage() {
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-5xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdasdasdadasdas-removebg-preview.png?updatedAt=1779782176718"
+            src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
             alt="IndoCity"
             className="h-8 sm:h-10 w-auto"
           />

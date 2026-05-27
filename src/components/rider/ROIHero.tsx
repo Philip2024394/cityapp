@@ -47,7 +47,7 @@ Cek di indocity.streetlocal.live`
   }
 
   return (
-    <div className="card card-driver p-5 relative overflow-hidden">
+    <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-5 relative overflow-hidden">
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none opacity-70"
@@ -60,7 +60,7 @@ Cek di indocity.streetlocal.live`
       <div className="relative">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[13px] uppercase tracking-wider font-extrabold text-dim leading-none flex items-center gap-1.5">
+            <div className="text-[13px] uppercase tracking-wider font-extrabold text-gray-500 leading-none flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5" />
               ROI this month
             </div>
@@ -68,9 +68,9 @@ Cek di indocity.streetlocal.live`
               <span className="text-[34px] font-extrabold gradient-text leading-none">
                 {roi.toFixed(1)}×
               </span>
-              <span className="text-[14px] text-muted font-bold">subscription</span>
+              <span className="text-[14px] text-gray-600 font-bold">subscription</span>
             </div>
-            <div className="text-[13px] text-muted mt-2 max-w-xs">
+            <div className="text-[13px] text-gray-600 mt-2 max-w-xs">
               {monthlyQuotes} quotes received · {idr(monthlyLeadsValue)} total lead value
             </div>
           </div>
@@ -83,10 +83,10 @@ Cek di indocity.streetlocal.live`
         {/* Progress to 5× target */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-[13px] font-bold mb-1.5">
-            <span className="text-muted">Target {target}×</span>
+            <span className="text-gray-600">Target {target}×</span>
             <span className={winning ? 'text-online' : 'text-brand'}>{progressPct}%</span>
           </div>
-          <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+          <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
@@ -99,8 +99,8 @@ Cek di indocity.streetlocal.live`
           </div>
         </div>
 
-        <div className="mt-3.5 pt-3 border-t border-line text-[13px] text-muted leading-relaxed">
-          <span className="font-bold text-ink/90">{idr(subscriptionMonthly)}/month</span>{' '}
+        <div className="mt-3.5 pt-3 border-t border-gray-200 text-[13px] text-gray-600 leading-relaxed">
+          <span className="font-bold text-[#0F172A]">{idr(subscriptionMonthly)}/month</span>{' '}
           subscription · if you close <span className="text-brand font-bold">all</span>{' '}
           quotes, you make <span className="text-online font-bold">{idr(Math.max(0, monthlyLeadsValue - subscriptionMonthly))}</span> net this month.
         </div>
@@ -118,15 +118,15 @@ Cek di indocity.streetlocal.live`
             <div className="text-[12px] uppercase tracking-wider font-extrabold" style={{ color: '#22C55E' }}>
               vs Gojek / Grab
             </div>
-            <div className="text-[15px] font-extrabold mt-1 leading-snug">
+            <div className="text-[15px] font-extrabold mt-1 leading-snug text-[#0F172A]">
               You saved <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
             </div>
-            <div className="text-[12px] text-muted mt-1">
+            <div className="text-[12px] text-gray-600 mt-1">
               They&apos;d have taken {idr(competitorCommission)} (8% of {idr(monthlyLeadsValue)} — {COMPETITOR_COMMISSION_BASIS}). IndoCity takes Rp 0.
             </div>
             <button
               onClick={onShareSavings}
-              className="mt-3 w-full p-2.5 rounded-xl font-extrabold text-[13px] text-bg active:scale-[0.99] transition flex items-center justify-center gap-2"
+              className="mt-3 w-full p-2.5 rounded-xl font-extrabold text-[13px] text-white active:scale-[0.99] transition flex items-center justify-center gap-2"
               style={{
                 background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
                 boxShadow: '0 6px 16px rgba(37,211,102,0.30)',

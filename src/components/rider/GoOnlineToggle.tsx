@@ -193,7 +193,7 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
 
   return (
     <>
-      <div className="card p-5 relative overflow-hidden">
+      <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-5 relative overflow-hidden">
         <div
           className="absolute inset-0 transition-opacity duration-500 pointer-events-none"
           style={{
@@ -205,11 +205,11 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className={online && !syncError ? 'dot-online' : 'dot-offline'} />
-              <span className="text-[14px] font-extrabold tracking-wider uppercase text-muted">
+              <span className="text-[14px] font-extrabold tracking-wider uppercase text-gray-600">
                 {online && !syncError ? 'Online — customer bisa lihat kamu' : 'Offline'}
               </span>
             </div>
-            <div className="text-xl font-extrabold mt-1.5">
+            <div className="text-xl font-extrabold mt-1.5 text-[#0F172A]">
               {pending
                 ? 'Menyinkron…'
                 : online && !syncError
@@ -218,7 +218,7 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
             </div>
             <div
               className="text-[14px] mt-1 leading-snug"
-              style={{ color: syncError ? '#FCA5A5' : 'rgba(255,255,255,0.55)' }}
+              style={{ color: syncError ? '#B91C1C' : '#4B5563' }}
             >
               {gpsHint}
             </div>
@@ -266,10 +266,10 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
                 <MapPin className="w-4 h-4" style={{ color: '#FCA5A5' }} strokeWidth={2.5} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-extrabold leading-snug" style={{ color: '#FCA5A5' }}>
+                <div className="text-[15px] font-extrabold leading-snug" style={{ color: '#B91C1C' }}>
                   Izin lokasi diblokir
                 </div>
-                <p className="text-[14px] text-muted leading-relaxed mt-1">
+                <p className="text-[14px] text-gray-600 leading-relaxed mt-1">
                   Customer tidak bisa lihat posisimu sampai izin lokasi diaktifkan.
                   Buka pengaturan browser/HP → izinkan lokasi untuk indocity.id.
                 </p>
@@ -340,10 +340,9 @@ function BackgroundLocationDisclosure({
         className="fixed left-0 right-0 bottom-0 z-[90] pb-safe animate-[fadeUp_0.22s_ease-out]"
       >
         <div
-          className="mx-auto max-w-md w-full"
+          className="mx-auto max-w-md w-full bg-gray-100 border-t border-gray-200"
           style={{
-            background: '#0A0A0A',
-            borderTop: '1px solid rgba(250,204,21,0.40)',
+            borderTopColor: 'rgba(250,204,21,0.40)',
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
             boxShadow: '0 -20px 60px rgba(0,0,0,0.55)',
@@ -354,27 +353,26 @@ function BackgroundLocationDisclosure({
               className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)' }}
             >
-              <MapPin className="w-5 h-5 text-bg" strokeWidth={2.5} />
+              <MapPin className="w-5 h-5 text-[#0F172A]" strokeWidth={2.5} />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-[18px] font-extrabold leading-tight">
+              <h2 className="text-[18px] font-extrabold leading-tight text-[#0F172A]">
                 Lokasi kamu saat online
               </h2>
-              <p className="text-[14px] text-muted leading-snug mt-1">
+              <p className="text-[14px] text-gray-600 leading-snug mt-1">
                 IndoCity butuh izin lokasi sekali saja untuk bisa kerja.
               </p>
             </div>
             <button
               onClick={onDismiss}
               aria-label="Tutup"
-              className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-ink transition"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
+              className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:text-[#0F172A] transition bg-gray-50 border border-gray-200"
             >
               <XIcon className="w-4 h-4" strokeWidth={2.5} />
             </button>
           </div>
 
-          <div className="px-5 pb-4 space-y-3 text-[14px] text-ink/90 leading-relaxed">
+          <div className="px-5 pb-4 space-y-3 text-[14px] text-[#0F172A] leading-relaxed">
             <p>
               Saat kamu <strong>Online</strong>, posisimu dikirim ke marketplace
               setiap 30 detik supaya customer bisa lihat kamu di peta dan kontak
@@ -385,7 +383,7 @@ function BackgroundLocationDisclosure({
               ini supaya kamu tetap muncul di marketplace meskipun lagi naik motor
               tanpa buka HP.
             </p>
-            <ul className="space-y-1.5 text-[13px] text-muted">
+            <ul className="space-y-1.5 text-[13px] text-gray-600">
               <li>✓ Hanya saat kamu <strong>Online</strong> — tap Offline untuk berhenti</li>
               <li>✓ Tidak disimpan sebagai riwayat perjalanan</li>
               <li>✓ Tidak dibagikan ke pihak ketiga</li>
@@ -395,14 +393,14 @@ function BackgroundLocationDisclosure({
           <div className="px-5 pb-5 grid grid-cols-1 gap-2">
             <button
               onClick={onAccept}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-[#0F172A] font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
               style={{ minHeight: 52 }}
             >
               Lanjut & aktifkan lokasi
             </button>
             <button
               onClick={onDismiss}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-transparent text-muted font-extrabold text-[14px] uppercase tracking-wider border border-white/10 active:scale-[0.99]"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-transparent text-gray-600 font-extrabold text-[14px] uppercase tracking-wider border border-gray-200 active:scale-[0.99]"
               style={{ minHeight: 52 }}
             >
               Tidak sekarang

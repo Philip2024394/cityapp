@@ -72,7 +72,7 @@ export default function ViralityPanel() {
   }, [])
 
   if (loading) {
-    return <div className="card h-24 shimmer" />
+    return <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm h-24 shimmer" />
   }
   if (!data) return null
 
@@ -96,7 +96,7 @@ function RankCard({ rank, cityTotal, city }: { rank: number | null; cityTotal: n
   const isTop10 = rank <= 10
   return (
     <div
-      className="card p-4 flex items-center gap-3"
+      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center gap-3"
       style={{
         borderColor: isTop10 ? 'rgba(250,204,21,0.30)' : undefined,
         background: isTop10 ? 'rgba(250,204,21,0.05)' : undefined,
@@ -105,19 +105,19 @@ function RankCard({ rank, cityTotal, city }: { rank: number | null; cityTotal: n
       <div
         className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
         style={{
-          background: isTop10 ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${isTop10 ? 'rgba(250,204,21,0.30)' : 'rgba(255,255,255,0.10)'}`,
+          background: isTop10 ? 'rgba(250,204,21,0.15)' : 'rgba(15,23,42,0.05)',
+          border: `1px solid ${isTop10 ? 'rgba(250,204,21,0.30)' : 'rgba(15,23,42,0.10)'}`,
         }}
       >
-        <Trophy className="w-5 h-5" style={{ color: isTop10 ? '#FACC15' : 'rgba(255,255,255,0.55)' }} strokeWidth={2.25} />
+        <Trophy className="w-5 h-5" style={{ color: isTop10 ? '#FACC15' : '#6B7280' }} strokeWidth={2.25} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">
+        <div className="text-[12px] uppercase tracking-wider font-extrabold text-gray-500">
           Your rank this week
         </div>
-        <div className="text-[16px] font-extrabold mt-0.5 leading-tight">
-          #{rank} <span className="text-muted font-bold">of {cityTotal}</span>{' '}
-          {city && <span className="text-muted font-bold">in {city}</span>}
+        <div className="text-[16px] font-extrabold mt-0.5 leading-tight text-[#0F172A]">
+          #{rank} <span className="text-gray-600 font-bold">of {cityTotal}</span>{' '}
+          {city && <span className="text-gray-600 font-bold">in {city}</span>}
         </div>
       </div>
     </div>
@@ -128,7 +128,7 @@ function ReferralCard({ monthsEarned, monthsPending, referralCount }: { monthsEa
   return (
     <Link
       href="/dashboard/refer"
-      className="card card-interactive p-4 flex items-center gap-3"
+      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center gap-3"
       style={{ background: 'rgba(250,204,21,0.08)', borderColor: 'rgba(250,204,21,0.30)' }}
     >
       <div
@@ -138,12 +138,12 @@ function ReferralCard({ monthsEarned, monthsPending, referralCount }: { monthsEa
         <Gift className="w-5 h-5 text-brand" strokeWidth={2.25} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-extrabold text-[14px]">
+        <div className="font-extrabold text-[14px] text-[#0F172A]">
           {referralCount === 0
             ? 'Earn 1 free month per referral'
             : `${referralCount} referred · ${monthsEarned}mo earned`}
         </div>
-        <div className="text-[12px] text-muted truncate mt-0.5">
+        <div className="text-[12px] text-gray-600 truncate mt-0.5">
           {referralCount === 0
             ? 'Share your link in WhatsApp driver groups'
             : monthsPending > 0
@@ -160,26 +160,25 @@ function BuddyCard({ mentor, mentees }: { mentor: Mentor | null; mentees: Mentee
   // Show mentor card if the driver IS a mentee (new driver paired with a vet).
   if (mentor) {
     return (
-      <div className="card p-4 flex items-center gap-3">
+      <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center gap-3">
         <img
           src={mentor.photoUrl || `https://i.pravatar.cc/100?u=${mentor.slug}`}
           alt=""
-          className="w-11 h-11 rounded-xl object-cover ring-1 ring-white/10 shrink-0"
+          className="w-11 h-11 rounded-xl object-cover ring-1 ring-gray-200 shrink-0"
         />
         <div className="flex-1 min-w-0">
-          <div className="text-[12px] uppercase tracking-wider font-extrabold text-dim">
+          <div className="text-[12px] uppercase tracking-wider font-extrabold text-gray-500">
             Your buddy
           </div>
-          <div className="font-extrabold text-[14px] mt-0.5 truncate">{mentor.name}</div>
-          <div className="text-[12px] text-muted mt-0.5">Tap to view their profile</div>
+          <div className="font-extrabold text-[14px] mt-0.5 truncate text-[#0F172A]">{mentor.name}</div>
+          <div className="text-[12px] text-gray-600 mt-0.5">Tap to view their profile</div>
         </div>
         <Link
           href={`/r/${mentor.slug}`}
-          className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition active:scale-95"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+          className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition active:scale-95 bg-gray-50 border border-gray-200"
           aria-label={`View ${mentor.name}'s profile`}
         >
-          <ArrowRight className="w-4 h-4 text-muted" strokeWidth={2.5} />
+          <ArrowRight className="w-4 h-4 text-gray-600" strokeWidth={2.5} />
         </Link>
       </div>
     )
@@ -187,11 +186,11 @@ function BuddyCard({ mentor, mentees }: { mentor: Mentor | null; mentees: Mentee
   // Show mentees card if the driver IS a mentor.
   if (mentees && mentees.length > 0) {
     return (
-      <div className="card p-4">
+      <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-brand" />
-          <div className="text-[14px] font-extrabold">
-            You&apos;re mentoring <span className="text-muted font-bold">· {mentees.length}</span>
+          <div className="text-[14px] font-extrabold text-[#0F172A]">
+            You&apos;re mentoring <span className="text-gray-600 font-bold">· {mentees.length}</span>
           </div>
         </div>
         <ul className="space-y-2">
@@ -200,18 +199,17 @@ function BuddyCard({ mentor, mentees }: { mentor: Mentor | null; mentees: Mentee
               <img
                 src={m.photoUrl || `https://i.pravatar.cc/100?u=${m.slug}`}
                 alt=""
-                className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10 shrink-0"
+                className="w-9 h-9 rounded-xl object-cover ring-1 ring-gray-200 shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-[13px] truncate">{m.name}</div>
+                <div className="font-bold text-[13px] truncate text-[#0F172A]">{m.name}</div>
               </div>
               <Link
                 href={`/r/${m.slug}`}
-                className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)' }}
+                className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition active:scale-95 bg-gray-50 border border-gray-200"
                 aria-label={`View ${m.name}'s profile`}
               >
-                <ArrowRight className="w-3.5 h-3.5 text-muted" strokeWidth={2.5} />
+                <ArrowRight className="w-3.5 h-3.5 text-gray-600" strokeWidth={2.5} />
               </Link>
             </li>
           ))}
@@ -231,7 +229,7 @@ function DriverGroupCard({ city }: { city: string | null }) {
       href={DRIVER_GROUP_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="card card-interactive p-4 flex items-center gap-3"
+      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center gap-3"
     >
       <div
         className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
@@ -243,10 +241,10 @@ function DriverGroupCard({ city }: { city: string | null }) {
         <Users className="w-5 h-5" style={{ color: '#25D366' }} strokeWidth={2.25} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-extrabold text-[14px]">
+        <div className="font-extrabold text-[14px] text-[#0F172A]">
           Join the {city ? `${city} ` : ''}IndoCity drivers group
         </div>
-        <div className="text-[12px] text-muted truncate mt-0.5">
+        <div className="text-[12px] text-gray-600 truncate mt-0.5">
           WhatsApp group — driver tips, hotspots, peer support
         </div>
       </div>

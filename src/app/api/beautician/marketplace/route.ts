@@ -21,6 +21,8 @@ const PUBLIC_COLS = [
   'rating_count',
   // mig 0086 — Home/Hotel/Villa icons on the card bottom-left
   'service_locations',
+  // mig 0079 — "Spa Center" pill when no service_locations are set
+  'has_physical_location',
   // Card hero strip + mini portfolio + themed accents (new card design)
   'cover_image_url',
   'theme_color',

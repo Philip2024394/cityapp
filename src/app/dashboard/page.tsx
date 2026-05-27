@@ -103,7 +103,7 @@ export default function DashboardPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-[100dvh] pb-28">
+      <main className="min-h-[100dvh] pb-28 bg-white text-black">
         <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
           <Greeting ME={ME} onShare={shareProfile} />
 
@@ -138,11 +138,14 @@ function Greeting({ ME, onShare }: { ME: Rider; onShare: () => void }) {
       <div className="flex items-center gap-3 min-w-0">
         <img src={ME.photoUrl} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0" />
         <div className="min-w-0">
-          <div className="text-[13px] text-muted">Selamat datang,</div>
-          <div className="text-lg font-extrabold truncate">{ME.name.split(' ')[0]}</div>
+          <div className="text-[13px] text-gray-600">Selamat datang,</div>
+          <div className="text-lg font-extrabold truncate text-[#0F172A]">{ME.name.split(' ')[0]}</div>
         </div>
       </div>
-      <button onClick={onShare} className="btn-secondary !py-2 !px-3 !text-[13px] !min-h-0 shrink-0">
+      <button
+        onClick={onShare}
+        className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 border border-gray-200 text-[13px] font-extrabold text-[#0F172A] hover:bg-gray-200 transition"
+      >
         <Share2 className="w-3.5 h-3.5" />
         Share
       </button>
@@ -182,13 +185,13 @@ function FirstTimeDashboard({
           className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)' }}
         >
-          <Rocket className="w-5 h-5 text-bg" strokeWidth={2.5} />
+          <Rocket className="w-5 h-5 text-[#0F172A]" strokeWidth={2.5} />
         </div>
         <div className="min-w-0">
-          <div className="font-extrabold text-[15px] leading-snug">
+          <div className="font-extrabold text-[15px] leading-snug text-[#0F172A]">
             Yuk mulai dapat customer pertama!
           </div>
-          <div className="text-[13px] text-muted mt-1 leading-snug">
+          <div className="text-[13px] text-gray-600 mt-1 leading-snug">
             Selesaikan 3 langkah cepat di bawah — habis itu profilmu langsung tayang di marketplace.
           </div>
         </div>
@@ -259,19 +262,19 @@ function FirstTimeDashboard({
       <button
         type="button"
         onClick={() => setMoreOpen((v) => !v)}
-        className="w-full card card-interactive p-3.5 flex items-center justify-between"
+        className="w-full rounded-3xl bg-gray-100 border border-gray-200 p-3.5 shadow-sm flex items-center justify-between"
       >
-        <span className="text-[13px] font-extrabold text-muted uppercase tracking-wider">
+        <span className="text-[13px] font-extrabold text-gray-600 uppercase tracking-wider">
           Lihat semua alat (opsional)
         </span>
         <ChevronDown
-          className="w-4 h-4 text-muted transition-transform"
+          className="w-4 h-4 text-gray-500 transition-transform"
           style={{ transform: moreOpen ? 'rotate(180deg)' : 'rotate(0)' }}
         />
       </button>
       {moreOpen && (
         <div className="space-y-3">
-          <p className="text-[12px] text-dim leading-snug px-1">
+          <p className="text-[12px] text-gray-500 leading-snug px-1">
             Alat-alat tambahan untuk driver yang sudah aktif. Boleh diatur nanti — fokus dulu di 3 langkah di atas.
           </p>
           <SecondaryToolGrid />
@@ -292,7 +295,7 @@ function PrimaryActionCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="card p-4">
+    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-4 shadow-sm">
       <div className="flex items-start gap-3 mb-3">
         <div
           className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-[14px]"
@@ -305,10 +308,10 @@ function PrimaryActionCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-[15px] font-extrabold leading-tight">{title}</h3>
+            <h3 className="text-[15px] font-extrabold leading-tight text-[#0F172A]">{title}</h3>
             <HelpTip title={helpTitle} body={helpBody} variant="lightbulb" />
           </div>
-          <p className="text-[13px] text-muted leading-snug mt-1">{subtitle}</p>
+          <p className="text-[13px] text-gray-600 leading-snug mt-1">{subtitle}</p>
         </div>
       </div>
       {children}
@@ -389,7 +392,7 @@ function ActivatedDashboard({
         <B2BScoreCard />
         <Link
           href="/onboarding?mode=edit"
-          className="card card-interactive p-4 flex items-center justify-between"
+          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center justify-between"
           style={{ borderColor: 'rgba(250,204,21,0.40)' }}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -397,8 +400,8 @@ function ActivatedDashboard({
               <Edit3 className="w-4 h-4 text-brand" />
             </div>
             <div className="min-w-0">
-              <div className="font-extrabold text-[14px]">Edit profil & harga</div>
-              <div className="text-[13px] text-muted truncate">
+              <div className="font-extrabold text-[14px] text-[#0F172A]">Edit profil & harga</div>
+              <div className="text-[13px] text-gray-600 truncate">
                 Ubah harga, jam kerja, foto motor, dan layanan
               </div>
             </div>
@@ -449,7 +452,7 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between gap-2 pt-2 pb-1 px-1">
-      <h2 className="text-[12px] uppercase tracking-wider font-extrabold text-dim">
+      <h2 className="text-[12px] uppercase tracking-wider font-extrabold text-gray-500">
         {title}
       </h2>
       <HelpTip title={helpTitle} body={helpBody} />
@@ -473,7 +476,7 @@ function CollapsibleSection({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-[12px] uppercase tracking-wider font-extrabold text-dim hover:text-ink transition"
+          className="flex items-center gap-1.5 text-[12px] uppercase tracking-wider font-extrabold text-gray-500 hover:text-[#0F172A] transition"
         >
           {title}
           <ChevronDown
@@ -596,24 +599,24 @@ function ShareKitCard({
   }
 
   return (
-    <div className={compact ? '' : 'card p-5'}>
+    <div className={compact ? '' : 'rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-5'}>
       {!compact && (
         <div className="flex items-center gap-2 mb-3">
           <Share2 className="w-4 h-4 text-brand" />
-          <h2 className="text-[12px] text-dim uppercase tracking-wider font-extrabold">
+          <h2 className="text-[12px] text-gray-500 uppercase tracking-wider font-extrabold">
             Share your page
           </h2>
         </div>
       )}
 
       <div className="flex items-stretch gap-2 mb-3">
-        <div className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-black/50 border border-white/10 text-[13px] text-ink font-mono truncate">
+        <div className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-[13px] text-[#0F172A] font-mono truncate">
           {shareUrl || '—'}
         </div>
         <button
           type="button"
           onClick={copyLink}
-          className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-black/50 border border-white/10 text-[12px] font-extrabold text-ink hover:border-brand/40 transition"
+          className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-[12px] font-extrabold text-[#0F172A] hover:border-brand/40 transition"
         >
           {copied === 'url'
             ? <><Check className="w-3.5 h-3.5 text-brand" /> Copied</>
@@ -625,7 +628,7 @@ function ShareKitCard({
         <button
           type="button"
           onClick={shareWhatsApp}
-          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-black/60 active:scale-[0.98] transition"
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-gray-300 active:scale-[0.98] transition"
           style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}
         >
           <MessageCircle className="w-4 h-4" />
@@ -634,7 +637,7 @@ function ShareKitCard({
         <button
           type="button"
           onClick={shareFacebook}
-          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-black/60 active:scale-[0.98] transition"
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-gray-300 active:scale-[0.98] transition"
           style={{ background: 'linear-gradient(135deg, #1877F2, #0E5FD2)' }}
         >
           <Facebook className="w-4 h-4" />
@@ -643,7 +646,7 @@ function ShareKitCard({
         <button
           type="button"
           onClick={shareInstagram}
-          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-black/60 active:scale-[0.98] transition"
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-extrabold text-white border border-gray-300 active:scale-[0.98] transition"
           style={{
             background:
               'linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%)',
@@ -680,13 +683,13 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
 
   if (compact) {
     return (
-      <div className="card p-4 flex items-center justify-between gap-3">
+      <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[12px] text-dim uppercase tracking-wider font-extrabold">Langganan</div>
-          <div className="text-[14px] font-extrabold mt-0.5">
+          <div className="text-[12px] text-gray-500 uppercase tracking-wider font-extrabold">Langganan</div>
+          <div className="text-[14px] font-extrabold mt-0.5 text-[#0F172A]">
             {status === 'trial' ? 'Trial aktif' : status === 'active' ? 'Aktif' : 'Belum aktif'}
           </div>
-          <div className="text-[12px] text-muted mt-0.5">Rp 38K/bulan · Rp 350K/tahun</div>
+          <div className="text-[12px] text-gray-600 mt-0.5">Rp 38K/bulan · Rp 350K/tahun</div>
         </div>
         <SubscriptionStatusChip status={status} />
       </div>
@@ -697,7 +700,7 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
 
   return (
     <div
-      className="card p-5"
+      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-5"
       style={isPastDue
         ? { borderColor: 'rgba(239,68,68,0.45)', boxShadow: '0 0 24px rgba(239,68,68,0.15)' }
         : undefined}
@@ -720,10 +723,10 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
             style={{ background: '#EF4444', boxShadow: '0 0 6px #EF4444' }}
           />
           <div className="min-w-0">
-            <div className="text-[15px] font-extrabold leading-snug" style={{ color: '#FCA5A5' }}>
+            <div className="text-[15px] font-extrabold leading-snug" style={{ color: '#B91C1C' }}>
               Langganan kamu tidak aktif
             </div>
-            <p className="text-[14px] text-muted leading-relaxed mt-1">
+            <p className="text-[14px] text-gray-600 leading-relaxed mt-1">
               Profilmu disembunyikan dari marketplace — customer tidak bisa
               kontak kamu sampai langganan diperpanjang. Bayar bulanan atau
               tahunan di bawah untuk tampil kembali.
@@ -742,8 +745,8 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
 
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-[13px] text-dim uppercase tracking-wider font-extrabold">Subscription</div>
-          <div className="font-extrabold text-lg mt-0.5">
+          <div className="text-[13px] text-gray-500 uppercase tracking-wider font-extrabold">Subscription</div>
+          <div className="font-extrabold text-lg mt-0.5 text-[#0F172A]">
             {status === 'trial'
               ? 'Trial — renew sebelum expired'
               : status === 'active'
@@ -754,7 +757,7 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
                     ? 'Langganan dibatalkan'
                     : 'Belum aktif'}
           </div>
-          <div className="text-[13px] text-muted mt-1">{MONTHLY_OR_YEARLY_LABEL}</div>
+          <div className="text-[13px] text-gray-600 mt-1">{MONTHLY_OR_YEARLY_LABEL}</div>
         </div>
         <SubscriptionStatusChip status={status} />
       </div>
@@ -769,15 +772,15 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
           </Link>
           <Link
             href="/dashboard/renew"
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-bg text-brand font-extrabold text-[13px] uppercase tracking-wider border-2 border-brand active:scale-[0.99]"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-white text-brand font-extrabold text-[13px] uppercase tracking-wider border-2 border-brand active:scale-[0.99]"
           >
             Tahunan · Rp 350K / 365 hari
           </Link>
         </div>
       ) : (
         <div className="mt-4 rounded-xl p-3 text-[13px] leading-snug" style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.35)' }}>
-          <div className="font-extrabold text-ink mb-1">Pembayaran via WhatsApp admin</div>
-          <p className="text-muted leading-relaxed mb-2">
+          <div className="font-extrabold text-[#0F172A] mb-1">Pembayaran via WhatsApp admin</div>
+          <p className="text-gray-600 leading-relaxed mb-2">
             Auto-billing belum aktif. Bayar manual via QRIS / transfer bank, lalu kirim
             bukti ke admin untuk aktivasi langganan.
           </p>
@@ -790,7 +793,7 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
             Chat admin →
           </a>
           {process.env.NODE_ENV !== 'production' && (
-            <div className="mt-2 pt-2 border-t border-white/10 text-[11px] text-dim">
+            <div className="mt-2 pt-2 border-t border-gray-200 text-[11px] text-gray-500">
               Dev only: set <code className="text-brand">NEXT_PUBLIC_MIDTRANS_CLIENT_KEY</code> + <code className="text-brand">MIDTRANS_SERVER_KEY</code> to enable auto-billing.
             </div>
           )}
@@ -826,13 +829,13 @@ function ToolCard({ href, icon, label, hint }: { href: string; icon: React.React
   return (
     <Link
       href={href}
-      className="card card-interactive p-3 flex flex-col gap-1.5 min-h-[96px]"
+      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex flex-col gap-1.5 min-h-[96px] hover:border-gray-300 transition"
     >
       <div className="w-8 h-8 rounded-lg bg-brand/12 border border-brand/22 flex items-center justify-center text-brand">
         {icon}
       </div>
-      <div className="text-[14px] font-extrabold leading-tight mt-1">{label}</div>
-      <div className="text-[13px] text-muted leading-tight">{hint}</div>
+      <div className="text-[14px] font-extrabold leading-tight mt-1 text-[#0F172A]">{label}</div>
+      <div className="text-[13px] text-gray-600 leading-tight">{hint}</div>
     </Link>
   )
 }
