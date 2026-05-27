@@ -1,0 +1,25 @@
+import type { Metadata } from 'next'
+import ExploreClient from './ExploreClient'
+
+// ============================================================================
+// /explore — the new "hub" page (May 2026 restructure)
+// ----------------------------------------------------------------------------
+// Houses everything that used to live on /:
+//   - 10 service tiles (Ride / Parcel / Food / Rental / Tour / Massage /
+//     Beautician / Laundry / Handyman / Home Clean)
+//   - Three browse CTAs (Rentals / Bus charter / B2B contracts)
+//   - Language toggle + Sign-in link
+//
+// Arrived at via the "Enter App" CTA on / after the location warm-up modal
+// (whether GPS granted or skipped). The page does NOT itself trigger any
+// location prompt — that's exclusively the warm-up's job.
+// ============================================================================
+
+export const metadata: Metadata = {
+  title: 'Explore · IndoCity',
+  description: 'Browse rides, rentals, places, and services across Indonesia.',
+}
+
+export default function ExplorePage() {
+  return <ExploreClient />
+}
