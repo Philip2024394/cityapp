@@ -261,13 +261,43 @@ export default function PlaceProfileShell({
           )}
           {/* Soft top fade so the share chip stays readable on bright photos. */}
           <div
-            className="absolute inset-x-0 top-0 h-20 pointer-events-none"
+            className="absolute inset-x-0 top-0 h-28 pointer-events-none"
             style={{
               background:
-                'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 100%)',
+                'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.10) 70%, transparent 100%)',
             }}
             aria-hidden
           />
+
+          {/* Place name (top-left overlay) + slogan (first sentence of the
+              description). White text + drop shadow so it stays readable
+              over photo + the fade above. Truncated long descriptions to
+              ~80 chars so the slogan line wraps cleanly. */}
+          <div className="absolute top-3 left-3 right-20 pointer-events-none">
+            <h1
+              className="text-white font-black tracking-tight leading-[1.1] text-[20px] sm:text-[24px]"
+              style={{ textShadow: '0 2px 10px rgba(0,0,0,0.55)' }}
+            >
+              {place.name}
+            </h1>
+            {place.description && (
+              <p
+                className="text-white/95 font-semibold leading-snug mt-1 text-[12px] sm:text-[13px] line-clamp-2"
+                style={{ textShadow: '0 2px 8px rgba(0,0,0,0.55)' }}
+              >
+                {(() => {
+                  // Slogan = first sentence of the description (clipped at
+                  // ~80 chars so it never crowds the hero). Falls back to
+                  // the full string when there's no sentence boundary.
+                  const d = place.description.trim()
+                  const firstSentence = d.split(/(?<=[.!?])\s/)[0] ?? d
+                  return firstSentence.length > 80
+                    ? firstSentence.slice(0, 80).trimEnd() + '…'
+                    : firstSentence
+                })()}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Reviews toggle — only renders when we actually have review data,
@@ -338,16 +368,6 @@ export default function PlaceProfileShell({
                   ({reviewCount} review{reviewCount === 1 ? '' : 's'})
                 </span>
               </div>
-              {/* "Start from Rp X" — cheapest priced offer pill, hidden when
-                  no priced offers (temples / image-only galleries). Surfaces
-                  the entry-price the customer would pay for a menu item /
-                  ticket / product. Self-published by venue. */}
-              {startFromLabel && (
-                <div className="mt-1.5 inline-flex items-baseline gap-1">
-                  <span className="text-[10px] font-medium text-gray-500">Start from</span>
-                  <span className="text-[14px] font-black text-black leading-none">{startFromLabel}</span>
-                </div>
-              )}
             </div>
 
             {/* "Top Listed" award badge — neutral gray pill with themed icon
@@ -478,6 +498,34 @@ export default function PlaceProfileShell({
               background="#FEF3C7"
               color="#78350F"
             />
+
+            {/* PRICE + CONTACT FOOTER ROW — mirrors the beautician profile
+                exact pattern (page.tsx lines 595-614): large Rp price on the
+                left with the "Start from" caption underneath, themed Contact
+                button (square w/ rounded corners) on the right. Sits inside
+                the content scroll, not a sticky overlay. */}
+            <div className="flex items-end justify-between gap-3 pb-4">
+              <div className="leading-none pb-3">
+                <div className="text-[24px] sm:text-[28px] font-black text-black">
+                  {startFromLabel ?? '—'}
+                </div>
+                <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
+                  Start from
+                </div>
+              </div>
+              {showContact && waHref && (
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
+                  style={{ background: theme }}
+                >
+                  <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  Contact
+                </a>
+              )}
+            </div>
 
           </>
         )}
@@ -643,30 +691,9 @@ export default function PlaceProfileShell({
           the destination is the user's actual context). When
           contact_enabled=false OR no whatsapp_e164, this row is empty
           and the bottom accent bar sits flush with the viewport. */}
-      {showContact && waHref && (
-        <div
-          className="fixed left-0 right-0 z-30"
-          style={{ bottom: 6 /* leave room for the accent bar */ }}
-        >
-          <div className="mx-auto max-w-2xl px-3 pb-3">
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3.5 text-[14px] font-black active:scale-[0.98] transition"
-              style={{
-                background: BRAND_YELLOW,
-                color: BRAND_NAVY,
-                minHeight: 52,
-                boxShadow: '0 8px 22px rgba(250,204,21,0.40)',
-              }}
-            >
-              <MessageCircle className="w-5 h-5" strokeWidth={2.5} />
-              Contact venue
-            </a>
-          </div>
-        </div>
-      )}
+      {/* Sticky "Contact venue" yellow pill removed per founder direction —
+          the inline Contact button in the beautician-style footer row
+          (next to the Start-from price) is now the single contact path. */}
 
       {/* Bottom accent bar — fixed to visible viewport edge, same as beautician. */}
       <div
