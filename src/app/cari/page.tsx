@@ -322,7 +322,9 @@ function PlanTripPageInner() {
         style={{
           backgroundImage: `url("${BG_IMAGE}")`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          // Push the image up by 120px so the visible composition in
+          // the hero area sits higher (founder direction).
+          backgroundPosition: 'center -120px',
           backgroundRepeat: 'no-repeat',
         }}
         aria-hidden
