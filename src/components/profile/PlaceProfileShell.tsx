@@ -163,6 +163,30 @@ export default function PlaceProfileShell({
   const reviewCount = place.reviewCount ?? 0
   const hasReviews  = ratingVal > 0 && reviewCount > 0
 
+  // Cheapest priced offer — surfaces as "Start from Rp X" on the info
+  // card so customers instantly see the entry price (drinks-from / menu-
+  // from / ticket-from / product-from per category). null = no priced
+  // offers → pill is hidden. Lower-bound only — the venue self-publishes
+  // each offer's individual price, IndoCity never computes a total.
+  const minOfferPriceIdr: number | null = (() => {
+    const prices = offers
+      .map(o => o.price_idr)
+      .filter((p): p is number => typeof p === 'number' && p > 0)
+    return prices.length === 0 ? null : Math.min(...prices)
+  })()
+  const startFromLabel: string | null = (() => {
+    if (minOfferPriceIdr == null) return null
+    if (minOfferPriceIdr >= 1_000_000) {
+      const jt = minOfferPriceIdr / 1_000_000
+      return `Rp ${Number.isInteger(jt) ? jt : jt.toFixed(1)}jt`
+    }
+    if (minOfferPriceIdr >= 1000) {
+      const k = minOfferPriceIdr / 1000
+      return `Rp ${Number.isInteger(k) ? k : k.toFixed(0)}k`
+    }
+    return `Rp ${minOfferPriceIdr.toLocaleString('id-ID')}`
+  })()
+
   // Map offers → PortfolioPhoto shape so the shared carousel + detail
   // popup renders identically to the beautician variant.
   const portfolioPhotos: PortfolioPhoto[] = offers.map((o) => ({
@@ -314,6 +338,16 @@ export default function PlaceProfileShell({
                   ({reviewCount} review{reviewCount === 1 ? '' : 's'})
                 </span>
               </div>
+              {/* "Start from Rp X" — cheapest priced offer pill, hidden when
+                  no priced offers (temples / image-only galleries). Surfaces
+                  the entry-price the customer would pay for a menu item /
+                  ticket / product. Self-published by venue. */}
+              {startFromLabel && (
+                <div className="mt-1.5 inline-flex items-baseline gap-1">
+                  <span className="text-[10px] font-medium text-gray-500">Start from</span>
+                  <span className="text-[14px] font-black text-black leading-none">{startFromLabel}</span>
+                </div>
+              )}
             </div>
 
             {/* "Top Listed" award badge — neutral gray pill with themed icon
@@ -627,11 +661,16 @@ export default function PlaceProfileShell({
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-white border border-gray-200 px-4 py-3 text-[13px] font-extrabold text-black shadow-md active:scale-[0.98] transition"
-              style={{ minHeight: 48 }}
+              className="inline-flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3.5 text-[14px] font-black active:scale-[0.98] transition"
+              style={{
+                background: BRAND_YELLOW,
+                color: BRAND_NAVY,
+                minHeight: 52,
+                boxShadow: '0 8px 22px rgba(250,204,21,0.40)',
+              }}
             >
-              <MessageCircle className="w-4 h-4 text-green-600" strokeWidth={2.5} />
-              Contact venue on WhatsApp
+              <MessageCircle className="w-5 h-5" strokeWidth={2.5} />
+              Contact venue
             </a>
           </div>
         </div>
