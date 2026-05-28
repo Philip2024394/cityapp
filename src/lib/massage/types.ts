@@ -167,6 +167,17 @@ export type MassageProviderPublic = Pick<
   has_physical_location?: boolean | null
   latitude?:  number | null
   longitude?: number | null
+  // mig 0104 — feature parity with the beautician vertical.
+  // hero_text: { line1, line2, tagline, color, effect } — NULL = render defaults.
+  hero_text?:              Record<string, unknown> | null
+  // promo_text: RunningMarquee message above the portfolio carousel.
+  promo_text?:             string | null
+  // busy_dates: ISO YYYY-MM-DD strings the therapist marked unavailable.
+  busy_dates?:             string[] | null
+  // service_photos: Record<tier, photoUrl[]> for the per-service gallery.
+  service_photos?:         Record<string, string[]> | null
+  // marketplace_categories: filter chip values the provider appears under.
+  marketplace_categories?: string[] | null
 }
 
 export const AVAILABILITY_LABELS: Record<MassageAvailability, string> = {

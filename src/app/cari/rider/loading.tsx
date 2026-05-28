@@ -1,15 +1,20 @@
+// Minimal loading shell for the /cari/rider redirect. The page itself is
+// a server-side `redirect()` so this rarely renders, but Next still
+// requires a valid loading boundary alongside any async server page.
 export default function Loading() {
   return (
-    <main className="min-h-[100dvh] px-4 pt-6" style={{ background: '#0A0A0A' }}>
-      <div className="max-w-xl mx-auto space-y-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-2xl animate-pulse"
-            style={{ background: 'rgba(255,255,255,0.04)', height: 180 }}
-          />
-        ))}
-      </div>
+    <main
+      className="min-h-[100dvh] flex items-center justify-center"
+      style={{ background: '#0A0A0A' }}
+      aria-label="Redirecting"
+    >
+      <div
+        className="w-8 h-8 rounded-full animate-spin"
+        style={{
+          border: '3px solid rgba(250,204,21,0.25)',
+          borderTopColor: '#FACC15',
+        }}
+      />
     </main>
   )
 }

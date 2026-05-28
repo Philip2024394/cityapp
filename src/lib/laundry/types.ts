@@ -70,6 +70,12 @@ export type LaundryProviderPublic = Pick<
   rating_count?: number | null
   // mig 0087 — per-provider accent for the public profile page.
   theme_color?: string | null
+  // mig 0106 — feature parity with beautician (visit us + hero/promo copy)
+  has_physical_location?: boolean | null
+  latitude?:              number | null
+  longitude?:             number | null
+  hero_text?:             Record<string, unknown> | null
+  promo_text?:            string | null
 }
 
 export const PACKAGE_LABELS = {

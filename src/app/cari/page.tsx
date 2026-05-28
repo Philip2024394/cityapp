@@ -5,12 +5,10 @@ import Link from 'next/link'
 import {
   ArrowDown,
   ArrowUp,
-  ArrowRight,
   ChevronRight,
   Compass,
   MapPin,
   Plus,
-  Search,
   Star,
   X,
 } from 'lucide-react'
@@ -22,6 +20,7 @@ import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/l
 import { haversineKm } from '@/lib/geo/haversine'
 import { logNav } from '@/lib/perf/navTiming'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
+import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
 import type { Rider, ServiceType } from '@/types/rider'
 
 // ============================================================================
@@ -240,6 +239,45 @@ function PlanTripPageInner() {
     return () => { cancelled = true }
   }, [vehicleType])
 
+  // Selection state for the cheapest-by-default booking pattern. /cari
+  // is the ride / parcel surface — speed-driven (Gojek/Grab style: pick
+  // cheapest, tap one button, go). The other 8 lifestyle marketplaces
+  // keep the profile-first pattern because trust matters more than
+  // speed there. Here the card body SELECTS the driver and a single
+  // sticky CTA at the bottom opens that selected driver's WhatsApp.
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null)
+
+  // Auto-select the cheapest driver as soon as the list lands. Cheapest
+  // = lowest min_fee (the published "From Rp X" headline). When min_fee
+  // is missing we fall back to price_per_km — keeps the surface usable
+  // for drivers who only set a per-km rate. Guard against racing the
+  // fetch by waiting for drivers.length > 0, AND only auto-select when
+  // nothing is selected yet so customer choices stick across re-renders
+  // (e.g., the lowest-fare endpoint refetching, drivers refreshing).
+  useEffect(() => {
+    if (selectedDriverId !== null) return
+    if (drivers.length === 0) return
+    let cheapest: Rider | null = null
+    let cheapestFee = Number.POSITIVE_INFINITY
+    for (const d of drivers) {
+      const fee = d.minFee ?? d.pricePerKm ?? null
+      if (fee == null || !Number.isFinite(fee)) continue
+      if (fee < cheapestFee) {
+        cheapestFee = fee
+        cheapest = d
+      }
+    }
+    // Final fallback: if no driver had a usable fee, select the first
+    // one in the list so the BOOK NOW CTA still renders.
+    const pick = cheapest ?? drivers[0]
+    if (pick) setSelectedDriverId(pick.id)
+  }, [drivers, selectedDriverId])
+
+  const selectedDriver = useMemo(
+    () => drivers.find((d) => d.id === selectedDriverId) ?? null,
+    [drivers, selectedDriverId],
+  )
+
   // Detect user country for the autocomplete bias (unchanged).
   const userCountry = useCountryFromCoords(geo.coords ?? null)
   const countryCodes = useMemo(() => (userCountry ? [userCountry] : []), [userCountry])
@@ -254,33 +292,35 @@ function PlanTripPageInner() {
     setDropoffLabel(pickupLabel)
   }
 
-  // Selected-driver state. Customer taps a card in the inline list → that
-  // driver is highlighted; the Book Driver CTA at the bottom activates.
-  // No navigation to a separate list page (founder direction: inline
-  // scrolling list IS the action path).
-  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null)
-  const selectedDriver = useMemo(
-    () => drivers.find((d) => d.id === selectedDriverId) ?? null,
-    [drivers, selectedDriverId],
-  )
+  // Driver cards SELECT a driver (cheapest is auto-selected on mount —
+  // see the useEffect above). A single sticky BOOK NOW CTA at the
+  // bottom of the container opens the SELECTED driver's WhatsApp with
+  // a prefilled trip message. Each card also carries a small Profile →
+  // pill for customers who want to vet a specific driver before
+  // tapping BOOK NOW. This is /cari-only — the lifestyle marketplaces
+  // keep the profile-first pattern.
 
-  // Book Driver — opens WhatsApp to the selected driver with a pre-filled
-  // Indonesian starter message that names the trip ends. Customer + driver
-  // agree the fare directly there. IndoCity does not handle the booking
-  // itself (PM 12/2019 directory safe-harbour: discovery + WhatsApp
-  // hand-off only).
-  function handleBookDriver() {
-    if (!selectedDriver) return
-    haptic.impact()
-    logNav('cari:book-driver')
-    const phone = selectedDriver.whatsappE164?.replace(/[^0-9]/g, '') ?? ''
-    if (!phone) return
-    const lines: string[] = ['Halo, saya tertarik booking via IndoCity.']
-    if (pickupLabel) lines.push(`Pickup: ${pickupLabel}`)
-    if (dropoffLabel) lines.push(`Drop-off: ${dropoffLabel}`)
-    if (pitstopOpen && pitstopNote.trim()) lines.push(`Pit stop: ${pitstopNote.trim()}`)
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`
-    if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer')
+  // Compose the WhatsApp deep-link body for the sticky CTA. Pickup +
+  // dropoff come from the typed inputs at the top of the page — we
+  // intentionally avoid embedding geocoded coords here so the message
+  // matches what the customer wrote (no surprise "wrong street"
+  // dispatches). Returns '' when the driver's number is unusable —
+  // caller falls back to disabling the CTA.
+  function buildSelectedWhatsAppLink(d: Rider): string {
+    const wa = normaliseE164ForWaMe(d.whatsappE164 ?? '')
+    if (!wa) return ''
+    const lines: string[] = [
+      `Halo ${d.name}, saya mau booking via IndoCity.`,
+      '',
+    ]
+    if (pickupLabel.trim())  lines.push(`📍 Pickup: ${pickupLabel.trim()}`)
+    if (dropoffLabel.trim()) lines.push(`🏁 Drop off: ${dropoffLabel.trim()}`)
+    if (pitstopOpen && pitstopNote.trim()) lines.push(`🛑 Stop: ${pitstopNote.trim()}`)
+    if (tripKm != null && Number.isFinite(tripKm)) {
+      lines.push('', `📏 Jarak: ±${tripKm.toFixed(1)} km`)
+    }
+    lines.push('', 'Apakah tersedia?')
+    return `https://wa.me/${wa}?text=${encodeURIComponent(lines.join('\n'))}`
   }
 
   // Legacy "View drivers" navigation is kept available for deep-link
@@ -613,10 +653,10 @@ function PlanTripPageInner() {
                   driver={d}
                   vehicleType={vehicleType}
                   pickup={pickup}
-                  selected={selectedDriverId === d.id}
+                  selected={d.id === selectedDriverId}
                   onSelect={() => {
+                    setSelectedDriverId(d.id)
                     haptic.tap()
-                    setSelectedDriverId((prev) => (prev === d.id ? null : d.id))
                   }}
                 />
               ))}
@@ -649,36 +689,56 @@ function PlanTripPageInner() {
               </span>
             </Link>
 
-            {/* BOOK DRIVER — primary CTA sitting INSIDE the booking
-                container at the very bottom. Solid brand-yellow (no
-                gradient) per founder direction. Disabled until the
-                customer has tapped a driver in the inline list; then
-                activates and opens WhatsApp to that driver with a
-                pre-filled Indonesian starter message. IndoCity's
-                involvement ends at the handoff — fare is agreed
-                between customer and driver directly. */}
-            <div className="mt-3 shrink-0">
-              <button
-                type="button"
-                onClick={handleBookDriver}
-                disabled={!selectedDriver}
-                aria-label={selectedDriver ? `Book ${selectedDriver.name}` : 'Select a driver first'}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-bg font-black text-[15px] tracking-tight active:scale-[0.99] transition-all shadow-[0_10px_28px_rgba(250,204,21,0.45)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-                style={{ background: '#FACC15', minHeight: 48 }}
-              >
-                <Search className="w-4 h-4" strokeWidth={3} />
-                <span>
-                  {selectedDriver
-                    ? `Book Driver · ${selectedDriver.name.split(' ').slice(0, 2).join(' ')}`
-                    : 'Book Driver'}
-                </span>
-                <ArrowRight className="w-4 h-4" strokeWidth={3} />
-              </button>
-              <p className="mt-2 text-center text-[11px] text-[#52525B] font-bold leading-snug px-2">
-                Self-published rates · IndoCity is a software directory.
-                You agree the fare directly with the driver.
-              </p>
-            </div>
+            {/* STICKY BOOK NOW — fires WhatsApp for the currently
+                selected driver (cheapest by default, customer-chosen
+                otherwise). Renders only when a driver is in fact
+                selected. Single yellow gradient pill spanning the
+                container width — Gojek/Grab-style "one big button to
+                go". The Profile → pill on each card is the escape
+                hatch for customers who want to vet a driver first. */}
+            {selectedDriver && (() => {
+              const waHref = buildSelectedWhatsAppLink(selectedDriver)
+              const label = selectedDriver.name
+              const disabled = !waHref
+              return (
+                <a
+                  href={waHref || undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-disabled={disabled}
+                  onClick={(e) => {
+                    if (disabled) {
+                      e.preventDefault()
+                      return
+                    }
+                    haptic.impact()
+                  }}
+                  className="mt-3 shrink-0 flex items-center justify-center rounded-2xl font-extrabold tracking-tight active:scale-[0.99] transition"
+                  style={{
+                    minHeight: 56,
+                    padding: '14px 18px',
+                    background: disabled
+                      ? '#E4E4E7'
+                      : 'linear-gradient(90deg, #FACC15 0%, #F59E0B 100%)',
+                    color: disabled ? '#71717A' : '#0F172A',
+                    boxShadow: disabled
+                      ? 'none'
+                      : '0 6px 18px rgba(250,204,21,0.45)',
+                    fontSize: 15,
+                    opacity: disabled ? 0.7 : 1,
+                  }}
+                >
+                  <span className="truncate">
+                    BOOK NOW · {label}
+                  </span>
+                </a>
+              )
+            })()}
+
+            <p className="mt-3 shrink-0 text-center text-[11px] text-[#52525B] font-bold leading-snug px-2">
+              Self-published rates · IndoCity is a software directory.
+              You agree the fare directly with the driver.
+            </p>
           </div>
         </div>
       </div>
@@ -721,8 +781,13 @@ function VehicleToggleButton({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Driver card — landscape layout per spec. Image left, title + subtitle +
-// rating in the middle, price + ETA on the right. Tap routes to /car/[slug]
-// or /r/[slug] depending on vehicle type.
+// rating in the middle, price + ETA on the right. The card BODY is a
+// <button> that selects this driver in the parent /cari state; the
+// sticky BOOK NOW CTA at the bottom of the container then opens this
+// driver's WhatsApp. A small Profile → pill in the lower-right is a
+// <Link> to /r/{slug} (bike) or /car/{slug} (car) for customers who
+// want to vet trust signals before tapping BOOK NOW; the pill stops
+// propagation so tapping it doesn't also fire the card's select.
 // ─────────────────────────────────────────────────────────────────────────────
 function DriverCard({
   driver,
@@ -776,25 +841,46 @@ function DriverCard({
   const fee = driver.minFee ?? driver.pricePerKm ?? null
   const priceLabel = fee != null ? `Rp ${fee.toLocaleString('en-US')}` : null
 
-  // Cards no longer navigate — they SELECT (highlight). The container's
-  // Book Driver CTA at the bottom takes the selected driver to WhatsApp.
-  // vehicleType is no longer needed for routing but retained for any
-  // future per-vehicle card variations.
-  void vehicleType
+  // Route to the driver's profile based on the active vehicleType toggle.
+  // /cari's driver list is server-filtered by vehicle_type (see
+  // fetchActiveDriversBrowser), so every card under the Car toggle is a
+  // car driver and every card under the Bike toggle is a bike driver —
+  // no per-row vehicle_type lookup needed. Truck / minibus drivers
+  // surface on the car list (per types/rider.ts dashboard mapping) and
+  // also route to /car/{slug}.
+  const profileHref = vehicleType === 'car'
+    ? `/car/${driver.slug}`
+    : `/r/${driver.slug}`
 
+  // Selection visuals — yellow border, soft yellow tint, and a small
+  // scale-up so the chosen card visibly "lifts" out of the list. The
+  // base (unselected) state keeps the existing hover-yellow-border
+  // affordance from the prior design so customers can still see which
+  // card is interactive.
+  const cardClass = selected
+    ? 'w-full text-left flex items-center gap-3 p-2.5 rounded-xl transition border-2 border-[#FACC15] bg-[#FFFBEA] scale-[1.01] shadow-[0_4px_14px_rgba(250,204,21,0.30)]'
+    : 'w-full text-left flex items-center gap-3 p-2.5 rounded-xl active:scale-[0.99] transition border border-[#E4E4E7] bg-white hover:border-[#FACC15]'
+
+  // NOTE: card body is a div+role="button" rather than a real <button>
+  // because we need to embed a <Link> (Profile pill) inside it — and
+  // nesting an interactive <a> inside a real <button> is invalid HTML
+  // and triggers a React hydration warning. The role + tabIndex +
+  // keyboard handler give us the same a11y semantics.
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect()
+        }
+      }}
       aria-pressed={selected}
-      aria-label={`${selected ? 'Deselect' : 'Select'} ${driver.name}`}
-      className={
-        'w-full text-left flex items-center gap-3 p-2.5 rounded-xl active:scale-[0.99] transition ' +
-        (selected
-          ? 'border-2 border-brand bg-[#FFFDF5] shadow-[0_4px_14px_rgba(250,204,21,0.30)]'
-          : 'border border-[#E4E4E7] bg-white hover:border-[#FACC15]')
-      }
-      style={{ minHeight: 64 }}
+      aria-label={`Select ${driver.name}`}
+      className={`${cardClass} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]`}
+      style={{ minHeight: 72 }}
     >
       {/* Vehicle / brand image */}
       <div
@@ -810,7 +896,7 @@ function DriverCard({
         />
       </div>
 
-      {/* Middle column — title + subtitle + rating */}
+      {/* Middle column — title + subtitle + rating + Profile pill */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="text-[14px] font-black text-bg truncate">{vehicleLabel}</span>
@@ -820,12 +906,31 @@ function DriverCard({
             {subtitle}
           </div>
         )}
-        {driver.rating !== undefined && (
-          <div className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-extrabold text-bg">
-            <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} />
-            {driver.rating.toFixed(1)}
-          </div>
-        )}
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          {driver.rating !== undefined ? (
+            <div className="inline-flex items-center gap-1 text-[12px] font-extrabold text-bg">
+              <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} />
+              {driver.rating.toFixed(1)}
+            </div>
+          ) : (
+            <span />
+          )}
+          {/* Profile pill — small subtle escape hatch to the driver's
+              own /r or /car profile page. Stops propagation so tapping
+              the pill does NOT also fire the parent button's onSelect
+              (otherwise the card would briefly flip selected on the
+              way out). Wraps ONLY the pill, not the card body. */}
+          <Link
+            href={profileHref}
+            prefetch
+            onClick={(e) => { e.stopPropagation() }}
+            aria-label={`View ${driver.name}'s full profile`}
+            className="inline-flex items-center justify-center px-2 py-2.5 rounded-full text-[12px] font-extrabold text-[#52525B] hover:text-[#0F172A] hover:bg-white transition"
+            style={{ minHeight: 44, lineHeight: 1 }}
+          >
+            Profile →
+          </Link>
+        </div>
       </div>
 
       {/* Right column — price + ETA (yellow) */}
@@ -844,6 +949,6 @@ function DriverCard({
           </div>
         )}
       </div>
-    </button>
+    </div>
   )
 }

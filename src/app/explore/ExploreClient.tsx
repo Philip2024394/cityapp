@@ -32,7 +32,7 @@ type LifestyleId =
   | 'beautician' | 'laundry' | 'handyman' | 'home-clean'
 type LifestyleTile = { id: LifestyleId; label: string; Icon: LucideIcon; href: string }
 const LIFESTYLE_TILES: ReadonlyArray<LifestyleTile> = [
-  { id: 'food',       label: 'Food',    Icon: UtensilsCrossed, href: '/cari?service=food' },
+  { id: 'food',       label: 'Food',    Icon: UtensilsCrossed, href: '/food' },
   { id: 'rental',     label: 'Rental',  Icon: KeyRound,        href: '/rent' },
   { id: 'tour',       label: 'Tour',    Icon: MapPinned,       href: '/tour' },
   { id: 'massage',    label: 'Massage', Icon: Flower2,         href: '/massage' },

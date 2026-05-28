@@ -162,9 +162,14 @@ export async function fetchActiveDriversBrowser(
     .order('last_active_at', { ascending: false, nullsFirst: false })
     .order('rating', { ascending: false, nullsFirst: false })
     .limit(50)
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     if (error) console.warn('[drivers] fetchActiveDrivers failed:', error.message)
-    return MOCK_RIDERS
+    // MOCK_RIDERS is a hardcoded BIKE-only array — only return it as a
+    // last-resort dev fallback for the bike vertical. Other vehicle types
+    // fall through to mock_drivers table reads below (which DO have car /
+    // truck / minibus rows seeded via mig 0050+0095). Returning MOCK_RIDERS
+    // on a car toggle was causing /car/{slug} 404s.
+    return vehicleType === 'bike' ? MOCK_RIDERS : []
   }
   // Filter out past_due / canceled subs before returning — the
   // marketplace must not show riders whose billing has lapsed, even
@@ -178,18 +183,23 @@ export async function fetchActiveDriversBrowser(
   // One mock is hidden automatically each time a real driver is inserted
   // (DB AFTER-INSERT trigger), so this query is naturally rate-limited.
   // Reals always come first in the returned list.
-  const mocks = await fetchMockDriversBrowser()
+  const mocks = await fetchMockDriversBrowser(vehicleType)
   return [...reals, ...mocks]
 }
 
-// Pull the visible-mock pool. Failures fall back to empty so an outage
-// of mock_drivers never breaks the real marketplace.
-async function fetchMockDriversBrowser(): Promise<Rider[]> {
+// Pull the visible-mock pool, scoped to the requested vehicle_type. Failures
+// fall back to empty so an outage of mock_drivers never breaks the real
+// marketplace. The vehicleType filter avoids cross-mixing (e.g., returning
+// bike mocks when the customer is on the Car toggle).
+async function fetchMockDriversBrowser(
+  vehicleType: 'bike' | 'car' | 'truck' | 'premium_car' | 'minibus' = 'bike',
+): Promise<Rider[]> {
   const supabase = getBrowserSupabase()
   if (!supabase) return []
   const { data, error } = await supabase
     .from('mock_drivers')
     .select('*')
+    .eq('vehicle_type', vehicleType)
     .is('mock_hidden_at', null)
     .order('availability', { ascending: true })
     .order('created_at', { ascending: false })

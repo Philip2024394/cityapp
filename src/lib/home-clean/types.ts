@@ -66,4 +66,12 @@ export type HomeCleanProviderPublic = Pick<
   rating_count?: number | null
   // mig 0087 — per-provider accent for the public profile page.
   theme_color?: string | null
+  // mig 0105 — beautician-parity feature columns.
+  service_photos?:        Record<string, string[]> | null
+  has_physical_location?: boolean | null
+  latitude?:              number | null
+  longitude?:             number | null
+  busy_dates?:            string[] | null
+  hero_text?:             Record<string, unknown> | null
+  promo_text?:            string | null
 }

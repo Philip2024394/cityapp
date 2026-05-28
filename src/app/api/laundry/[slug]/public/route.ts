@@ -16,6 +16,13 @@ const PUBLIC_COLS = [
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',
+  // ratings surfaced on the public profile page
+  'rating','rating_count',
+  // mig 0087 per-profile theme accent color
+  'theme_color',
+  // mig 0106 feature parity with beautician (visit us + hero/promo copy)
+  'has_physical_location','latitude','longitude',
+  'hero_text','promo_text',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

@@ -1,22 +1,60 @@
 'use client'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import AppNav from '@/components/layout/AppNav'
-import ProfileHero        from '@/components/profile/ProfileHero'
-import ProfileGallery     from '@/components/profile/ProfileGallery'
-import { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
-import PricingBlock, { type PricingTier } from '@/components/profile/PricingBlock'
-import StickyContactBar   from '@/components/profile/StickyContactBar'
-import SocialShareSheet   from '@/components/profile/SocialShareSheet'
-import TrustBadges        from '@/components/profile/TrustBadges'
-import AboutSection       from '@/components/profile/AboutSection'
-import OperatingHoursCard from '@/components/profile/OperatingHoursCard'
+import { Star, Award, Menu, Truck, Store, Share2, Link2, MessageCircle, X, ChevronLeft, BadgeCheck, MapPin, Bike, Sparkles, Droplets } from 'lucide-react'
+import RunningMarquee from '@/components/profile/RunningMarquee'
+import PortfolioCarousel, {
+  PortfolioDetailPopup,
+  type PortfolioPhoto,
+} from '@/components/profile/PortfolioCarousel'
+import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
+import VisitUsPanel, {
+  SocialInstagramIcon,
+  SocialTikTokIcon,
+  SocialFacebookIcon,
+} from '@/components/profile/VisitUsPanel'
+import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import type { LaundryProviderPublic } from '@/lib/laundry/types'
 
-// /laundry/[slug] — convenience-led: turnaround, min kg, per-kg pricing.
+// Default theme accent — used when a laundry provider hasn't picked
+// their own theme_color. Blue (#3B82F6) carries the water / fresh tone
+// that fits the category. Per-provider hex overrides flow through every
+// accent surface via the `theme` constant below.
+const DEFAULT_THEME = '#3B82F6'
+
+// Review row as returned by GET /api/reviews. created_at is ISO,
+// formatted to "Xd ago" / absolute date in the UI.
+type ReviewRow = {
+  id:           string
+  reviewer_name:string
+  rating:       number
+  comment:      string | null
+  created_at:   string
+}
+
+// Service tier id used for filtering portfolio + chip pills. Mirrors the
+// beautician BeauticianServiceOffered concept but constrained to laundry
+// packages the provider has priced.
+type LaundryTierId = 'wash' | 'wash_dry' | 'wash_iron'
+
+const LAUNDRY_TIER_LABELS: Record<LaundryTierId, string> = {
+  wash:      'Wash',
+  wash_dry:  'Wash + Dry',
+  wash_iron: 'Wash + Iron',
+}
+
+// /laundry/[slug] — universal profile flagship build, laundry edition.
+// Convenience-led category: turnaround + min kg + per-kg pricing shown
+// front-and-center. Visuals share the beautician shell so all 10
+// IndoCity verticals carry a unified profile UI.
+
+// Vertical default for the hero. Used when the laundry hasn't set their
+// own cover_image_url yet — keeps the page on-brand instead of bare.
+const DEFAULT_LAUNDRY_HERO =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 
 export default function LaundryProviderPage() {
   const params = useParams<{ slug: string }>()
@@ -25,9 +63,37 @@ export default function LaundryProviderPage() {
   const [notFound, setNotFound] = useState(false)
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
-  const [galleryView, setGalleryView] = useState<PortfolioView>('grid')
+  const [shareCopied, setShareCopied] = useState(false)
+  // null = show photos across ALL tiers (combined). When a tier id is
+  // set, the portfolio carousel filters to just that tier's framing.
+  const [activeTier, setActiveTier] = useState<LaundryTierId | null>(null)
+  // Selected carousel card — opens the View Details popup when set.
+  const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  // Portfolio layout — flip between auto-drifting carousel + 2-col grid.
+  const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
+  // Reviews view — replaces everything below the floating info-card.
+  const [showReviews, setShowReviews] = useState(false)
+  // Visit Us view — also replaces content area when active (only
+  // available when the laundry has pinned a physical address; for now,
+  // shown whenever we have coordinates or a service-area note).
+  const [showVisitUs, setShowVisitUs] = useState(false)
+  const [reviews, setReviews]         = useState<ReviewRow[] | null>(null)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsRefreshCount, setReviewsRefreshCount] = useState(0)
+  // Lifted from ReviewsPanel so the footer Leave Review button can open
+  // the form too, not just the in-panel trigger.
+  const [reviewFormOpen, setReviewFormOpen] = useState(false)
+  // Contact popup — opened by both the bottom Contact CTA and the
+  // per-tier "View Details" Contact button. `contactServiceName`
+  // pre-fills the package field when triggered from a tier card.
+  const [contactOpen,        setContactOpen]        = useState(false)
+  const [contactServiceName, setContactServiceName] = useState<string>('')
 
-  useEffect(() => { capturePartnerFromUrl(); setPartnerTag(getStoredPartnerSlug()) }, [])
+  useEffect(() => {
+    capturePartnerFromUrl()
+    setPartnerTag(getStoredPartnerSlug())
+  }, [])
+
   useEffect(() => {
     if (!slug || !/^[a-z0-9_-]+$/.test(slug)) { setNotFound(true); return }
     fetch(`/api/laundry/${encodeURIComponent(slug)}/public`, { cache: 'no-store' })
@@ -40,6 +106,22 @@ export default function LaundryProviderPage() {
 
   useProfileViewTracker({ providerType: 'laundry', providerId: p?.id })
 
+  // Resolved accent color for every accent surface on this page.
+  // p.theme_color wins; fall back to global default blue.
+  const theme = p?.theme_color || DEFAULT_THEME
+
+  // Fetch reviews only when the panel is first opened, then again
+  // after a new submission (bump reviewsRefreshCount).
+  useEffect(() => {
+    if (!showReviews || !p?.id) return
+    setReviewsLoading(true)
+    fetch(`/api/reviews?provider_type=laundry&provider_id=${encodeURIComponent(p.id)}`, { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((j: { reviews?: ReviewRow[] } | null) => setReviews(j?.reviews ?? []))
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false))
+  }, [showReviews, p?.id, reviewsRefreshCount])
+
   if (notFound) {
     return (
       <Shell>
@@ -50,121 +132,974 @@ export default function LaundryProviderPage() {
       </Shell>
     )
   }
-  if (!p) return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
+  if (!p) {
+    return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
+  }
 
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/laundry/${p.slug}`
 
+  // Active tier list — only tiers the laundry has actually priced.
+  const pricedTiers: LaundryTierId[] = []
+  if (p.price_wash_per_kg_idr      && p.price_wash_per_kg_idr > 0)      pricedTiers.push('wash')
+  if (p.price_wash_dry_per_kg_idr  && p.price_wash_dry_per_kg_idr > 0)  pricedTiers.push('wash_dry')
+  if (p.price_wash_iron_per_kg_idr && p.price_wash_iron_per_kg_idr > 0) pricedTiers.push('wash_iron')
+
+  // Visit Us is available whenever we have *something* to render — a
+  // service-area note, a city, or operating hours. Laundry rows don't
+  // currently expose lat/lng so the map falls back to its "not pinned"
+  // placeholder; the rest of the panel (address card, hours, calendar)
+  // remains useful.
+  const hasVisitUsContent = Boolean(
+    p.service_area_notes?.trim() || p.city?.trim() || p.operating_hours,
+  )
+
+  // WhatsApp prefill text for the contact CTA.
   const waText = [
     `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
     `Saya mau pakai jasa laundry.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Bisa info pickup?`,
   ].filter(Boolean).join('\n')
-
-  // Per-kg pricing tiers. First populated tier featured.
-  const tiers: PricingTier[] = []
-  if (p.price_wash_per_kg_idr)      tiers.push({ label: 'Wash',         amount: p.price_wash_per_kg_idr,      sub: 'per kg' })
-  if (p.price_wash_dry_per_kg_idr)  tiers.push({ label: 'Wash + Dry',   amount: p.price_wash_dry_per_kg_idr,  sub: 'per kg' })
-  if (p.price_wash_iron_per_kg_idr) tiers.push({ label: 'Wash + Iron',  amount: p.price_wash_iron_per_kg_idr, sub: 'per kg' })
-  if (tiers.length > 0) tiers[0] = { ...tiers[0], featured: true }
-
-  const footnoteBits: string[] = []
-  if (p.min_kg)           footnoteBits.push(`Minimum ${p.min_kg} kg per order`)
-  if (p.turnaround_hours) footnoteBits.push(`Selesai ${p.turnaround_hours} jam`)
-  const footnote = footnoteBits.length ? footnoteBits.join(' · ') : undefined
+  void waText // reserved for potential direct-WA fallback; popup handles WA below
 
   return (
     <Shell>
-      <ProfileHero
-        coverUrl={p.cover_image_url}
-        avatarUrl={p.profile_image_url}
-        name={p.display_name}
-        categoryLabel="Laundry"
-        rating={p.rating ?? null}
-        reviewCount={p.rating_count ?? null}
-        idVerified={true}
-        availability={p.availability}
-      />
+      {/* Hero — cover with overlay text, plus a floating info-card that
+          sits on the bottom edge of the cover (15px rounded corners). */}
+      <div className="relative pb-2">
+        {/* Top-right share button. */}
+        <button
+          type="button"
+          onClick={() => setShareOpen(true)}
+          aria-label="Share profile"
+          className="absolute top-3 right-3 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md active:scale-[0.96] transition"
+          style={{ background: theme }}
+        >
+          <Share2 className="w-4 h-4" strokeWidth={2.5} />
+        </button>
 
-      <div className="px-4 pb-32 max-w-2xl mx-auto space-y-5 pt-4">
-        <Link href="/laundry" className="text-[12px] text-ink/60 hover:text-ink inline-block">← Back to marketplace</Link>
+        <div
+          className="relative w-full overflow-hidden bg-black"
+          style={{ aspectRatio: '16 / 9' }}
+        >
+          <img
+            src={p.cover_image_url || DEFAULT_LAUNDRY_HERO}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* Hero overlay — laundry-flavoured copy. */}
+          <div className="absolute left-4 z-10 select-none leading-none" style={{ top: 31 }}>
+            <div className="flex items-center gap-0.5 text-[28px] sm:text-[34px] font-normal drop-shadow-[0_2px_6px_rgba(255,255,255,0.55)]" style={{ color: '#000000' }}>
+              <span>Professional</span>
+              <Droplets
+                className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 -mt-3"
+                strokeWidth={0}
+                fill={theme}
+                style={{ color: theme, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))' }}
+              />
+            </div>
+            <div
+              className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden"
+            >
+              <span className="inline-block" style={{ color: theme }}>
+                Laundry
+              </span>
+            </div>
+            <div className="text-[13px] sm:text-[14px] font-semibold mt-1.5 drop-shadow-[0_1px_3px_rgba(255,255,255,0.55)] whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: '#000000', maxWidth: 'min(360px, calc(100vw - 32px))' }}>
+              Fresh, fast, folded to your door
+            </div>
 
-        <TrustBadges idVerified memberSince={p.created_at} lastActiveAt={p.last_active_at} />
-
-        {/* Convenience signals — fast scan above the fold. */}
-        <div className="flex flex-wrap gap-1.5">
-          {p.turnaround_hours && (
-            <span className="inline-flex items-center text-[11px] font-extrabold text-brand px-2.5 py-1 rounded-full bg-brand/10 border border-brand/30">
-              ⏱ {p.turnaround_hours}h selesai
-            </span>
-          )}
-          {p.min_kg && (
-            <span className="inline-flex items-center text-[11px] font-bold text-ink/70 px-2.5 py-1 rounded-full bg-white/5 border border-white/10">
-              Min {p.min_kg} kg
-            </span>
-          )}
-          <span className="inline-flex items-center text-[11px] font-bold text-ink/70 px-2.5 py-1 rounded-full bg-white/5 border border-white/10">
-            {p.years_experience} yrs experience
-          </span>
+            {/* Service modes — Pickup + Drop-off are the two universal
+                laundry channels. The laundry public API doesn't yet
+                expose a per-provider mode set, so both are surfaced.
+                Min kg / turnaround appear under the pricing block. */}
+            <div className="flex items-start gap-2 max-w-[280px]" style={{ marginTop: 15 }}>
+              <HeroIcon icon={Truck} slogan="Pickup" theme={theme} />
+              <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />
+              <HeroIcon icon={Store} slogan="Drop-off" theme={theme} />
+            </div>
+          </div>
         </div>
 
-        <AboutSection bio={p.bio} city={p.city} serviceArea={p.service_area_notes}
-          languages={p.languages} certifications={p.certifications} />
+        {/* Reviews toggle — themed pill above the floating card, right
+            side. Click swaps the area below for the reviews list. */}
+        <div className="px-4 relative z-20 flex justify-end" style={{ marginTop: -56 }}>
+          <button
+            type="button"
+            onClick={() => setShowReviews((v) => !v)}
+            aria-pressed={showReviews}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-extrabold shadow-md active:scale-[0.97] transition"
+            style={{ background: theme }}
+          >
+            <Star className="w-3.5 h-3.5" strokeWidth={0} fill="#FFFFFF" />
+            {showReviews ? 'Hide reviews' : 'Reviews'}
+          </button>
+        </div>
 
-        <PricingBlock
-          title="Paket"
-          tiers={tiers}
-          footnote={footnote}
-        />
+        {/* Floating info card — overlaps the bottom edge of the cover.
+            All 4 corners 15px. Left: avatar. Middle: name / city / rating.
+            Right: "Top Rated Seller" badge. */}
+        <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
+          <div
+            className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
+            style={{ borderRadius: 15 }}
+          >
+            {/* Profile image */}
+            {p.profile_image_url ? (
+              <img
+                src={p.profile_image_url}
+                alt={p.display_name}
+                className="w-16 h-16 rounded-full object-cover shrink-0 border-2 border-white shadow"
+              />
+            ) : (
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center text-white text-[22px] font-black shrink-0 border-2 border-white shadow"
+                style={{ background: theme }}
+              >
+                {p.display_name.charAt(0).toUpperCase()}
+              </div>
+            )}
 
-        <ProfileGallery
-          photos={p.gallery_image_urls ?? []}
-          title="Foto"
-          view={galleryView}
-          onViewChange={setGalleryView}
-        />
-
-        <OperatingHoursCard hours={p.operating_hours ?? null} />
-
-        {(p.instagram_url || p.tiktok_url || p.facebook_url) && (
-          <section className="space-y-2">
-            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-ink/70">Follow</h2>
-            <div className="flex flex-wrap gap-2">
-              {p.instagram_url && <SocialChip href={p.instagram_url} label="Instagram" />}
-              {p.tiktok_url    && <SocialChip href={p.tiktok_url}    label="TikTok" />}
-              {p.facebook_url  && <SocialChip href={p.facebook_url}  label="Facebook" />}
+            {/* Name + city + rating */}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[16px] sm:text-[18px] font-black text-black truncate leading-tight flex items-center gap-1">
+                <span className="truncate">{p.display_name}</span>
+                <BadgeCheck
+                  className="w-4 h-4 shrink-0"
+                  strokeWidth={2.5}
+                  fill={theme}
+                  style={{ color: '#FFFFFF' }}
+                  aria-label="Verified"
+                />
+              </h1>
+              <p className="text-[12px] text-gray-500 truncate mt-0.5">
+                {p.city?.trim() || 'Indonesia'}
+              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <Star
+                  className="w-3.5 h-3.5 shrink-0"
+                  style={{ color: '#FACC15' }}
+                  fill="#FACC15"
+                  strokeWidth={0}
+                />
+                <span className="text-[12px] font-extrabold text-black">
+                  {p.rating != null && p.rating > 0 ? p.rating.toFixed(1) : '—'}
+                </span>
+                <span className="text-[12px] text-gray-500">
+                  ({p.rating_count ?? 0} review{(p.rating_count ?? 0) === 1 ? '' : 's'})
+                </span>
+              </div>
             </div>
+
+            {/* Top Rated Seller badge — neutral gray pill so the chip
+                stays unchanged across profiles; only the Award icon +
+                text tint the active profile theme color so each laundry
+                shows their own accent. */}
+            <div
+              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
+              style={{ background: '#F3F4F6' }}
+            >
+              <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: theme }} />
+              <span className="text-[12px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
+                Top Rated Seller
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pb-6 max-w-2xl mx-auto space-y-3 pt-3">
+        {showVisitUs ? (
+          <VisitUsPanel
+            displayName={p.display_name}
+            address={p.service_area_notes ?? p.city ?? null}
+            city={p.city ?? null}
+            // laundry rows don't expose lat/lng yet — panel falls back
+            // gracefully to a "not pinned" placeholder in the map slot.
+            lat={null}
+            lng={null}
+            hours={p.operating_hours ?? null}
+            instagramUrl={p.instagram_url ?? null}
+            tiktokUrl={p.tiktok_url ?? null}
+            facebookUrl={p.facebook_url ?? null}
+            busyDates={[]}
+            themeColor={theme}
+            onClose={() => setShowVisitUs(false)}
+            bottomCta={null}
+          />
+        ) : showReviews ? (
+          <ReviewsPanel
+            providerId={p.id ?? ''}
+            reviews={reviews ?? []}
+            loading={reviewsLoading}
+            formOpen={reviewFormOpen}
+            setFormOpen={setReviewFormOpen}
+            onSubmitted={() => setReviewsRefreshCount((n) => n + 1)}
+            theme={theme}
+          />
+        ) : (
+          <>
+        {/* About {name} — clamped bio. Black heading + gray body for
+            readability on the white page background. */}
+        <section className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+              About {p.display_name}
+            </h2>
+            {hasVisitUsContent && (
+              <button
+                type="button"
+                onClick={() => setShowVisitUs(true)}
+                className="inline-flex items-center gap-1 text-[12px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+                style={{ color: theme }}
+              >
+                <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Visit Us
+              </button>
+            )}
+          </div>
+          <div className="flex items-start gap-3">
+            {p.bio?.trim() ? (
+              <p
+                className="text-[13px] text-gray-600 leading-snug flex-1 min-w-0"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 5,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Collapse stray \n in the stored bio to a single
+                    space so short sentences don't each sit on their
+                    own line — text now flows naturally and the line
+                    clamp counts true rendered lines. */}
+                {p.bio.replace(/\s*\n\s*/g, ' ')}
+              </p>
+            ) : (
+              <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
+            )}
+          </div>
+        </section>
+
+        {/* Services Provided — laundry packages the provider has priced.
+            Each tier renders only when the matching price is set so
+            empty placeholders never get a public badge. */}
+        {pricedTiers.length > 0 && (
+          <section className="space-y-2" style={{ marginTop: 15 }}>
+            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+              Services Provided
+            </h2>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* "All" reset chip — clears any active tier filter so the
+                  portfolio carousel shows photos across every tier
+                  again. Highlighted with the theme when no filter is
+                  active. */}
+              <button
+                type="button"
+                onClick={() => setActiveTier(null)}
+                aria-pressed={activeTier === null}
+                className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
+                style={
+                  activeTier === null
+                    ? { background: theme, color: '#FFFFFF' }
+                    : { background: '#F3F4F6', color: '#374151' }
+                }
+              >
+                All
+              </button>
+              {pricedTiers.map((tid) => (
+                <TierFilterBadge
+                  key={tid} tid={tid}
+                  active={activeTier === tid}
+                  onClick={() => setActiveTier(activeTier === tid ? null : tid)}
+                  theme={theme}
+                />
+              ))}
+            </div>
+            {/* Convenience signals — min kg + turnaround under the
+                pills, neutral gray so the tier chips remain the
+                primary visual anchor. */}
+            {(p.min_kg || p.turnaround_hours) && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {p.turnaround_hours != null && p.turnaround_hours > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[12px] font-bold text-gray-700 px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200">
+                    Selesai {p.turnaround_hours}h
+                  </span>
+                )}
+                {p.min_kg != null && p.min_kg > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[12px] font-bold text-gray-700 px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200">
+                    Min {p.min_kg} kg per order
+                  </span>
+                )}
+                {typeof p.years_experience === 'number' && p.years_experience > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[12px] font-bold text-gray-700 px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200">
+                    {p.years_experience} yrs experience
+                  </span>
+                )}
+              </div>
+            )}
           </section>
         )}
 
+        {/* Portfolio carousel — built from gallery_image_urls (laundry
+            doesn't yet have per-tier photos), captioned with the active
+            tier label so the framing stays consistent with beautician. */}
+        {(() => {
+          const photos = buildPortfolioPhotos(p, activeTier)
+          if (photos.length === 0) return null
+          return (
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                  {activeTier
+                    ? `${LAUNDRY_TIER_LABELS[activeTier]} — Portfolio`
+                    : 'Portfolio'}
+                </h2>
+                <PortfolioViewToggle
+                  view={portfolioView}
+                  onChange={setPortfolioView}
+                  themeColor={theme}
+                />
+              </div>
+              <p className="text-[12px] text-gray-500 italic -mt-1">
+                Please contact for additional services not listed
+              </p>
+              <PortfolioCarousel
+                photos={photos}
+                onViewDetails={(ph) => setDetailPhoto(ph)}
+                themeColor={theme}
+                view={portfolioView}
+              />
+            </section>
+          )
+        })()}
+
+        {/* Running marquee — weekly promo ribbon under the carousel. */}
+        <RunningMarquee
+          text={'Message me this week — fresh laundry pickup and drop-off across the city, folded and ready in hours.'}
+        />
+
+        {/* CTA row under the carousel — large per-kg price on the left,
+            themed Contact button on the right. pb-4 leaves breathing
+            room before the accent bar. */}
+        <div className="flex items-end justify-between gap-3 pb-4">
+          <div className="leading-none pb-3">
+            <div className="text-[24px] sm:text-[28px] font-black text-black">
+              {formatStartFromPrice(p)}
+            </div>
+            <div className="text-[12px] sm:text-[12px] font-medium text-gray-500 mt-1">
+              {firstPricedSubLabel(p) || 'Start from'}
+            </div>
+          </div>
+          {p.whatsapp_e164 && (
+            <button
+              type="button"
+              onClick={() => { setContactServiceName(''); setContactOpen(true) }}
+              className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
+              style={{ background: theme, minHeight: 44 }}
+            >
+              <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
+              Contact
+            </button>
+          )}
+        </div>
+
         {partnerTag && (
-          <div className="rounded-xl bg-brand/10 border border-brand/30 px-3 py-2 text-[12px] text-brand">
+          <div className="rounded-xl px-3 py-2 text-[12px]"
+            style={{ background: `${theme}15`, border: `1px solid ${theme}40`, color: theme }}>
             Referred by partner: <span className="font-extrabold">{partnerTag}</span>
           </div>
         )}
+          </>
+        )}
+
       </div>
 
-      <StickyContactBar whatsappE164={p.whatsapp_e164} prefillText={waText} onShare={() => setShareOpen(true)} />
-      <SocialShareSheet open={shareOpen} onClose={() => setShareOpen(false)} url={profileUrl}
-        prefillText={`Lihat profil ${p.display_name} di IndoCity:`} providerName={p.display_name} />
+      {shareOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShareOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl relative"
+            style={{ borderTop: `4px solid ${theme}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-[16px] font-black text-black">Share Profile</h3>
+              <button
+                onClick={() => setShareOpen(false)}
+                aria-label="Close"
+                className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center"
+              >
+                <X className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
+              </button>
+            </div>
+            <p className="text-[12px] text-gray-500 mb-4">
+              Bagikan profil {p.display_name} ke teman atau klien.
+            </p>
+            <div className="space-y-2">
+              {/* Copy link — single-tap; status flips to "Copied!" for 1.8s. */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(profileUrl) } catch { /* clipboard denied */ }
+                  setShareCopied(true)
+                  setTimeout(() => setShareCopied(false), 1800)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition border border-gray-200 active:scale-[0.99]"
+              >
+                <span className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+                  <Link2 className="w-4 h-4" strokeWidth={2.5} />
+                </span>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-[13px] font-extrabold text-black">
+                    {shareCopied ? 'Copied!' : 'Copy link'}
+                  </div>
+                  <div className="text-[12px] text-gray-500 truncate">{profileUrl}</div>
+                </div>
+              </button>
+
+              {/* WhatsApp — accepts URL share natively via wa.me. */}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di IndoCity: ${profileUrl}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
+                style={{ background: '#25D366' }}
+              >
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+                </span>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-extrabold">WhatsApp</div>
+                  <div className="text-[12px] text-white/85">Send link to a contact</div>
+                </div>
+              </a>
+
+              {/* Facebook — accepts URL share via sharer.php. */}
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
+                style={{ background: '#1877F2' }}
+              >
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <SocialFacebookIcon />
+                </span>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-extrabold">Facebook</div>
+                  <div className="text-[12px] text-white/85">Share to your timeline</div>
+                </div>
+              </a>
+
+              {/* Instagram — IG doesn't accept arbitrary URL share. We
+                  copy the link to the clipboard and open IG so the user
+                  can paste into a DM / Story / bio. */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(profileUrl) } catch { /* ignore */ }
+                  setShareCopied(true)
+                  setTimeout(() => setShareCopied(false), 1800)
+                  window.open('https://www.instagram.com/', '_blank')
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
+                style={{ background: 'linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4)' }}
+              >
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <SocialInstagramIcon />
+                </span>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-extrabold">Instagram</div>
+                  <div className="text-[12px] text-white/85">Link copied — paste to DM / Story</div>
+                </div>
+              </button>
+
+              {/* TikTok — same pattern: copy link, open app. */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(profileUrl) } catch { /* ignore */ }
+                  setShareCopied(true)
+                  setTimeout(() => setShareCopied(false), 1800)
+                  window.open('https://www.tiktok.com/', '_blank')
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition bg-black"
+              >
+                <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <SocialTikTokIcon />
+                </span>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-extrabold">TikTok</div>
+                  <div className="text-[12px] text-white/85">Link copied — paste to bio / DM</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Right-edge "back" bar — yellow brand strip flush against the
+          window edge, diverts back to /laundry. */}
+      <a
+        href="/laundry"
+        aria-label="Back to IndoCity laundry"
+        className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
+        style={{
+          right: 0,
+          top: '35%',
+          transform: 'translateY(-50%)',
+          width: 34,
+          height: 110,
+          background: '#FACC15',
+          color: '#0A0A0A',
+          borderTopLeftRadius: 14,
+          borderBottomLeftRadius: 14,
+          boxShadow: '-4px 4px 14px rgba(0,0,0,0.22)',
+        }}
+      >
+        <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+        <span
+          className="font-extrabold uppercase"
+          style={{
+            writingMode: 'vertical-rl',
+            transform: 'rotate(180deg)',
+            fontSize: 12,
+            letterSpacing: '0.18em',
+          }}
+        >
+          Back
+        </span>
+      </a>
+
+      {/* Footer Leave Review button — only renders when the Reviews
+          panel is active AND the inline form isn't already open. */}
+      {showReviews && !reviewFormOpen && (
+        <button
+          type="button"
+          onClick={() => setReviewFormOpen(true)}
+          className="fixed left-1/2 -translate-x-1/2 z-30 inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-xl text-white text-[13px] font-extrabold shadow-lg active:scale-[0.97] transition"
+          style={{ bottom: 18, background: theme, boxShadow: '0 6px 18px rgba(0,0,0,0.35)', minHeight: 44 }}
+        >
+          <Star className="w-4 h-4" strokeWidth={0} fill="#FFFFFF" />
+          Leave Review
+        </button>
+      )}
+
+      {/* Bottom accent bar — fixed to visible viewport edge. */}
+      <div
+        className="fixed left-0 right-0 z-10"
+        style={{ bottom: 0, height: 6, background: theme }}
+        aria-hidden
+      />
+
+      {/* Portfolio "View Details" popup — full image + description +
+          start price + Contact CTA. */}
+      {detailPhoto && (
+        <PortfolioDetailPopup
+          photo={detailPhoto}
+          themeColor={theme}
+          canContact={Boolean(p.whatsapp_e164)}
+          onClose={() => setDetailPhoto(null)}
+          onContact={() => {
+            setContactServiceName(detailPhoto.name ?? '')
+            setDetailPhoto(null)
+            setContactOpen(true)
+          }}
+        />
+      )}
+      {/* Contact / booking popup — opened by both the bottom Contact
+          CTA and any per-tier Contact button. NOTE: there is no
+          /api/laundry/[slug]/book endpoint yet, so we fall back to the
+          beautician booking route as a temporary scaffold — flagged for
+          follow-up in the report. */}
+      {contactOpen && p.whatsapp_e164 && (
+        <ContactBookingPopup
+          providerSlug={p.slug}
+          providerName={p.display_name}
+          whatsapp={p.whatsapp_e164}
+          themeColor={theme}
+          serviceOptions={pricedTiers.map((tid) => ({
+            value: LAUNDRY_TIER_LABELS[tid],
+            label: LAUNDRY_TIER_LABELS[tid],
+          }))}
+          presetService={contactServiceName}
+          busyDates={[]}
+          bookEndpoint={`/api/laundry/${p.slug}/book`}
+          copy={{
+            title: `Book ${p.display_name}`,
+            intro: "Pick a pickup date + time and we'll open WhatsApp with your request.",
+            whatsappMessage: ({ service, date, time, notes }) => [
+              `Hi ${p.display_name}, I'd like to book ${service.trim() || 'a laundry pickup'} `,
+              `on ${date} at ${time}.`,
+              partnerTag ? `I'm a guest of ${partnerTag}.` : '',
+              notes.trim() ? `Notes: ${notes.trim()}` : '',
+            ].filter(Boolean).join('\n'),
+          }}
+          onClose={() => setContactOpen(false)}
+        />
+      )}
     </Shell>
   )
 }
 
-function SocialChip({ href, label }: { href: string; label: string }) {
+function TierFilterBadge({
+  tid, active, onClick, theme,
+}: { tid: LaundryTierId; active: boolean; onClick: () => void; theme: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer"
-      className="inline-flex items-center text-[12px] font-extrabold px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-ink hover:bg-white/10 transition">
-      {label} →
-    </a>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="inline-flex items-center gap-1.5 text-[12px] font-extrabold px-3 py-1.5 rounded-full transition active:scale-[0.97]"
+      style={
+        active
+          ? { background: theme, color: '#FFFFFF' }
+          : { background: 'rgba(229, 231, 235, 0.95)', color: '#0A0A0A' }
+      }
+    >
+      <Sparkles
+        className="w-3.5 h-3.5"
+        strokeWidth={2.5}
+        style={{ color: active ? '#FFFFFF' : theme }}
+      />
+      {LAUNDRY_TIER_LABELS[tid]}
+    </button>
+  )
+}
+
+// Cheapest per-kg price across the priced tiers. Falls back to a soft
+// default so the CTA never reads empty.
+function formatStartFromPrice(p: LaundryProviderPublic): string {
+  const all = [p.price_wash_per_kg_idr, p.price_wash_dry_per_kg_idr, p.price_wash_iron_per_kg_idr]
+    .filter((n): n is number => typeof n === 'number' && n > 0)
+  if (all.length === 0) return 'Rp 10k'
+  return formatPriceIdr(Math.min(...all)) ?? 'Rp 10k'
+}
+
+// Sub-label for the start-from price: which tier is featured + per-kg.
+function firstPricedSubLabel(p: LaundryProviderPublic): string | null {
+  const raw: Array<{ label: string; amount: number | null | undefined }> = [
+    { label: LAUNDRY_TIER_LABELS.wash,      amount: p.price_wash_per_kg_idr      },
+    { label: LAUNDRY_TIER_LABELS.wash_dry,  amount: p.price_wash_dry_per_kg_idr  },
+    { label: LAUNDRY_TIER_LABELS.wash_iron, amount: p.price_wash_iron_per_kg_idr },
+  ]
+  const candidates: Array<{ label: string; amount: number }> = []
+  for (const t of raw) {
+    if (typeof t.amount === 'number' && t.amount > 0) {
+      candidates.push({ label: t.label, amount: t.amount })
+    }
+  }
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => a.amount - b.amount)
+  return `${candidates[0].label} / kg — start from`
+}
+
+// Builds the portfolio carousel feed. Laundry doesn't yet have a
+// per-tier service_photos column, so we flatten gallery_image_urls into
+// the rich PortfolioPhoto shape. When a tier filter is active the same
+// gallery is shown — labelled with the active tier so the framing
+// stays coherent. This is parity with what the API exposes today.
+function buildPortfolioPhotos(
+  p: LaundryProviderPublic,
+  active: LaundryTierId | null,
+): PortfolioPhoto[] {
+  const gallery = (p.gallery_image_urls ?? []).filter((u): u is string => typeof u === 'string' && u.length > 0)
+  if (gallery.length === 0) return []
+  const tierLabel = active ? LAUNDRY_TIER_LABELS[active] : 'Laundry'
+  const tierPrice =
+    active === 'wash'      ? p.price_wash_per_kg_idr      :
+    active === 'wash_dry'  ? p.price_wash_dry_per_kg_idr  :
+    active === 'wash_iron' ? p.price_wash_iron_per_kg_idr :
+    (p.price_wash_per_kg_idr ?? p.price_wash_dry_per_kg_idr ?? p.price_wash_iron_per_kg_idr ?? null)
+  return gallery.map((url) => ({
+    url,
+    name:        tierLabel,
+    description: active
+      ? `${LAUNDRY_TIER_LABELS[active]} — per-kg pricing, ${p.turnaround_hours ? `siap ${p.turnaround_hours}h` : 'pickup tersedia'}.`
+      : `Fresh laundry handled by ${p.display_name}.`,
+    price_idr:   tierPrice ?? null,
+  }))
+}
+
+function formatPriceIdr(amount: number | null | undefined): string | null {
+  if (typeof amount !== 'number' || amount <= 0) return null
+  if (amount >= 1_000_000) {
+    const jt = amount / 1_000_000
+    return `Rp ${Number.isInteger(jt) ? jt : jt.toFixed(1)}jt`
+  }
+  if (amount >= 1_000) {
+    const k = amount / 1_000
+    return `Rp ${Number.isInteger(k) ? k : k.toFixed(0)}k`
+  }
+  return `Rp ${amount.toLocaleString('id-ID')}`
+}
+
+function ReviewsPanel({
+  providerId, reviews, loading, formOpen, setFormOpen, onSubmitted, theme,
+}: {
+  providerId:  string
+  reviews:     ReviewRow[]
+  loading:     boolean
+  formOpen:    boolean
+  setFormOpen: (open: boolean) => void
+  theme:       string
+  onSubmitted: () => void
+}) {
+  const [stars, setStars]         = useState(0)
+  const [name, setName]           = useState('')
+  const [whatsapp, setWhatsapp]   = useState('')
+  const [comment, setComment]     = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [err, setErr]             = useState<string | null>(null)
+
+  const visible = reviews ?? []
+  const avg = visible.length === 0
+    ? 0
+    : visible.reduce((s, r) => s + r.rating, 0) / visible.length
+
+  async function submit() {
+    setErr(null)
+    if (stars < 1 || stars > 5) { setErr('Pilih rating 1-5 bintang.'); return }
+    if (!name.trim())            { setErr('Isi nama.');                  return }
+    if (comment.trim().length > 250) { setErr('Review max 250 huruf.');  return }
+    setSubmitting(true)
+    try {
+      const sessionId = readOrMakeReviewSessionId()
+      const r = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider_type:     'laundry',
+          provider_id:       providerId,
+          reviewer_name:     name.trim(),
+          reviewer_whatsapp: whatsapp.trim() || undefined,
+          rating:            stars,
+          comment:           comment.trim() || undefined,
+          session_id:        sessionId,
+        }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setErr(j?.error || 'Failed to submit'); return }
+      setStars(0); setName(''); setWhatsapp(''); setComment(''); setFormOpen(false)
+      onSubmitted()
+    } finally { setSubmitting(false) }
+  }
+
+  return (
+    <section className="space-y-2" style={{ marginTop: 32 }}>
+      {!formOpen && (
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+            Reviews
+          </h2>
+          <div className="text-[12px] font-bold text-gray-500">
+            <span className="text-black font-black text-[14px]">{avg > 0 ? avg.toFixed(1) : '—'}</span>
+            {' · '}{visible.length} {visible.length === 1 ? 'review' : 'reviews'}
+          </div>
+        </div>
+      )}
+
+      {/* Inline review form — triggered by the footer "Leave Review"
+          button. Renders directly on the page background. */}
+      {formOpen && (
+        <div className="space-y-2.5 px-1 pt-1">
+          <div className="flex items-center justify-between">
+            <div className="text-[13px] font-extrabold text-black">Leave a review</div>
+            <button
+              type="button"
+              onClick={() => { setFormOpen(false); setErr(null) }}
+              aria-label="Close form"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white shadow-sm active:scale-[0.95] transition"
+              style={{ background: theme }}
+            >
+              <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* 5-star picker — unselected stars gray; selected stars
+              turn solid yellow so the chosen rating is unambiguous. */}
+          <div className="flex items-center gap-1">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const filled = i < stars
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setStars(i + 1)}
+                  aria-label={`Rate ${i + 1} star${i ? 's' : ''}`}
+                  className="p-1 active:scale-[0.9] transition"
+                  style={{ minWidth: 44, minHeight: 44 }}
+                >
+                  <Star
+                    className="w-7 h-7 transition-colors"
+                    strokeWidth={1.5}
+                    fill={filled ? '#FACC15' : '#D1D5DB'}
+                    style={{ color: filled ? '#FACC15' : '#9CA3AF' }}
+                  />
+                </button>
+              )
+            })}
+          </div>
+
+          <input
+            type="text"
+            value={name}
+            maxLength={60}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nama Anda"
+            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none"
+            style={{ minHeight: 44 }}
+          />
+          <input
+            type="tel"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            placeholder="WhatsApp (opsional, +62…)"
+            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none"
+            style={{ minHeight: 44 }}
+          />
+          <div className="space-y-1">
+            <textarea
+              value={comment}
+              maxLength={250}
+              rows={3}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Tulis pengalaman Anda (max 250 huruf)"
+              className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] resize-none focus:outline-none"
+            />
+            <div className="text-[12px] text-gray-500 text-right">{comment.length}/250</div>
+          </div>
+
+          {err && (
+            <div className="rounded-md border border-red-300 bg-red-50 text-red-700 text-[12px] px-2 py-1.5">
+              {err}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting}
+            className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full text-white text-[13px] font-extrabold disabled:opacity-60 active:scale-[0.98] transition"
+            style={{ background: theme, minHeight: 44 }}
+          >
+            {submitting ? 'Submitting…' : 'Submit review'}
+          </button>
+        </div>
+      )}
+
+      {/* List — hidden while the inline review form is open. */}
+      {!formOpen && (
+      <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
+        {loading && visible.length === 0 && (
+          <div className="text-[12px] text-gray-500 italic">Loading reviews…</div>
+        )}
+        {!loading && visible.length === 0 && (
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
+            <div className="text-[12px] text-gray-500">Belum ada review. Jadilah yang pertama.</div>
+          </div>
+        )}
+        {visible.map((r) => (
+          <div key={r.id} className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-black shrink-0"
+                  style={{ background: theme }}
+                >
+                  {r.reviewer_name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[12px] font-extrabold text-black truncate">{r.reviewer_name}</div>
+                  <div className="text-[12px] text-gray-500">{formatReviewWhen(r.created_at)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-0.5 shrink-0">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <Star
+                    key={j}
+                    className="w-3 h-3"
+                    strokeWidth={0}
+                    fill={j < r.rating ? theme : '#E5E7EB'}
+                    style={{ color: j < r.rating ? theme : '#E5E7EB' }}
+                  />
+                ))}
+              </div>
+            </div>
+            {r.comment && (
+              <p className="text-[12px] text-gray-700 leading-snug">{r.comment}</p>
+            )}
+          </div>
+        ))}
+      </div>
+      )}
+    </section>
+  )
+}
+
+// Stable per-browser session id for review dedup. Reused across leave-
+// review submissions; the API rejects same-session-same-provider dupes.
+function readOrMakeReviewSessionId(): string {
+  try {
+    let v = localStorage.getItem('cr-review-sid')
+    if (!v) {
+      v = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+        ? crypto.randomUUID()
+        : `sid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      localStorage.setItem('cr-review-sid', v)
+    }
+    return v
+  } catch { return `sid-${Date.now()}` }
+}
+
+function formatReviewWhen(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  if (!Number.isFinite(ms) || ms < 0) return ''
+  const m = Math.floor(ms / 60000)
+  if (m < 1)  return 'just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  if (d < 7)  return `${d}d ago`
+  if (d < 30) return `${Math.floor(d / 7)}w ago`
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function HeroIcon({
+  src, icon: Icon, slogan, theme,
+}: { src?: string; icon?: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>; slogan: string; theme: string }) {
+  return (
+    <div className="flex-1 flex flex-col items-center text-center min-w-0">
+      <span
+        className="inline-flex items-center justify-center rounded-xl bg-white/75 backdrop-blur-sm shadow-sm"
+        style={{ width: 44, height: 44 }}
+      >
+        {src
+          ? <img src={src} alt="" className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] object-contain" />
+          : Icon
+            ? <Icon className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px]" strokeWidth={2.25} style={{ color: theme }} />
+            : null}
+      </span>
+      <div className="mt-1.5 text-[13px] sm:text-[14px] font-bold text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
+        {slogan}
+      </div>
+    </div>
   )
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  // Solid white paints over the global PageBackground (which sits at
+  // -z-10) so the courier scene doesn't show through here.
   return (
-    <main className="relative min-h-[100dvh] text-ink">
-      <AppNav />
+    <main className="relative min-h-[100dvh] bg-white text-ink">
+      {/* Hide the floating dev-toolbar wrench on this page only. */}
+      <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
       {children}
     </main>
   )

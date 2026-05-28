@@ -1,45 +1,37 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import {
-  ChevronLeft, MapPin, MessageCircle, Star, Car as CarIcon,
-  Calendar, Users, Palette, Hash, Info,
-} from 'lucide-react'
 import { getAdminSupabase } from '@/lib/supabase/admin'
-import ProfileGallery from '@/components/profile/ProfileGallery'
 import JsonLd from '@/components/seo/JsonLd'
-import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+import DriverProfileShell, { type DriverPublic } from '@/components/profile/DriverProfileShell'
 
 // =============================================================================
-// /car/[slug] — public per-driver profile page (Phase 1: Car vertical)
+// /car/[slug] — public per-driver profile page (car vertical)
 // =============================================================================
 // IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. This page surfaces a
 // single car driver who self-publishes their own min_fee + price_per_km.
-// IndoCity never sets, computes, appoints, or matches fares. The customer
-// taps "Contact via WhatsApp" → wa.me handoff with a starter message; the
-// driver and customer agree the final fare directly in chat.
+// Customer's destination from /cari driver-result cards — renders the
+// shared DriverProfileShell which embeds the booking widget (typed pickup
+// + dropoff + multi-stop + WhatsApp deep-link) and the alternatives
+// fallback when the page driver is busy/offline.
 //
-// Server-rendered for SEO so every car driver gets an indexable URL. Slug
-// lookup hits BOTH `drivers` (real) and `mock_drivers` (demo fallback);
-// returns 404 if neither table has the slug. Pricing copy is intentionally
-// compliance-safe — never "our prices", never "trip cost".
+// Server-rendered so every car driver gets an indexable URL. Slug lookup
+// hits BOTH `drivers` (real) and `mock_drivers` (demo fallback); returns
+// 404 if neither table has the slug. The booking widget itself is a
+// client component (DriverProfileShell) — the page passes server-loaded
+// data into it as props.
 // =============================================================================
 
 export const revalidate = 300
 
-const SITE_URL    = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
-const BRAND_YELLOW = '#FACC15'
-const BRAND_NAVY   = '#0F172A'
-const WORDMARK_URL =
-  'https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
 
 // -----------------------------------------------------------------------------
 // Loader — checks `drivers` first (real) then falls back to `mock_drivers`.
-// -----------------------------------------------------------------------------
 // Both tables share most column names but a few diverge:
 //   drivers.brand_logo_url  ↔  mock_drivers.profile_image_url
 // The CarDriver shape below normalises that into a single `profile_image_url`
 // field so the rendering code doesn't branch on origin.
+// -----------------------------------------------------------------------------
 
 type CarDriver = {
   source:              'real' | 'mock'
@@ -56,6 +48,7 @@ type CarDriver = {
   availability:        'online' | 'busy' | 'offline' | null
   min_fee:             number | null
   price_per_km:        number | null
+  pitstop_fee:         number | null
   service_zone_radius_km: number | null
   vehicle_make:        string | null
   vehicle_model:       string | null
@@ -64,6 +57,13 @@ type CarDriver = {
   vehicle_plate:       string | null
   vehicle_seats:       number | null
   vehicle_photos:      string[]
+  services:            string[]
+  /** Driver-selected trip-type tags (mig 0110). See
+   *  src/lib/drivers/serviceOfferings.ts for the canonical id list. */
+  service_offerings:   string[]
+  current_lat:         number | null
+  current_lng:         number | null
+  cover_image_url:     string | null
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -71,6 +71,11 @@ function parseVehiclePhotos(raw: unknown): string[] {
   // legacy rows where it's null, an object, or contains non-strings.
   if (!Array.isArray(raw)) return []
   return raw.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+}
+
+function parseServices(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return raw.filter((x): x is string => typeof x === 'string')
 }
 
 async function loadCarDriver(slug: string): Promise<CarDriver | null> {
@@ -85,9 +90,10 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
     .select(`
       user_id, slug, business_name, bio, whatsapp_e164, brand_logo_url,
       city, area, rating, trips_count, availability,
-      min_fee, price_per_km, service_zone_radius_km,
+      min_fee, price_per_km, pitstop_fee, service_zone_radius_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
+      services, service_offerings, current_lat, current_lng, cover_image_url,
       status
     `)
     .eq('slug', slug)
@@ -112,6 +118,7 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       availability:           (r.availability as CarDriver['availability']) ?? null,
       min_fee:                (r.min_fee as number | null) ?? null,
       price_per_km:           (r.price_per_km as number | null) ?? null,
+      pitstop_fee:            (r.pitstop_fee as number | null) ?? null,
       service_zone_radius_km: (r.service_zone_radius_km as number | null) ?? null,
       vehicle_make:           (r.vehicle_make as string | null) ?? null,
       vehicle_model:          (r.vehicle_model as string | null) ?? null,
@@ -120,6 +127,11 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       vehicle_plate:          (r.vehicle_plate as string | null) ?? null,
       vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
+      services:               parseServices(r.services),
+      service_offerings:      parseServices(r.service_offerings),
+      current_lat:            (r.current_lat as number | null) ?? null,
+      current_lng:            (r.current_lng as number | null) ?? null,
+      cover_image_url:        (r.cover_image_url as string | null) ?? null,
     }
   }
 
@@ -133,7 +145,8 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       city, area, rating, availability,
       min_fee, price_per_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
-      vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos
+      vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
+      services, service_offerings, cover_image_url
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'car')
@@ -157,6 +170,7 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       availability:           (r.availability as CarDriver['availability']) ?? null,
       min_fee:                (r.min_fee as number | null) ?? null,
       price_per_km:           (r.price_per_km as number | null) ?? null,
+      pitstop_fee:            null,
       service_zone_radius_km: null,
       vehicle_make:           (r.vehicle_make as string | null) ?? null,
       vehicle_model:          (r.vehicle_model as string | null) ?? null,
@@ -165,6 +179,11 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       vehicle_plate:          (r.vehicle_plate as string | null) ?? null,
       vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
+      services:               parseServices(r.services),
+      service_offerings:      parseServices(r.service_offerings),
+      current_lat:            null,
+      current_lng:            null,
+      cover_image_url:        (r.cover_image_url as string | null) ?? null,
     }
   }
 
@@ -172,27 +191,104 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
 }
 
 // -----------------------------------------------------------------------------
+// Alternatives loader — populated only when the page driver is NOT online.
+// Queries the public `drivers_public` view via the admin client for active
+// car drivers excluding the current slug, capped at 5 rows. Sort is done
+// inside the shell once we have both anchors.
+// -----------------------------------------------------------------------------
+async function loadAlternativeCarDrivers(excludeSlug: string): Promise<CarDriver[]> {
+  const admin = getAdminSupabase()
+  if (!admin) return []
+  const { data, error } = await admin
+    .from('drivers_public')
+    .select(`
+      user_id, slug, business_name, bio, whatsapp_e164, brand_logo_url,
+      city, area, rating, trips_count, availability,
+      min_fee, price_per_km, pitstop_fee, service_zone_radius_km,
+      vehicle_type, vehicle_make, vehicle_model, vehicle_year,
+      vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
+      services, current_lat, current_lng
+    `)
+    .eq('vehicle_type', 'car')
+    .eq('availability', 'online')
+    .neq('slug', excludeSlug)
+    .order('last_active_at', { ascending: false, nullsFirst: false })
+    .limit(5)
+  if (error || !data) return []
+  return (data as Record<string, unknown>[]).map((r) => ({
+    source:                 'real',
+    id:                     String(r.user_id ?? r.slug),
+    slug:                   String(r.slug ?? ''),
+    business_name:          String(r.business_name ?? ''),
+    bio:                    (r.bio as string | null) ?? null,
+    whatsapp_e164:          (r.whatsapp_e164 as string | null) ?? null,
+    profile_image_url:      (r.brand_logo_url as string | null) ?? null,
+    city:                   (r.city as string | null) ?? null,
+    area:                   (r.area as string | null) ?? null,
+    rating:                 (r.rating as number | null) ?? null,
+    trips_count:            (r.trips_count as number | null) ?? null,
+    availability:           (r.availability as CarDriver['availability']) ?? null,
+    min_fee:                (r.min_fee as number | null) ?? null,
+    price_per_km:           (r.price_per_km as number | null) ?? null,
+    pitstop_fee:            (r.pitstop_fee as number | null) ?? null,
+    service_zone_radius_km: (r.service_zone_radius_km as number | null) ?? null,
+    vehicle_make:           (r.vehicle_make as string | null) ?? null,
+    vehicle_model:          (r.vehicle_model as string | null) ?? null,
+    vehicle_year:           (r.vehicle_year as number | null) ?? null,
+    vehicle_color:          (r.vehicle_color as string | null) ?? null,
+    vehicle_plate:          (r.vehicle_plate as string | null) ?? null,
+    vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
+    vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
+    services:               parseServices(r.services),
+    service_offerings:      [],  // drivers_public view doesn't expose service_offerings yet (deferred — same pattern as cover_image_url)
+    current_lat:            (r.current_lat as number | null) ?? null,
+    current_lng:            (r.current_lng as number | null) ?? null,
+    cover_image_url:        null,  // drivers_public view doesn't expose cover_image_url yet (deferred)
+  }))
+}
+
+// -----------------------------------------------------------------------------
+// Adapter — server CarDriver → DriverPublic (the shell shape).
+// -----------------------------------------------------------------------------
+function carDriverToDriverPublic(d: CarDriver): DriverPublic {
+  return {
+    id:             d.id,
+    slug:           d.slug,
+    business_name:  d.business_name,
+    bio:            d.bio,
+    whatsapp_e164:  d.whatsapp_e164,
+    photo_url:      d.profile_image_url,
+    city:           d.city,
+    area:           d.area,
+    rating:         d.rating,
+    trips_count:    d.trips_count,
+    availability:   d.availability,
+    vehicle_type:   'car',
+    vehicle_make:   d.vehicle_make,
+    vehicle_model:  d.vehicle_model,
+    vehicle_year:   d.vehicle_year,
+    vehicle_color:  d.vehicle_color,
+    vehicle_seats:  d.vehicle_seats,
+    vehicle_photos: d.vehicle_photos,
+    price_per_km:   d.price_per_km,
+    min_fee:        d.min_fee,
+    pitstop_fee:    d.pitstop_fee,
+    lat:            d.current_lat,
+    lng:            d.current_lng,
+    services:       d.services,
+    service_offerings: d.service_offerings ?? [],
+    cover_image_url: d.cover_image_url,
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Helpers
 // -----------------------------------------------------------------------------
-
-function formatIdr(amount: number | null | undefined): string | null {
-  if (typeof amount !== 'number' || amount <= 0) return null
-  return `Rp ${amount.toLocaleString('id-ID')}`
-}
 
 function vehicleHeadline(d: CarDriver): string {
   const parts = [d.vehicle_make, d.vehicle_model].filter(Boolean) as string[]
   if (parts.length === 0) return 'Car'
   return parts.join(' ')
-}
-
-function buildWhatsAppLink(d: CarDriver): string | null {
-  // Strip the leading '+' (and any other non-digit) before passing to
-  // wa.me — Indonesian e.164 numbers come in as '62...' already.
-  const num = (d.whatsapp_e164 ?? '').replace(/\D+/g, '')
-  if (!num) return null
-  const msg = `Halo ${d.business_name}, saya tertarik dengan layanan Anda di IndoCity`
-  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
 }
 
 // -----------------------------------------------------------------------------
@@ -242,12 +338,10 @@ export default async function CarDriverProfilePage({
   const d = await loadCarDriver(slug)
   if (!d) notFound()
 
-  const photos      = d.vehicle_photos
-  const minFeeLabel = formatIdr(d.min_fee)
-  const perKmLabel  = formatIdr(d.price_per_km)
-  const waLink      = buildWhatsAppLink(d)
-  const vehicle     = vehicleHeadline(d)
-  const where       = [d.area, d.city].filter(Boolean).join(', ')
+  // Alternatives — only when the page driver is NOT online. Saves a
+  // round-trip when the booking widget will render anyway.
+  const isOffline = d.availability === 'busy' || d.availability === 'offline'
+  const alternatives = isOffline ? await loadAlternativeCarDrivers(d.slug) : []
 
   // Schema.org LocalBusiness — keeps the per-driver page eligible for
   // Knowledge Graph / Maps surfacing. priceRange is the generic 'Rp'
@@ -283,302 +377,10 @@ export default async function CarDriverProfilePage({
   return (
     <>
       <JsonLd data={jsonLd} />
-      <main className="relative min-h-[100dvh] bg-white text-[#0A0A0A]">
-        {/* -------- Brand header — navy bar with the wordmark logo -------- */}
-        <header
-          className="w-full flex items-center justify-between px-4"
-          style={{ background: BRAND_NAVY, height: 56 }}
-        >
-          <Link
-            href="/car"
-            aria-label="Back to car directory"
-            className="inline-flex items-center gap-1.5 text-white/85 active:scale-[0.97] transition"
-            style={{ minHeight: 44 }}
-          >
-            <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
-            <span className="text-[13px] font-extrabold uppercase tracking-wider">Car</span>
-          </Link>
-          <img
-            src={WORDMARK_URL}
-            alt="IndoCity"
-            className="h-7 w-auto"
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.35))' }}
-          />
-          <span aria-hidden style={{ width: 56 }} />
-        </header>
-
-        {d.source === 'mock' && (
-          <div
-            className="px-4 py-2 flex items-center justify-center gap-1.5 text-[13px] font-extrabold"
-            style={{ background: '#FEF3C7', color: '#92400E' }}
-          >
-            <Info className="w-3.5 h-3.5" strokeWidth={2.5} />
-            Demo profile — this is a seeded example driver
-          </div>
-        )}
-
-        <div className="max-w-2xl mx-auto px-4 pt-3 pb-24">
-          {/* -------- Hero — vehicle photos (carousel if >1, single if 1) -------- */}
-          {photos.length > 1 ? (
-            <ProfileGallery
-              photos={photos}
-              title=""
-              variant="carousel"
-              titleClassName="hidden"
-            />
-          ) : photos.length === 1 ? (
-            <div className="rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 mb-3">
-              <img
-                src={photos[0]}
-                alt={`${d.business_name} — ${vehicle}`}
-                className="w-full aspect-[16/10] object-cover"
-              />
-            </div>
-          ) : (
-            // No photos uploaded yet → friendly placeholder. Keeps the
-            // hero block height stable so the page below doesn't jump.
-            <div
-              className="rounded-2xl overflow-hidden mb-3 flex items-center justify-center"
-              style={{
-                aspectRatio: '16 / 10',
-                background: `linear-gradient(135deg, ${BRAND_YELLOW} 0%, #EAB308 100%)`,
-              }}
-            >
-              <CarIcon className="w-16 h-16 text-white/85" strokeWidth={1.5} />
-            </div>
-          )}
-
-          {/* -------- Driver headline card -------- */}
-          <section className="mt-3 flex items-start gap-3">
-            {d.profile_image_url ? (
-              <img
-                src={d.profile_image_url}
-                alt={d.business_name}
-                className="w-16 h-16 rounded-full object-cover shrink-0 border-2 border-white shadow"
-              />
-            ) : (
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white text-[22px] font-black shrink-0 border-2 border-white shadow"
-                style={{ background: BRAND_YELLOW }}
-              >
-                {d.business_name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-[20px] sm:text-[22px] font-black text-black leading-tight">
-                {d.business_name}
-              </h1>
-              <p className="text-[13px] text-gray-500 truncate mt-0.5">
-                {vehicle}{where ? ` · ${where}` : ''}
-              </p>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                {d.availability && (
-                  <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-extrabold"
-                    style={{
-                      background:
-                        d.availability === 'online' ? '#DCFCE7' :
-                        d.availability === 'busy'   ? '#FEF3C7' : '#F3F4F6',
-                      color:
-                        d.availability === 'online' ? '#166534' :
-                        d.availability === 'busy'   ? '#92400E' : '#374151',
-                    }}
-                  >
-                    <span
-                      aria-hidden
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{
-                        background:
-                          d.availability === 'online' ? '#16A34A' :
-                          d.availability === 'busy'   ? '#F59E0B' : '#9CA3AF',
-                      }}
-                    />
-                    {d.availability === 'online' ? 'Available' :
-                     d.availability === 'busy'   ? 'Busy'      : 'Offline'}
-                  </span>
-                )}
-                {(d.rating != null && d.rating > 0) && (
-                  <span className="inline-flex items-center gap-1 text-[13px] font-extrabold text-black">
-                    <Star
-                      className="w-3.5 h-3.5"
-                      strokeWidth={0}
-                      fill={BRAND_YELLOW}
-                      style={{ color: BRAND_YELLOW }}
-                    />
-                    {d.rating.toFixed(1)}
-                    {d.trips_count != null && (
-                      <span className="text-[12px] font-medium text-gray-500">
-                        · {d.trips_count} trip{d.trips_count === 1 ? '' : 's'}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* -------- Driver bio -------- */}
-          {d.bio?.trim() && (
-            <section className="mt-4">
-              <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black mb-1.5">
-                About {d.business_name}
-              </h2>
-              <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {d.bio}
-              </p>
-            </section>
-          )}
-
-          {/* -------- Vehicle details card -------- */}
-          <section className="mt-4">
-            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black mb-2">
-              Vehicle details
-            </h2>
-            <div
-              className="rounded-2xl border border-gray-200 bg-white p-3 grid grid-cols-2 gap-2"
-              style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
-            >
-              <VehicleField icon={<CarIcon className="w-3.5 h-3.5" strokeWidth={2.25} />} label="Make"  value={d.vehicle_make} />
-              <VehicleField icon={<CarIcon className="w-3.5 h-3.5" strokeWidth={2.25} />} label="Model" value={d.vehicle_model} />
-              <VehicleField icon={<Calendar className="w-3.5 h-3.5" strokeWidth={2.25} />} label="Year"  value={d.vehicle_year ? String(d.vehicle_year) : null} />
-              <VehicleField icon={<Palette className="w-3.5 h-3.5" strokeWidth={2.25} />} label="Color" value={d.vehicle_color} />
-              <VehicleField icon={<Hash className="w-3.5 h-3.5" strokeWidth={2.25} />} label="Plate"  value={d.vehicle_plate} />
-              <VehicleField icon={<Users className="w-3.5 h-3.5" strokeWidth={2.25} />} label="Seats" value={d.vehicle_seats ? `${d.vehicle_seats} passengers` : null} />
-            </div>
-          </section>
-
-          {/* -------- Pricing — compliance-safe wording -------- */}
-          <section className="mt-4">
-            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black mb-2">
-              Published rates
-            </h2>
-            <div
-              className="rounded-2xl border border-gray-200 bg-white p-3 space-y-2"
-              style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
-            >
-              <PriceRow
-                label="From"
-                value={minFeeLabel ? `From ${minFeeLabel}` : 'Not yet published'}
-                subnote="Self-published by driver"
-              />
-              <div className="h-px bg-gray-100" />
-              <PriceRow
-                label="Per kilometer"
-                value={perKmLabel ? `${perKmLabel} / km` : 'Not yet published'}
-                subnote="Self-published by driver"
-              />
-            </div>
-            <p className="text-[12px] text-gray-500 leading-snug mt-2 px-1">
-              Driver publishes their own rates. Agree the final fare directly
-              with the driver — IndoCity is a directory only.
-            </p>
-          </section>
-
-          {/* -------- Service area -------- */}
-          {(where || d.service_zone_radius_km != null) && (
-            <section className="mt-4">
-              <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black mb-2">
-                Service area
-              </h2>
-              <div
-                className="rounded-2xl border border-gray-200 bg-white p-3 flex items-start gap-2"
-                style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
-              >
-                <MapPin
-                  className="w-4 h-4 mt-0.5 shrink-0"
-                  strokeWidth={2.25}
-                  style={{ color: BRAND_YELLOW }}
-                />
-                <div className="min-w-0">
-                  <div className="text-[13px] font-extrabold text-black">
-                    {where || 'Indonesia'}
-                  </div>
-                  {d.service_zone_radius_km != null && d.service_zone_radius_km > 0 && (
-                    <div className="text-[12px] text-gray-500 mt-0.5">
-                      Service zone radius · {d.service_zone_radius_km} km
-                    </div>
-                  )}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* -------- Compliance disclaimer (compact) -------- */}
-          <div className="mt-4">
-            <PlatformDisclaimer variant="compact" />
-          </div>
-        </div>
-
-        {/* -------- Sticky bottom CTA bar — Contact via WhatsApp -------- */}
-        {waLink && (
-          <div
-            className="fixed left-0 right-0 z-30 px-4 py-3"
-            style={{
-              bottom: 0,
-              background: 'rgba(255,255,255,0.95)',
-              borderTop: '1px solid rgba(0,0,0,0.06)',
-              backdropFilter: 'blur(6px)',
-            }}
-          >
-            <div className="max-w-2xl mx-auto">
-              <a
-                href={waLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl text-white font-extrabold text-[13px] active:scale-[0.98] transition"
-                style={{
-                  background: BRAND_YELLOW,
-                  color: BRAND_NAVY,
-                  minHeight: 48,
-                  boxShadow: '0 8px 18px rgba(250,204,21,0.35)',
-                }}
-              >
-                <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-                Contact {d.business_name} on WhatsApp
-              </a>
-              <p className="text-[11px] text-gray-500 text-center mt-1.5 leading-snug">
-                Chat directly — agree the trip and final fare with the driver.
-              </p>
-            </div>
-          </div>
-        )}
-      </main>
+      <DriverProfileShell
+        driver={carDriverToDriverPublic(d)}
+        alternatives={alternatives.map(carDriverToDriverPublic)}
+      />
     </>
-  )
-}
-
-// -----------------------------------------------------------------------------
-// Small presentational helpers (server-rendered, no client JS)
-// -----------------------------------------------------------------------------
-
-function VehicleField({
-  icon, label, value,
-}: { icon: React.ReactNode; label: string; value: string | null }) {
-  return (
-    <div className="min-w-0">
-      <div className="flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
-        <span style={{ color: BRAND_YELLOW }}>{icon}</span>
-        {label}
-      </div>
-      <div className="text-[13px] font-extrabold text-black truncate mt-0.5">
-        {value ?? '—'}
-      </div>
-    </div>
-  )
-}
-
-function PriceRow({
-  label, value, subnote,
-}: { label: string; value: string; subnote: string }) {
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-gray-500">
-          {label}
-        </div>
-        <div className="text-[11px] text-gray-400 mt-0.5">{subnote}</div>
-      </div>
-      <div className="text-[15px] font-black text-black shrink-0">{value}</div>
-    </div>
   )
 }

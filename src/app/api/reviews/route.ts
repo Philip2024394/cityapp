@@ -26,7 +26,7 @@ type Payload = {
   // EITHER driver_user_id (legacy driver reviews)
   driver_user_id?: string
   // OR provider_type + provider_id (polymorphic — mig 0072 / 0075)
-  provider_type?: 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean' | 'tour_guide' | 'bike_rental'
+  provider_type?: 'driver' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean' | 'tour_guide' | 'bike_rental'
   provider_id?:   string
   reviewer_name: string
   reviewer_country?: string
@@ -36,8 +36,12 @@ type Payload = {
   session_id: string  // any client-generated anonymous identifier
 }
 
-const POLY_TYPES = new Set(['massage','beautician','laundry','handyman','home_clean','tour_guide','bike_rental'])
+const POLY_TYPES = new Set(['driver','massage','beautician','laundry','handyman','home_clean','tour_guide','bike_rental'])
 const POLY_TABLES: Record<string, string> = {
+  // 'driver' covers both bike + car drivers from the unified `drivers`
+  // table (vehicle_type column discriminates). DriverProfileShell sends
+  // provider_type='driver' for /r/[slug] and /car/[slug] reviews.
+  driver:     'drivers',
   massage:    'massage_providers',
   beautician: 'beautician_providers',
   laundry:    'laundry_providers',
@@ -111,10 +115,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'invalid_provider_id' }, { status: 400 })
     }
     const table = POLY_TABLES[body.provider_type as string]
+    // `drivers` table uses `user_id` as the PK (no `id` column). Other
+    // providers use `id`. Pick the right lookup column per vertical.
+    const idCol = body.provider_type === 'driver' ? 'user_id' : 'id'
     const { data: prov } = await admin
       .from(table)
-      .select('id, status')
-      .eq('id', body.provider_id!)
+      .select(`${idCol}, status`)
+      .eq(idCol, body.provider_id!)
       .maybeSingle()
     if (!prov) return NextResponse.json({ error: 'provider_not_found' }, { status: 404 })
     if ((prov as { status: string }).status !== 'active'

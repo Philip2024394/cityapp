@@ -176,8 +176,11 @@ export default function UniversalProviderCard({
                  :                                '#9CA3AF'
 
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl transition hover:-translate-y-0.5 hover:shadow-2xl"
+    <Link
+      href={href}
+      prefetch
+      aria-label={`View profile of ${displayName}`}
+      className="relative overflow-hidden rounded-2xl transition hover:-translate-y-0.5 hover:shadow-2xl block focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
         background: s.bodyBg,
         backdropFilter: s.bodyBackdrop,
@@ -376,22 +379,25 @@ export default function UniversalProviderCard({
             </div>
           ) : <span />}
 
-          <Link
-            href={href}
-            aria-label={`View profile of ${displayName}`}
-            className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shrink-0 hover:brightness-110 transition shadow-md"
+          {/* Profile pill — visual affordance only. The whole card is the
+              tap target (outer <Link>), so this stays as a styled <span>
+              to signal "this card leads somewhere" without nesting an
+              interactive element inside another. Keeps min-44px height
+              via py-2 + line-height for WCAG tap-target parity. */}
+          <span
+            aria-hidden="true"
+            className="rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shrink-0 transition shadow-md"
             style={{
               background: theme,
               color: '#0A0A0A',
               boxShadow: `0 4px 14px ${theme}55`,
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             <User className="w-3.5 h-3.5" strokeWidth={2.5} />
             {ctaLabel}
-          </Link>
+          </span>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }

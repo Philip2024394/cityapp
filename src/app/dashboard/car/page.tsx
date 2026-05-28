@@ -19,6 +19,8 @@ import { Loader2, X, Upload, CheckCircle2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import RentalSection, { type RentalSavePayload } from '@/components/dashboard/RentalSection'
+import { CAR_BANNERS } from '@/lib/drivers/banners'
+import { SERVICE_OFFERINGS } from '@/lib/drivers/serviceOfferings'
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -65,6 +67,8 @@ type CarDriverRow = {
   rental_weekly_rate_idr: number | null
   rental_monthly_rate_idr: number | null
   rental_min_days: number | null
+  cover_image_url: string | null
+  service_offerings: string[] | null
 }
 
 type LoadState =
@@ -120,7 +124,8 @@ export default function CarDriverDashboardPage() {
         'price_per_km, min_fee, pitstop_fee, ' +
         'accepts_cash, accepts_qr, accepts_transfer, qr_payment_url, transfer_details, ' +
         'availability, service_zone_radius_km, paid_until, ' +
-        'rental_type, rental_daily_rate_idr, rental_weekly_rate_idr, rental_monthly_rate_idr, rental_min_days',
+        'rental_type, rental_daily_rate_idr, rental_weekly_rate_idr, rental_monthly_rate_idr, rental_min_days, ' +
+        'cover_image_url, service_offerings',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -279,6 +284,8 @@ function Dashboard({ row, onReload }: { row: CarDriverRow; onReload: () => void 
         <CarRentalSection    row={row} onSaved={onReload} />
         <PaymentMethodsSection row={row} onSaved={onReload} />
         <BusinessProfileSection row={row} onSaved={onReload} />
+        <BannerSection       row={row} onSaved={onReload} />
+        <ServicesSection     row={row} onSaved={onReload} />
       </div>
 
       <QrisPaymentModal
@@ -608,6 +615,233 @@ function PhotosSection({ row, onSaved }: { row: CarDriverRow; onSaved: () => voi
         <div className="flex items-center justify-between gap-3">
           {toast ? <Toast kind={toast.kind}>{toast.msg}</Toast> : <span />}
           <SaveButton saving={saving} dirty={dirty} />
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+// ============================================================================
+// Profile banner — driver picks the hero backdrop for their /car/[slug]
+// profile page from a curated set. Persisted on drivers.cover_image_url
+// (mig 0108). Null falls back to DEFAULT_CAR_HERO in DriverProfileShell.
+// ============================================================================
+function BannerSection({ row, onSaved }: { row: CarDriverRow; onSaved: () => void }) {
+  const { saving, toast, save } = useSectionSaver(onSaved)
+  const [selected, setSelected] = useState<string | null>(row.cover_image_url ?? null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const dirty = (selected ?? null) !== (row.cover_image_url ?? null)
+  // Is the currently-selected banner a curated one? If not, it must be
+  // an uploaded URL — surface it as a "Your upload" thumbnail.
+  const curatedUrls = new Set(CAR_BANNERS.map((b) => b.url))
+  const customUrl = selected && !curatedUrls.has(selected) ? selected : null
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await save({ cover_image_url: selected })
+  }
+
+  async function handleFile(file: File) {
+    setUploadError(null)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image too large — max 5MB.')
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please choose an image file.')
+      return
+    }
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setUploadError('Upload not available.'); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setUploadError('Sign-in required.'); return }
+    setUploading(true)
+    try {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '')
+      const path = `${user.id}/banner-${Date.now()}.${ext}`
+      const { error } = await supabase.storage
+        .from('driver-banners')
+        .upload(path, file, { contentType: file.type, upsert: false })
+      if (error) { setUploadError(error.message); setUploading(false); return }
+      const { data: pub } = supabase.storage.from('driver-banners').getPublicUrl(path)
+      setSelected(pub.publicUrl)
+      // Auto-save the uploaded URL so it's immediately live on the profile.
+      await save({ cover_image_url: pub.publicUrl })
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <SectionCard title="Profile banner">
+      <p className="text-[13px] text-black/70">
+        Pick a banner below or upload your own. Leave unselected to use the default.
+      </p>
+      <form onSubmit={onSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          {/* Default-banner option (null cover_image_url) */}
+          <button
+            type="button"
+            onClick={() => setSelected(null)}
+            aria-pressed={selected === null}
+            className="relative aspect-[16/9] rounded-xl overflow-hidden border-2 transition active:scale-[0.99]"
+            style={{
+              borderColor: selected === null ? '#FACC15' : '#E4E4E7',
+              boxShadow: selected === null ? '0 4px 12px rgba(250,204,21,0.30)' : 'none',
+              minHeight: 44,
+            }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center text-[12px] font-extrabold text-black/70 bg-gray-50">
+              Default
+            </div>
+          </button>
+          {/* Your uploaded banner (if any, and not in the curated list) */}
+          {customUrl && (
+            <button
+              type="button"
+              onClick={() => setSelected(customUrl)}
+              aria-pressed
+              aria-label="Your uploaded banner"
+              className="relative aspect-[16/9] rounded-xl overflow-hidden border-2 transition active:scale-[0.99]"
+              style={{
+                borderColor: '#FACC15',
+                boxShadow: '0 4px 12px rgba(250,204,21,0.30)',
+                minHeight: 44,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={customUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-black/65 text-white">
+                Your upload
+              </span>
+            </button>
+          )}
+          {CAR_BANNERS.map((b) => {
+            const active = selected === b.url
+            return (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setSelected(b.url)}
+                aria-pressed={active}
+                aria-label={b.label || b.id}
+                className="relative aspect-[16/9] rounded-xl overflow-hidden border-2 transition active:scale-[0.99]"
+                style={{
+                  borderColor: active ? '#FACC15' : '#E4E4E7',
+                  boxShadow: active ? '0 4px 12px rgba(250,204,21,0.30)' : 'none',
+                  minHeight: 44,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={b.url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Upload your own banner — file picker. Auto-saves on success
+            (uploaded URL goes straight to drivers.cover_image_url). */}
+        <div>
+          <label
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white text-black/80 px-4 py-2.5 text-[13px] font-extrabold cursor-pointer hover:bg-gray-50 min-h-[44px]"
+            aria-disabled={uploading}
+          >
+            <Upload className="w-4 h-4" strokeWidth={2.5} />
+            {uploading ? 'Uploading…' : 'Upload your own banner'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) handleFile(f)
+                e.target.value = ''  // allow re-selecting same file
+              }}
+            />
+          </label>
+          {uploadError && (
+            <p className="mt-2 text-[12px] font-bold text-red-600">{uploadError}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <SaveButton saving={saving} dirty={dirty} />
+          {toast}
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
+// ============================================================================
+// Services offered — toggle-pill grid that writes to
+// drivers.service_offerings (mig 0110). Drivers pick the kinds of trips
+// they offer; customers see these as yellow-tint badges on /car/[slug].
+//
+// Layout: 2-col grid on mobile, 4-col on sm:. Selected pill = yellow border
+// + light yellow tint. min-h-[44px] keeps the tap targets WCAG-AA compliant.
+// ============================================================================
+function ServicesSection({ row, onSaved }: { row: CarDriverRow; onSaved: () => void }) {
+  const { saving, toast, save } = useSectionSaver(onSaved)
+  const initial = Array.isArray(row.service_offerings) ? row.service_offerings : []
+  const [selected, setSelected] = useState<string[]>(initial)
+
+  // Dirty check — order-insensitive set comparison so re-ordering doesn't
+  // false-positive as "unsaved".
+  const dirty = (() => {
+    if (selected.length !== initial.length) return true
+    const a = new Set(selected)
+    for (const id of initial) if (!a.has(id)) return true
+    return false
+  })()
+
+  function toggle(id: string) {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await save({ service_offerings: selected })
+  }
+
+  return (
+    <SectionCard title="Services offered">
+      <p className="text-[13px] text-black/70 leading-snug">
+        Pick the kinds of trips you offer. Customers see these badges on your profile.
+      </p>
+      <form onSubmit={onSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {SERVICE_OFFERINGS.map((s) => {
+            const active = selected.includes(s.id)
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => toggle(s.id)}
+                aria-pressed={active}
+                className="rounded-xl px-3 py-3 text-[13px] font-extrabold transition border min-h-[44px] active:scale-[0.98]"
+                style={{
+                  background: active ? '#FEF9C3' : '#FFFFFF',
+                  borderColor: active ? '#FACC15' : '#E4E4E7',
+                  color: active ? '#854D0E' : '#0A0A0A',
+                  boxShadow: active ? '0 2px 8px rgba(250,204,21,0.30)' : 'none',
+                }}
+              >
+                {s.label}
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <SaveButton saving={saving} dirty={dirty} />
+          {toast ? <Toast kind={toast.kind}>{toast.msg}</Toast> : <span />}
         </div>
       </form>
     </SectionCard>

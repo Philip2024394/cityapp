@@ -1,9 +1,10 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Star, BadgeCheck, Award, MapPin, Bike, Car as CarIcon,
-  Share2, Link2, X, ChevronLeft, MessageCircle,
+  Share2, Link2, X, ChevronLeft, MessageCircle, ArrowRight,
   ShoppingBag, Minus, Plus, Trash2,
 } from 'lucide-react'
 import { haversineKm } from '@/lib/geo/haversine'
@@ -174,6 +175,59 @@ export default function PlaceProfileShell({
   // yellow until per-venue theming ships, so the accent stays consistent.
   const theme = BRAND_YELLOW
 
+  // Driver round-trip — when the customer arrived here from a driver
+  // profile's "Places" pill, `return_driver` carries `r:slug` (bike) or
+  // `c:slug` (car-like). We use this to (a) swap the footer "Contact
+  // venue" CTA for a yellow "Take me here →" button and (b) build the
+  // href that returns to the driver profile with this place pre-filled
+  // as the drop-off. Pickup params (pName/pLat/pLng) round-trip back so
+  // the customer's typed pickup survives the full loop.
+  const searchParams = useSearchParams()
+  const returnDriverToken = searchParams?.get('return_driver') ?? null
+  const incomingPName = searchParams?.get('pName') ?? null
+  const incomingPLat  = searchParams?.get('pLat')  ?? null
+  const incomingPLng  = searchParams?.get('pLng')  ?? null
+
+  // Parse the `return_driver` token. Format is `r:<slug>` for bike
+  // drivers and `c:<slug>` for car-like drivers. Anything else (missing
+  // prefix, unknown prefix, blank slug, accidental extra colons) is
+  // treated as INVALID and the "Take me here" CTA is suppressed —
+  // falling back to the regular Contact CTA so the customer is never
+  // stranded with a broken navigation button. We never try to "guess"
+  // the prefix from /r vs /car referers because that bypasses URL state
+  // and would silently re-route customers who hand-edited the link.
+  const returnDriverTarget = useMemo(() => {
+    if (!returnDriverToken) return null
+    const colonIdx = returnDriverToken.indexOf(':')
+    if (colonIdx <= 0) return null
+    const prefix = returnDriverToken.slice(0, colonIdx)
+    const slug   = returnDriverToken.slice(colonIdx + 1).trim()
+    if (!slug) return null
+    if (prefix === 'r') return { path: `/r/${slug}` }
+    if (prefix === 'c') return { path: `/car/${slug}` }
+    return null
+  }, [returnDriverToken])
+
+  // Compose the return URL — drops this place's name + coords (when
+  // present) onto the driver-profile route so the booking widget
+  // hydrates pickup + dropoff on mount. We URL-encode via
+  // URLSearchParams (handles spaces, ampersands, accented chars in
+  // venue names). lat/lng are omitted from the query when the place
+  // row has null/non-finite coords; the driver shell is typed-only so
+  // the dName alone is enough to drive the booking widget, but cars
+  // shipping a map picker later can read the coords too.
+  const takeMeHereHref = useMemo(() => {
+    if (!returnDriverTarget) return null
+    const sp = new URLSearchParams()
+    sp.set('dName', place.name)
+    if (Number.isFinite(place.lat)) sp.set('dLat', String(place.lat))
+    if (Number.isFinite(place.lng)) sp.set('dLng', String(place.lng))
+    if (incomingPName) sp.set('pName', incomingPName)
+    if (incomingPLat)  sp.set('pLat',  incomingPLat)
+    if (incomingPLng)  sp.set('pLng',  incomingPLng)
+    return `${returnDriverTarget.path}?${sp.toString()}`
+  }, [returnDriverTarget, place.name, place.lat, place.lng, incomingPName, incomingPLat, incomingPLng])
+
   const [shareOpen,   setShareOpen]   = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   // Reviews + Visit Us panels swap the content area, same as beautician.
@@ -183,6 +237,15 @@ export default function PlaceProfileShell({
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
   // Selected offer card — opens the View Details popup when set.
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  // Cart is FOOD-ONLY. Government offices, temples, hospitals etc. don't
+  // have menu items to order — gate every cart surface on this flag.
+  // Food categories mirror the /food page's filter set.
+  const IS_FOOD_PLACE =
+    place.category === 'restaurant' ||
+    place.category === 'cafe' ||
+    place.category === 'bar' ||
+    place.category === 'club'
+
   // Cart state — per-place localStorage cart for the WhatsApp handoff.
   const cart = usePlaceCart(place.id)
   const [cartOpen, setCartOpen] = useState(false)
@@ -298,31 +361,33 @@ export default function PlaceProfileShell({
           >
             <Share2 className="w-4 h-4" strokeWidth={2.5} />
           </button>
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            aria-label={cart.totalQty > 0
-              ? `Open cart (${cart.totalQty} item${cart.totalQty === 1 ? '' : 's'})`
-              : 'Open cart'}
-            className="relative w-10 h-10 rounded-full flex items-center justify-center text-black shadow-md active:scale-[0.96] transition"
-            style={{
-              background: 'rgba(255,255,255,0.92)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              minWidth: 44, minHeight: 44,
-            }}
-          >
-            <ShoppingBag className="w-4 h-4" strokeWidth={2.5} />
-            {cart.totalQty > 0 && (
-              <span
-                aria-hidden
-                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-black leading-none shadow"
-                style={{ background: BRAND_YELLOW, color: BRAND_NAVY, border: '1.5px solid #FFFFFF' }}
-              >
-                {cart.totalQty > 99 ? '99+' : cart.totalQty}
-              </span>
-            )}
-          </button>
+          {IS_FOOD_PLACE && (
+            <button
+              type="button"
+              onClick={() => setCartOpen(true)}
+              aria-label={cart.totalQty > 0
+                ? `Open cart (${cart.totalQty} item${cart.totalQty === 1 ? '' : 's'})`
+                : 'Open cart'}
+              className="relative w-10 h-10 rounded-full flex items-center justify-center text-black shadow-md active:scale-[0.96] transition"
+              style={{
+                background: 'rgba(255,255,255,0.92)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                minWidth: 44, minHeight: 44,
+              }}
+            >
+              <ShoppingBag className="w-4 h-4" strokeWidth={2.5} />
+              {cart.totalQty > 0 && (
+                <span
+                  aria-hidden
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-black leading-none shadow"
+                  style={{ background: BRAND_YELLOW, color: BRAND_NAVY, border: '1.5px solid #FFFFFF' }}
+                >
+                  {cart.totalQty > 99 ? '99+' : cart.totalQty}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         <div
@@ -619,7 +684,14 @@ export default function PlaceProfileShell({
                 exact pattern (page.tsx lines 595-614): large Rp price on the
                 left with the "Start from" caption underneath, themed Contact
                 button (square w/ rounded corners) on the right. Sits inside
-                the content scroll, not a sticky overlay. */}
+                the content scroll, not a sticky overlay.
+
+                When the customer arrived from a driver profile (return_driver
+                token present + valid prefix), the Contact CTA is REPLACED
+                with a yellow "Take me here →" button that returns to the
+                driver profile with this place's name + coords pre-filled as
+                the drop-off. Invalid tokens fall through to the regular
+                Contact CTA so the customer is never stranded. */}
             <div className="flex items-end justify-between gap-3 pb-4">
               <div className="leading-none pb-3">
                 <div className="text-[24px] sm:text-[28px] font-black text-black">
@@ -629,7 +701,21 @@ export default function PlaceProfileShell({
                   Start from
                 </div>
               </div>
-              {showContact && waHref && (
+              {takeMeHereHref ? (
+                <Link
+                  href={takeMeHereHref}
+                  aria-label="Take me here — set this place as drop-off"
+                  className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
+                  style={{
+                    background: BRAND_YELLOW,
+                    color: '#0A0A0A',
+                    minHeight: 44,
+                  }}
+                >
+                  Take me here
+                  <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+                </Link>
+              ) : (showContact && waHref) ? (
                 <a
                   href={waHref}
                   target="_blank"
@@ -640,7 +726,7 @@ export default function PlaceProfileShell({
                   <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
                   Contact
                 </a>
-              )}
+              ) : null}
             </div>
 
           </>
@@ -829,7 +915,7 @@ export default function PlaceProfileShell({
           uses name match (offers carry no id in PortfolioPhoto). */}
       {detailPhoto && (() => {
         const matchedOffer = offers.find((o) => o.name === detailPhoto.name) ?? null
-        const canAddToCart = Boolean(
+        const canAddToCart = IS_FOOD_PLACE && Boolean(
           matchedOffer && typeof matchedOffer.price_idr === 'number' && matchedOffer.price_idr > 0,
         )
         const existingLine = matchedOffer
@@ -876,8 +962,9 @@ export default function PlaceProfileShell({
           the cart. Total is a simple sum of offer.price_idr × qty —
           IndoCity never adds delivery, service, or platform fees. The
           primary CTA builds an Indonesian WhatsApp message and hands
-          off to the venue's WhatsApp; we never see the conversation. */}
-      {cartOpen && (
+          off to the venue's WhatsApp; we never see the conversation.
+          Gated on IS_FOOD_PLACE — non-food places never open this. */}
+      {IS_FOOD_PLACE && cartOpen && (
         <PlaceCartSheet
           placeName={place.name}
           whatsappE164={place.whatsappE164}

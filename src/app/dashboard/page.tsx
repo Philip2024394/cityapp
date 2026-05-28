@@ -24,6 +24,8 @@ import HelpTip from '@/components/common/HelpTip'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { MOCK_CUSTOMERS, repeatCustomers } from '@/data/mockCustomers'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
+import { getBrowserSupabase } from '@/lib/supabase/client'
+import { SERVICE_OFFERINGS } from '@/lib/drivers/serviceOfferings'
 import { useHaptic } from '@/hooks/useHaptic'
 import type { Rider } from '@/types/rider'
 import {
@@ -387,6 +389,7 @@ function ActivatedDashboard({
         defaultOpen
       >
         <RentalToggles />
+        <ServicesSection />
         <BusinessContractToggle />
         <TourGuideToggle />
         <B2BScoreCard />
@@ -837,5 +840,143 @@ function ToolCard({ href, icon, label, hint }: { href: string; icon: React.React
       <div className="text-[14px] font-extrabold leading-tight mt-1 text-[#0F172A]">{label}</div>
       <div className="text-[13px] text-gray-600 leading-tight">{hint}</div>
     </Link>
+  )
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ServicesSection — Services-offered editor for the bike dashboard.
+// ----------------------------------------------------------------------------
+// Loads `drivers.service_offerings` for the signed-in driver, lets them pick
+// which trip types they offer (City Service, Daily Hire, Hourly Hire,
+// Airport Pickup, etc.), then writes the array back on Save. Mirrors the
+// pattern used by the other bike-dashboard toggle widgets (load own state
+// from Supabase, optimistic-write on click). Customers see these badges on
+// the public /r/[slug] profile.
+//
+// Empty state and unauth/Supabase-missing states render nothing (parity with
+// BusinessContractToggle).
+// ────────────────────────────────────────────────────────────────────────────
+function ServicesSection() {
+  const haptic = useHaptic()
+  const [selected, setSelected] = useState<string[]>([])
+  const [initial, setInitial] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [savedFlash, setSavedFlash] = useState(false)
+
+  useEffect(() => {
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setLoading(false); return }
+    let cancelled = false
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
+      const { data } = await supabase
+        .from('drivers')
+        .select('service_offerings')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (cancelled) return
+      const arr = Array.isArray((data as { service_offerings?: unknown } | null)?.service_offerings)
+        ? ((data as { service_offerings: unknown[] }).service_offerings.filter((x): x is string => typeof x === 'string'))
+        : []
+      setSelected(arr)
+      setInitial(arr)
+      setLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  const dirty = (() => {
+    if (selected.length !== initial.length) return true
+    const a = new Set(selected)
+    for (const id of initial) if (!a.has(id)) return true
+    return false
+  })()
+
+  function toggle(id: string) {
+    haptic.tap()
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
+
+  async function onSave() {
+    setError(null)
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setError('Supabase not configured.'); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setError('Not signed in.'); return }
+    setSaving(true)
+    const { error: err } = await supabase
+      .from('drivers')
+      .update({ service_offerings: selected })
+      .eq('user_id', user.id)
+    setSaving(false)
+    if (err) { setError(err.message); return }
+    setInitial(selected)
+    setSavedFlash(true)
+    haptic.impact()
+    setTimeout(() => setSavedFlash(false), 2200)
+  }
+
+  if (loading) {
+    return <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm h-24 shimmer" />
+  }
+
+  return (
+    <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 space-y-3">
+      <div>
+        <div className="font-extrabold text-[14px] text-[#0F172A]">Services offered</div>
+        <div className="text-[12px] text-gray-600 mt-0.5 leading-relaxed">
+          Pick the kinds of trips you offer. Customers see these badges on your profile.
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {SERVICE_OFFERINGS.map((s) => {
+          const active = selected.includes(s.id)
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => toggle(s.id)}
+              aria-pressed={active}
+              className="rounded-xl px-3 py-3 text-[13px] font-extrabold transition border min-h-[44px] active:scale-[0.98]"
+              style={{
+                background: active ? '#FEF9C3' : '#FFFFFF',
+                borderColor: active ? '#FACC15' : '#E4E4E7',
+                color: active ? '#854D0E' : '#0A0A0A',
+                boxShadow: active ? '0 2px 8px rgba(250,204,21,0.30)' : 'none',
+              }}
+            >
+              {s.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || !dirty}
+          className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
+        >
+          {saving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
+        </button>
+        {savedFlash && (
+          <span className="text-[12px] font-extrabold" style={{ color: '#16A34A' }}>
+            Saved.
+          </span>
+        )}
+        {error && (
+          <span className="text-[12px] font-extrabold" style={{ color: '#DC2626' }}>
+            {error}
+          </span>
+        )}
+      </div>
+    </div>
   )
 }

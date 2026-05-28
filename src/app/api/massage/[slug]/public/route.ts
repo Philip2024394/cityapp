@@ -15,12 +15,22 @@ const PUBLIC_COLS = [
   'whatsapp_e164',
   'profile_image_url',
   'availability',
+  'is_mock',
   // mig 0072 universal profile fields
   'cover_image_url','gallery_image_urls','languages',
   'instagram_url','tiktok_url','facebook_url',
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',
+  // ratings (mocked on demo cards until reviews ship)
+  'rating','rating_count',
+  // mig 0087 per-provider theme accent color
+  'theme_color',
+  // mig 0088 service locations + optional physical studio coordinates
+  'service_locations',
+  'has_physical_location','latitude','longitude',
+  // mig 0104 — beautician-parity feature columns
+  'hero_text','promo_text','busy_dates','service_photos','marketplace_categories',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

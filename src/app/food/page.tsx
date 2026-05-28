@@ -5,70 +5,50 @@ import { haversineKm } from '@/lib/geo/haversine'
 import type { Place, PlaceCategory, CityZone } from '@/lib/places/types'
 
 // ============================================================================
-// /places — White-card directory of self-listed venues (2026-05-27 redesign)
+// /food — White-card directory of self-listed eat/drink venues.
 // ----------------------------------------------------------------------------
-// Replaces the dark glass-card layout with a /cari-style white container.
-// Server-renders the data, then hands off to <PlacesBrowser>, a small client
-// island that owns search + chip-filter + GPS-sort state.
+// Mirror of /places (2026-05-27 redesign) but scoped to the food set
+// (restaurant, cafe, bar, club). Same backend `places` table — only the
+// category filter and chip rail differ. Profile clicks still route to
+// /places/[slug] so the detail surface stays unified across both browse
+// views.
 //
 // Compliance posture: IndoCity is a software directory (PM 12/2019). The
 // list labels venues as "self-listed". No fake "verified" / "official
 // partner" badges — only data the row actually carries is surfaced.
-//
-// Phase 1 hardcodes the default city to Yogyakarta. Multi-city support is
-// a `?city=` query param + zones lookup away.
 // ============================================================================
 
 export const metadata = {
-  title: 'Places · IndoCity',
+  title: 'Food · IndoCity',
   description:
-    'Browse self-listed tourism venues — temples, beaches, landmarks, ' +
-    'hotels, malls — near you in Indonesia. IndoCity is a software directory.',
-  alternates: { canonical: 'https://indocity.id/places' },
+    'Browse self-listed eateries — restaurants, cafés, bars, clubs — ' +
+    'near you in Indonesia. IndoCity is a software directory.',
+  alternates: { canonical: 'https://indocity.id/food' },
 }
 
 // Force fresh data on every request so newly-approved places land without a
-// redeploy. Aligns with /car and /rentals which use the same posture.
+// redeploy. Aligns with /places posture verbatim.
 export const dynamic = 'force-dynamic'
 
 const DEFAULT_CITY = 'yogyakarta'
 
-// Tourism-only categories surfaced on /places. Food (restaurant/cafe/bar/
-// club) lives on /food; utility categories (hospital, pharmacy, transit,
-// government, repair) are intentionally excluded from the default browse
-// view here — they're still reachable via search and the legacy detail
-// route at /places/[slug].
-const TOURISM_CATEGORIES: ReadonlyArray<PlaceCategory> = [
-  // Tourism / shopping
-  'temple',
-  'beach',
-  'attraction',
-  'hotel',
-  'mall',
-  // Utility & services — re-added per founder direction so /places is
-  // the broader Indonesian directory (food remains carved out under /food).
-  'hospital',
-  'pharmacy',
-  'government',
-  'airport',
-  'train_station',
-  'bus_station',
+// Food-only categories surfaced on /food. Tourism categories live on
+// /places; utility categories (hospital, pharmacy, transit, government,
+// repair) are intentionally excluded from the default browse view here.
+const FOOD_CATEGORIES: ReadonlyArray<PlaceCategory> = [
+  'restaurant',
+  'cafe',
+  'bar',
+  'club',
 ]
 
-// Chip rail for /places — mirrors TOURISM_CATEGORIES with Bahasa labels.
-const PLACES_CHIPS = [
-  { id: 'all',           label: 'All' },
-  { id: 'temple',        label: 'Candi' },
-  { id: 'beach',         label: 'Pantai' },
-  { id: 'attraction',    label: 'Wisata' },
-  { id: 'hotel',         label: 'Hotel' },
-  { id: 'mall',          label: 'Mall' },
-  { id: 'hospital',      label: 'RS' },
-  { id: 'pharmacy',      label: 'Apotek' },
-  { id: 'government',    label: 'Pemerintah' },
-  { id: 'airport',       label: 'Bandara' },
-  { id: 'train_station', label: 'Stasiun' },
-  { id: 'bus_station',   label: 'Terminal' },
+// Chip rail for /food — mirrors FOOD_CATEGORIES with Bahasa labels.
+const FOOD_CHIPS = [
+  { id: 'all',        label: 'All' },
+  { id: 'restaurant', label: 'Resto' },
+  { id: 'cafe',       label: 'Kafe' },
+  { id: 'bar',        label: 'Bar' },
+  { id: 'club',       label: 'Klub' },
 ] as const
 
 type PlaceRow = {
@@ -111,12 +91,9 @@ function capitalise(s: string): string {
   return s[0]!.toUpperCase() + s.slice(1)
 }
 
-// Server-side fetch of every approved place in a city + the zone's
-// centroid + bounds. We compute isOutOfZone + returnKm here so the client
-// island can render distance / out-of-city badges without a round-trip
-// once GPS lands. Uses the service-role admin client (page is fully
-// public, RLS on places is "approved-only readable", but using admin
-// keeps the read consistent with /car and /rentals).
+// Server-side fetch of every approved food venue in a city + the zone's
+// centroid + bounds. Identical shape to /places/loadPlaces so the client
+// island receives the same Place[] contract.
 async function loadPlaces(city: string): Promise<{ places: Place[]; zone: CityZone | null }> {
   const admin = getAdminSupabase()
   if (!admin) return { places: [], zone: null }
@@ -127,7 +104,7 @@ async function loadPlaces(city: string): Promise<{ places: Place[]; zone: CityZo
       .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng')
       .eq('city', city)
       .eq('status', 'approved')
-      .in('category', TOURISM_CATEGORIES as unknown as string[])
+      .in('category', FOOD_CATEGORIES as unknown as string[])
       .order('name'),
     admin
       .from('city_zones')
@@ -172,7 +149,7 @@ async function loadPlaces(city: string): Promise<{ places: Place[]; zone: CityZo
   return { places, zone }
 }
 
-export default async function PlacesPage({
+export default async function FoodPage({
   searchParams,
 }: {
   searchParams: Promise<{ city?: string }>
@@ -191,9 +168,7 @@ export default async function PlacesPage({
       }}
     >
       {/* HEADER — IndoCity wordmark on the left (Ind + pin + City), nothing
-          on the right. Mirrors the /cari header pattern but on a white
-          surface so the wordmark sits in brand-navy + brand-yellow rather
-          than white. */}
+          on the right. Mirrors the /places header pattern verbatim. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
@@ -229,17 +204,16 @@ export default async function PlacesPage({
         </div>
       </header>
 
-      {/* WHITE CARD CONTAINER — 15px horizontal screen-edge insets, max
-          width 640 on desktop. Rounded on ALL corners since this surface
-          isn't fixed-to-footer like /cari is. Sits over the page's white
-          body so it reads as a softly-elevated panel. */}
+      {/* WHITE CARD CONTAINER — same posture as /places. Profile clicks
+          inside the browser still route to /places/[slug] (same detail
+          surface) since there's no separate /food/[slug] route. */}
       <div className="px-[15px] pb-10">
         <PlacesBrowser
           places={places}
           currentCityLabel={currentCityLabel}
-          chips={PLACES_CHIPS}
-          title={`Places in ${currentCityLabel}`}
-          subtitle={`Temples, beaches, landmarks across ${currentCityLabel}`}
+          chips={FOOD_CHIPS}
+          title={`Food in ${currentCityLabel}`}
+          subtitle={`Best restaurants, cafés, bars across ${currentCityLabel}`}
         />
       </div>
     </main>

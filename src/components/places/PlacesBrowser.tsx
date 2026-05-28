@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronRight,
@@ -41,12 +41,18 @@ import type { Place, PlaceCategory } from '@/lib/places/types'
 // detail surface still owns the WhatsApp / Maps handoffs).
 
 type ChipFilter = 'all' | PlaceCategory
+export type PlacesChipDef = { id: ChipFilter; label: string }
 
 // Six logical category groupings collapsed to a single-row chip strip so
 // the filter rail stays scannable on a 360-wide phone. Each chip maps to
 // either 'all' or a single category id. Order chosen for tourist appeal
 // (food/coffee first, then transit + health last).
-const CHIP_DEFS: Array<{ id: ChipFilter; label: string }> = [
+//
+// This is the default chip set used when the caller doesn't pass an
+// explicit `chips` prop. /food and /places each pass their own narrower
+// chip set so the rail reflects only the categories relevant to that
+// surface.
+const DEFAULT_CHIP_DEFS: ReadonlyArray<PlacesChipDef> = [
   { id: 'all',        label: 'All' },
   { id: 'restaurant', label: 'Resto' },
   { id: 'cafe',       label: 'Kafe' },
@@ -99,15 +105,40 @@ function isOpenNow(category: PlaceCategory, tags: string[]): boolean {
 export default function PlacesBrowser({
   places,
   currentCityLabel,
+  chips,
+  title,
+  subtitle,
 }: {
   places: Place[]
   currentCityLabel: string
+  // Optional chip set — caller-supplied so /food and /places can each
+  // render a tailored filter rail. Defaults to the full directory set.
+  chips?: ReadonlyArray<PlacesChipDef>
+  // Optional title + subtitle override for the header row. When omitted,
+  // we render the legacy "Places near you" copy.
+  title?: string
+  subtitle?: string
 }) {
+  const CHIP_DEFS = chips ?? DEFAULT_CHIP_DEFS
   const router = useRouter()
+  const searchParams = useSearchParams()
   const haptic = useHaptic()
   // autoRequest=true so the distance/sort fills in on mount without an
   // extra tap. If denied, distances simply show '—' on each card.
   const geo = useGeolocation(true)
+
+  // Driver round-trip params — when the customer arrives here from a
+  // driver profile, we carry `return_driver=r:slug` (or `c:slug`) plus
+  // the customer's typed pickup (pName/pLat/pLng if available) forward
+  // onto each place-card tap. The place profile reads `return_driver`
+  // and replaces the Contact CTA with "Take me here →" so the customer
+  // can route the chosen place back to the driver's booking widget as
+  // the drop-off. When `return_driver` is absent these params are
+  // empty and card taps behave exactly as before.
+  const returnDriver = searchParams?.get('return_driver') ?? null
+  const pName = searchParams?.get('pName') ?? null
+  const pLat  = searchParams?.get('pLat')  ?? null
+  const pLng  = searchParams?.get('pLng')  ?? null
 
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<ChipFilter>('all')
@@ -150,7 +181,21 @@ export default function PlacesBrowser({
 
   function handleOpen(slug: string) {
     haptic.tap()
-    router.push(`/places/${slug}`)
+    // Forward driver-return + pickup params when present so the place
+    // detail page can render the "Take me here →" CTA + round-trip the
+    // customer's typed pickup back to the driver profile. When
+    // `return_driver` is absent we route bare — preserving the existing
+    // /places/[slug] behavior for customers who arrived organically.
+    if (!returnDriver) {
+      router.push(`/places/${slug}`)
+      return
+    }
+    const sp = new URLSearchParams()
+    sp.set('return_driver', returnDriver)
+    if (pName) sp.set('pName', pName)
+    if (pLat)  sp.set('pLat',  pLat)
+    if (pLng)  sp.set('pLng',  pLng)
+    router.push(`/places/${slug}?${sp.toString()}`)
   }
 
   return (
@@ -166,10 +211,10 @@ export default function PlacesBrowser({
         <div className="flex items-center justify-between gap-2 shrink-0">
           <div className="min-w-0">
             <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg leading-tight">
-              Places near you
+              {title ?? 'Places near you'}
             </h1>
             <p className="text-[12px] font-bold text-[#71717A] leading-tight mt-0.5 truncate">
-              {currentCityLabel} · self-listed venues
+              {subtitle ?? `${currentCityLabel} · self-listed venues`}
             </p>
           </div>
           <Link
