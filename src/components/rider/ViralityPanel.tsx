@@ -79,11 +79,6 @@ export default function ViralityPanel() {
   return (
     <div className="space-y-2.5">
       <RankCard rank={data.rank} cityTotal={data.cityTotal} city={data.city} />
-      <ReferralCard
-        monthsEarned={data.monthsEarned}
-        monthsPending={data.monthsPending}
-        referralCount={data.referrals.length}
-      />
       <BuddyCard mentor={data.mentor} mentees={data.mentees} />
       {DRIVER_GROUP_URL && <DriverGroupCard city={data.city} />}
     </div>
@@ -115,44 +110,12 @@ function RankCard({ rank, cityTotal, city }: { rank: number | null; cityTotal: n
         <div className="text-[12px] uppercase tracking-wider font-extrabold text-gray-500">
           Your rank this week
         </div>
-        <div className="text-[16px] font-extrabold mt-0.5 leading-tight text-[#0F172A]">
+        <div className="text-[16px] font-extrabold mt-0.5 leading-tight text-[#0A0A0A]">
           #{rank} <span className="text-gray-600 font-bold">of {cityTotal}</span>{' '}
           {city && <span className="text-gray-600 font-bold">in {city}</span>}
         </div>
       </div>
     </div>
-  )
-}
-
-function ReferralCard({ monthsEarned, monthsPending, referralCount }: { monthsEarned: number; monthsPending: number; referralCount: number }) {
-  return (
-    <Link
-      href="/dashboard/refer"
-      className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center gap-3"
-      style={{ background: 'rgba(250,204,21,0.08)', borderColor: 'rgba(250,204,21,0.30)' }}
-    >
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(250,204,21,0.18)', border: '1px solid rgba(250,204,21,0.35)' }}
-      >
-        <Gift className="w-5 h-5 text-brand" strokeWidth={2.25} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-extrabold text-[14px] text-[#0F172A]">
-          {referralCount === 0
-            ? 'Earn 1 free month per referral'
-            : `${referralCount} referred · ${monthsEarned}mo earned`}
-        </div>
-        <div className="text-[12px] text-gray-600 truncate mt-0.5">
-          {referralCount === 0
-            ? 'Share your link in WhatsApp driver groups'
-            : monthsPending > 0
-              ? `${monthsPending} pending — waiting for paid signup`
-              : 'Tap to share your link with more drivers'}
-        </div>
-      </div>
-      <ArrowRight className="w-4 h-4 text-brand shrink-0" />
-    </Link>
   )
 }
 
@@ -170,7 +133,7 @@ function BuddyCard({ mentor, mentees }: { mentor: Mentor | null; mentees: Mentee
           <div className="text-[12px] uppercase tracking-wider font-extrabold text-gray-500">
             Your buddy
           </div>
-          <div className="font-extrabold text-[14px] mt-0.5 truncate text-[#0F172A]">{mentor.name}</div>
+          <div className="font-extrabold text-[14px] mt-0.5 truncate text-[#0A0A0A]">{mentor.name}</div>
           <div className="text-[12px] text-gray-600 mt-0.5">Tap to view their profile</div>
         </div>
         <Link
@@ -189,7 +152,7 @@ function BuddyCard({ mentor, mentees }: { mentor: Mentor | null; mentees: Mentee
       <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-brand" />
-          <div className="text-[14px] font-extrabold text-[#0F172A]">
+          <div className="text-[14px] font-extrabold text-[#0A0A0A]">
             You&apos;re mentoring <span className="text-gray-600 font-bold">· {mentees.length}</span>
           </div>
         </div>
@@ -202,7 +165,7 @@ function BuddyCard({ mentor, mentees }: { mentor: Mentor | null; mentees: Mentee
                 className="w-9 h-9 rounded-xl object-cover ring-1 ring-gray-200 shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-[13px] truncate text-[#0F172A]">{m.name}</div>
+                <div className="font-bold text-[13px] truncate text-[#0A0A0A]">{m.name}</div>
               </div>
               <Link
                 href={`/r/${m.slug}`}
@@ -241,7 +204,7 @@ function DriverGroupCard({ city }: { city: string | null }) {
         <Users className="w-5 h-5" style={{ color: '#25D366' }} strokeWidth={2.25} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-extrabold text-[14px] text-[#0F172A]">
+        <div className="font-extrabold text-[14px] text-[#0A0A0A]">
           Join the {city ? `${city} ` : ''}IndoCity drivers group
         </div>
         <div className="text-[12px] text-gray-600 truncate mt-0.5">

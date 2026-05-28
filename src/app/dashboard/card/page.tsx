@@ -5,7 +5,9 @@ import { ChevronLeft, Printer, Share2, Loader2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DashboardNav from '@/components/layout/DashboardNav'
 import QRBusinessCard from '@/components/rider/QRBusinessCard'
+import MemberQRCard, { MemberQRActions } from '@/components/share/MemberQRCard'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
+import { idr } from '@/lib/format/idr'
 import { useHaptic } from '@/hooks/useHaptic'
 import type { Rider } from '@/types/rider'
 
@@ -100,6 +102,41 @@ export default function BusinessCardPage() {
                   Share link
                 </button>
               </div>
+
+              {/* ────────────────────────────────────────────────────────────
+                  PREVIEW — Universal QR card. Same design will land on
+                  every other vertical dashboard (beautician, massage,
+                  laundry, handyman, home-clean, tour, partner, car).
+                  Has Download + Print + Share. Keeping the legacy rider
+                  card above for now so we can A/B the look.
+                  ──────────────────────────────────────────────────────────── */}
+              <div className="mt-8 space-y-3 no-print">
+                <div className="card p-3 border-brand/20 bg-brand/5">
+                  <div className="text-[12px] font-extrabold uppercase tracking-wide text-brand">
+                    Preview · Universal card (new)
+                  </div>
+                  <div className="text-[12px] text-muted mt-0.5">
+                    Coming to every vendor dashboard. Includes <strong>Download as PNG</strong> — no more screenshot workaround.
+                  </div>
+                </div>
+              </div>
+              <div className="print-area py-2">
+                <MemberQRCard
+                  profileUrl={profileUrl}
+                  displayName={ME.name}
+                  city={ME.city}
+                  subtitle={`${ME.bike.make} ${ME.bike.model} · ${ME.area}`}
+                  photoUrl={ME.photoUrl}
+                  verticalLabel="IndoCity · Rider"
+                  whatsappE164={ME.whatsappE164}
+                  priceLine={`From ${idr(ME.pricePerKm)} / km`}
+                />
+              </div>
+              <MemberQRActions
+                profileUrl={profileUrl}
+                displayName={ME.name}
+                shareText={`Motorcycle courier in ${ME.city} — book directly on IndoCity. ${profileUrl}`}
+              />
             </>
           )}
 

@@ -14,11 +14,8 @@ import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
 import ViralityPanel from '@/components/rider/ViralityPanel'
 import RentalToggles from '@/components/rider/RentalToggles'
-import BusinessContractToggle from '@/components/rider/BusinessContractToggle'
 import BookingAlertsToggle from '@/components/rider/BookingAlertsToggle'
 import DriverInboxWidget from '@/components/rider/DriverInboxWidget'
-import TourGuideToggle from '@/components/rider/TourGuideToggle'
-import B2BScoreCard from '@/components/rider/B2BScoreCard'
 import DeleteAccountSection from '@/components/settings/DeleteAccountSection'
 import HelpTip from '@/components/common/HelpTip'
 import { MOCK_RIDERS } from '@/data/mockRiders'
@@ -141,12 +138,12 @@ function Greeting({ ME, onShare }: { ME: Rider; onShare: () => void }) {
         <img src={ME.photoUrl} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0" />
         <div className="min-w-0">
           <div className="text-[13px] text-gray-600">Selamat datang,</div>
-          <div className="text-lg font-extrabold truncate text-[#0F172A]">{ME.name.split(' ')[0]}</div>
+          <div className="text-lg font-extrabold truncate text-[#0A0A0A]">{ME.name.split(' ')[0]}</div>
         </div>
       </div>
       <button
         onClick={onShare}
-        className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 border border-gray-200 text-[13px] font-extrabold text-[#0F172A] hover:bg-gray-200 transition"
+        className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 border border-gray-200 text-[13px] font-extrabold text-[#0A0A0A] hover:bg-gray-200 transition"
       >
         <Share2 className="w-3.5 h-3.5" />
         Share
@@ -187,10 +184,10 @@ function FirstTimeDashboard({
           className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)' }}
         >
-          <Rocket className="w-5 h-5 text-[#0F172A]" strokeWidth={2.5} />
+          <Rocket className="w-5 h-5 text-[#0A0A0A]" strokeWidth={2.5} />
         </div>
         <div className="min-w-0">
-          <div className="font-extrabold text-[15px] leading-snug text-[#0F172A]">
+          <div className="font-extrabold text-[15px] leading-snug text-[#0A0A0A]">
             Yuk mulai dapat customer pertama!
           </div>
           <div className="text-[13px] text-gray-600 mt-1 leading-snug">
@@ -310,7 +307,7 @@ function PrimaryActionCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-[15px] font-extrabold leading-tight text-[#0F172A]">{title}</h3>
+            <h3 className="text-[15px] font-extrabold leading-tight text-[#0A0A0A]">{title}</h3>
             <HelpTip title={helpTitle} body={helpBody} variant="lightbulb" />
           </div>
           <p className="text-[13px] text-gray-600 leading-snug mt-1">{subtitle}</p>
@@ -382,17 +379,14 @@ function ActivatedDashboard({
         helpTitle="Layanan tambahan = penghasilan tambahan"
         helpBody={
           <>
-            <p>Aktifkan rental motor, jadi tour guide, atau terima kontrak B2B dari Shopee/restaurant.</p>
-            <p>Penghasilan dari layanan ini bisa <strong>2-3× lipat</strong> dari ojek biasa karena marginnya lebih besar dan customer lebih loyal.</p>
+            <p>Aktifkan rental motor untuk menambah penghasilan harianmu.</p>
+            <p>Customer rental biasanya lebih loyal — sekali coba bisa langganan tiap weekend.</p>
           </>
         }
         defaultOpen
       >
         <RentalToggles />
         <ServicesSection />
-        <BusinessContractToggle />
-        <TourGuideToggle />
-        <B2BScoreCard />
         <Link
           href="/onboarding?mode=edit"
           className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center justify-between"
@@ -403,7 +397,7 @@ function ActivatedDashboard({
               <Edit3 className="w-4 h-4 text-brand" />
             </div>
             <div className="min-w-0">
-              <div className="font-extrabold text-[14px] text-[#0F172A]">Edit profil & harga</div>
+              <div className="font-extrabold text-[14px] text-[#0A0A0A]">Edit profil & harga</div>
               <div className="text-[13px] text-gray-600 truncate">
                 Ubah harga, jam kerja, foto motor, dan layanan
               </div>
@@ -479,7 +473,7 @@ function CollapsibleSection({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-[12px] uppercase tracking-wider font-extrabold text-gray-500 hover:text-[#0F172A] transition"
+          className="flex items-center gap-1.5 text-[12px] uppercase tracking-wider font-extrabold text-gray-500 hover:text-[#0A0A0A] transition"
         >
           {title}
           <ChevronDown
@@ -613,13 +607,13 @@ function ShareKitCard({
       )}
 
       <div className="flex items-stretch gap-2 mb-3">
-        <div className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-[13px] text-[#0F172A] font-mono truncate">
+        <div className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-[13px] text-[#0A0A0A] font-mono truncate">
           {shareUrl || '—'}
         </div>
         <button
           type="button"
           onClick={copyLink}
-          className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-[12px] font-extrabold text-[#0F172A] hover:border-brand/40 transition"
+          className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-[12px] font-extrabold text-[#0A0A0A] hover:border-brand/40 transition"
         >
           {copied === 'url'
             ? <><Check className="w-3.5 h-3.5 text-brand" /> Copied</>
@@ -689,7 +683,7 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
       <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[12px] text-gray-500 uppercase tracking-wider font-extrabold">Langganan</div>
-          <div className="text-[14px] font-extrabold mt-0.5 text-[#0F172A]">
+          <div className="text-[14px] font-extrabold mt-0.5 text-[#0A0A0A]">
             {status === 'trial' ? 'Trial aktif' : status === 'active' ? 'Aktif' : 'Belum aktif'}
           </div>
           <div className="text-[12px] text-gray-600 mt-0.5">Rp 38K/bulan · Rp 350K/tahun</div>
@@ -749,7 +743,7 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-[13px] text-gray-500 uppercase tracking-wider font-extrabold">Subscription</div>
-          <div className="font-extrabold text-lg mt-0.5 text-[#0F172A]">
+          <div className="font-extrabold text-lg mt-0.5 text-[#0A0A0A]">
             {status === 'trial'
               ? 'Trial — renew sebelum expired'
               : status === 'active'
@@ -782,7 +776,7 @@ function SubscriptionCard({ status, compact = false }: { status?: string; compac
         </div>
       ) : (
         <div className="mt-4 rounded-xl p-3 text-[13px] leading-snug" style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.35)' }}>
-          <div className="font-extrabold text-[#0F172A] mb-1">Pembayaran via WhatsApp admin</div>
+          <div className="font-extrabold text-[#0A0A0A] mb-1">Pembayaran via WhatsApp admin</div>
           <p className="text-gray-600 leading-relaxed mb-2">
             Auto-billing belum aktif. Bayar manual via QRIS / transfer bank, lalu kirim
             bukti ke admin untuk aktivasi langganan.
@@ -837,7 +831,7 @@ function ToolCard({ href, icon, label, hint }: { href: string; icon: React.React
       <div className="w-8 h-8 rounded-lg bg-brand/12 border border-brand/22 flex items-center justify-center text-brand">
         {icon}
       </div>
-      <div className="text-[14px] font-extrabold leading-tight mt-1 text-[#0F172A]">{label}</div>
+      <div className="text-[14px] font-extrabold leading-tight mt-1 text-[#0A0A0A]">{label}</div>
       <div className="text-[13px] text-gray-600 leading-tight">{hint}</div>
     </Link>
   )
@@ -928,7 +922,7 @@ function ServicesSection() {
   return (
     <div className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-4 space-y-3">
       <div>
-        <div className="font-extrabold text-[14px] text-[#0F172A]">Services offered</div>
+        <div className="font-extrabold text-[14px] text-[#0A0A0A]">Services offered</div>
         <div className="text-[12px] text-gray-600 mt-0.5 leading-relaxed">
           Pick the kinds of trips you offer. Customers see these badges on your profile.
         </div>
@@ -962,7 +956,7 @@ function ServicesSection() {
           type="button"
           onClick={onSave}
           disabled={saving || !dirty}
-          className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
+          className="rounded-full bg-brand text-[#0A0A0A] px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
         >
           {saving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
         </button>

@@ -161,7 +161,7 @@ export default function CarDriverDashboardPage() {
           <h1 className="text-[20px] font-black mb-2">Sign in required</h1>
           <Link
             href="/login?next=/dashboard/car"
-            className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+            className="rounded-full bg-brand text-[#0A0A0A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
           >
             Sign in
           </Link>
@@ -179,7 +179,7 @@ export default function CarDriverDashboardPage() {
           </p>
           <Link
             href="/signup"
-            className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+            className="rounded-full bg-brand text-[#0A0A0A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
           >
             Go to sign up
           </Link>
@@ -199,7 +199,7 @@ export default function CarDriverDashboardPage() {
           <div className="flex flex-col gap-2 items-center">
             <Link
               href="/signup"
-              className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+              className="rounded-full bg-brand text-[#0A0A0A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
             >
               Sign up as Car driver
             </Link>
@@ -219,7 +219,7 @@ export default function CarDriverDashboardPage() {
           <p className="text-[13px] text-black/70 mb-4">{state.message}</p>
           <button
             onClick={reload}
-            className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
+            className="rounded-full bg-brand text-[#0A0A0A] px-6 py-3 text-[13px] font-extrabold inline-block min-h-[44px]"
           >
             Retry
           </button>
@@ -382,7 +382,7 @@ function SaveButton({ saving, dirty }: { saving: boolean; dirty: boolean }) {
     <button
       type="submit"
       disabled={saving || !dirty}
-      className="rounded-full bg-brand text-[#0F172A] px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
+      className="rounded-full bg-brand text-[#0A0A0A] px-6 py-3 text-[13px] font-extrabold uppercase tracking-wider min-h-[44px] disabled:opacity-60"
     >
       {saving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
     </button>
@@ -459,7 +459,7 @@ function AvailabilitySection({ row, onSaved }: { row: CarDriverRow; onSaved: () 
               onClick={() => set(a)}
               className={`rounded-xl px-3 py-3 text-[13px] font-extrabold uppercase tracking-wider transition border min-h-[44px] ${
                 active
-                  ? 'bg-brand text-[#0F172A] border-brand'
+                  ? 'bg-brand text-[#0A0A0A] border-brand'
                   : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
               }`}
               aria-pressed={active}
@@ -1192,7 +1192,7 @@ function QrisPaymentModal({
       aria-labelledby="qris-modal-title"
     >
       <div
-        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white text-[#0F172A] shadow-2xl"
+        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white text-[#0A0A0A] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -1215,9 +1215,9 @@ function QrisPaymentModal({
 
           {/* Amount pill */}
           <div className="mt-4 rounded-xl bg-[#FACC15]/15 border border-[#FACC15] px-4 py-3 flex items-center justify-between">
-            <span className="text-[13px] font-bold text-[#0F172A]/80">Amount</span>
-            <span className="text-[15px] font-black text-[#0F172A]">
-              Rp {SUBSCRIPTION_IDR.toLocaleString('id-ID')} <span className="font-bold text-[13px] text-[#0F172A]/70">/ 1 month</span>
+            <span className="text-[13px] font-bold text-[#0A0A0A]/80">Amount</span>
+            <span className="text-[15px] font-black text-[#0A0A0A]">
+              Rp {SUBSCRIPTION_IDR.toLocaleString('id-ID')} <span className="font-bold text-[13px] text-[#0A0A0A]/70">/ 1 month</span>
             </span>
           </div>
 
@@ -1278,7 +1278,7 @@ function QrisPaymentModal({
               ) : (
                 <div className="p-5 flex flex-col items-center justify-center text-center min-h-[88px]">
                   <Upload className="w-5 h-5 text-black/50 mb-1" aria-hidden />
-                  <div className="text-[13px] font-extrabold text-[#0F172A]">Choose screenshot</div>
+                  <div className="text-[13px] font-extrabold text-[#0A0A0A]">Choose screenshot</div>
                   <div className="text-[12px] text-black/55 mt-0.5">PNG or JPG of your payment receipt</div>
                 </div>
               )}
@@ -1295,7 +1295,7 @@ function QrisPaymentModal({
             type="button"
             onClick={submit}
             disabled={!file || uploading}
-            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#FACC15] text-[#0F172A] px-5 py-3 text-[13px] font-extrabold min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#FACC15] text-[#0A0A0A] px-5 py-3 text-[13px] font-extrabold min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
           >
             {uploading ? (
               <>
@@ -1332,7 +1332,7 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
     <li className="flex items-start gap-2.5">
       <span
         aria-hidden
-        className="shrink-0 w-6 h-6 rounded-full bg-[#0F172A] text-white text-[12px] font-black flex items-center justify-center mt-[1px]"
+        className="shrink-0 w-6 h-6 rounded-full bg-[#0A0A0A] text-white text-[12px] font-black flex items-center justify-center mt-[1px]"
       >
         {n}
       </span>

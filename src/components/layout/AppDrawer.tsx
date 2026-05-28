@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
   Menu, X as XIcon,
-  LayoutDashboard, Bike, User, DollarSign, Package, Flame, Gift, Users,
-  IdCard, MessageSquare, ClipboardList, Scale, Star, LogOut, Briefcase,
+  LayoutDashboard, Bike, User, DollarSign, Package, Flame, Users,
+  IdCard, MessageSquare, Star, LogOut,
   Handshake, QrCode,
   Clock, AlertTriangle, CheckCircle2, ListChecks, Wallet,
   Sparkles, Store, UserCog,
@@ -34,15 +34,11 @@ const DRIVER_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/pricing',                label: 'Pricing',            icon: DollarSign },
   { href: '/services',               label: 'Services',           icon: Package },
   { href: '/dashboard/hotspots',     label: 'Hotspots',           icon: Flame },
-  { href: '/dashboard/refer',        label: 'Refer drivers',      icon: Gift },
   { href: '/dashboard/customers',    label: 'Customer book',      icon: Users },
   { href: '/dashboard/card',         label: 'Business card',      icon: IdCard },
   { href: '/dashboard/templates',    label: 'Quick reply',        icon: MessageSquare },
-  { href: '/dashboard/operations',   label: 'Operations log',     icon: ClipboardList },
   { href: '/dashboard/rentals',      label: 'My rentals',         icon: Bike },
-  { href: '/business',               label: 'Business contracts', icon: Briefcase },
   { href: '/dashboard/favourites',   label: 'Favourite places',   icon: Star },
-  { href: '/dashboard/legal',        label: 'Legal requirements', icon: Scale },
 ]
 
 const PARTNER_NAV_ITEMS: ReadonlyArray<NavItem> = [

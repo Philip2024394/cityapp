@@ -21,7 +21,6 @@ const IS_DEV = process.env.NODE_ENV !== 'production'
 
 const QUICK_LINKS: ReadonlyArray<{ label: string; href: string }> = [
   { label: 'Driver dashboard', href: '/dashboard' },
-  { label: 'Refer drivers',    href: '/dashboard/refer' },
   { label: 'Onboarding (edit)', href: '/onboarding?mode=edit' },
   { label: 'My public profile', href: '/r/test-driver-0050' },
   { label: 'Customer marketplace', href: '/cari' },

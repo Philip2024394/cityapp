@@ -147,7 +147,7 @@ export default function BookingAlertsToggle() {
           <Bell className="w-5 h-5" strokeWidth={2.25} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-extrabold text-[14px] text-[#0F172A]">
+          <div className="font-extrabold text-[14px] text-[#0A0A0A]">
             Loud booking alerts
           </div>
           <div className="text-[12px] text-gray-600 mt-0.5 leading-relaxed">
@@ -171,7 +171,7 @@ export default function BookingAlertsToggle() {
 
       {enabled && native && (
         <div
-          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex items-center gap-3 text-[12px] text-[#0F172A]"
+          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex items-center gap-3 text-[12px] text-[#0A0A0A]"
           style={{ borderColor: 'rgba(34,197,94,0.30)', background: 'rgba(34,197,94,0.06)' }}
         >
           <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#16A34A' }} />
@@ -183,7 +183,7 @@ export default function BookingAlertsToggle() {
 
       {!native && (
         <div
-          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex items-center gap-3 text-[12px] text-[#0F172A]"
+          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex items-center gap-3 text-[12px] text-[#0A0A0A]"
           style={{ borderColor: 'rgba(96,165,250,0.30)', background: 'rgba(96,165,250,0.06)' }}
         >
           <Smartphone className="w-4 h-4 shrink-0" style={{ color: '#2563EB' }} />
@@ -199,7 +199,7 @@ export default function BookingAlertsToggle() {
           style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)' }}
         >
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
-          <span className="text-[#0F172A]">{error}</span>
+          <span className="text-[#0A0A0A]">{error}</span>
         </div>
       )}
 
@@ -257,10 +257,10 @@ function PushNotificationRationale({
               className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)' }}
             >
-              <Bell className="w-5 h-5 text-[#0F172A]" strokeWidth={2.5} />
+              <Bell className="w-5 h-5 text-[#0A0A0A]" strokeWidth={2.5} />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-[18px] font-extrabold leading-tight text-[#0F172A]">
+              <h2 className="text-[18px] font-extrabold leading-tight text-[#0A0A0A]">
                 Bunyi keras saat ada customer
               </h2>
               <p className="text-[14px] text-gray-600 leading-snug mt-1">
@@ -270,13 +270,13 @@ function PushNotificationRationale({
             <button
               onClick={onDismiss}
               aria-label="Tutup"
-              className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:text-[#0F172A] transition bg-gray-50 border border-gray-200"
+              className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:text-[#0A0A0A] transition bg-gray-50 border border-gray-200"
             >
               <XIcon className="w-4 h-4" strokeWidth={2.5} />
             </button>
           </div>
 
-          <div className="px-5 pb-4 space-y-3 text-[14px] text-[#0F172A] leading-relaxed">
+          <div className="px-5 pb-4 space-y-3 text-[14px] text-[#0A0A0A] leading-relaxed">
             <p>
               IndoCity butuh izin notifikasi sekali saja supaya HP-mu bisa
               <strong> bunyi keras 10 detik</strong> setiap kali customer tap
@@ -292,7 +292,7 @@ function PushNotificationRationale({
           <div className="px-5 pb-5 grid grid-cols-1 gap-2">
             <button
               onClick={onAccept}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-[#0F172A] font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-[#0A0A0A] font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
               style={{ minHeight: 52 }}
             >
               Lanjut & izinkan notifikasi

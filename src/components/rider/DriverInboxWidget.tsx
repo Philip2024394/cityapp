@@ -154,7 +154,7 @@ export default function DriverInboxWidget() {
               className="rounded-xl p-2.5 flex items-center gap-2 bg-gray-50 border border-gray-200"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-extrabold truncate text-[#0F172A]">
+                <div className="text-[13px] font-extrabold truncate text-[#0A0A0A]">
                   {SOURCE_LABEL[p.source_page ?? 'other'] ?? 'Customer tap'}
                 </div>
                 <div className="text-[12px] text-gray-600 mt-0.5">
@@ -177,7 +177,7 @@ export default function DriverInboxWidget() {
                 type="button"
                 onClick={() => onAck(p.id)}
                 disabled={isAcking}
-                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#0F172A] text-[12px] font-extrabold active:scale-95 transition disabled:opacity-60"
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#0A0A0A] text-[12px] font-extrabold active:scale-95 transition disabled:opacity-60"
                 style={{
                   background: 'linear-gradient(135deg, #FACC15, #EAB308)',
                   border: '1px solid rgba(0,0,0,0.85)',

@@ -100,7 +100,7 @@ Cek di indocity.streetlocal.live`
         </div>
 
         <div className="mt-3.5 pt-3 border-t border-gray-200 text-[13px] text-gray-600 leading-relaxed">
-          <span className="font-bold text-[#0F172A]">{idr(subscriptionMonthly)}/month</span>{' '}
+          <span className="font-bold text-[#0A0A0A]">{idr(subscriptionMonthly)}/month</span>{' '}
           subscription · if you close <span className="text-brand font-bold">all</span>{' '}
           quotes, you make <span className="text-online font-bold">{idr(Math.max(0, monthlyLeadsValue - subscriptionMonthly))}</span> net this month.
         </div>
@@ -118,7 +118,7 @@ Cek di indocity.streetlocal.live`
             <div className="text-[12px] uppercase tracking-wider font-extrabold" style={{ color: '#22C55E' }}>
               vs Gojek / Grab
             </div>
-            <div className="text-[15px] font-extrabold mt-1 leading-snug text-[#0F172A]">
+            <div className="text-[15px] font-extrabold mt-1 leading-snug text-[#0A0A0A]">
               You saved <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
             </div>
             <div className="text-[12px] text-gray-600 mt-1">

@@ -156,7 +156,7 @@ export default function RentalToggles() {
       {/* Status footer — shows approval state + edit link */}
       {state.hasRental && (state.selfRide || state.withDriver) && (
         <div
-          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex items-center gap-3 text-[12px] text-[#0F172A]"
+          className="rounded-3xl bg-gray-100 border border-gray-200 shadow-sm p-3 flex items-center gap-3 text-[12px] text-[#0A0A0A]"
           style={{
             borderColor: state.approved ? 'rgba(34,197,94,0.30)' : 'rgba(245,158,11,0.30)',
             background: state.approved ? 'rgba(34,197,94,0.06)' : 'rgba(245,158,11,0.06)',
@@ -177,7 +177,7 @@ export default function RentalToggles() {
           {state.rentalId && (
             <Link
               href={`/dashboard/rentals/${state.rentalId}/edit`}
-              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-extrabold text-[12px] text-[#0F172A] hover:text-brand transition bg-gray-50 border border-gray-200"
+              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-extrabold text-[12px] text-[#0A0A0A] hover:text-brand transition bg-gray-50 border border-gray-200"
               style={{ minHeight: 36 }}
             >
               Edit
@@ -193,7 +193,7 @@ export default function RentalToggles() {
           style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)' }}
         >
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
-          <span className="text-[#0F172A]">{error}</span>
+          <span className="text-[#0A0A0A]">{error}</span>
         </div>
       )}
     </div>
@@ -233,7 +233,7 @@ function ToggleCard({
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-extrabold text-[14px] text-[#0F172A]">{title}</div>
+        <div className="font-extrabold text-[14px] text-[#0A0A0A]">{title}</div>
         <div className="text-[12px] text-gray-600 mt-0.5 leading-relaxed">{subtitle}</div>
       </div>
       <div

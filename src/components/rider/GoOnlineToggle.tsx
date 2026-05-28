@@ -209,7 +209,7 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
                 {online && !syncError ? 'Online — customer bisa lihat kamu' : 'Offline'}
               </span>
             </div>
-            <div className="text-xl font-extrabold mt-1.5 text-[#0F172A]">
+            <div className="text-xl font-extrabold mt-1.5 text-[#0A0A0A]">
               {pending
                 ? 'Menyinkron…'
                 : online && !syncError
@@ -353,10 +353,10 @@ function BackgroundLocationDisclosure({
               className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #FACC15, #EAB308)' }}
             >
-              <MapPin className="w-5 h-5 text-[#0F172A]" strokeWidth={2.5} />
+              <MapPin className="w-5 h-5 text-[#0A0A0A]" strokeWidth={2.5} />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-[18px] font-extrabold leading-tight text-[#0F172A]">
+              <h2 className="text-[18px] font-extrabold leading-tight text-[#0A0A0A]">
                 Lokasi kamu saat online
               </h2>
               <p className="text-[14px] text-gray-600 leading-snug mt-1">
@@ -366,13 +366,13 @@ function BackgroundLocationDisclosure({
             <button
               onClick={onDismiss}
               aria-label="Tutup"
-              className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:text-[#0F172A] transition bg-gray-50 border border-gray-200"
+              className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-gray-600 hover:text-[#0A0A0A] transition bg-gray-50 border border-gray-200"
             >
               <XIcon className="w-4 h-4" strokeWidth={2.5} />
             </button>
           </div>
 
-          <div className="px-5 pb-4 space-y-3 text-[14px] text-[#0F172A] leading-relaxed">
+          <div className="px-5 pb-4 space-y-3 text-[14px] text-[#0A0A0A] leading-relaxed">
             <p>
               Saat kamu <strong>Online</strong>, posisimu dikirim ke marketplace
               setiap 30 detik supaya customer bisa lihat kamu di peta dan kontak
@@ -393,7 +393,7 @@ function BackgroundLocationDisclosure({
           <div className="px-5 pb-5 grid grid-cols-1 gap-2">
             <button
               onClick={onAccept}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-[#0F172A] font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand to-brand2 text-[#0A0A0A] font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99]"
               style={{ minHeight: 52 }}
             >
               Lanjut & aktifkan lokasi
