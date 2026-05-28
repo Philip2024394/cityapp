@@ -13,7 +13,7 @@ import AppDrawer, { AppDrawerTrigger } from './AppDrawer'
 //
 // The driver drawer never renders on customer-facing surfaces.
 
-const DRIVER_ROUTE_PREFIXES     = ['/dashboard', '/profile', '/pricing', '/services', '/onboarding']
+const DRIVER_ROUTE_PREFIXES     = ['/dashboard', '/profile', '/services', '/onboarding']
 const PARTNER_ROUTE_PREFIXES    = ['/dashboard/partner', '/partners']
 const MASSAGE_ROUTE_PREFIXES    = ['/dashboard/massage', '/massage']
 const BEAUTICIAN_ROUTE_PREFIXES = ['/dashboard/beautician', '/beautician']

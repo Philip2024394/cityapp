@@ -31,7 +31,7 @@ type NavItem = {
 const DRIVER_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/dashboard',              label: 'Dashboard',          icon: LayoutDashboard },
   { href: '/profile',                label: 'Profile + bike',     icon: User },
-  { href: '/pricing',                label: 'Pricing',            icon: DollarSign },
+  { href: '/dashboard/pricing',      label: 'Pricing',            icon: DollarSign },
   { href: '/services',               label: 'Services',           icon: Package },
   { href: '/dashboard/hotspots',     label: 'Hotspots',           icon: Flame },
   { href: '/dashboard/customers',    label: 'Customer book',      icon: Users },
