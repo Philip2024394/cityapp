@@ -8,4 +8,8 @@ dist
 next-env.d.ts.bak
 supabase/.temp
 
+.open-next
+.wrangler
+.dev.vars
+
 .vercel

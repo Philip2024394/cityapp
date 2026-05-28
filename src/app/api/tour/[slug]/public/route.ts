@@ -72,7 +72,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
   }
   if (real) {
-    return NextResponse.json({ provider: { ...real, is_mock: false } })
+    return NextResponse.json({ provider: { ...(real as unknown as Record<string, unknown>), is_mock: false } })
   }
 
   // 2. Mock fallback — mig 0052 publishes unhidden mock rows to anon. We
@@ -89,5 +89,5 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
   }
   if (!mock) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-  return NextResponse.json({ provider: { ...mock, is_mock: true } })
+  return NextResponse.json({ provider: { ...(mock as unknown as Record<string, unknown>), is_mock: true } })
 }

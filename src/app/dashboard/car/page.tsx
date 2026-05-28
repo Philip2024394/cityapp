@@ -770,7 +770,7 @@ function BannerSection({ row, onSaved }: { row: CarDriverRow; onSaved: () => voi
 
         <div className="flex items-center gap-3">
           <SaveButton saving={saving} dirty={dirty} />
-          {toast}
+          {toast ? <Toast kind={toast.kind}>{toast.msg}</Toast> : <span />}
         </div>
       </form>
     </SectionCard>

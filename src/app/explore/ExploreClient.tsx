@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import {
-  Bus, Briefcase, ChevronLeft, Truck,
+  ArrowRight, Bus, Briefcase, ChevronLeft, Truck,
   User, Package, UtensilsCrossed, KeyRound, MapPinned,
   Flower2, Scissors, Shirt, Wrench, SprayCan,
   type LucideIcon,
@@ -139,6 +139,7 @@ export default function ExploreClient() {
           {TRANSPORT_TILES.map((tile, i) => {
             const Icon = tile.Icon
             const sub = tile.id === 'person' ? t.rideSub : t.parcelSub
+            const isRide = tile.id === 'person'
             return (
               <Link
                 key={tile.id}
@@ -146,7 +147,11 @@ export default function ExploreClient() {
                 prefetch
                 onClick={() => logNav(`explore-tile:${tile.id}`)}
                 aria-label={`${tile.label} — ${sub}`}
-                className="group relative flex flex-col items-center justify-center gap-2 aspect-square p-4 rounded-3xl overflow-hidden transition-all active:scale-[0.98]"
+                className={`group relative aspect-square rounded-3xl overflow-hidden transition-all active:scale-[0.98] ${
+                  isRide
+                    ? 'block p-3'
+                    : 'flex flex-col items-center justify-center gap-2 p-4'
+                }`}
                 style={{
                   background: `linear-gradient(155deg, ${CHARCOAL} 0%, ${CHARCOAL_DEEP} 100%)`,
                   border: `1.5px solid ${GOLD}`,
@@ -160,19 +165,47 @@ export default function ExploreClient() {
                   className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity"
                   style={{ background: 'radial-gradient(circle at 30% 0%, rgba(245,197,66,0.22), transparent 60%)' }}
                 />
-                <span
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'rgba(245,197,66,0.14)', border: '1px solid rgba(245,197,66,0.32)' }}
-                  aria-hidden
-                >
-                  <Icon className="w-9 h-9" strokeWidth={2} style={{ color: GOLD }} />
-                </span>
-                <span className="font-extrabold text-[20px] leading-tight tracking-wide uppercase" style={{ color: GOLD }}>
-                  {tile.label}
-                </span>
-                <span className="text-[12px] font-bold text-white/85 leading-tight">
-                  {sub}
-                </span>
+                {isRide ? (
+                  <>
+                    <img
+                      src="https://ik.imagekit.io/9mrgsv2rp/Untitledsadasdasdasdasdaa.png"
+                      alt=""
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 w-full h-full object-contain"
+                    />
+                    <div className="absolute top-3 left-3 flex flex-col items-start leading-[1.02]">
+                      <span className="font-extrabold text-[22px] tracking-wide uppercase text-white">
+                        Book
+                      </span>
+                      <span className="font-extrabold text-[22px] tracking-wide uppercase" style={{ color: GOLD }}>
+                        Ride
+                      </span>
+                    </div>
+                    <span
+                      aria-hidden
+                      className="absolute bottom-3 left-3 w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ background: 'rgba(245,197,66,0.18)', border: `1.5px solid ${GOLD}` }}
+                    >
+                      <ArrowRight className="w-5 h-5" strokeWidth={2.5} style={{ color: GOLD }} />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                      style={{ background: 'rgba(245,197,66,0.14)', border: '1px solid rgba(245,197,66,0.32)' }}
+                      aria-hidden
+                    >
+                      <Icon className="w-9 h-9" strokeWidth={2} style={{ color: GOLD }} />
+                    </span>
+                    <span className="font-extrabold text-[20px] leading-tight tracking-wide uppercase" style={{ color: GOLD }}>
+                      {tile.label}
+                    </span>
+                    <span className="text-[12px] font-bold text-white/85 leading-tight">
+                      {sub}
+                    </span>
+                  </>
+                )}
               </Link>
             )
           })}

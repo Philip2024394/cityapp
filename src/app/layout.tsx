@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import PageBackground from '@/components/layout/PageBackground'
+
+// App-wide dynamic rendering. Indocity is mostly auth-gated / per-request
+// (admin, dashboards, profile pages, marketplace queries) so prerendering
+// buys nothing and trips on every `useSearchParams()` without a Suspense
+// boundary. One switch, no Suspense boilerplate sprinkled across the tree.
+export const dynamic = 'force-dynamic'
 import RegisterServiceWorker from '@/components/pwa/RegisterServiceWorker'
 import InstallPrompt from '@/components/pwa/InstallPrompt'
 import PreloadTiles from '@/components/pwa/PreloadTiles'
