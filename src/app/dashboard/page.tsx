@@ -13,7 +13,6 @@ import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
 import ViralityPanel from '@/components/rider/ViralityPanel'
-import RentalToggles from '@/components/rider/RentalToggles'
 import BookingAlertsToggle from '@/components/rider/BookingAlertsToggle'
 import DriverInboxWidget from '@/components/rider/DriverInboxWidget'
 import DeleteAccountSection from '@/components/settings/DeleteAccountSection'
@@ -379,13 +378,12 @@ function ActivatedDashboard({
         helpTitle="Layanan tambahan = penghasilan tambahan"
         helpBody={
           <>
-            <p>Aktifkan rental motor untuk menambah penghasilan harianmu.</p>
-            <p>Customer rental biasanya lebih loyal — sekali coba bisa langganan tiap weekend.</p>
+            <p>Pilih layanan yang kamu tawarkan — antar-jemput, hourly hire, airport, dst.</p>
+            <p>Pasang yang sesuai bike + jadwal kamu. Customer cari driver berdasarkan layanan ini.</p>
           </>
         }
         defaultOpen
       >
-        <RentalToggles />
         <ServicesSection />
         <Link
           href="/onboarding?mode=edit"
