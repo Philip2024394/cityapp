@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Printer, Share2, Loader2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import DashboardNav from '@/components/layout/DashboardNav'
 import QRBusinessCard from '@/components/rider/QRBusinessCard'
 import MemberQRCard, { MemberQRActions } from '@/components/share/MemberQRCard'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
@@ -165,7 +164,6 @@ export default function BusinessCardPage() {
           </Link>
         </div>
       </main>
-      <DashboardNav />
 
       {/* Print-only styles */}
       <style jsx global>{`

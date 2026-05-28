@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Search, Users, Share2, Loader2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import DashboardNav from '@/components/layout/DashboardNav'
 import CustomerRow from '@/components/rider/CustomerRow'
 import { MOCK_CUSTOMERS, repeatCustomers, thisWeek, totalLeadsValue, type Customer } from '@/data/mockCustomers'
 import { fetchMyDriverBrowser } from '@/lib/drivers/queries'
@@ -152,7 +151,6 @@ export default function CustomerBookPage() {
           )}
         </div>
       </main>
-      <DashboardNav />
     </>
   )
 }

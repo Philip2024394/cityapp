@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Flame, Compass, TrendingUp } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import DashboardNav from '@/components/layout/DashboardNav'
 import BusyHoursChart from '@/components/rider/BusyHoursChart'
 import { MOCK_ZONES, categoryFor, COLOR_FOR_CATEGORY, DAY_HOURS, dayName } from '@/data/mockHotspots'
 
@@ -170,7 +169,6 @@ export default function HotspotsPage() {
           </div>
         </div>
       </main>
-      <DashboardNav />
     </>
   )
 }

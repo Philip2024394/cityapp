@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, MessageSquare, Check } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import DashboardNav from '@/components/layout/DashboardNav'
 import TemplateCard from '@/components/rider/TemplateCard'
 import { REPLY_TEMPLATES, CATEGORY_LABELS, type Template } from '@/data/replyTemplates'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -83,7 +82,6 @@ export default function TemplatesPage() {
           </div>
         </div>
       </main>
-      <DashboardNav />
     </>
   )
 }

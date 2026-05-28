@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { Save } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import DashboardNav from '@/components/layout/DashboardNav'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import type { ServiceType } from '@/types/rider'
 import { SERVICE_ICONS, SERVICE_LABELS } from '@/types/rider'
@@ -82,7 +81,6 @@ export default function ServicesPage() {
           </button>
         </div>
       </main>
-      <DashboardNav />
     </>
   )
 }

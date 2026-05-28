@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { Save, Info, Settings2, StopCircle, Scale, RotateCcw } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import DashboardNav from '@/components/layout/DashboardNav'
 import SuggestedPricingCard from '@/components/rider/SuggestedPricingCard'
 import { MOCK_RIDERS } from '@/data/mockRiders'
 import { idr } from '@/lib/format/idr'
@@ -383,7 +382,6 @@ export default function PricingPage() {
           </button>
         </div>
       </main>
-      <DashboardNav />
     </>
   )
 }

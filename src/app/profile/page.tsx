@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { Save, Phone, Box, Loader2, Check } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import DashboardNav from '@/components/layout/DashboardNav'
 import LocationPicker, { type LocationPickerValue } from '@/components/rider/LocationPicker'
 import BikePicker from '@/components/rider/BikePicker'
 import BikeColorPicker from '@/components/rider/BikeColorPicker'
@@ -290,7 +289,6 @@ export default function ProfilePage() {
           </button>
         </div>
       </main>
-      <DashboardNav />
     </>
   )
 }

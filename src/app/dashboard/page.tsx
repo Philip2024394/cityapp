@@ -6,10 +6,10 @@ import {
   ArrowRight, Users, IdCard, MessageSquare, Share2, Edit3, MapPin, Bike, Star,
   Copy, Check, MessageCircle, Facebook, Instagram, ChevronDown, Camera, Rocket,
   Hourglass, CircleDot, Circle, AlertCircle as AlertIcon,
+  Flame, Receipt as ReceiptIcon,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import DriverSubscriptionBanner from '@/components/upgrade/DriverSubscriptionBanner'
-import DashboardNav from '@/components/layout/DashboardNav'
 import GoOnlineToggle from '@/components/rider/GoOnlineToggle'
 import ROIHero from '@/components/rider/ROIHero'
 import ViralityPanel from '@/components/rider/ViralityPanel'
@@ -101,7 +101,7 @@ export default function DashboardPage() {
   return (
     <>
       <AppNav />
-      <main className="min-h-[100dvh] pb-28 bg-white text-black">
+      <main className="min-h-[100dvh] pb-10 bg-white text-black">
         <div className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
           <Greeting ME={ME} onShare={shareProfile} />
 
@@ -122,7 +122,6 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
-      <DashboardNav />
     </>
   )
 }
@@ -334,6 +333,53 @@ function ActivatedDashboard({
   return (
     <div className="space-y-4">
       <GoOnlineToggle defaultOnline={online} onChange={setOnline} />
+
+      {/* Quick-access tiles — Hotspots (find customers) + Owed (settle
+          partner balances). Replaces the entries the old floating-nav
+          footer used to expose. Tap-target ≥ 64px high per WCAG. */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          href="/dashboard/hotspots"
+          className="rounded-2xl p-3.5 flex items-start gap-3 transition active:scale-[0.98]"
+          style={{
+            background: 'rgba(250,204,21,0.08)',
+            border: '1px solid rgba(250,204,21,0.35)',
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(250,204,21,0.20)', border: '1px solid rgba(250,204,21,0.45)' }}
+            aria-hidden
+          >
+            <Flame className="w-5 h-5" strokeWidth={2.25} style={{ color: '#0A0A0A' }} />
+          </div>
+          <div className="min-w-0">
+            <div className="font-extrabold text-[14px] text-[#0A0A0A] leading-tight">Hotspots</div>
+            <div className="text-[12px] text-gray-600 leading-snug mt-0.5">Cari area customer ramai</div>
+          </div>
+        </Link>
+        <Link
+          href="/dashboard/balances"
+          className="rounded-2xl p-3.5 flex items-start gap-3 transition active:scale-[0.98]"
+          style={{
+            background: 'rgba(250,204,21,0.08)',
+            border: '1px solid rgba(250,204,21,0.35)',
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(250,204,21,0.20)', border: '1px solid rgba(250,204,21,0.45)' }}
+            aria-hidden
+          >
+            <ReceiptIcon className="w-5 h-5" strokeWidth={2.25} style={{ color: '#0A0A0A' }} />
+          </div>
+          <div className="min-w-0">
+            <div className="font-extrabold text-[14px] text-[#0A0A0A] leading-tight">Owed</div>
+            <div className="text-[12px] text-gray-600 leading-snug mt-0.5">Komisi partner tersettle</div>
+          </div>
+        </Link>
+      </div>
+
       <DriverInboxWidget />
       <BookingAlertsToggle />
 
