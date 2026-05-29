@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Plus, Bike, Clock, CheckCircle2, AlertTriangle, Ban, Edit3, ChevronRight } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import { getServerSupabase } from '@/lib/supabase/server'
 import DeleteRentalButton from '@/components/rent/DeleteRentalButton'
 
@@ -59,6 +60,7 @@ export default async function DashboardRentalsPage() {
       <AppNav />
       <main className="min-h-[100dvh] pb-16">
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-24 space-y-5">
+          <PWAInstallCard />
           <header className="flex items-end justify-between gap-3">
             <div>
               <h1 className="text-[24px] sm:text-[28px] font-extrabold tracking-tight leading-tight">

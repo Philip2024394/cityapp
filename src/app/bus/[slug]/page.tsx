@@ -7,8 +7,10 @@ import {
 } from 'lucide-react'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import ProfileGallery from '@/components/profile/ProfileGallery'
+import WaIntentAnchor from '@/components/profile/WaIntentAnchor'
 import JsonLd from '@/components/seo/JsonLd'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 
 // =============================================================================
 // /bus/[slug] — public per-driver profile page (Phase 1: Minibus vertical)
@@ -297,6 +299,10 @@ export default async function BusDriverProfilePage({
   return (
     <>
       <JsonLd data={jsonLd} />
+      {/* Profile-view tracker — sessionStorage-deduped client island that
+          pings /api/profile-view on mount so the driver's stats page picks
+          up this visit. Server-rendered page can't use the hook directly. */}
+      <ProfileViewBeacon providerType="driver" providerId={d.id} />
       <main className="relative min-h-[100dvh] bg-white text-[#0A0A0A]">
         {/* -------- Brand header — navy bar with the wordmark logo -------- */}
         <header
@@ -559,10 +565,11 @@ export default async function BusDriverProfilePage({
             }}
           >
             <div className="max-w-2xl mx-auto">
-              <a
+              <WaIntentAnchor
                 href={waLink}
-                target="_blank"
-                rel="noopener noreferrer"
+                providerId={d.id}
+                vertical="car"
+                source="bus_profile"
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl text-white font-extrabold text-[13px] active:scale-[0.98] transition"
                 style={{
                   background: BRAND_YELLOW,
@@ -573,7 +580,7 @@ export default async function BusDriverProfilePage({
               >
                 <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
                 Contact {d.business_name} on WhatsApp
-              </a>
+              </WaIntentAnchor>
               <p className="text-[11px] text-gray-500 text-center mt-1.5 leading-snug">
                 Chat directly — agree the trip and final fare with the driver.
               </p>

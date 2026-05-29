@@ -1,6 +1,7 @@
 'use client'
 import { useMemo, useState } from 'react'
 import { MessageCircle, X, Calendar } from 'lucide-react'
+import { fireConnectIntent, type ConnectIntentSource, type ConnectIntentVertical } from '@/lib/connectIntent'
 
 // Customer-facing booking popup — date + time + service form that
 // records a booking_request server-side then bounces the customer to
@@ -22,6 +23,14 @@ export type ContactBookingPopupProps = {
   providerName:    string
   whatsapp:        string
   themeColor:      string
+  /** Provider's auth.users.id — fires the WhatsApp intent intercept
+   *  alert to the provider's dashboard the moment this form submits. */
+  providerId?:     string
+  /** Which vertical this surface lives in — drives the intent vertical
+   *  field. Omit to skip the intent fire (legacy callers). */
+  intentVertical?: ConnectIntentVertical
+  /** Source slug for the intent log. Defaults to 'other' if omitted. */
+  intentSource?:   ConnectIntentSource
   /** Per-vertical service options. Pass [] to skip the dropdown. */
   serviceOptions:  ContactBookingServiceOption[]
   /** Pre-selected service label (set when triggered from a service card). */
@@ -45,6 +54,7 @@ export type ContactBookingPopupProps = {
 
 export default function ContactBookingPopup({
   providerSlug, providerName, whatsapp, themeColor,
+  providerId, intentVertical, intentSource,
   serviceOptions, presetService = '', busyDates,
   bookEndpoint, copy, onClose,
 }: ContactBookingPopupProps) {
@@ -121,6 +131,14 @@ export default function ContactBookingPopup({
 
       const builder = copy?.whatsappMessage ?? defaultWaMessage
       const waMsg = builder({ service, date, time, notes })
+
+      // Fire WhatsApp-intent alert to the provider BEFORE opening
+      // WhatsApp. See lib/connectIntent.ts — fire-and-forget via
+      // sendBeacon, never blocks navigation.
+      if (providerId && intentVertical) {
+        fireConnectIntent(providerId, intentSource ?? 'other', intentVertical)
+      }
+
       window.open(
         `https://wa.me/${whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(waMsg)}`,
         '_blank',

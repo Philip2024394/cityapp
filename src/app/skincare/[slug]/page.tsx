@@ -1032,6 +1032,9 @@ export default function SkincareProviderPage() {
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="skincare"
+          intentSource="skincare_profile"
           themeColor={theme}
           serviceOptions={(p.services_offered ?? []).map((sid) => ({
             value: SKINCARE_SERVICE_LABELS[sid] ?? sid,

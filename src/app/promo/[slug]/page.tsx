@@ -77,7 +77,7 @@ async function lookupPromo(slug: string): Promise<{
   // best-performing ones surface; falls back to created_at for ties.
   const { data: relatedRaw } = await admin
     .from('promo_pages')
-    .select('slug, headline, photo_url, view_count')
+    .select('slug, headline, photo_url, view_count, expires_at')
     .eq('provider_type', 'beautician')
     .eq('provider_id',   promo.provider_id)
     .is('archived_at',   null)

@@ -882,6 +882,9 @@ export default function HandymanProviderPage() {
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="handyman"
+          intentSource="handyman_profile"
           themeColor={theme}
           serviceOptions={(p.specialties ?? []).map((sid) => ({
             value: SPECIALTY_LABELS[sid] ?? sid,

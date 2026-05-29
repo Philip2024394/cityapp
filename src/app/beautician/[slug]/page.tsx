@@ -1054,6 +1054,9 @@ export default function BeauticianProviderPage() {
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="beautician"
+          intentSource="beautician_profile"
           themeColor={theme}
           serviceOptions={(p.services_offered ?? []).map((sid) => ({
             value: SERVICE_OFFERED_LABELS[sid] ?? sid,

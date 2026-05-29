@@ -1061,6 +1061,9 @@ export default function FacialProviderPage() {
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="facial"
+          intentSource="facial_profile"
           themeColor={theme}
           serviceOptions={(p.services_offered ?? []).map((sid) => ({
             value: FACIAL_SERVICE_LABELS[sid] ?? sid,

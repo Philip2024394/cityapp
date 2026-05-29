@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 
 // /dashboard/property — placeholder hub for the new property category.
 // The fully styled editor lives at /dashboard/property/edit (shared
@@ -8,6 +9,7 @@ export default function PropertyDashboardHome() {
   return (
     <main className="min-h-[100dvh] bg-bg text-ink px-4 pt-10 pb-32">
       <div className="max-w-2xl mx-auto">
+        <PWAInstallCard />
         <h1 className="text-[22px] font-black mb-1">Property dashboard</h1>
         <p className="text-[12px] text-ink/65 leading-snug mb-6">
           New category — schema landed via migration 0126. Signup &amp; overview UI ships in a follow-up.

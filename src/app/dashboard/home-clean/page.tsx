@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
+import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
@@ -57,6 +58,7 @@ export default function HomeCleanDashboardPage() {
   return (
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
+        <PWAInstallCard />
         <ProviderRenewBanner provider={p} upgradeHref="/home-clean/upgrade" />
         <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{p.display_name}</h1>

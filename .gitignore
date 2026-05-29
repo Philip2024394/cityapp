@@ -13,3 +13,6 @@ supabase/.temp
 .dev.vars
 
 .vercel
+
+# Local dev-server output
+.dev-server.log

@@ -848,6 +848,9 @@ export default function TourGuideProfilePage() {
           providerSlug={p.slug}
           providerName={p.name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="tour-guide"
+          intentSource="tour_profile"
           themeColor={theme}
           serviceOptions={(p.services ?? [])
             .map((sid) => findTourService(sid))

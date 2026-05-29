@@ -930,6 +930,9 @@ export default function LaundryProviderPage() {
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="laundry"
+          intentSource="laundry_profile"
           themeColor={theme}
           serviceOptions={servicesOffered.map((sid) => ({
             value: SERVICE_OFFERED_LABELS[sid] ?? sid,

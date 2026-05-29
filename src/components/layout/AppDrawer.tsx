@@ -12,6 +12,7 @@ import {
   Compass, Map, KeyRound, Palette, Shirt, Wrench, Brush, Pencil, Layers,
   Globe2, ExternalLink, Calendar,
   CreditCard, HelpCircle, FileText, ShieldCheck,
+  Car,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -147,6 +148,102 @@ const RENTAL_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/rent/list/new',      label: 'List a new bike',   icon: Sparkles },
 ]
 
+// Car driver dashboard — multi-page structure matching beautician's
+// pattern. Replaces the single 1,354-line /dashboard/car monolith. Note:
+// "Accept payments" deliberately means the methods the driver accepts
+// directly (cash/QR/transfer) — NOT platform-collected Stripe/Midtrans
+// for ride fares, which is forbidden per Permenhub 118/2018 (see the
+// policy comment at the top of src/app/cari/page.tsx).
+const CAR_DRIVER_NAV_SECTIONS: ReadonlyArray<NavSection> = [
+  {
+    header: 'My profile',
+    items: [
+      { href: '/dashboard/car',         label: 'Driver dashboard', icon: UserCog },
+      { href: '/dashboard/car/info',    label: 'Profile info',     icon: User },
+      { href: '/dashboard/car/edit',    label: 'Page design',      icon: Pencil },
+      { href: '/dashboard/car/vehicle', label: 'Vehicle details',  icon: Car },
+    ],
+  },
+  {
+    header: 'Services & pricing',
+    items: [
+      { href: '/dashboard/car/services',     label: 'Services & rates', icon: Layers },
+      { href: '/dashboard/car/payments',     label: 'Payment methods',  icon: CreditCard },
+      { href: '/dashboard/car/subscription', label: 'Subscription',     icon: Wallet },
+    ],
+  },
+  {
+    header: 'Growth',
+    items: [
+      { href: '/dashboard/car/stats',  label: 'Stats',       icon: Flame },
+      { href: '/dashboard/car/qr',     label: 'Profile QR',  icon: QrCode },
+      { href: '/dashboard/car/social', label: 'Social posts', icon: Sparkles },
+    ],
+  },
+  {
+    header: 'Trust & legal',
+    items: [
+      { href: '/dashboard/car/faq',     label: 'FAQ',                 icon: HelpCircle },
+      { href: '/dashboard/car/terms',   label: 'Terms & conditions',  icon: FileText },
+      { href: '/dashboard/car/privacy', label: 'Privacy policy',      icon: ShieldCheck },
+    ],
+  },
+  {
+    header: 'More',
+    items: [
+      { href: '/car',          label: 'Marketplace',     icon: Store },
+      { href: '/drivers/car',  label: 'Drivers landing', icon: ExternalLink },
+    ],
+  },
+]
+
+// Bike-rider dashboard — sibling of CAR_DRIVER_NAV_SECTIONS but scoped
+// to bike drivers (vehicle_type='bike'). Same yellow brand, same drawer
+// structure; differs from car-driver only in label wording ("Bike
+// details" instead of "Vehicle details") and the public link target.
+const RIDER_NAV_SECTIONS: ReadonlyArray<NavSection> = [
+  {
+    header: 'My profile',
+    items: [
+      { href: '/dashboard/rider',         label: 'Rider dashboard',  icon: UserCog },
+      { href: '/dashboard/rider/info',    label: 'Profile info',     icon: User },
+      { href: '/dashboard/rider/edit',    label: 'Page design',      icon: Pencil },
+      { href: '/dashboard/rider/vehicle', label: 'Bike details',     icon: Bike },
+    ],
+  },
+  {
+    header: 'Services & pricing',
+    items: [
+      { href: '/dashboard/rider/services',     label: 'Services & rates', icon: Layers },
+      { href: '/dashboard/rider/payments',     label: 'Payment methods',  icon: CreditCard },
+      { href: '/dashboard/rider/subscription', label: 'Subscription',     icon: Wallet },
+    ],
+  },
+  {
+    header: 'Growth',
+    items: [
+      { href: '/dashboard/rider/stats',  label: 'Stats',        icon: Flame },
+      { href: '/dashboard/rider/qr',     label: 'Profile QR',   icon: QrCode },
+      { href: '/dashboard/rider/social', label: 'Social posts', icon: Sparkles },
+    ],
+  },
+  {
+    header: 'Trust & legal',
+    items: [
+      { href: '/dashboard/rider/faq',     label: 'FAQ',                 icon: HelpCircle },
+      { href: '/dashboard/rider/terms',   label: 'Terms & conditions',  icon: FileText },
+      { href: '/dashboard/rider/privacy', label: 'Privacy policy',      icon: ShieldCheck },
+    ],
+  },
+  {
+    header: 'More',
+    items: [
+      { href: '/cari',     label: 'Booking',         icon: Store },
+      { href: '/drivers',  label: 'Drivers landing', icon: ExternalLink },
+    ],
+  },
+]
+
 // Facial + Skincare verticals — clone of beautician's section shape so
 // the Trust & legal + Payments groups are present from day one.
 const FACIAL_NAV_SECTIONS: ReadonlyArray<NavSection> = [
@@ -223,7 +320,7 @@ const SKINCARE_NAV_SECTIONS: ReadonlyArray<NavSection> = [
   },
 ]
 
-type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals' | 'facial' | 'skincare'
+type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals' | 'facial' | 'skincare' | 'car-driver' | 'rider'
 const VARIANT_TITLE: Record<Variant, string> = {
   driver:        'Driver menu',
   partner:       'Partner menu',
@@ -236,6 +333,8 @@ const VARIANT_TITLE: Record<Variant, string> = {
   rentals:       'Rental owner menu',
   facial:        'Facial menu',
   skincare:      'Skincare menu',
+  'car-driver':  'Car driver menu',
+  rider:         'Rider menu',
 }
 const VARIANT_LABEL: Record<Variant, string> = {
   driver:        'Driver navigation',
@@ -249,6 +348,8 @@ const VARIANT_LABEL: Record<Variant, string> = {
   rentals:       'Rental owner navigation',
   facial:        'Facial navigation',
   skincare:      'Skincare navigation',
+  'car-driver':  'Car driver navigation',
+  rider:         'Rider navigation',
 }
 
 // Per-variant brand tinting for the nav-item pills. Keep verticals whose
@@ -275,6 +376,8 @@ const VARIANT_BRAND: Record<Variant, {
   'home-clean':  { from: '#22D3EE', to: '#0891B2', shadow: '6,182,212',   ink: '#FFFFFF', onPillText: '#22D3EE' },
   facial:        { from: '#F472B6', to: '#DB2777', shadow: '236,72,153',  ink: '#FFFFFF', onPillText: '#F472B6' },
   skincare:      { from: '#F472B6', to: '#DB2777', shadow: '236,72,153',  ink: '#FFFFFF', onPillText: '#F472B6' },
+  'car-driver':  { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
+  rider:         { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
 }
 
 export default function AppDrawer({
@@ -303,6 +406,8 @@ export default function AppDrawer({
     variant === 'rentals'      ? [{ items: RENTAL_NAV_ITEMS }] :
     variant === 'facial'       ? FACIAL_NAV_SECTIONS :
     variant === 'skincare'     ? SKINCARE_NAV_SECTIONS :
+    variant === 'car-driver'   ? CAR_DRIVER_NAV_SECTIONS :
+    variant === 'rider'        ? RIDER_NAV_SECTIONS :
                                  [{ items: DRIVER_NAV_ITEMS }]
 
   // Active match supports hrefs with query strings. Path piece must match
@@ -534,6 +639,8 @@ export function AppDrawerTrigger({
     variant === 'rentals'    ? 'Open rental owner menu' :
     variant === 'facial'     ? 'Open facial menu' :
     variant === 'skincare'   ? 'Open skincare menu' :
+    variant === 'car-driver' ? 'Open car driver menu' :
+    variant === 'rider'      ? 'Open rider menu' :
     'Open driver menu'
   return (
     <button

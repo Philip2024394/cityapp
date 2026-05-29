@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Camera, Sparkles, Palette, Link2, CheckCircle2, Clock, Copy } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import StatusPulse from '@/components/dashboard/StatusPulse'
 import WeeklyHoursEditor from '@/components/dashboard/WeeklyHoursEditor'
@@ -131,6 +132,7 @@ export default function FacialDashboardPage() {
   return (
     <Shell>
       <div className="px-4 pt-4 pb-32 max-w-lg mx-auto space-y-4">
+        <PWAInstallCard />
         {/* Greeting + progress */}
         <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-4">

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Plus, Compass, Edit3, ChevronRight, Clock, CheckCircle2, AlertTriangle, Ban, MapPin, ExternalLink } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import TourGuideSubscriptionBanner from '@/components/upgrade/TourGuideSubscriptionBanner'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { findTourService } from '@/data/tourServices'
@@ -49,6 +50,7 @@ export default async function DashboardTourGuidePage() {
       <AppNav />
       <main className="min-h-[100dvh] pb-16 bg-white text-black">
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-24 space-y-5">
+          <PWAInstallCard />
           <TourGuideSubscriptionBanner />
           <header className="flex items-end justify-between gap-3">
             <div>

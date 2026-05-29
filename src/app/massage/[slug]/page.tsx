@@ -911,6 +911,9 @@ export default function MassageProviderPage() {
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="massage"
+          intentSource="massage_profile"
           themeColor={theme}
           serviceOptions={offeredServices.map((sid) => ({
             value: MASSAGE_TYPE_LABELS[sid] ?? sid,

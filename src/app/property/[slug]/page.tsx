@@ -866,6 +866,9 @@ export default function PropertyProviderPage() {
           providerSlug={p.slug}
           providerName={displayTitle}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="property"
+          intentSource="property_profile"
           themeColor={theme}
           serviceOptions={servicesOffered.map((sid) => ({
             value: PROPERTY_TYPE_LABELS[sid] ?? sid,

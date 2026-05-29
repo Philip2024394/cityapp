@@ -42,6 +42,23 @@ export default function SignupPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp, step])
 
+  // URL-param role pre-selection — when the user lands here from a
+  // dedicated landing page (e.g. /drivers → /signup?role=driver,
+  // /drivers/car → /signup?role=driver&vehicle=car), skip the role
+  // picker entirely and drop them straight on the phone-entry step.
+  // The role is already known from where they came from. Reads
+  // `window.location.search` directly (rather than useSearchParams)
+  // so no Suspense boundary is required.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const urlRole = params.get('role')
+    if (urlRole === 'driver' || urlRole === 'customer') {
+      setRole(urlRole)
+      setStep('phone')
+    }
+  }, []) // mount only — URL param shouldn't change after navigation
+
   function continueFromRole(e: React.FormEvent) {
     e.preventDefault()
     setError(null)

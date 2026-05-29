@@ -8,8 +8,10 @@ import {
   ChevronRight,
   Compass,
   MapPin,
+  Package,
   Plus,
   Star,
+  UserRound,
   X,
 } from 'lucide-react'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
@@ -21,6 +23,7 @@ import { haversineKm } from '@/lib/geo/haversine'
 import { logNav } from '@/lib/perf/navTiming'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
+import { fireConnectIntent } from '@/lib/connectIntent'
 import type { Rider, ServiceType } from '@/types/rider'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl, GENERIC_CAR_FALLBACK } from '@/data/carImages'
@@ -76,6 +79,16 @@ function parseService(raw: string | null): ServiceType {
   // New layout defaults to 'car' per founder spec (Car tile shown active
   // first in the vehicle toggle). Legacy entries still resolve correctly.
   return 'car'
+}
+
+// `mode` is the new top-of-page axis the customer toggles:
+//   ride   → "Book a ride" (passenger transport)
+//   parcel → "Send a parcel" (parcel courier)
+// Persists in the URL as ?mode=ride|parcel, default 'ride'. Combines
+// with the existing vehicle (Car / Bike) axis below it.
+type BookingMode = 'ride' | 'parcel'
+function parseMode(raw: string | null): BookingMode {
+  return raw === 'parcel' ? 'parcel' : 'ride'
 }
 
 // Recent-places localStorage cache (same shape as the old /cari so the
@@ -179,6 +192,7 @@ function PlanTripPageInner() {
   // Bike legacy mappings (person/parcel/food → Bike side) still resolve.
   const service: ServiceType = parseService(params.get('service'))
   const vehicleType: 'car' | 'bike' = service === 'car' ? 'car' : 'bike'
+  const mode: BookingMode = parseMode(params.get('mode'))
 
   // perf instrumentation
   useEffect(() => { logNav('cari:mount') }, [])
@@ -261,6 +275,20 @@ function PlanTripPageInner() {
     return () => { cancelled = true }
   }, [vehicleType])
 
+  // Visible-drivers filter — combines the vehicle axis (Car/Bike, already
+  // applied at fetch time) with the new mode axis (Ride/Parcel). For
+  // bike+parcel we require the driver to have opted into 'parcel'
+  // service. For car+parcel we don't filter — most car drivers can take
+  // a parcel job; the customer signals intent via the WhatsApp message
+  // prefix. For ride mode we don't filter either (drivers without an
+  // explicit 'person' service still get bookings via direct contact).
+  const visibleDrivers = useMemo(() => {
+    if (mode === 'parcel' && vehicleType === 'bike') {
+      return drivers.filter((d) => d.services?.includes('parcel'))
+    }
+    return drivers
+  }, [drivers, mode, vehicleType])
+
   // Selection state for the cheapest-by-default booking pattern. /cari
   // is the ride / parcel surface — speed-driven (Gojek/Grab style: pick
   // cheapest, tap one button, go). The other 8 lifestyle marketplaces
@@ -278,10 +306,10 @@ function PlanTripPageInner() {
   // (e.g., the lowest-fare endpoint refetching, drivers refreshing).
   useEffect(() => {
     if (selectedDriverId !== null) return
-    if (drivers.length === 0) return
+    if (visibleDrivers.length === 0) return
     let cheapest: Rider | null = null
     let cheapestFee = Number.POSITIVE_INFINITY
-    for (const d of drivers) {
+    for (const d of visibleDrivers) {
       const fee = d.minFee ?? d.pricePerKm ?? null
       if (fee == null || !Number.isFinite(fee)) continue
       if (fee < cheapestFee) {
@@ -291,13 +319,23 @@ function PlanTripPageInner() {
     }
     // Final fallback: if no driver had a usable fee, select the first
     // one in the list so the BOOK NOW CTA still renders.
-    const pick = cheapest ?? drivers[0]
+    const pick = cheapest ?? visibleDrivers[0]
     if (pick) setSelectedDriverId(pick.id)
-  }, [drivers, selectedDriverId])
+  }, [visibleDrivers, selectedDriverId])
+
+  // Reset selection when the mode flips and the previously-selected
+  // driver is no longer visible — otherwise the sticky CTA would book
+  // someone the customer isn't looking at.
+  useEffect(() => {
+    if (!selectedDriverId) return
+    if (!visibleDrivers.find((d) => d.id === selectedDriverId)) {
+      setSelectedDriverId(null)
+    }
+  }, [visibleDrivers, selectedDriverId])
 
   const selectedDriver = useMemo(
-    () => drivers.find((d) => d.id === selectedDriverId) ?? null,
-    [drivers, selectedDriverId],
+    () => visibleDrivers.find((d) => d.id === selectedDriverId) ?? null,
+    [visibleDrivers, selectedDriverId],
   )
 
   // Detect user country for the autocomplete bias (unchanged).
@@ -331,10 +369,10 @@ function PlanTripPageInner() {
   function buildSelectedWhatsAppLink(d: Rider): string {
     const wa = normaliseE164ForWaMe(d.whatsappE164 ?? '')
     if (!wa) return ''
-    const lines: string[] = [
-      `Halo ${d.name}, saya mau booking via Kita2u.`,
-      '',
-    ]
+    const opener = mode === 'parcel'
+      ? `Halo ${d.name}, saya mau kirim paket via CityRiders.`
+      : `Halo ${d.name}, saya mau pesan ride via CityRiders.`
+    const lines: string[] = [opener, '']
     if (pickupLabel.trim())  lines.push(`📍 Pickup: ${pickupLabel.trim()}`)
     if (dropoffLabel.trim()) lines.push(`🏁 Drop off: ${dropoffLabel.trim()}`)
     if (pitstopOpen && pitstopNote.trim()) lines.push(`🛑 Stop: ${pitstopNote.trim()}`)
@@ -374,7 +412,25 @@ function PlanTripPageInner() {
   // Render
   // ───────────────────────────────────────────────────────────────────────
   return (
-    <>
+    <main
+      className="relative min-h-[100dvh]"
+      style={{
+        // Soft cream backdrop on desktop frames the centred phone-style
+        // booking app. Invisible on mobile (full-width content).
+        background:
+          'radial-gradient(circle at top, #FEF3C7 0%, #F5F5F4 70%, #E7E5E4 100%)',
+      }}
+    >
+      {/* Phone-frame on desktop — matches /cityriders, /drivers,
+          /drivers/car. The 480px frame becomes the positioning context
+          for the fixed children below (hero bg, booking container) on
+          desktop via a no-op translateZ transform applied via the
+          .cari-frame CSS rule below — putting `transform` on the element
+          makes it a containing block for `position: fixed` descendants
+          per CSS spec, so they stay inside the frame instead of the
+          full viewport. The .cari-fixed → absolute swap completes the
+          handoff. */}
+      <div className="cari-frame relative lg:my-6 lg:mx-auto lg:max-w-[480px] lg:rounded-[32px] lg:shadow-[0_24px_80px_rgba(10,10,10,0.18)] lg:overflow-hidden lg:bg-white">
       {/* Custom yellow scrollbar for the driver list — thin rail, short
           rounded thumb. Hits both WebKit (Chrome/Safari/Edge) and Firefox.
           `min-height` on the thumb keeps it visible even on very tall
@@ -394,6 +450,18 @@ function PlanTripPageInner() {
         .cari-driver-scroll::-webkit-scrollbar-thumb:hover {
           background-color: #EAB308;
         }
+        /* On lg+, make the phone-frame a containing block for fixed
+           children so the hero map background and the booking sheet
+           stay inside the frame rather than the full viewport. */
+        @media (min-width: 1024px) {
+          .cari-frame {
+            transform: translateZ(0);
+            height: calc(100dvh - 48px);
+          }
+          .cari-frame .cari-fixed {
+            position: absolute !important;
+          }
+        }
       `}</style>
 
       {/* HERO MAP IMAGE — fixed full-viewport background, sits at z-0
@@ -403,9 +471,10 @@ function PlanTripPageInner() {
           map icons + route line displaying as an overlay on it.
           `background-position: center -120px` lifts the composition's
           focal area into that visible band (founder direction from the
-          original implementation). */}
+          original implementation). On desktop the `cari-fixed` rule
+          swaps fixed → absolute so it anchors inside the phone frame. */}
       <div
-        className="fixed inset-0 z-0 pointer-events-none"
+        className="cari-fixed fixed inset-0 z-0 pointer-events-none"
         style={{
           backgroundImage: `url("https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png")`,
           backgroundSize: 'cover',
@@ -415,25 +484,28 @@ function PlanTripPageInner() {
         aria-hidden
       />
 
-      {/* HEADER — wordmark on the left, nearby pill on the right. */}
+      {/* HEADER — CityRiders brand mark on the left, nearby pill on the
+          right. Logo + wordmark style matches the /cityriders, /drivers,
+          and /drivers/car landings so the whole family reads consistent. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
-            href="/"
-            className="inline-flex items-center hover:opacity-85 transition"
-            aria-label="Kita2u home"
+            href="/cityriders"
+            className="inline-flex items-center gap-2 hover:opacity-85 active:scale-[0.97] transition"
+            aria-label="CityRiders home"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714"
+              alt=""
+              className="w-9 h-9 rounded-xl"
+              style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.18)' }}
+            />
             <span
-              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
+              className="font-black tracking-tight text-[20px] sm:text-[22px] leading-none"
               style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
             >
-              Kita
-            </span>
-            <span
-              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
-              style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
-            >
-              2u
+              CityRiders
             </span>
           </Link>
 
@@ -484,7 +556,7 @@ function PlanTripPageInner() {
           reads as a panel emerging from the footer. 15px horizontal
           insets from the screen edges. */}
       <div
-        className="fixed left-0 right-0 bottom-0 z-20"
+        className="cari-fixed fixed left-0 right-0 bottom-0 z-20"
         style={{ paddingLeft: 15, paddingRight: 15 }}
       >
         <div
@@ -492,9 +564,23 @@ function PlanTripPageInner() {
           style={{ height: '70vh', maxWidth: 640 }}
         >
           <div className="flex flex-col h-full p-4 sm:p-5 pb-safe">
-            {/* ROW 1 — Header bar: "Where to?" + Add Stop button */}
+            {/* ROW 1 — Header bar: mode icon + "Where to?" + Add Stop.
+                The mode icon (UserRound for Ride, Package for Parcel) is
+                the passive indicator now that the explicit toggle moved
+                to /cityriders. Tinted yellow so it visually anchors the
+                page intent at a glance. */}
             <div className="flex items-center justify-between gap-2 shrink-0">
-              <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg">
+              <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg inline-flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full"
+                  style={{ background: '#FACC15', color: '#0A0A0A' }}
+                  title={mode === 'parcel' ? 'Parcel mode' : 'Ride mode'}
+                >
+                  {mode === 'parcel'
+                    ? <Package className="w-4 h-4" strokeWidth={2.75} />
+                    : <UserRound className="w-4 h-4" strokeWidth={2.75} />}
+                </span>
                 Where to?
               </h1>
               <button
@@ -652,15 +738,19 @@ function PlanTripPageInner() {
             </div>
 
             {/* ROW 3 — Vehicle toggle (Car / Bike). Drives the inline
-                driver list + the vehicleType URL param when CTA is tapped. */}
+                driver list + the vehicleType URL param when CTA is tapped.
+                Preserves the current `mode` so flipping between Car/Bike
+                doesn't reset Ride↔Parcel. The Ride/Parcel decision is made
+                ONE screen back on /cityriders; here we just respect it
+                via the URL param + a small icon next to "Where to?". */}
             <div className="mt-3 shrink-0 grid grid-cols-2 gap-2">
               <VehicleToggleButton
-                href="/cari?service=car"
+                href={`/cari?service=car&mode=${mode}`}
                 active={vehicleType === 'car'}
                 label="Car"
               />
               <VehicleToggleButton
-                href="/cari?service=person"
+                href={`/cari?service=person&mode=${mode}`}
                 active={vehicleType === 'bike'}
                 label="Bike"
               />
@@ -675,17 +765,19 @@ function PlanTripPageInner() {
             <div
               className="cari-driver-scroll mt-3 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2 -mx-1 px-1"
             >
-              {driversLoading && drivers.length === 0 && (
+              {driversLoading && visibleDrivers.length === 0 && (
                 <div className="py-6 text-center text-[13px] font-bold text-[#71717A]">
                   Loading drivers…
                 </div>
               )}
-              {!driversLoading && drivers.length === 0 && (
+              {!driversLoading && visibleDrivers.length === 0 && (
                 <div className="py-6 text-center text-[13px] font-bold text-[#71717A]">
-                  No {vehicleType === 'car' ? 'car' : 'bike'} drivers online right now.
+                  {mode === 'parcel' && vehicleType === 'bike'
+                    ? 'No bike drivers accepting parcels right now — try Car.'
+                    : `No ${vehicleType === 'car' ? 'car' : 'bike'} drivers online right now.`}
                 </div>
               )}
-              {drivers.map((d) => (
+              {visibleDrivers.map((d) => (
                 <DriverCard
                   key={d.id}
                   driver={d}
@@ -749,6 +841,11 @@ function PlanTripPageInner() {
                       e.preventDefault()
                       return
                     }
+                    fireConnectIntent(
+                      selectedDriver.id,
+                      'cari',
+                      vehicleType === 'car' ? 'car' : 'rider',
+                    )
                     haptic.impact()
                   }}
                   className="mt-3 shrink-0 flex items-center justify-center rounded-2xl font-extrabold tracking-tight active:scale-[0.99] transition"
@@ -780,7 +877,8 @@ function PlanTripPageInner() {
           </div>
         </div>
       </div>
-    </>
+      </div>{/* /cari-frame phone-frame wrapper */}
+    </main>
   )
 }
 

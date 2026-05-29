@@ -1,9 +1,11 @@
 import Link from 'next/link'
+import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 
 export default function PropertyRentHome() {
   return (
     <main className="min-h-[100dvh] bg-bg text-ink px-4 pt-10 pb-32">
       <div className="max-w-2xl mx-auto">
+        <PWAInstallCard />
         <h1 className="text-[22px] font-black mb-1">Property · Rental dashboard</h1>
         <p className="text-[12px] text-ink/65 leading-snug mb-6">
           List a rental property. Daily / weekly / monthly tiers in the editor.

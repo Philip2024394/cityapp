@@ -7,6 +7,7 @@ import {
   Car as CarIcon, Users as UsersIcon,
   PlaneTakeoff, Building2, MapPinned,
   ArrowUp, ArrowDown,
+  UserRound, Package as PackageIcon,
 } from 'lucide-react'
 import { haversineKm } from '@/lib/geo/haversine'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
@@ -14,6 +15,8 @@ import { idr } from '@/lib/format/idr'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl } from '@/data/carImages'
 import { SERVICE_OFFERINGS } from '@/lib/drivers/serviceOfferings'
+import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
+import { fireConnectIntent } from '@/lib/connectIntent'
 
 // =============================================================================
 // DriverProfileShell — shared driver-profile renderer for /r/[slug] (bike)
@@ -171,14 +174,17 @@ function buildShellWhatsAppLink(opts: {
   pickup:    string
   dropoff:   string
   stops:     string[]
+  /** 'ride' → passenger transport copy; 'parcel' → parcel courier copy.
+   *  Defaults to 'ride' for back-compat. */
+  mode?:     'ride' | 'parcel'
   estimate?: { minFee: number; pricePerKm: number; pitstopFee: number; numStops: number } | null
 }): string {
   const wa = normaliseE164ForWaMe(opts.driver.whatsapp_e164 ?? '')
   if (!wa) return ''
-  const lines: string[] = [
-    `Halo ${opts.driver.business_name}, saya mau booking via Kita2u.`,
-    '',
-  ]
+  const opener = opts.mode === 'parcel'
+    ? `Halo ${opts.driver.business_name}, saya mau kirim paket via CityRiders.`
+    : `Halo ${opts.driver.business_name}, saya mau booking via Kita2u.`
+  const lines: string[] = [opener, '']
   if (opts.pickup.trim())  lines.push(`📍 Pickup: ${opts.pickup.trim()}`)
   if (opts.dropoff.trim()) lines.push(`🏁 Drop off: ${opts.dropoff.trim()}`)
   const extras = opts.stops.map((s) => s.trim()).filter(Boolean)
@@ -206,6 +212,11 @@ function buildShellWhatsAppLink(opts: {
 // -----------------------------------------------------------------------------
 export default function DriverProfileShell({ driver, alternatives }: DriverProfileShellProps) {
   const searchParams = useSearchParams()
+  // Profile-view tracking — one ping per session per (provider_type,
+  // provider_id) pair. Feeds the driver's /dashboard/car/stats page
+  // (views, share clicks, WhatsApp taps) via provider_profile_views.
+  // Hook is sessionStorage-deduped so refreshes don't double-count.
+  useProfileViewTracker({ providerType: 'driver', providerId: driver.id })
   const [pickup, setPickup]   = useState('')
   const [dropoff, setDropoff] = useState('')
   // Extra typed stops. Customer can add any number — no cap per spec.
@@ -332,9 +343,33 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     }
   }, [driver.min_fee, driver.price_per_km, driver.pitstop_fee, stops])
 
+  // Ride / Parcel mode toggle in the booking widget. Driver's available
+  // modes are derived from `services` (bike: 'person'/'parcel') and
+  // `service_offerings` (cars opt into 'cargo_parcel'). When only one
+  // mode is offered, the toggle hides and the message body uses that
+  // mode automatically.
+  const offersParcel = useMemo(() => {
+    if (driver.services.includes('parcel')) return true
+    if (driver.service_offerings?.includes('cargo_parcel')) return true
+    return false
+  }, [driver.services, driver.service_offerings])
+  const offersRide = useMemo(() => {
+    // Every driver offers rides unless they ONLY listed cargo. Bike
+    // drivers explicitly opt out by leaving 'person' off their services
+    // array; cars/trucks default to offering rides since that's the
+    // primary use case.
+    if (driver.vehicle_type === 'bike') return driver.services.includes('person')
+    return true
+  }, [driver.services, driver.vehicle_type])
+  const [mode, setMode] = useState<'ride' | 'parcel'>(() => {
+    if (offersRide) return 'ride'
+    if (offersParcel) return 'parcel'
+    return 'ride'
+  })
+
   const waLink = useMemo(() => buildShellWhatsAppLink({
-    driver, pickup, dropoff, stops, estimate: estimateInputs,
-  }), [driver, pickup, dropoff, stops, estimateInputs])
+    driver, pickup, dropoff, stops, estimate: estimateInputs, mode,
+  }), [driver, pickup, dropoff, stops, estimateInputs, mode])
 
   // Service-mode pills — keep the chip set tight by filtering to the
   // dictionary above; unknown values stored in `services` (from legacy
@@ -396,7 +431,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             style={{ color: BRAND_YELLOW, maxWidth: 'min(340px, calc(100vw - 32px))' }}
           >
             <span className="truncate inline-block max-w-full align-bottom">
-              {driver.business_name || driver.display_name || 'Driver'}
+              {driver.business_name || 'Driver'}
             </span>
           </div>
           {driver.bio && (
@@ -686,6 +721,10 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             stops={stops} setStops={setStops}
             estimate={estimateInputs}
             waLink={waLink}
+            mode={mode}
+            setMode={setMode}
+            offersRide={offersRide}
+            offersParcel={offersParcel}
             onBookingSent={() => setBookingSent(true)}
           />
         ) : (
@@ -711,7 +750,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
 // -----------------------------------------------------------------------------
 function OnlineBookingWidget({
   driver, pickup, setPickup, dropoff, setDropoff, stops, setStops,
-  estimate, waLink, onBookingSent,
+  estimate, waLink, mode, setMode, offersRide, offersParcel, onBookingSent,
 }: {
   driver:        DriverPublic
   pickup:        string;  setPickup:  (v: string) => void
@@ -719,6 +758,10 @@ function OnlineBookingWidget({
   stops:         string[]; setStops:  (v: string[]) => void
   estimate:      { minFee: number; pricePerKm: number; pitstopFee: number; numStops: number } | null
   waLink:        string
+  mode:          'ride' | 'parcel'
+  setMode:       (m: 'ride' | 'parcel') => void
+  offersRide:    boolean
+  offersParcel:  boolean
   /** Fires the instant BOOK NOW is tapped (before the WA deep-link
    *  opens), so the hero route-preview polyline starts its 6s colour
    *  transition from black → brand yellow. */
@@ -741,11 +784,51 @@ function OnlineBookingWidget({
       className="mt-4 rounded-2xl p-3 space-y-2.5"
       style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
     >
+      {/* Mode toggle — Ride / Parcel. Only renders when the driver
+          actually offers both. Otherwise the widget runs in the single
+          mode the driver supports and the toggle is hidden. */}
+      {offersRide && offersParcel && (
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setMode('ride')}
+            aria-pressed={mode === 'ride'}
+            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-extrabold text-[13px] tracking-tight transition active:scale-95"
+            style={{
+              background: mode === 'ride' ? BRAND_YELLOW : INPUT_BG,
+              color:      mode === 'ride' ? TEXT_INK     : TEXT_SECOND,
+              border:     `1px solid ${mode === 'ride' ? BRAND_YELLOW : BORDER}`,
+              boxShadow:  mode === 'ride' ? '0 4px 12px rgba(250,204,21,0.35)' : 'none',
+              minHeight: 44,
+            }}
+          >
+            <UserRound className="w-4 h-4" strokeWidth={2.5} />
+            <span>Book a ride</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('parcel')}
+            aria-pressed={mode === 'parcel'}
+            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-extrabold text-[13px] tracking-tight transition active:scale-95"
+            style={{
+              background: mode === 'parcel' ? BRAND_YELLOW : INPUT_BG,
+              color:      mode === 'parcel' ? TEXT_INK     : TEXT_SECOND,
+              border:     `1px solid ${mode === 'parcel' ? BRAND_YELLOW : BORDER}`,
+              boxShadow:  mode === 'parcel' ? '0 4px 12px rgba(250,204,21,0.35)' : 'none',
+              minHeight: 44,
+            }}
+          >
+            <PackageIcon className="w-4 h-4" strokeWidth={2.5} />
+            <span>Send a parcel</span>
+          </button>
+        </div>
+      )}
+
       {/* Header row — title on left, yellow Add stop pill on right.
           Mirrors /cari page.tsx lines 462-486 ("Where to?" + Add Stop). */}
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-[13px] font-extrabold uppercase tracking-wider" style={{ color: TEXT_INK }}>
-          Book {driver.business_name.split(' ')[0]}
+          {mode === 'parcel' ? `Send via ${driver.business_name.split(' ')[0]}` : `Book ${driver.business_name.split(' ')[0]}`}
         </h2>
         <button
           type="button"
@@ -909,6 +992,10 @@ function OnlineBookingWidget({
         aria-disabled={!canBook}
         onClick={(e) => {
           if (!canBook) { e.preventDefault(); return }
+          const isBike   = driver.vehicle_type === 'bike'
+          const source   = isBike ? 'rider_profile' : 'car_profile'
+          const vertical = isBike ? 'rider' : 'car'
+          fireConnectIntent(driver.id, source, vertical)
           onBookingSent()
         }}
         className="w-full inline-flex items-center justify-center gap-2 rounded-xl font-extrabold text-[14px] uppercase tracking-wider active:scale-[0.99] transition"

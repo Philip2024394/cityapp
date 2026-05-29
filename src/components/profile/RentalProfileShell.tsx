@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import ProfileGallery from '@/components/profile/ProfileGallery'
+import WaIntentAnchor from '@/components/profile/WaIntentAnchor'
 import JsonLd from '@/components/seo/JsonLd'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 
@@ -651,10 +652,11 @@ export async function renderRentalProfile(
             }}
           >
             <div className="max-w-2xl mx-auto">
-              <a
+              <WaIntentAnchor
                 href={waLink}
-                target="_blank"
-                rel="noopener noreferrer"
+                providerId={d.id}
+                vertical="rentals"
+                source="rentals_profile"
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl font-extrabold text-[13px] active:scale-[0.98] transition"
                 style={{
                   background: BRAND_YELLOW,
@@ -665,7 +667,7 @@ export async function renderRentalProfile(
               >
                 <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
                 Contact {d.business_name} on WhatsApp
-              </a>
+              </WaIntentAnchor>
               <p className="text-[11px] text-gray-500 text-center mt-1.5 leading-snug">
                 Chat directly — agree rental terms with the driver.
               </p>

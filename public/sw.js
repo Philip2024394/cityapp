@@ -273,3 +273,59 @@ async function enforceQuota(cache) {
     await cache.delete(keys[i])
   }
 }
+
+// ============================================================================
+// CityRiders booking-alert push handlers
+// ----------------------------------------------------------------------------
+// Receives VAPID Web Push notifications from /api/connect-intent and
+// renders a fixed-string alert. Tapping the notification opens (or
+// focuses) /dashboard; the BookingAlertProvider's Realtime subscription
+// then delivers the full popup with source + timestamp context.
+//
+// We intentionally do NOT decrypt a payload — the sender posts empty-body
+// pushes (see src/lib/push/sendWebPush.ts) so we use fixed strings here.
+// ============================================================================
+
+const CR_ALERT_TITLE = 'CityRiders — incoming WhatsApp'
+const CR_ALERT_BODY  = 'A customer just tapped your WhatsApp button.'
+const CR_ALERT_TAG   = 'cityriders-inbound'
+
+self.addEventListener('push', (event) => {
+  let title = CR_ALERT_TITLE
+  let body  = CR_ALERT_BODY
+  try {
+    if (event.data) {
+      const data = event.data.json()
+      if (typeof data?.title === 'string') title = data.title
+      if (typeof data?.body  === 'string') body  = data.body
+    }
+  } catch (_) { /* empty payload — use defaults */ }
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      tag:        CR_ALERT_TAG,
+      renotify:   true,
+      requireInteraction: true,
+      vibrate:    [400, 200, 400, 200, 400],
+      icon:       '/icons/icon-192.png',
+      badge:      '/icons/icon-192.png',
+      data:       { url: '/dashboard' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = (event.notification.data && event.notification.data.url) || '/dashboard'
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    for (const c of all) {
+      if (c.url.includes('/dashboard')) {
+        await c.focus()
+        return
+      }
+    }
+    await self.clients.openWindow(target)
+  })())
+})

@@ -23,6 +23,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Loader2, X, Upload, CheckCircle2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import RentalSection, { type RentalSavePayload } from '@/components/dashboard/RentalSection'
 
@@ -259,6 +260,7 @@ function Dashboard({ row, onReload }: { row: TruckDriverRow; onReload: () => voi
   return (
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
+        <PWAInstallCard />
         {paidToast && (
           <div
             className="rounded-xl border border-green-300 bg-green-50 text-green-800 text-[13px] px-4 py-3 flex items-center gap-2 shadow-sm"

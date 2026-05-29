@@ -880,6 +880,9 @@ export default function HomeCleanProviderPage() {
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
+          providerId={p.id}
+          intentVertical="home-clean"
+          intentSource="home_clean_profile"
           themeColor={theme}
           serviceOptions={(p.services_offered ?? []).map((sid) => ({
             value: HOME_CLEAN_SERVICE_LABELS[sid] ?? sid,

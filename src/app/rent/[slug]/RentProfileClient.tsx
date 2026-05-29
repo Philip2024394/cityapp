@@ -707,6 +707,9 @@ export default function RentProfileClient({ row: r }: { row: BikeRentalPublic })
           providerSlug={r.slug}
           providerName={displayName}
           whatsapp={r.owner_whatsapp_e164}
+          providerId={r.id}
+          intentVertical="rentals"
+          intentSource="rentals_profile"
           themeColor={theme}
           serviceOptions={servicesOffered.map((sid) => ({
             value: BIKE_TYPE_LABELS[sid] ?? sid,

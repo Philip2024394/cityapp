@@ -151,6 +151,7 @@ export type BeauticianHeroText = {
 
 // Carousel entry. URL is required; the rest is optional so older rows
 // (mig 0074 v1, just string URLs) still render.
+import type { BadgeType } from '@/lib/badges'
 export type BeauticianServicePhoto = {
   url:          string
   name?:        string         // header — e.g. "Nail Art"
@@ -171,7 +172,7 @@ export type BeauticianServicePhoto = {
    *  card with a slow corner-glow animation. Six types live in
    *  src/lib/badges: discount, new_listing, appointment_only,
    *  low_stock, bridal_special, trending. */
-  badge?: { type: string; value?: number } | null
+  badge?: { type: BadgeType; value?: number } | null
 }
 
 export const SERVICE_LABELS = {

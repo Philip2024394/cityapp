@@ -49,3 +49,36 @@ export const TRIAL_LABEL_ID = `${TRIAL_DAYS} hari gratis`
 
 /** "7-day free trial" */
 export const TRIAL_LABEL_EN = `${TRIAL_DAYS}-day free trial`
+
+// ─── Founder cohort — first 1000 Indonesian drivers locked at 38k forever ──
+//
+// Founder decision 2026-05-29: the first 1000 drivers in Indonesia keep
+// the current monthly price (Rp 38.000) FOR LIFE. Drivers #1001+ pay the
+// standard rate (TBD — kept at the same 38k as a placeholder so existing
+// pricing copy doesn't lie until the new tier is decided). Set
+// `STANDARD_MONTHLY_IDR` to the new rate the moment that decision lands
+// and `MONTHLY_PRICE_LABEL` will keep showing founder pricing in copy
+// because that constant is the founder rate.
+//
+// Implementation note: cohort status is derived from a row count on the
+// drivers table at signup time (see src/lib/pricing/founderCohort.ts).
+// Lock the determination on insert by stamping `founder_cohort` to a
+// future migration; for now we compute it on the fly.
+
+/** Hard cap on the founder cohort — first 1000 drivers in Indonesia. */
+export const FOUNDER_COHORT_CAP = 1000
+
+/** Monthly rate locked for founder-cohort drivers (Rp 38.000). */
+export const FOUNDER_MONTHLY_IDR = SUBSCRIPTION_MONTHLY_IDR
+
+/** Standard post-founder monthly rate. TBD — placeholder kept at the
+ *  founder rate so copy stays honest until the higher tier is set. */
+export const STANDARD_MONTHLY_IDR = SUBSCRIPTION_MONTHLY_IDR
+
+/** "Pendiri · Rp 38.000/bulan seumur hidup" — copy for the badge. */
+export const FOUNDER_BADGE_LABEL_ID =
+  `Pendiri · ${MONTHLY_PRICE_LABEL}/bulan seumur hidup`
+
+/** "Founder · Rp 38.000/month for life" — English variant. */
+export const FOUNDER_BADGE_LABEL_EN =
+  `Founder · ${MONTHLY_PRICE_LABEL}/month for life`
