@@ -51,6 +51,8 @@ const TOUR_BANNER_LIBRARY: BannerLibrary = {
       'https://ik.imagekit.io/7grri5v7d/jimbaran%20indonisea.png?updatedAt=1761742702514',
     ],
     mixed: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2024,%202026,%2004_17_03%20PM.png?updatedAt=1777022242430',
+      'https://ik.imagekit.io/nepgaxllc/6789D.png?updatedAt=1777023528708',
       'https://ik.imagekit.io/7grri5v7d/strehdjdewweedsdsEESSSSSS.png?updatedAt=1773523933499',
       'https://ik.imagekit.io/7grri5v7d/strehdjdewwee.png?updatedAt=1773522458062',
       'https://ik.imagekit.io/7grri5v7d/strehdjdew.png?updatedAt=1773521508514',

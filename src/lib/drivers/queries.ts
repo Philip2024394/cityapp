@@ -224,12 +224,31 @@ type MockDriverRow = {
   bike_model: string | null
   bike_year: number | null
   bike_type: 'matic' | 'sport' | 'manual' | null
+  // mig 0093 added these columns specifically for the car/truck mocks.
+  // The seed data populates vehicle_* and leaves bike_* null when the
+  // vehicle_type is 'car'. Mapper below coalesces — bike_* wins when
+  // present (legacy bike mocks), vehicle_* fills in for cars/trucks so
+  // the Rider object always carries a usable make/model for the catalog
+  // lookup in /cari (and any other consumer of `rider.bike`).
+  vehicle_make: string | null
+  vehicle_model: string | null
+  vehicle_year: number | null
+  vehicle_type: 'car' | 'bike' | 'minibus' | 'truck' | 'premium_car' | null
   rating: number | null
   availability: 'online' | 'busy' | 'offline'
   created_at: string
 }
 
 function mockDriverRowToRider(row: MockDriverRow): Rider {
+  // Make/model coalescing — see comment on MockDriverRow.vehicle_make.
+  // Car mocks have vehicle_make set and bike_make null; bike mocks the
+  // other way round. We want a single non-empty (make, model) on the
+  // Rider object so the /cari catalog lookup always has something to
+  // match against. Empty-string fallback preserves the existing legacy
+  // shape.
+  const make  = row.bike_make  || row.vehicle_make  || ''
+  const model = row.bike_model || row.vehicle_model || ''
+  const year  = row.bike_year  || row.vehicle_year  || 0
   return {
     id: row.id,
     slug: row.slug,
@@ -241,9 +260,9 @@ function mockDriverRowToRider(row: MockDriverRow): Rider {
     city: row.city || '',
     services: (row.services || []) as ServiceType[],
     bike: {
-      make: row.bike_make || '',
-      model: row.bike_model || '',
-      year: row.bike_year || 0,
+      make,
+      model,
+      year,
       color: '',
       type: (row.bike_type || 'matic') as 'matic' | 'sport' | 'manual',
       hasBox: false,

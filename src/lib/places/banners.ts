@@ -11,6 +11,15 @@ import type { BannerCategory, BannerLibrary } from '@/lib/banners/library'
 export const PLACES_BANNER_LIBRARY: BannerLibrary = {
   '#10B981': {
     indonesian: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_36_56%20AM.png?updatedAt=1776710234849',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_36_12%20AM.png?updatedAt=1776710188384',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_35_10%20AM.png?updatedAt=1776710128590',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_58_16%20AM.png?updatedAt=1776711509774',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_03_59%20AM.png?updatedAt=1776711853142',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_10_50%20AM.png?updatedAt=1776712266070',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_08_24%20AM.png?updatedAt=1776712120137',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_11_46%20AM.png?updatedAt=1776712322545',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_18_50%20AM.png?updatedAt=1776712745413',
       'https://ik.imagekit.io/7grri5v7d/nasi%20uduk.png?updatedAt=1759938243210',
       'https://ik.imagekit.io/7grri5v7d/babi%20ganang.png?updatedAt=1759671010083',
       'https://ik.imagekit.io/7grri5v7d/nasi%20padang.png?updatedAt=1759670802691',
@@ -23,7 +32,52 @@ export const PLACES_BANNER_LIBRARY: BannerLibrary = {
       'https://ik.imagekit.io/7grri5v7d/nasi%20goreng.png?updatedAt=1759478879677',
       'https://ik.imagekit.io/7grri5v7d/nasi%20gorengS.png?updatedAt=1759479178751',
     ],
+    sushi: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_45_59%20AM.png?updatedAt=1776710776455',
+      'https://ik.imagekit.io/7grri5v7d/strehdjdewweedsdsEE.png?updatedAt=1773523404038',
+    ],
+    rooftop_bar: [
+      'https://ik.imagekit.io/7grri5v7d/strehdjdewweeds.png?updatedAt=1773522563882',
+    ],
+    live_music: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2024,%202026,%2004_28_23%20PM.png?updatedAt=1777022918950',
+    ],
+    mixed: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2024,%202026,%2003_53_13%20PM.png?updatedAt=1777020809884',
+    ],
+    fresh_juice: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_52_56%20AM.png?updatedAt=1776711191008',
+    ],
+    ice_cream: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_17_47%20AM.png?updatedAt=1776712682543',
+    ],
+    burger_fries: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_39_31%20AM.png?updatedAt=1776710385538',
+    ],
+    steak: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_37_37%20AM.png?updatedAt=1776710272663',
+    ],
+    pasta: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_40_54%20AM.png?updatedAt=1776710476334',
+    ],
+    fish: [
+      // Same URL also lives under 'indonesian' — kept in both per the
+      // established cross-category-duplication pattern.
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_36_56%20AM.png?updatedAt=1776710234849',
+    ],
+    chicken_satay: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_57_36%20AM.png?updatedAt=1776711475931',
+    ],
+    cake_shop: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_02_58%20AM.png?updatedAt=1776711793361',
+    ],
+    pizza: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_42_04%20AM.png?updatedAt=1776710542088',
+      'https://ik.imagekit.io/7grri5v7d/pizza%20night.png?updatedAt=1773520721010',
+    ],
     indonesian_drinks_ice: [
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2002_16_53%20AM.png?updatedAt=1776712630695',
+      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Apr%2021,%202026,%2001_56_14%20AM.png?updatedAt=1776711389652',
       'https://ik.imagekit.io/7grri5v7d/DRINKS%20INDONISEA.png?updatedAt=1759484189273',
       'https://ik.imagekit.io/7grri5v7d/indonisea%20foods%20streets%20snacks.png?updatedAt=1759835680795',
       'https://ik.imagekit.io/7grri5v7d/indonisea%20foods%20streets%20snack.png?updatedAt=1759835453951',
@@ -33,6 +87,7 @@ export const PLACES_BANNER_LIBRARY: BannerLibrary = {
       'https://ik.imagekit.io/7grri5v7d/indo%20food%20dribks%20news%20sss.png?updatedAt=1759836678037',
     ],
     indonesian_street_food: [
+      'https://ik.imagekit.io/7grri5v7d/strehdjd.png?updatedAt=1773521354779',
       'https://ik.imagekit.io/7grri5v7d/indo%20food%20dribks%20news.png?updatedAt=1759836130155',
       'https://ik.imagekit.io/7grri5v7d/indo%20food%20dribks%20new.png?updatedAt=1759835945234',
       'https://ik.imagekit.io/7grri5v7d/indo%20food.png?updatedAt=1759835045543',
@@ -67,8 +122,18 @@ export const PLACES_BANNER_CATEGORIES: BannerCategory[] = [
   { id: 'indonesian',             label: 'Indonesian' },
   { id: 'indonesian_street_food', label: 'Indonesian — Street Food' },
   { id: 'indonesian_drinks_ice',  label: 'Indonesian — Drinks & Ice' },
+  { id: 'fresh_juice',            label: 'Fresh Juice' },
+  { id: 'ice_cream',              label: 'Ice Cream' },
+  { id: 'burger_fries',           label: 'Burger & Fries' },
+  { id: 'steak',                  label: 'Steak' },
+  { id: 'pasta',                  label: 'Pasta' },
+  { id: 'fish',                   label: 'Fish' },
+  { id: 'chicken_satay',          label: 'Chicken Satay' },
+  { id: 'cake_shop',              label: 'Cake Shop' },
   { id: 'italian',       label: 'Italian' },
+  { id: 'pizza',         label: 'Pizza' },
   { id: 'japanese',      label: 'Japanese' },
+  { id: 'sushi',         label: 'Sushi' },
   { id: 'korean',        label: 'Korean' },
   { id: 'chinese',       label: 'Chinese' },
   { id: 'thai',          label: 'Thai' },
@@ -81,5 +146,7 @@ export const PLACES_BANNER_CATEGORIES: BannerCategory[] = [
   { id: 'fusion',        label: 'Fusion' },
   { id: 'cafe',          label: 'Cafe' },
   { id: 'bar',           label: 'Bar' },
+  { id: 'rooftop_bar',   label: 'Rooftop Bar' },
+  { id: 'live_music',    label: 'Live Music' },
   { id: 'mixed',         label: 'Mixed cuisine' },
 ]

@@ -37,6 +37,13 @@ export const runtime = 'nodejs'  // needs `crypto` (keyVault) + Node fetch
 // vendor_type → provider table the API will look up keys on. Each
 // entry here also requires the matching /api/<vertical>/* routes + the
 // vendor_orders constraint to include the type (see mig 0142 / 0143).
+//
+// ⚠ NEVER ADD ride/transport TYPES HERE. ⚠
+// 'driver', 'car_driver', 'bike_rider', 'rental_driver', 'truck',
+// 'bus' — all explicitly excluded. CityRiders is positioned as a
+// directory + driver SaaS (Permenhub 118/2018 light lane), not a
+// transport aplikator. The platform must never collect ride fares.
+// See the policy comment at the top of `src/app/cari/page.tsx`.
 const VENDOR_TABLES: Record<string, string> = {
   beautician: 'beautician_providers',
   facial:     'facial_providers',

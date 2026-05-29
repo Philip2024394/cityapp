@@ -22,6 +22,8 @@ import { logNav } from '@/lib/perf/navTiming'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
 import type { Rider, ServiceType } from '@/types/rider'
+import { getBikeImageUrl } from '@/data/bikeImages'
+import { getCarImageUrl, GENERIC_CAR_FALLBACK } from '@/data/carImages'
 
 // ============================================================================
 // /cari — Card-based booking page (full redesign 2026-05-27)
@@ -35,6 +37,28 @@ import type { Rider, ServiceType } from '@/types/rider'
 // Compliance posture: IndoCity is a software directory (PM 12/2019). The
 // driver cards label fares as "From Rp X" — never as a calculated trip
 // price. A persistent disclaimer sits under the CTA.
+//
+// ⚠ HARD POLICY — NO PAYMENTS / NO CART ON CITYRIDERS SURFACES ⚠
+// Founder decision 2026-05-29: this page (and every driver/rider surface
+// — `/r/[slug]`, `/car/[slug]`, `/bus/[slug]`, `/cari/rider`, the rental
+// flows, DriverProfileShell, RentalDriverCard) MUST NOT import or use
+// VendorCartButton, VendorCartSheet, useVendorCart, or any cart helper.
+// MUST NOT add `payment_provider` to the drivers / mock_drivers tables.
+// MUST NOT add 'driver' / 'car_driver' / 'bike_rider' / 'rental' to the
+// /api/checkout VENDOR_TABLES allowlist.
+//
+// Why: Indonesian Permenhub 118/2018 classifies platforms that "arrange
+// transport" — especially those that handle fare collection — as
+// transport aplikators (Gojek/Grab category). That triggers licensing,
+// KIR inspection, cooperative routing, commission caps, and OJK fintech
+// regs. CityRiders deliberately sits in the lighter "directory + driver
+// SaaS" lane: drivers pay a flat subscription, the platform never moves
+// money, customers and drivers transact privately over WhatsApp.
+//
+// Service marketplace verticals (beautician, facial, skincare, future
+// handyman/laundry/massage/home-clean propagation) are a DIFFERENT
+// regulatory category and CAN use the payment plumbing. This restriction
+// applies ONLY to ride / transport surfaces.
 // ============================================================================
 
 // Per-service placeholder text — same dictionary as before so deep-links
@@ -351,6 +375,46 @@ function PlanTripPageInner() {
   // ───────────────────────────────────────────────────────────────────────
   return (
     <>
+      {/* Custom yellow scrollbar for the driver list — thin rail, short
+          rounded thumb. Hits both WebKit (Chrome/Safari/Edge) and Firefox.
+          `min-height` on the thumb keeps it visible even on very tall
+          lists where it'd otherwise compress to a sliver. */}
+      <style>{`
+        .cari-driver-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #FACC15 transparent;
+        }
+        .cari-driver-scroll::-webkit-scrollbar { width: 6px; }
+        .cari-driver-scroll::-webkit-scrollbar-track { background: transparent; }
+        .cari-driver-scroll::-webkit-scrollbar-thumb {
+          background-color: #FACC15;
+          border-radius: 9999px;
+          min-height: 36px;
+        }
+        .cari-driver-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: #EAB308;
+        }
+      `}</style>
+
+      {/* HERO MAP IMAGE — fixed full-viewport background, sits at z-0
+          behind the header (z-30) and the bottom-anchored 70vh booking
+          container (z-20). The ~30vh gap above the white container is
+          where this illustration reads through, with the pickup/dropoff
+          map icons + route line displaying as an overlay on it.
+          `background-position: center -120px` lifts the composition's
+          focal area into that visible band (founder direction from the
+          original implementation). */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center -120px',
+          backgroundRepeat: 'no-repeat',
+        }}
+        aria-hidden
+      />
+
       {/* HEADER — wordmark on the left, nearby pill on the right. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -602,10 +666,14 @@ function PlanTripPageInner() {
               />
             </div>
 
-            {/* ROW 4 — Scrollable driver list. Filtered by vehicleType. */}
+            {/* ROW 4 — Scrollable driver list. Filtered by vehicleType.
+                Custom yellow scrollbar (`cari-driver-scroll`) — thin
+                rail + short rounded thumb so customers see the scroll
+                affordance without it eating page width. WebKit + Firefox
+                rules below; styles live in a <style> tag near the top of
+                the component so the class is portable. */}
             <div
-              className="mt-3 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2 -mx-1 px-1"
-              style={{ scrollbarWidth: 'thin' }}
+              className="cari-driver-scroll mt-3 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2 -mx-1 px-1"
             >
               {driversLoading && drivers.length === 0 && (
                 <div className="py-6 text-center text-[13px] font-bold text-[#71717A]">
@@ -772,17 +840,24 @@ function DriverCard({
   selected: boolean
   onSelect: () => void
 }) {
-  // Image: prefer brand_logo_url (drivers upload a photo of their vehicle
-  // for their own profile page) — the legacy Rider shape exposes this as
-  // `photoUrl`. Fallback is the pravatar URL generated in queries.ts.
-  const imgSrc = driver.photoUrl
-
   // Title: vehicle make + model when set, otherwise business name. The
   // Rider shape stores the vehicle on `bike` (legacy name — table covers
   // car + bike via the vehicle_type discriminator).
   const make = driver.bike?.make?.trim()
   const model = driver.bike?.model?.trim()
   const vehicleLabel = make || model ? `${make ?? ''} ${model ?? ''}`.trim() : driver.name
+
+  // Card image — always the VEHICLE (car catalog for car drivers, bike
+  // catalog for bike riders), never the driver's face. Profile photos
+  // stay on the actual /car/[slug] or /r/[slug] page; the booking card
+  // is a vehicle picker so it shows what the customer is hiring.
+  // Both helpers ALWAYS return a non-empty string (generic silhouette
+  // when the make/model isn't in the catalog yet) so there's never a
+  // null src; the <img onError> below catches transient 404s and swaps
+  // to the silhouette so a broken URL never leaves a blank tile.
+  const imgSrc = vehicleType === 'car'
+    ? getCarImageUrl(make, model)
+    : getBikeImageUrl(make, model)
 
   // Subtitle: year + color when set, otherwise area/city.
   const year = driver.bike?.year
@@ -852,21 +927,33 @@ function DriverCard({
       className={`${cardClass} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]`}
       style={{ minHeight: 72 }}
     >
-      {/* Vehicle / brand image */}
+      {/* Vehicle / brand image — landscape 84×56 (1.5:1) instead of the
+          old 64×64 square so a car's side-profile fits without the
+          front/rear bumpers being cropped by `object-cover`. Bikes are
+          also more landscape than square in side profile, so the same
+          shape helps them too. */}
       <div
         className="shrink-0 rounded-lg overflow-hidden bg-[#F4F4F5]"
-        style={{ width: 64, height: 64 }}
+        style={{ width: 84, height: 56 }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgSrc}
           alt=""
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain p-0.5"
           loading="lazy"
+          onError={(e) => {
+            // Defence in depth — if the catalog URL ever 404s (ImageKit
+            // blip, asset deleted, etc.) swap to the generic silhouette
+            // so the tile is never blank. The `src` guard prevents an
+            // infinite loop if the fallback itself fails.
+            const el = e.currentTarget
+            if (el.src !== GENERIC_CAR_FALLBACK) el.src = GENERIC_CAR_FALLBACK
+          }}
         />
       </div>
 
-      {/* Middle column — title + subtitle + rating + Profile pill */}
+      {/* Middle column — title + subtitle + price (moved from right) */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="text-[14px] font-black text-bg truncate">{vehicleLabel}</span>
@@ -876,48 +963,62 @@ function DriverCard({
             {subtitle}
           </div>
         )}
-        <div className="mt-0.5 flex items-center justify-between gap-2">
-          {driver.rating !== undefined ? (
-            <div className="inline-flex items-center gap-1 text-[12px] font-extrabold text-bg">
-              <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} />
-              {driver.rating.toFixed(1)}
-            </div>
-          ) : (
-            <span />
+        {/* Price + ETA — moved here from the right column so the rating
+            star can move to the top-right and the Profile yellow button
+            anchors the bottom-right. Inline so they sit on one line.
+            Price is one step larger (16px / extra-black) so it reads
+            as the most prominent number on the card. */}
+        <div className="mt-0.5 flex items-center gap-1.5">
+          {priceLabel && (
+            <span className="text-[16px] font-black text-bg tracking-tight leading-tight">
+              {priceLabel}
+            </span>
           )}
-          {/* Profile pill — small subtle escape hatch to the driver's
-              own /r or /car profile page. Stops propagation so tapping
-              the pill does NOT also fire the parent button's onSelect
-              (otherwise the card would briefly flip selected on the
-              way out). Wraps ONLY the pill, not the card body. */}
-          <Link
-            href={profileHref}
-            prefetch
-            onClick={(e) => { e.stopPropagation() }}
-            aria-label={`View ${driver.name}'s full profile`}
-            className="inline-flex items-center justify-center px-2 py-2.5 rounded-full text-[12px] font-extrabold text-[#52525B] hover:text-[#0F172A] hover:bg-white transition"
-            style={{ minHeight: 44, lineHeight: 1 }}
-          >
-            Profile →
-          </Link>
+          {etaLabel && (
+            <>
+              {priceLabel && <span aria-hidden className="text-[11px] text-[#A1A1AA]">·</span>}
+              <span className="text-[11px] font-extrabold" style={{ color: '#F59E0B' }}>
+                {etaLabel}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Right column — price + ETA (yellow) */}
-      <div className="shrink-0 text-right">
-        {priceLabel && (
-          <div className="text-[13px] font-black text-bg tracking-tight">
-            {priceLabel}
+      {/* Right column — star on top, yellow Profile button on bottom.
+          `self-stretch` lets the column fill the card's full height
+          (the card itself enforces min-height 72), so justify-between
+          properly pins the star to the top edge and the Profile button
+          to the bottom edge regardless of how tall the middle column
+          gets. */}
+      <div className="shrink-0 self-stretch flex flex-col items-end justify-between py-0.5">
+        {driver.rating !== undefined ? (
+          <div className="inline-flex items-center gap-1 text-[12px] font-extrabold text-bg">
+            <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} />
+            {driver.rating.toFixed(1)}
           </div>
+        ) : (
+          <span />
         )}
-        {etaLabel && (
-          <div
-            className="text-[11px] font-extrabold mt-0.5"
-            style={{ color: '#F59E0B' }}
-          >
-            {etaLabel}
-          </div>
-        )}
+        {/* Profile pill — yellow chevron button, lower-right corner.
+            Stops propagation so tapping the pill does NOT also fire the
+            parent button's onSelect (otherwise the card would briefly
+            flip selected on the way out). */}
+        <Link
+          href={profileHref}
+          prefetch
+          onClick={(e) => { e.stopPropagation() }}
+          aria-label={`View ${driver.name}'s full profile`}
+          className="inline-flex items-center justify-center rounded-full px-2 text-[10px] font-extrabold uppercase tracking-wider shadow-sm active:scale-[0.97] transition"
+          style={{
+            background: '#FACC15',
+            color: '#0A0A0A',
+            minHeight: 18,
+            lineHeight: 1,
+          }}
+        >
+          Profile
+        </Link>
       </div>
     </div>
   )
