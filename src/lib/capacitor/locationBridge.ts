@@ -51,8 +51,8 @@ export async function startNativeBackgroundPing(): Promise<StartResult> {
   try {
     const id = await BackgroundGeolocation.addWatcher(
       {
-        backgroundMessage: 'IndoCity is sharing your location so customers can find you.',
-        backgroundTitle:   'IndoCity is online',
+        backgroundMessage: 'Kita2u is sharing your location so customers can find you.',
+        backgroundTitle:   'Kita2u is online',
         requestPermissions: true,
         // Reject stale fixes — we want fresh GPS for accurate "X km away".
         stale: false,

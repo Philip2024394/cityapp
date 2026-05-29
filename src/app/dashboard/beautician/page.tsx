@@ -1,9 +1,11 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Camera, Sparkles, Palette, BadgeCheck, Link2, CheckCircle2, Clock, Copy } from 'lucide-react'
+import { ChevronRight, Camera, Sparkles, Palette, Link2, CheckCircle2, Clock, Copy } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
+import StatusPulse from '@/components/dashboard/StatusPulse'
+import WeeklyHoursEditor from '@/components/dashboard/WeeklyHoursEditor'
 import {
   type BeauticianProvider,
   type BeauticianAvailability,
@@ -106,11 +108,9 @@ export default function BeauticianDashboardPage() {
     || provider.price_makeup_idr || provider.price_nail_idr || provider.price_hair_idr,
   )
   const designDone   = Boolean(provider.theme_color || provider.cover_image_url || provider.hero_text)
-  const ktpDone      = provider.status === 'active'
-  const ktpPending   = Boolean(provider.ktp_image_url) && provider.status !== 'active'
 
-  const totalSteps   = 4
-  const doneSteps    = [infoDone, servicesDone, designDone, ktpDone].filter(Boolean).length
+  const totalSteps   = 3
+  const doneSteps    = [infoDone, servicesDone, designDone].filter(Boolean).length
   const pct          = Math.round((doneSteps / totalSteps) * 100)
   const firstName    = provider.display_name.split(' ')[0] || 'there'
 
@@ -184,20 +184,6 @@ export default function BeauticianDashboardPage() {
             description="Theme color, banner, title text, and scrolling promo"
             status={designDone ? 'done' : 'pending'}
           />
-          <TaskCard
-            href="/dashboard/beautician/info"
-            icon={<BadgeCheck size={22} />}
-            iconBg="bg-emerald-500/25 text-emerald-200"
-            title="ID verification (KTP)"
-            description={
-              ktpDone
-                ? 'Your profile is live on the marketplace.'
-                : ktpPending
-                  ? 'Admin is reviewing — usually within 24 hours.'
-                  : 'Upload your ID to appear on the marketplace.'
-            }
-            status={ktpDone ? 'done' : ktpPending ? 'pending-review' : 'pending'}
-          />
         </div>
 
         {/* Share link */}
@@ -229,31 +215,37 @@ export default function BeauticianDashboardPage() {
           </div>
         </section>
 
-        {/* Availability + trial — kept at the bottom as a small status strip */}
+        {/* Weekly opening hours — replaces the manual Online/Busy/Offline
+            toggle (founder ask 2026-05-29). Auto-derived status pulse:
+            green satellite ping when current time is within today's
+            hours, orange dot when outside (or busy). Car + bike rental
+            dashboards keep manual toggles since they're "available now
+            or not" by nature. */}
         <section className="rounded-3xl bg-white border border-gray-200 p-4 space-y-3">
-          <div>
-            <div className="text-[12px] font-bold uppercase tracking-wider text-black/55 mb-2">My status</div>
-            <div className="grid grid-cols-3 gap-2">
-              {(['online','busy','offline'] as const).map((a) => {
-                const active = provider.availability === a
-                const labels = { online: 'Online', busy: 'Busy', offline: 'Offline' }
-                const colors = active
-                  ? a === 'online' ? 'bg-emerald-500 text-white border-emerald-500'
-                  : a === 'busy'   ? 'bg-amber-500   text-white border-amber-500'
-                  :                  'bg-stone-500   text-white border-stone-500'
-                  : 'bg-gray-100 text-black/80 border-gray-200 hover:bg-gray-200'
-                return (
-                  <button
-                    key={a}
-                    onClick={() => setAvailability(a)}
-                    className={`rounded-xl px-3 py-3 text-[13px] font-extrabold uppercase tracking-wider transition border min-h-[44px] ${colors}`}
-                  >
-                    {labels[a]}
-                  </button>
-                )
-              })}
-            </div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-[12px] font-bold uppercase tracking-wider text-black/55">My opening hours</div>
+            <StatusPulse
+              operatingHours={(provider as FullProvider & { operating_hours?: Record<string, string> | null }).operating_hours ?? null}
+              busyDates={(provider as FullProvider & { busy_dates?: string[] | null }).busy_dates ?? null}
+              busyTimeSlots={(provider as FullProvider & { busy_time_slots?: Array<{ date: string; start_time: string; end_time: string }> | null }).busy_time_slots ?? null}
+              size={14}
+              showLabel
+            />
           </div>
+          <WeeklyHoursEditor
+            value={(provider as FullProvider & { operating_hours?: Record<string, string> | null }).operating_hours ?? null}
+            accentColor="#EC4899"
+            onChange={async (next) => {
+              setProvider((cur) => cur ? { ...cur, operating_hours: next } : cur)
+              try {
+                await fetch('/api/beautician/me/profile', {
+                  method:  'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body:    JSON.stringify({ operating_hours: next }),
+                })
+              } catch { /* optimistic; next reload reconciles */ }
+            }}
+          />
           <ProviderRenewBanner provider={provider} upgradeHref="/beautician/upgrade" />
         </section>
       </div>

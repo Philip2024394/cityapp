@@ -44,7 +44,7 @@ export default function BatteryOptPromptModal({ onAccept, onDismiss }: Props) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Izin baterai IndoCity"
+        aria-label="Izin baterai Kita2u"
         className="fixed left-0 right-0 bottom-0 z-[90] pb-safe animate-[fadeUp_0.22s_ease-out]"
       >
         <div
@@ -85,7 +85,7 @@ export default function BatteryOptPromptModal({ onAccept, onDismiss }: Props) {
 
           <div className="px-5 pb-4 space-y-3 text-[14px] text-ink/90 leading-relaxed">
             <p>
-              Untuk tetap <strong>Online</strong> saat layar mati, IndoCity
+              Untuk tetap <strong>Online</strong> saat layar mati, Kita2u
               perlu izin baterai. Tanpa izin ini, sistem hemat baterai HP
               kamu akan menutup aplikasi setelah ~30 menit — dan kamu
               berhenti muncul di peta customer tanpa sadar.

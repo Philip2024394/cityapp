@@ -17,6 +17,10 @@ export type MassageType =
   // Western
   | 'swedish' | 'deep_tissue' | 'sports' | 'aromatherapy' | 'hot_stone'
   | 'trigger_point' | 'lymphatic' | 'prenatal' | 'myofascial'
+  // Trending / Indonesian-traditional (mig 0124)
+  | 'cupping' | 'couples' | 'gua_sha'
+  // mig 0136 — "Mixed services" escape-valve (mirrors beautician mig 0133)
+  | 'mixed'
   // Catch-all
   | 'other'
 
@@ -52,8 +56,18 @@ export const MASSAGE_TYPE_GROUPS: { group: string; items: { value: MassageType; 
     ],
   },
   {
+    group: 'Trending & Traditional',
+    items: [
+      { value: 'cupping', label: 'Cupping / Bekam' },
+      { value: 'couples', label: 'Couples Massage' },
+      { value: 'gua_sha', label: 'Gua Sha' },
+    ],
+  },
+  {
     group: 'Other',
     items: [
+      // mig 0136 — escape valve at the end of the catalog.
+      { value: 'mixed', label: 'Mixed services' },
       { value: 'other', label: 'Other / Custom' },
     ],
   },
@@ -83,6 +97,10 @@ export const MASSAGE_TYPE_SHORT: Record<MassageType, string> = {
   lymphatic:         'Lymphatic',
   prenatal:          'Prenatal',
   myofascial:        'Myofascial',
+  cupping:           'Cupping / Bekam',
+  couples:           'Couples',
+  gua_sha:           'Gua Sha',
+  mixed:             'Mixed',
   other:             'Custom',
 }
 

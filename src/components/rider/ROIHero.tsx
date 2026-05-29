@@ -39,7 +39,7 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
 
   function onShareSavings() {
     if (typeof window === 'undefined') return
-    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan IndoCity — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali (Gojek/Grab masih potong 8% per Perpres 27/2026).
+    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan Kita2u — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali (Gojek/Grab masih potong 8% per Perpres 27/2026).
 
 Cek di indocity.streetlocal.live`
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`
@@ -122,7 +122,7 @@ Cek di indocity.streetlocal.live`
               You saved <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
             </div>
             <div className="text-[12px] text-gray-600 mt-1">
-              They&apos;d have taken {idr(competitorCommission)} (8% of {idr(monthlyLeadsValue)} — {COMPETITOR_COMMISSION_BASIS}). IndoCity takes Rp 0.
+              They&apos;d have taken {idr(competitorCommission)} (8% of {idr(monthlyLeadsValue)} — {COMPETITOR_COMMISSION_BASIS}). Kita2u takes Rp 0.
             </div>
             <button
               onClick={onShareSavings}

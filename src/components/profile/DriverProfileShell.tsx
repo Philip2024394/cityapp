@@ -176,7 +176,7 @@ function buildShellWhatsAppLink(opts: {
   const wa = normaliseE164ForWaMe(opts.driver.whatsapp_e164 ?? '')
   if (!wa) return ''
   const lines: string[] = [
-    `Halo ${opts.driver.business_name}, saya mau booking via IndoCity.`,
+    `Halo ${opts.driver.business_name}, saya mau booking via Kita2u.`,
     '',
   ]
   if (opts.pickup.trim())  lines.push(`📍 Pickup: ${opts.pickup.trim()}`)

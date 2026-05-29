@@ -58,7 +58,7 @@ export default function ProfileSlugIslands(props: {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         url={props.shareUrl}
-        prefillText={props.shareText ?? `Lihat profil ${props.shareName} di IndoCity:`}
+        prefillText={props.shareText ?? `Lihat profil ${props.shareName} di Kita2u:`}
         providerName={props.shareName}
       />
     </>

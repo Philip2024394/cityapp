@@ -31,15 +31,11 @@ export async function POST(req: Request) {
 
   const { data: row, error: readErr } = await admin
     .from('massage_providers')
-    .select('id, status, availability')
+    .select('id, availability')
     .eq('user_id', user.id)
     .maybeSingle()
   if (readErr) return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
   if (!row)    return NextResponse.json({ error: 'no_provider_row' }, { status: 404 })
-
-  if (next === 'online' && row.status !== 'active') {
-    return NextResponse.json({ error: 'not_verified' }, { status: 403 })
-  }
 
   const { error: updErr } = await admin
     .from('massage_providers')

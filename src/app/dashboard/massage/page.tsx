@@ -4,9 +4,10 @@ import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import AvailabilityDot from '@/components/massage/AvailabilityDot'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
+import CountryPicker from '@/components/dashboard/CountryPicker'
+import { countryByCode } from '@/lib/data/countries'
 import {
   MASSAGE_TYPE_GROUPS,
   MASSAGE_TYPE_LABELS,
@@ -51,9 +52,7 @@ export default function MassageDashboardPage() {
       const j = await r.json() as { ok?: boolean; error?: string }
       if (!j.ok) {
         setProvider({ ...provider, availability: prev })
-        alert(j.error === 'not_verified'
-          ? 'Profile is not yet verified by admin. You can go online once the KTP review is complete.'
-          : 'Could not update availability.')
+        alert('Could not update availability.')
       }
     } catch {
       setProvider({ ...provider, availability: prev })
@@ -101,13 +100,6 @@ export default function MassageDashboardPage() {
               <div className="text-[12px] text-black/60 font-mono truncate">{provider.slug}</div>
             </div>
           </div>
-
-          {provider.status !== 'active' && (
-            <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 text-[12px] px-3 py-2 mb-3">
-              <strong>Awaiting verification.</strong> Your profile is not listed on the marketplace yet.
-              Admin reviews KTP within 24h. {provider.rejected_reason && <span className="block mt-1 text-red-300">Rejected: {provider.rejected_reason}</span>}
-            </div>
-          )}
 
           <div className="grid grid-cols-3 gap-2">
             {(['online','busy','offline'] as const).map((a) => {
@@ -226,12 +218,14 @@ type Patch = Partial<{
   city: string
   service_area_notes: string
   profile_image_url: string
-  ktp_image_url: string
   cover_image_url: string | null
   gallery_image_urls: string[]
   instagram_url: string | null
   tiktok_url: string | null
   facebook_url: string | null
+  x_url: string | null
+  snapchat_url: string | null
+  website_url: string | null
   operating_hours: Record<string, string> | null
   certifications: string[]
   languages: string[]
@@ -239,6 +233,7 @@ type Patch = Partial<{
   has_physical_location: boolean
   latitude:              number | null
   longitude:             number | null
+  country_code:          string
 }>
 
 function EditForm({
@@ -255,6 +250,9 @@ function EditForm({
     instagram_url?:      string | null
     tiktok_url?:         string | null
     facebook_url?:       string | null
+    x_url?:              string | null
+    snapchat_url?:       string | null
+    website_url?:        string | null
     operating_hours?:    Record<string, string> | null
     certifications?:     string[] | null
     languages?:          string[] | null
@@ -277,12 +275,14 @@ function EditForm({
     city: string
     service_area_notes: string
     profile_image_url: string
-    ktp_image_url: string
     cover_image_url:    string | null
     gallery_image_urls: string[]
     instagram_url:      string | null
     tiktok_url:         string | null
     facebook_url:       string | null
+    x_url:              string | null
+    snapchat_url:       string | null
+    website_url:        string | null
     operating_hours:    Record<string, string> | null
     certifications:     string[]
     languages:          string[]
@@ -290,6 +290,7 @@ function EditForm({
     has_physical_location: boolean
     latitude:              number | null
     longitude:             number | null
+    country_code:          string
   }>({
     display_name: provider.display_name,
     gender: provider.gender,
@@ -303,12 +304,14 @@ function EditForm({
     city: provider.city ?? '',
     service_area_notes: provider.service_area_notes ?? '',
     profile_image_url: provider.profile_image_url ?? '',
-    ktp_image_url: provider.ktp_image_url ?? '',
     cover_image_url:    p.cover_image_url ?? null,
     gallery_image_urls: p.gallery_image_urls ?? [],
     instagram_url:      p.instagram_url ?? null,
     tiktok_url:         p.tiktok_url ?? null,
     facebook_url:       p.facebook_url ?? null,
+    x_url:              p.x_url ?? null,
+    snapchat_url:       p.snapchat_url ?? null,
+    website_url:        p.website_url ?? null,
     operating_hours:    p.operating_hours ?? null,
     certifications:     p.certifications ?? [],
     languages:          p.languages ?? [],
@@ -316,6 +319,7 @@ function EditForm({
     has_physical_location: Boolean(p.has_physical_location),
     latitude:              p.latitude ?? null,
     longitude:             p.longitude ?? null,
+    country_code:          (p as { country_code?: string | null }).country_code ?? 'ID',
   })
 
   function upd<K extends keyof typeof f>(k: K, v: typeof f[K]) {
@@ -356,7 +360,8 @@ function EditForm({
         <input type="number" min={0} value={f.price_90min_idr}  onChange={(e) => upd('price_90min_idr',  Number(e.target.value))} placeholder="90 min" className={inputCls + ' text-[13px]'} />
         <input type="number" min={0} value={f.price_120min_idr} onChange={(e) => upd('price_120min_idr', Number(e.target.value))} placeholder="120 min" className={inputCls + ' text-[13px]'} />
       </div>
-      <input type="tel" value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} placeholder="+62 812 …" className={inputCls} />
+      <CountryPicker value={f.country_code} onChange={(code) => upd('country_code', code)} />
+      <input type="tel" value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} placeholder={`+${countryByCode(f.country_code).dial_code} 812 …`} className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area notes" className={inputCls} />
 
@@ -414,7 +419,6 @@ function EditForm({
         )}
       </div>
       {provider.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={provider.user_id} />}
-      {provider.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && (
         <UniversalProfileExtrasEditor
           userId={provider.user_id}
@@ -424,6 +428,9 @@ function EditForm({
             instagram_url:      f.instagram_url,
             tiktok_url:         f.tiktok_url,
             facebook_url:       f.facebook_url,
+            x_url:              f.x_url,
+            snapchat_url:       f.snapchat_url,
+            website_url:        f.website_url,
             operating_hours:    f.operating_hours,
             certifications:     f.certifications,
             languages:          f.languages,

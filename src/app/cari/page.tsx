@@ -37,8 +37,6 @@ import type { Rider, ServiceType } from '@/types/rider'
 // price. A persistent disclaimer sits under the CTA.
 // ============================================================================
 
-const BG_IMAGE = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png'
-
 // Per-service placeholder text — same dictionary as before so deep-links
 // from /places and other entry points still read naturally.
 const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
@@ -310,7 +308,7 @@ function PlanTripPageInner() {
     const wa = normaliseE164ForWaMe(d.whatsappE164 ?? '')
     if (!wa) return ''
     const lines: string[] = [
-      `Halo ${d.name}, saya mau booking via IndoCity.`,
+      `Halo ${d.name}, saya mau booking via Kita2u.`,
       '',
     ]
     if (pickupLabel.trim())  lines.push(`📍 Pickup: ${pickupLabel.trim()}`)
@@ -353,53 +351,25 @@ function PlanTripPageInner() {
   // ───────────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* STATIC MAP BACKGROUND — fixed inset-0, cover-fit. Replaces the
-          interactive maplibre canvas. The image stays behind all chrome
-          and reads as visual context, not a working map (founder
-          approved trade-off: customers use the inputs, not the map). */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: `url("${BG_IMAGE}")`,
-          backgroundSize: 'cover',
-          // Push the image up by 120px so the visible composition in
-          // the hero area sits higher (founder direction).
-          backgroundPosition: 'center -120px',
-          backgroundRepeat: 'no-repeat',
-        }}
-        aria-hidden
-      />
       {/* HEADER — wordmark on the left, nearby pill on the right. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
             className="inline-flex items-center hover:opacity-85 transition"
-            aria-label="IndoCity home"
+            aria-label="Kita2u home"
           >
             <span
               className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
-              style={{ color: '#FFFFFF', letterSpacing: '-0.02em' }}
+              style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
             >
-              Ind
+              Kita
             </span>
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              fill="none"
-              className="w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] mx-[1px] translate-y-[3px]"
-            >
-              <path
-                d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
-                fill="#FACC15"
-              />
-              <circle cx="12" cy="10" r="3" fill="#FFFFFF" />
-            </svg>
             <span
               className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
               style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
             >
-              City
+              2u
             </span>
           </Link>
 
@@ -736,7 +706,7 @@ function PlanTripPageInner() {
             })()}
 
             <p className="mt-3 shrink-0 text-center text-[11px] text-[#52525B] font-bold leading-snug px-2">
-              Self-published rates · IndoCity is a software directory.
+              Self-published rates · Kita2u is a software directory.
               You agree the fare directly with the driver.
             </p>
           </div>

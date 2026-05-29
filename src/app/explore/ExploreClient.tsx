@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   ArrowRight, Bus, Briefcase, ChevronLeft, Truck,
   User, Package, UtensilsCrossed, KeyRound, MapPinned,
-  Flower2, Scissors, Shirt, Wrench, SprayCan,
+  Flower2, Scissors, Shirt, Wrench, SprayCan, Home,
   type LucideIcon,
 } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
@@ -228,6 +228,13 @@ export default function ExploreClient() {
             Icon={Briefcase}
             title="Business contracts · Regular delivery drivers"
             sub="Shopee / TikTok / restaurants — recurring courier hire"
+          />
+          <BrowseRow
+            href="/property"
+            telemetry="explore-cta:property"
+            Icon={Home}
+            title="Property · Sales · Rentals · Builders"
+            sub="Houses, villas, apartments, land — for sale, rent, or pre-launch"
           />
         </div>
 

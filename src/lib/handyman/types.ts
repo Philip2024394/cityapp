@@ -9,6 +9,10 @@ export type HandymanSpecialty =
   | 'ceiling_gypsum' | 'water_pump' | 'water_heater'
   | 'cctv_antenna'   | 'aluminum'   | 'well_drilling'
   | 'pest_control'   | 'canopy'     | 'glass_window' | 'wallpaper'
+  // mig 0125 — 2026-05-29 catalogue expansion
+  | 'waterproofing'  | 'septic_tank' | 'solar_panel' | 'smart_home' | 'mosquito_net'
+  // mig 0136 — "Mixed services" escape-valve (mirrors beautician mig 0133)
+  | 'mixed'
   | 'other'
 
 // Bahasa-first labels — tukang search by Indonesian terms in real life.
@@ -37,6 +41,12 @@ export const SPECIALTY_LABELS: Record<HandymanSpecialty, string> = {
   canopy:             'Pasang Kanopi',
   glass_window:       'Tukang Kaca',
   wallpaper:          'Pasang Wallpaper',
+  waterproofing:      'Tukang Kedap Air · Waterproofing',
+  septic_tank:        'Service Septik Tank · Cuko',
+  solar_panel:        'Pasang Panel Surya',
+  smart_home:         'Teknisi Smart Home',
+  mosquito_net:       'Pasang Kawat Nyamuk',
+  mixed:              'Mixed services',
   other:              'Lainnya',
 }
 
@@ -66,6 +76,12 @@ export const SPECIALTY_SHORT: Record<HandymanSpecialty, string> = {
   canopy:             'Kanopi',
   glass_window:       'Kaca',
   wallpaper:          'Wallpaper',
+  waterproofing:      'Waterproof',
+  septic_tank:        'Septik',
+  solar_panel:        'Solar',
+  smart_home:         'Smart Home',
+  mosquito_net:       'Kawat Nyamuk',
+  mixed:              'Mixed',
   other:              'Lainnya',
 }
 
@@ -77,7 +93,11 @@ export const ALL_SPECIALTIES: HandymanSpecialty[] = [
   'ceiling_gypsum','water_pump','water_heater',
   'cctv_antenna','aluminum','well_drilling',
   'pest_control','canopy','glass_window','wallpaper',
+  'waterproofing','septic_tank','solar_panel','smart_home','mosquito_net',
   'other',
+  // mig 0136 — appended after 'other' so the rest of the catalog order
+  // stays stable; "Mixed services" sits at the end of the chip picker.
+  'mixed',
 ]
 
 // UX-enforced cap on a single tukang's specialty count. DB also enforces

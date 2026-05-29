@@ -2,10 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import {
-  Star, Award, Menu, Share2, Link2, MessageCircle, X, ChevronLeft,
-  BadgeCheck, MapPin, Bike, Sparkles,
-} from 'lucide-react'
+import { Star, Award, Menu, Home, Hotel, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
   PortfolioDetailPopup,
@@ -20,18 +17,24 @@ import VisitUsPanel, {
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
+import { Sparkles } from 'lucide-react'
+// Star + Award already imported above for the hero info-card.
 import {
-  ALL_SPECIALTIES, SPECIALTY_LABELS,
-  type HandymanProviderPublic, type HandymanSpecialty,
+  ALL_SPECIALTIES,
+  SPECIALTY_LABELS,
+  type HandymanProviderPublic,
+  type HandymanSpecialty,
 } from '@/lib/handyman/types'
+import { countryByCode } from '@/lib/data/countries'
 
-// /handyman/[slug] — 100% layout + design parity with /beautician/[slug].
-// Data is adapted per vertical (specialty chips, hourly/day pricing,
-// flat service_photos with partial-name filter) but the visual + behavioural
-// surface is identical.
-
+// Default theme accent — used when the tukang hasn't picked their own
+// theme_color (mig 0087). Tukang choose their accent from the dashboard
+// color palette; the chosen hex flows through every accent surface on
+// this page via the `theme` constant below.
 const DEFAULT_THEME = '#FACC15'
 
+// Review row as returned by GET /api/reviews. created_at is ISO,
+// formatted to "Xd ago" / absolute date in the UI.
 type ReviewRow = {
   id:           string
   reviewer_name:string
@@ -39,6 +42,19 @@ type ReviewRow = {
   comment:      string | null
   created_at:   string
 }
+
+
+// /handyman/[slug] — universal profile flagship build. Mirrors the
+// /beautician/[slug] page byte-for-byte at the JSX layer; only the data
+// source swaps from beautician_providers to handyman_providers and a
+// few vertical-specific adaptations apply (specialty chips, hourly/day
+// pricing block, flat service_photos array with partial-name filter).
+
+// Vertical default for the hero. Used when the tukang hasn't set
+// their own cover_image_url yet — keeps the page on-brand instead of
+// showing the generic yellow gradient on every new signup.
+const DEFAULT_HANDYMAN_HERO =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 
 export default function HandymanProviderPage() {
   const params = useParams<{ slug: string }>()
@@ -49,16 +65,28 @@ export default function HandymanProviderPage() {
   const [shareOpen, setShareOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [showMoreServices, setShowMoreServices] = useState(false)
+  // null = show photos from ALL services (combined). When a specialty
+  // is set, the portfolio carousel filters to just that specialty.
   const [activeService, setActiveService] = useState<HandymanSpecialty | null>(null)
+  // Selected carousel card — opens the View Details popup when set.
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  // Portfolio layout — flip between auto-drifting carousel + 2-col grid.
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
+  // Reviews view — replaces everything below the floating info-card.
   const [showReviews, setShowReviews] = useState(false)
+  // Visit Us view — also replaces content area when active (only
+  // available when the tukang has opted into a physical location).
   const [showVisitUs, setShowVisitUs] = useState(false)
-  const [reviews, setReviews] = useState<ReviewRow[] | null>(null)
+  const [reviews, setReviews]         = useState<ReviewRow[] | null>(null)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsRefreshCount, setReviewsRefreshCount] = useState(0)
+  // Lifted from ReviewsPanel so the footer Leave Review button can open
+  // the form too, not just the in-panel trigger.
   const [reviewFormOpen, setReviewFormOpen] = useState(false)
-  const [contactOpen, setContactOpen] = useState(false)
+  // Contact popup — opened by both the bottom Contact CTA and the
+  // per-service "View Details" Contact button. `contactServiceName`
+  // pre-fills the service field when triggered from a service card.
+  const [contactOpen,        setContactOpen]        = useState(false)
   const [contactServiceName, setContactServiceName] = useState<string>('')
 
   useEffect(() => {
@@ -78,8 +106,12 @@ export default function HandymanProviderPage() {
 
   useProfileViewTracker({ providerType: 'handyman', providerId: p?.id })
 
+  // Resolved accent color for every accent surface on this page.
+  // p.theme_color (mig 0087) wins; fall back to global default yellow.
   const theme = p?.theme_color || DEFAULT_THEME
 
+  // Fetch reviews only when the panel is first opened, then again
+  // after a new submission (bump reviewsRefreshCount).
   useEffect(() => {
     if (!showReviews || !p?.id) return
     setReviewsLoading(true)
@@ -107,16 +139,18 @@ export default function HandymanProviderPage() {
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/handyman/${p.slug}`
 
+  // WhatsApp prefill text for the under-carousel contact button.
   const waText = [
     `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
-    `Saya butuh tukang untuk pekerjaan di rumah / kantor.`,
+    `Saya tertarik dengan jasa tukang Anda.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
   ].filter(Boolean).join('\n')
 
   return (
     <Shell>
-      {/* Hero — cover with overlay text + floating info card. */}
+      {/* Hero — cover with overlay text, plus a floating info-card that
+          sits on the bottom edge of the cover (15px rounded corners). */}
       <div className="relative pb-2">
         {/* Top-right share button. */}
         <button
@@ -133,21 +167,13 @@ export default function HandymanProviderPage() {
           className="relative w-full overflow-hidden bg-black"
           style={{ aspectRatio: '16 / 9' }}
         >
-          {p.cover_image_url ? (
-            <img
-              src={p.cover_image_url}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="absolute inset-0"
-              style={{ background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)' }}
-              aria-hidden
-            />
-          )}
-
-          {/* Hero overlay — text from p.hero_text (mig 0091) with handyman defaults. */}
+          <img
+            src={p.cover_image_url || DEFAULT_HANDYMAN_HERO}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* Hero overlay — text now comes from p.hero_text (mig 0091)
+              when set; otherwise falls back to the default copy. */}
           {(() => {
             const ht = p.hero_text || {}
             const line1   = ht.line1   || 'Professional'
@@ -156,10 +182,14 @@ export default function HandymanProviderPage() {
             const line2Color   = ht.color         || theme
             const line1Color   = ht.line1_color   || '#000000'
             const taglineColor = ht.tagline_color || '#000000'
+            // Map legacy 'dance' / 'flyin' values to 'none' so old saved
+            // data doesn't break the new effect set.
             const rawEffect = ht.effect || 'none'
             const effect = ['none','shimmer','dance','underline'].includes(rawEffect) ? rawEffect : 'none'
             return (
               <div className={`absolute left-4 z-10 select-none leading-none cr-hero-${effect}`} style={{ top: 31 }}>
+                {/* Refined, premium effects — scoped to the line2
+                    (cr-hero-word) span only. */}
                 <style>{`
                   @keyframes cr-hero-dance {
                     0%,100% { transform: translate(0,0) rotate(0) }
@@ -207,7 +237,9 @@ export default function HandymanProviderPage() {
                     style={{ color: theme, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))' }}
                   />
                 </div>
-                <div className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden">
+                <div
+                  className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden"
+                >
                   <span className="cr-hero-word inline-block" style={{ color: line2Color }}>
                     {line2}
                   </span>
@@ -215,12 +247,39 @@ export default function HandymanProviderPage() {
                 <div className="text-[13px] sm:text-[14px] font-semibold mt-1.5 drop-shadow-[0_1px_3px_rgba(255,255,255,0.55)] whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: taglineColor, maxWidth: 'min(360px, calc(100vw - 32px))' }}>
                   {tagline}
                 </div>
+
+                {/* Service locations the tukang travels to — for the
+                    handyman vertical only Home and Hotel are sensible,
+                    so villa/spa are intentionally hidden here. A
+                    missing or null service_locations array still hides
+                    the whole row to avoid implying locations the
+                    tukang doesn't actually serve. */}
+                {(() => {
+                  const locsRaw = (p as { service_locations?: Array<'home' | 'hotel' | 'villa'> | null }).service_locations
+                  const locs = new Set(locsRaw ?? [])
+                  if (locs.size === 0) return null
+                  const items: Array<{ key: string; icon: typeof Home; label: string }> = []
+                  if (locs.has('home'))  items.push({ key: 'home',  icon: Home,  label: 'Home' })
+                  if (locs.has('hotel')) items.push({ key: 'hotel', icon: Hotel, label: 'Hotel' })
+                  if (items.length === 0) return null
+                  return (
+                    <div className="flex items-start gap-2 max-w-[280px]" style={{ marginTop: 15 }}>
+                      {items.map((it, idx) => (
+                        <React.Fragment key={it.key}>
+                          {idx > 0 && <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />}
+                          <HeroIcon icon={it.icon} slogan={it.label} theme={theme} />
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             )
           })()}
         </div>
 
-        {/* Reviews toggle pill */}
+        {/* Reviews toggle — themed pill above the floating card, right side.
+            Click swaps the area below for the reviews list. */}
         <div className="px-4 relative z-20 flex justify-end" style={{ marginTop: -56 }}>
           <button
             type="button"
@@ -234,12 +293,15 @@ export default function HandymanProviderPage() {
           </button>
         </div>
 
-        {/* Floating info card */}
+        {/* Floating info card — overlaps the bottom edge of the cover.
+            All 4 corners 15px. Left: avatar. Middle: name / city / rating.
+            Right: "Top Rated Seller" badge. */}
         <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
           <div
             className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
             style={{ borderRadius: 15 }}
           >
+            {/* Profile image */}
             {p.profile_image_url ? (
               <img
                 src={p.profile_image_url}
@@ -249,12 +311,13 @@ export default function HandymanProviderPage() {
             ) : (
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center text-white text-[22px] font-black shrink-0 border-2 border-white shadow"
-                style={{ background: theme }}
+                style={{ background: '#FACC15' }}
               >
                 {p.display_name.charAt(0).toUpperCase()}
               </div>
             )}
 
+            {/* Name + city + rating */}
             <div className="min-w-0 flex-1">
               <h1 className="text-[16px] sm:text-[18px] font-black text-black truncate leading-tight flex items-center gap-1">
                 <span className="truncate">{p.display_name}</span>
@@ -285,6 +348,10 @@ export default function HandymanProviderPage() {
               </div>
             </div>
 
+            {/* Top Rated Seller badge — neutral gray pill so the chip
+                stays unchanged across profiles; only the Award icon +
+                text tint the active profile theme color so each tukang
+                shows their own accent. */}
             <div
               className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
               style={{ background: '#F3F4F6' }}
@@ -310,10 +377,17 @@ export default function HandymanProviderPage() {
             instagramUrl={p.instagram_url ?? null}
             tiktokUrl={p.tiktok_url ?? null}
             facebookUrl={p.facebook_url ?? null}
+            xUrl={(p as unknown as { x_url?: string | null }).x_url ?? null}
+            snapchatUrl={(p as unknown as { snapchat_url?: string | null }).snapchat_url ?? null}
+            websiteUrl={(p as unknown as { website_url?: string | null }).website_url ?? null}
+            whatsappE164={p.whatsapp_e164 ?? null}
+            telegramHandle={(p as unknown as { telegram_handle?: string | null }).telegram_handle ?? null}
+            wechatId={(p as unknown as { wechat_id?: string | null }).wechat_id ?? null}
+            lineId={(p as unknown as { line_id?: string | null }).line_id ?? null}
+            kakaotalkId={(p as unknown as { kakaotalk_id?: string | null }).kakaotalk_id ?? null}
             busyDates={(p.busy_dates ?? []) as string[]}
             themeColor={theme}
             onClose={() => setShowVisitUs(false)}
-            noLocationCopy="Lokasi belum di-pin oleh tukang."
             bottomCta={
               (typeof p.latitude === 'number' && typeof p.longitude === 'number')
                 ? {
@@ -354,167 +428,202 @@ export default function HandymanProviderPage() {
           />
         ) : (
           <>
-            {/* About {name} — 5-line clamped bio + optional Visit Us link. */}
-            <section className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                  About {p.display_name}
-                </h2>
-                {p.has_physical_location && (
+        {/* About {name} — 5-line clamped bio. Black heading + gray body
+            for readability on the white page background. */}
+        <section className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+              About {p.display_name}
+            </h2>
+            {p.has_physical_location && (
+              <button
+                type="button"
+                onClick={() => setShowVisitUs(true)}
+                className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+                style={{ color: theme }}
+              >
+                <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Visit Us
+              </button>
+            )}
+          </div>
+          <div className="flex items-start gap-3">
+            {p.bio?.trim() ? (
+              <p
+                className="text-[13px] text-gray-600 leading-snug flex-1 min-w-0"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 5,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Collapse stray \n in the stored bio to a single
+                    space so short sentences don't each sit on their
+                    own line — text now flows naturally and the line
+                    clamp counts true rendered lines. */}
+                {p.bio.replace(/\s*\n\s*/g, ' ')}
+              </p>
+            ) : (
+              <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
+            )}
+          </div>
+        </section>
+
+        {/* Services Provided — only renders specialties that actually
+            have at least one "live" carousel entry (image + matching
+            name + description). Empty placeholder specialties don't
+            deserve a public badge. */}
+        {(() => {
+          const offered = (p.specialties ?? []) as HandymanSpecialty[]
+          if (offered.length === 0) return null
+          const sp = (p.service_photos ?? []) as Array<{
+            url?: string; name?: string; description?: string
+          }>
+          // A specialty is "live" when at least one service_photos entry
+          // has a non-empty url + description AND its name partial-
+          // matches the specialty's label (case-insensitive). Same
+          // filter shape the carousel uses below, kept in sync so the
+          // chip the user picks always has photos to show.
+          const live = offered.filter((sid) => {
+            const label = (SPECIALTY_LABELS[sid] ?? sid).toLowerCase()
+            return sp.some((item) =>
+              item && typeof item === 'object'
+              && typeof item.url === 'string' && item.url.trim().length > 0
+              && typeof item.description === 'string' && item.description.trim().length > 0
+              && typeof item.name === 'string' && item.name.toLowerCase().includes(label)
+            )
+          })
+          if (live.length === 0) return null
+          const all     = live
+          const visible = all.slice(0, 3)
+          const hidden  = all.slice(3)
+          const hasMore = hidden.length > 0
+          return (
+            <section className="space-y-2" style={{ marginTop: 15 }}>
+              <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                Services Provided
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/* "All" reset chip — clears any active service filter
+                    so the portfolio carousel shows photos from every
+                    specialty again. Highlighted with the theme when no
+                    filter is active. */}
+                <button
+                  type="button"
+                  onClick={() => { setActiveService(null); setShowMoreServices(false) }}
+                  aria-pressed={activeService === null}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
+                  style={
+                    activeService === null
+                      ? { background: theme, color: '#FFFFFF' }
+                      : { background: '#F3F4F6', color: '#374151' }
+                  }
+                >
+                  All
+                </button>
+                {visible.map((sid) => (
+                  <ServiceFilterBadge
+                    key={sid} sid={sid}
+                    active={activeService === sid}
+                    onClick={() => setActiveService(activeService === sid ? null : sid)}
+                    theme={theme}
+                  />
+                ))}
+                {hasMore && (
                   <button
                     type="button"
-                    onClick={() => setShowVisitUs(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
-                    style={{ color: theme }}
+                    onClick={() => setShowMoreServices((v) => !v)}
+                    aria-label={showMoreServices ? 'Hide other services' : 'Show other services'}
+                    aria-expanded={showMoreServices}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white shrink-0 active:scale-[0.96] transition"
+                    style={{ background: theme }}
                   >
-                    <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    Visit Us
+                    <Menu className="w-4 h-4" strokeWidth={2.5} />
                   </button>
                 )}
               </div>
-              <div className="flex items-start gap-3">
-                {p.bio?.trim() ? (
-                  <p
-                    className="text-[13px] text-gray-600 leading-snug flex-1 min-w-0"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 5,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {p.bio.replace(/\s*\n\s*/g, ' ')}
-                  </p>
-                ) : (
-                  <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
-                )}
-              </div>
-            </section>
-
-            {/* Services Provided — chips for each specialty the tukang covers. */}
-            {(() => {
-              const offered = (p.specialties ?? []) as HandymanSpecialty[]
-              if (offered.length === 0) return null
-              const all     = offered
-              const visible = all.slice(0, 3)
-              const hidden  = all.slice(3)
-              const hasMore = hidden.length > 0
-              return (
-                <section className="space-y-2" style={{ marginTop: 15 }}>
-                  <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                    Services Provided
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => { setActiveService(null); setShowMoreServices(false) }}
-                      aria-pressed={activeService === null}
-                      className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
-                      style={
-                        activeService === null
-                          ? { background: theme, color: '#FFFFFF' }
-                          : { background: '#F3F4F6', color: '#374151' }
-                      }
-                    >
-                      All
-                    </button>
-                    {visible.map((sid) => (
-                      <ServiceFilterBadge
-                        key={sid} sid={sid}
-                        active={activeService === sid}
-                        onClick={() => setActiveService(activeService === sid ? null : sid)}
-                        theme={theme}
-                      />
-                    ))}
-                    {hasMore && (
-                      <button
-                        type="button"
-                        onClick={() => setShowMoreServices((v) => !v)}
-                        aria-label={showMoreServices ? 'Hide other services' : 'Show other services'}
-                        aria-expanded={showMoreServices}
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white shrink-0 active:scale-[0.96] transition"
-                        style={{ background: theme }}
-                      >
-                        <Menu className="w-4 h-4" strokeWidth={2.5} />
-                      </button>
-                    )}
-                  </div>
-                  {hasMore && showMoreServices && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {hidden.map((sid) => (
-                        <ServiceFilterBadge
-                          key={sid} sid={sid}
-                          active={activeService === sid}
-                          onClick={() => setActiveService(activeService === sid ? null : sid)}
-                          theme={theme}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )
-            })()}
-
-            {/* Portfolio carousel */}
-            {(() => {
-              const photos = buildPortfolioPhotos(p, activeService)
-              if (photos.length === 0) return null
-              return (
-                <section className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                      {activeService
-                        ? `${SPECIALTY_LABELS[activeService]} — Portfolio`
-                        : 'Portfolio'}
-                    </h2>
-                    <PortfolioViewToggle
-                      view={portfolioView}
-                      onChange={setPortfolioView}
-                      themeColor={theme}
+              {hasMore && showMoreServices && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {hidden.map((sid) => (
+                    <ServiceFilterBadge
+                      key={sid} sid={sid}
+                      active={activeService === sid}
+                      onClick={() => setActiveService(activeService === sid ? null : sid)}
+                      theme={theme}
                     />
-                  </div>
-                  <p className="text-[11px] text-gray-500 italic -mt-1">
-                    Please contact for additional services not listed
-                  </p>
-                  <PortfolioCarousel
-                    photos={photos}
-                    onViewDetails={(ph) => setDetailPhoto(ph)}
-                    themeColor={theme}
-                    view={portfolioView}
-                  />
-                </section>
-              )
-            })()}
-
-            {/* Running marquee — promo ribbon under the carousel. */}
-            <RunningMarquee
-              text={p.promo_text || 'Message me this week — professional tukang ready to serve your home, office or construction site.'}
-            />
-
-            {/* CTA row — Start From price on the left, Contact button on the right. */}
-            <div className="flex items-end justify-between gap-3 pb-4">
-              <div className="leading-none pb-3">
-                <div className="text-[24px] sm:text-[28px] font-black text-black">
-                  {formatStartFromPrice(p)}
+                  ))}
                 </div>
-                <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
-                  Start from
-                </div>
-              </div>
-              {p.whatsapp_e164 && (
-                <button
-                  type="button"
-                  onClick={() => { setContactServiceName(''); setContactOpen(true) }}
-                  className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
-                  style={{ background: theme }}
-                >
-                  <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
-                  Contact
-                </button>
               )}
+            </section>
+          )
+        })()}
+
+        {/* Portfolio carousel — rich cards (image + name + 2-line desc
+            + start price + View Details). Cards swipe left-to-right. */}
+        {(() => {
+          const photos = buildPortfolioPhotos(p, activeService)
+          if (photos.length === 0) return null
+          return (
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                  {activeService
+                    ? `${SPECIALTY_LABELS[activeService]} — Portfolio`
+                    : 'Portfolio'}
+                </h2>
+                <PortfolioViewToggle
+                  view={portfolioView}
+                  onChange={setPortfolioView}
+                  themeColor={theme}
+                />
+              </div>
+              <p className="text-[11px] text-gray-500 italic -mt-1">
+                Please contact for additional services not listed
+              </p>
+              <PortfolioCarousel
+                photos={photos}
+                onViewDetails={(ph) => setDetailPhoto(ph)}
+                themeColor={theme}
+                view={portfolioView}
+                currencySymbol={countryByCode((p as unknown as { country_code?: string | null }).country_code ?? 'ID').currency_symbol}
+              />
+            </section>
+          )
+        })()}
+
+        {/* Running marquee — weekly promo ribbon under the carousel. */}
+        <RunningMarquee
+          text={p.promo_text || 'Message me this week — professional tukang ready to serve your home, office or construction site.'}
+        />
+
+        {/* CTA row under the carousel — large price on the left,
+            themed Contact button (square w/ rounded corners) on the
+            right. pb-4 leaves breathing room before the accent bar. */}
+        <div className="flex items-end justify-between gap-3 pb-4">
+          <div className="leading-none pb-3">
+            <div className="text-[24px] sm:text-[28px] font-black text-black">
+              {formatStartFromPrice(p)}
             </div>
+            <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
+              Start from
+            </div>
+          </div>
+          {p.whatsapp_e164 && (
+            <button
+              type="button"
+              onClick={() => { setContactServiceName(''); setContactOpen(true) }}
+              className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
+              style={{ background: theme }}
+            >
+              <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
+              Contact
+            </button>
+          )}
+        </div>
           </>
         )}
+
       </div>
 
       {shareOpen && (
@@ -542,6 +651,7 @@ export default function HandymanProviderPage() {
               Bagikan profil {p.display_name} ke teman atau klien.
             </p>
             <div className="space-y-2">
+              {/* Copy link — single-tap; status flips to "Copied!" for 1.8s. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -562,6 +672,7 @@ export default function HandymanProviderPage() {
                 </div>
               </button>
 
+              {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di IndoCity: ${profileUrl}`)}`}
                 target="_blank"
@@ -578,6 +689,7 @@ export default function HandymanProviderPage() {
                 </div>
               </a>
 
+              {/* Facebook — accepts URL share via sharer.php. */}
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`}
                 target="_blank"
@@ -594,6 +706,9 @@ export default function HandymanProviderPage() {
                 </div>
               </a>
 
+              {/* Instagram — IG doesn't accept arbitrary URL share. We
+                  copy the link to the clipboard and open IG so the user
+                  can paste into a DM / Story / bio. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -614,6 +729,7 @@ export default function HandymanProviderPage() {
                 </div>
               </button>
 
+              {/* TikTok — same pattern: copy link, open app. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -637,16 +753,21 @@ export default function HandymanProviderPage() {
         </div>
       )}
 
-      {/* Right-edge "back" bar */}
+      {/* Right-edge "back" bar — tall vertical strip flush against the
+          window edge (no protrusion into the page content). Yellow,
+          rounded only on the inside (left) corners. Arrow icon top,
+          vertical "BACK" text below. Diverts back to /handyman. */}
       <a
         href="/handyman"
         aria-label="Back to IndoCity tukang"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
-          /* Anchored beside the About/bio block — keeps the button out
-             of the way of the Services chips + Portfolio carousel +
-             Contact CTA further down. */
+          /* Anchored beside the About/bio block on first paint so the
+             button never covers the interactive surfaces lower on the
+             page (Services chips, Portfolio carousel, Contact CTA).
+             top 35% + translateY(-50%) puts the 110px button visually
+             at ~30-40% of the viewport — i.e. the bio band. */
           top: '35%',
           transform: 'translateY(-50%)',
           width: 34,
@@ -672,7 +793,10 @@ export default function HandymanProviderPage() {
         </span>
       </a>
 
-      {/* Footer Leave Review — only when reviews panel is open AND inline form closed. */}
+      {/* Footer Leave Review button — only renders when the Reviews
+          panel is active AND the inline form isn't already open.
+          Hidden while the user is filling the form so it doesn't
+          obscure the Submit button. */}
       {showReviews && !reviewFormOpen && (
         <button
           type="button"
@@ -685,14 +809,15 @@ export default function HandymanProviderPage() {
         </button>
       )}
 
-      {/* Bottom accent bar */}
+      {/* Bottom accent bar — fixed to visible viewport edge. */}
       <div
         className="fixed left-0 right-0 z-10"
         style={{ bottom: 0, height: 6, background: theme }}
         aria-hidden
       />
 
-      {/* Portfolio "View Details" popup */}
+      {/* Portfolio "View Details" popup — full image + before/after
+          thumbs (if uploaded) + description + start price + Contact. */}
       {detailPhoto && (
         <PortfolioDetailPopup
           photo={detailPhoto}
@@ -706,8 +831,11 @@ export default function HandymanProviderPage() {
           }}
         />
       )}
-
-      {/* Contact / booking popup */}
+      {/* Contact / booking popup — opened by both the bottom Contact
+          CTA and any per-service Contact button. Submits a booking
+          request server-side first (so it shows up on the tukang's
+          calendar) and then opens WhatsApp with a matching pre-filled
+          message. Skips busy_dates the tukang has marked. */}
       {contactOpen && p.whatsapp_e164 && (
         <ContactBookingPopup
           providerSlug={p.slug}
@@ -728,9 +856,21 @@ export default function HandymanProviderPage() {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Specialty filter chip
-// ─────────────────────────────────────────────────────────────────────
+// PortfolioDetailPopup + ThumbButton now live in
+// @/components/profile/PortfolioCarousel.tsx and are imported at the
+// top of this file.
+
+// ContactBookingPopup now lives in @/components/profile/ContactBookingPopup.tsx
+// Inline copy removed in Phase 2-A4.
+
+// Carousel card — image up top, name + 2-line description + start
+// Portfolio carousel — auto-drifts left at a slow pace and pauses on
+// user interaction so swipe/drag/wheel still works. Cards are
+// duplicated so the loop seam (when scrollLeft passes half-width and
+// wraps back to 0) is invisible.
+// PortfolioCarousel + PortfolioCard now live in
+// @/components/profile/PortfolioCarousel.tsx — imported at the top of
+// this file. Inline copies removed in Phase 2-A2.
 
 function ServiceFilterBadge({
   sid, active, onClick, theme,
@@ -757,34 +897,49 @@ function ServiceFilterBadge({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Pricing + portfolio helpers
-// ─────────────────────────────────────────────────────────────────────
-
+// Cheapest price across hourly + day rates + per-photo prices. Falls
+// back to a sensible default when nothing is set so the CTA never
+// reads empty.
 function formatStartFromPrice(p: HandymanProviderPublic): string {
   const candidates: number[] = []
   if (typeof p.hourly_rate_idr === 'number' && p.hourly_rate_idr > 0) candidates.push(p.hourly_rate_idr)
   if (typeof p.day_rate_idr    === 'number' && p.day_rate_idr    > 0) candidates.push(p.day_rate_idr)
-  // Also scan service_photos prices in case the tukang priced individual jobs.
   const sp = (p.service_photos ?? []) as Array<{ price_idr?: number | null }>
   for (const item of sp) {
-    if (item && typeof item.price_idr === 'number' && item.price_idr > 0) candidates.push(item.price_idr)
+    if (item && typeof item === 'object' && typeof item.price_idr === 'number' && item.price_idr > 0) {
+      candidates.push(item.price_idr)
+    }
   }
   if (candidates.length === 0) return 'Rp 100k'
   return formatPriceIdr(Math.min(...candidates)) ?? 'Rp 100k'
 }
 
+// Normalises one service_photos entry — handyman uses a flat array of
+// objects (mig 0089 CHECK constraint). Plain URL strings are not part
+// of the schema; this helper still tolerates them just in case legacy
+// rows slipped through validation.
+function normalisePhoto(raw: unknown): PortfolioPhoto | null {
+  if (typeof raw === 'string') return { url: raw }
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const o = raw as Partial<PortfolioPhoto>
+    if (typeof o.url === 'string' && o.url) return { ...o, url: o.url } as PortfolioPhoto
+  }
+  return null
+}
+
+// Combines tukang photos into the carousel feed. When a specialty
+// filter is active, partial-matches the photo's `name` against the
+// specialty label (case-insensitive) so the chip filter still works on
+// the flat-array shape (mig 0089). Falls back to the legacy
+// gallery_image_urls (treated as headless URLs) when service_photos
+// is empty.
 function buildPortfolioPhotos(
   p: HandymanProviderPublic,
   active: HandymanSpecialty | null,
 ): PortfolioPhoto[] {
-  const raw = (p.service_photos ?? []) as Array<Partial<PortfolioPhoto>>
+  const raw = (p.service_photos ?? []) as unknown[]
   const photos: PortfolioPhoto[] = raw
-    .map((o): PortfolioPhoto | null => {
-      if (!o || typeof o !== 'object') return null
-      if (typeof o.url !== 'string' || !o.url.trim()) return null
-      return o as PortfolioPhoto
-    })
+    .map(normalisePhoto)
     .filter((x): x is PortfolioPhoto => x !== null)
 
   if (!active) {
@@ -792,10 +947,11 @@ function buildPortfolioPhotos(
     return (p.gallery_image_urls ?? []).map((url) => ({ url }))
   }
 
-  // Partial-match against the specialty label — works when tukang named
-  // their photos sensibly ("AC Service - kost 3 lantai" matches AC service).
-  // If the filter yields nothing, fall back to all photos so the carousel
-  // doesn't collapse to empty when chip data and photo data diverge.
+  // Partial-match against the specialty label — works when the tukang
+  // named their photos sensibly ("AC Service - kost 3 lantai" matches
+  // ac_service). If the filter yields nothing, fall back to all photos
+  // so the carousel doesn't collapse to empty when chip data and photo
+  // data diverge.
   const label = (SPECIALTY_LABELS[active] ?? active).toLowerCase()
   const matched = photos.filter((ph) => (ph.name ?? '').toLowerCase().includes(label))
   return matched.length > 0 ? matched : photos
@@ -814,9 +970,9 @@ function formatPriceIdr(amount: number | null | undefined): string | null {
   return `Rp ${amount.toLocaleString('id-ID')}`
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Reviews panel (inline list + leave-review form)
-// ─────────────────────────────────────────────────────────────────────
+// VisitUsPanel + AvailabilityCalendarPopup + Social*Icons now live in
+// @/components/profile/VisitUsPanel.tsx — imported at the top of this file.
+// Inline copies removed in Phase 2-A3.
 
 function ReviewsPanel({
   providerId, reviews, loading, formOpen, setFormOpen, onSubmitted, theme,
@@ -864,6 +1020,7 @@ function ReviewsPanel({
       })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(j?.error || 'Failed to submit'); return }
+      // Reset + close + refetch via parent.
       setStars(0); setName(''); setWhatsapp(''); setComment(''); setFormOpen(false)
       onSubmitted()
     } finally { setSubmitting(false) }
@@ -883,6 +1040,9 @@ function ReviewsPanel({
         </div>
       )}
 
+      {/* Inline review form — triggered by the footer "Leave Review"
+          button. Renders directly on the page background (no card
+          wrapper) so it doesn't feel like a nested popup. */}
       {formOpen && (
         <div className="space-y-2.5 px-1 pt-1">
           <div className="flex items-center justify-between">
@@ -898,6 +1058,8 @@ function ReviewsPanel({
             </button>
           </div>
 
+          {/* 5-star picker — unselected stars are gray; selected stars
+              turn solid yellow so the chosen rating is unambiguous. */}
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => {
               const filled = i < stars
@@ -965,6 +1127,9 @@ function ReviewsPanel({
         </div>
       )}
 
+      {/* List — hidden while the inline review form is open so the
+          user can focus on writing without the existing reviews + the
+          empty-state placeholder taking up screen space below. */}
       {!formOpen && (
       <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
         {loading && visible.length === 0 && (
@@ -1013,6 +1178,8 @@ function ReviewsPanel({
   )
 }
 
+// Stable per-browser session id for review dedup. Reused across leave-
+// review submissions; the API rejects same-session-same-provider dupes.
 function readOrMakeReviewSessionId(): string {
   try {
     let v = localStorage.getItem('cr-review-sid')
@@ -1040,9 +1207,42 @@ function formatReviewWhen(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function HeroIcon({
+  src, icon: Icon, slogan, theme,
+}: { src?: string; icon?: LucideIcon; slogan: string; theme: string }) {
+  return (
+    <div className="flex-1 flex flex-col items-center text-center min-w-0">
+      {/* Icon sits inside a soft white-tinted squircle so the theme-
+          coloured icon stays readable on any cover-image backdrop
+          (especially dark themes). */}
+      <span
+        className="inline-flex items-center justify-center rounded-xl bg-white/75 backdrop-blur-sm shadow-sm"
+        style={{ width: 44, height: 44 }}
+      >
+        {src
+          ? <img src={src} alt="" className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] object-contain" />
+          : Icon
+            ? <Icon className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px]" strokeWidth={2.25} style={{ color: theme }} />
+            : null}
+      </span>
+      <div className="mt-1.5 text-[13px] sm:text-[14px] font-bold text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
+        {slogan}
+      </div>
+    </div>
+  )
+}
+
+
 function Shell({ children }: { children: React.ReactNode }) {
+  // Solid white paints over the global PageBackground (which sits at
+  // -z-10) so the courier scene doesn't show through here. min-h-[100dvh]
+  // lets the page scroll naturally so panels like Visit Us / Reviews
+  // can extend past the initial viewport.
   return (
     <main className="relative min-h-[100dvh] bg-white text-ink">
+      {/* Hide the floating dev-toolbar wrench on this page only — the
+          page is meant to read as a polished customer-facing profile
+          and the spanner clutters the corner. Scoped to mount lifetime. */}
       <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
       {children}
     </main>
@@ -1051,4 +1251,10 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 // Suppress unused-symbol warnings for catalog imports we want available
 // to future per-vertical tweaks but don't reference directly above.
+// Also marks waText (used by future inline WA fallback) + Calendar /
+// ChevronRight / ExternalLink (imported to mirror beautician page) as
+// intentional.
 void ALL_SPECIALTIES
+void Calendar
+void ChevronRight
+void ExternalLink

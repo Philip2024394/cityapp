@@ -144,18 +144,9 @@ function Stat({ label, value, sub, accent, warn }: {
   )
 }
 
-const PARTNER_BG_URL =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-[100dvh] text-ink overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: `url(${PARTNER_BG_URL})` }}
-      />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/75" />
       <AppNav />
       {children}
     </main>

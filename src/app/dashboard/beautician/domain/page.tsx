@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Globe2, Check } from 'lucide-react'
+import { Globe2, Check, Tag, User } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { type BeauticianProvider } from '@/lib/beautician/types'
 
@@ -37,7 +37,7 @@ export default function BeauticianDomainPage() {
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
           <h1 className="text-[20px] font-black text-black mb-2">Sign in required</h1>
-          <Link href="/login?next=/dashboard/beautician/domain" className="rounded-full bg-yellow-400 text-yellow-900 px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
+          <Link href="/login?next=/dashboard/beautician/domain" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
         </div>
       </Shell>
     )
@@ -45,19 +45,27 @@ export default function BeauticianDomainPage() {
 
   return (
     <Shell>
-      <div className="px-4 pt-3 pb-28 max-w-lg mx-auto">
-        <header className="mb-5 flex items-start gap-3">
-          <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-yellow-400 text-yellow-900 shadow-md shadow-yellow-400/20">
-            <Globe2 size={18} />
+      <div className="px-4 pt-4 pb-28 max-w-lg mx-auto">
+        {/* Brand header — pink-tinted strip with globe icon, matching the
+            Design Studio header on /edit. */}
+        <div className="rounded-3xl border border-pink-200/70 bg-gradient-to-br from-pink-50 to-white p-5 shadow-sm mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-pink-500 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Globe2 size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-[20px] font-black leading-tight text-black truncate">Custom Domain</h1>
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider text-pink-600 bg-pink-100 border border-pink-200 rounded-full px-2 py-0.5">
+                  .my.id
+                </span>
+              </div>
+              <p className="text-[12.5px] text-black/70 leading-snug">
+                We connect a custom domain to your profile. Pricing varies by country and registrar — submit your top choices below and admin will WhatsApp you with availability + a quote.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-[24px] font-black text-black leading-tight">Buy a custom domain</h1>
-            <p className="text-[13px] text-black/70 mt-1">
-              We register a <span className="font-bold text-white">.my.id</span> domain for you and point it at your profile.
-              {' '}<span className="font-bold text-yellow-300">Rp 150.000 / year.</span>
-            </p>
-          </div>
-        </header>
+        </div>
 
         <DomainForm provider={provider} />
       </div>
@@ -119,10 +127,10 @@ function DomainForm({ provider }: { provider: BeauticianProvider | null }) {
     return (
       <Card>
         <div className="text-center py-3">
-          <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center mb-3 bg-yellow-400 text-yellow-900">
+          <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center mb-3 bg-pink-500 text-white shadow-md shadow-pink-500/25">
             <Check className="w-7 h-7" strokeWidth={3} />
           </div>
-          <h3 className="text-white text-[18px] font-extrabold">Request sent</h3>
+          <h3 className="text-black text-[18px] font-extrabold">Request sent</h3>
           <p className="text-black/70 text-[13px] mt-1.5 leading-snug max-w-sm mx-auto">
             We&apos;ll message you on WhatsApp within 1 business day with availability and the payment link.
           </p>
@@ -133,20 +141,20 @@ function DomainForm({ provider }: { provider: BeauticianProvider | null }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Card title="Choose up to 3 names" hint="We'll try the top choice first. The .my.id suffix is added automatically.">
+      <Card title="Choose up to 3 names" hint="We'll try the top choice first. The .my.id suffix is added automatically." icon={<Tag size={18} />}>
         <DomainField label="Your top choice" value={d1} onChange={setD1} placeholder="dewibeauty" required />
         <DomainField label="Alternative 1"   value={d2} onChange={setD2} placeholder="dewi-beauty" />
         <DomainField label="Alternative 2"   value={d3} onChange={setD3} placeholder="dewibeauty-bali" />
       </Card>
 
-      <Card title="Your details" hint="We'll message this number with availability + payment.">
+      <Card title="Your details" hint="We'll message this number with availability + payment." icon={<User size={18} />}>
         <ContactField label="Full name"        value={name} onChange={setName} />
         <ContactField label="WhatsApp (+62…)"  value={wa}   onChange={setWa}   inputMode="tel" />
         <ContactField label="City (optional)"  value={city} onChange={setCity} />
       </Card>
 
       {error && (
-        <div className="rounded-xl border border-rose-400/40 bg-rose-500/15 text-rose-100 text-[13px] px-4 py-3">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-[13px] px-4 py-3">
           {error}
         </div>
       )}
@@ -155,11 +163,11 @@ function DomainForm({ provider }: { provider: BeauticianProvider | null }) {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 px-6 py-4 text-[15px] font-extrabold uppercase tracking-wider disabled:opacity-60 shadow-lg shadow-yellow-400/30"
+          className="w-full rounded-full bg-pink-500 hover:bg-pink-600 text-white px-6 py-4 text-[15px] font-extrabold uppercase tracking-wider disabled:opacity-60 shadow-lg shadow-pink-500/25 min-h-[44px]"
         >
           {busy ? 'Sending…' : 'Send request'}
         </button>
-        <p className="text-white/50 text-[11px] text-center mt-2">
+        <p className="text-black/55 text-[12px] text-center mt-2">
           We&apos;ll WhatsApp you within 1 business day to confirm availability and payment.
         </p>
       </div>
@@ -179,20 +187,20 @@ function DomainField({
   return (
     <label className="block space-y-1.5">
       <span className="text-[13px] font-bold text-black/85 block">
-        {label}{required && <span className="text-yellow-300"> *</span>}
+        {label}{required && <span className="text-pink-500"> *</span>}
       </span>
-      <div className="flex items-stretch rounded-xl bg-gray-100 border border-gray-200 overflow-hidden focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-400/30">
+      <div className="flex items-stretch rounded-xl bg-gray-50 border border-gray-200 overflow-hidden focus-within:border-pink-400 focus-within:ring-2 focus-within:ring-pink-100">
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-transparent text-white text-[14px] px-3 py-3 outline-none placeholder-white/40 min-h-[44px]"
+          className="flex-1 bg-transparent text-black text-[14px] font-bold px-3 py-3 outline-none placeholder-black/35 placeholder:font-normal min-h-[44px]"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
         />
-        <span className="px-3 flex items-center text-white/80 text-[13px] font-extrabold border-l border-white/10 bg-black/40">
+        <span className="px-3 flex items-center text-black/70 text-[13px] font-extrabold border-l border-gray-200 bg-white">
           .my.id
         </span>
       </div>
@@ -216,19 +224,31 @@ function ContactField({
         inputMode={inputMode}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl bg-gray-100 border border-gray-200 px-4 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/30 min-h-[44px]"
+        className="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-[14px] text-black placeholder:text-black/35 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 min-h-[44px]"
       />
     </label>
   )
 }
 
-function Card({ title, hint, children }: { title?: string; hint?: string; children: React.ReactNode }) {
+function Card({ title, hint, icon, children }: {
+  title?: string
+  hint?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
+    <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
       {title && (
-        <div>
-          <h2 className="text-[15px] font-black text-black">{title}</h2>
-          {hint && <p className="text-[12px] text-black/65 leading-snug mt-1">{hint}</p>}
+        <div className="flex items-start gap-3">
+          {icon && (
+            <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-pink-100 text-pink-600">
+              {icon}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[15px] font-black text-black leading-tight">{title}</h2>
+            {hint && <p className="text-[12px] text-black/65 leading-snug mt-1">{hint}</p>}
+          </div>
         </div>
       )}
       {children}

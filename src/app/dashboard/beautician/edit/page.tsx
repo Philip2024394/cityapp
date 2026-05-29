@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Sparkles, Check } from 'lucide-react'
+import { ChevronLeft, Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
@@ -106,22 +106,31 @@ export default function BeauticianEditPage() {
 
   return (
     <Shell>
-      <div className="max-w-2xl mx-auto pt-3 pb-32 px-4">
-        {/* Top bar */}
-        <div className="flex items-center justify-end mb-3">
-          <div className="text-[11px] font-extrabold uppercase tracking-wider text-ink/55">
-            Live editor
+      <div className="max-w-2xl mx-auto pt-4 pb-32 px-4">
+        {/* Brand header — pink-tinted strip with sparkle icon, matching the
+            hub's polished feel. Auto-save badge lives on the right. */}
+        <div className="rounded-3xl border border-pink-200/70 bg-gradient-to-br from-pink-50 to-white p-5 shadow-sm mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-pink-500 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Sparkles size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-[20px] font-black leading-tight text-black truncate">Design Studio</h1>
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider text-pink-600 bg-pink-100 border border-pink-200 rounded-full px-2 py-0.5">
+                  Live
+                </span>
+              </div>
+              <p className="text-[12.5px] text-black/70 leading-snug">
+                Tune your public page in real time — theme, banner, text. Auto-saves as you type.
+              </p>
+            </div>
           </div>
         </div>
 
-        <h1 className="text-[22px] font-black leading-tight mb-1">Edit your profile</h1>
-        <p className="text-[12px] text-ink/65 leading-snug mb-4">
-          The hero preview above updates in real time as you edit below. Changes save automatically.
-        </p>
-
         {/* Live hero preview — wrapped in a relative container so the
             edit pencil floats over the top-right corner. */}
-        <div className="relative rounded-2xl overflow-hidden border border-white/15 shadow-lg">
+        <div className="relative rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
           {/* Cover */}
           <div className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: '16 / 9', maxHeight: 220 }}>
             <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -196,9 +205,9 @@ export default function BeauticianEditPage() {
           onSave={save}
         />
 
-        <p className="text-[11px] text-ink/45 mt-4 leading-snug">
-          More inline-edit sections coming soon (services · theme · hours). For now use the
-          {' '}<Link href="/dashboard/beautician" className="text-brand hover:underline">full dashboard form</Link>{' '}
+        <p className="text-[12px] text-black/55 mt-4 leading-snug">
+          More inline-edit sections coming soon (services · hours). For now use the
+          {' '}<Link href="/dashboard/beautician" className="text-pink-600 hover:underline font-bold">full dashboard form</Link>{' '}
           for the rest.
         </p>
       </div>
@@ -282,11 +291,11 @@ function BannerInlineControls({
   ]
 
   return (
-    <div className="mt-4 space-y-5">
+    <div className="mt-4 space-y-4">
       {/* Auto-save badge */}
       <div className="flex items-center justify-between">
-        <h2 className="text-[14px] font-extrabold uppercase tracking-wider text-ink">Edit banner</h2>
-        <div className={`text-[11px] font-bold transition ${savedFlash ? 'text-green-300 opacity-100' : 'opacity-0'}`}>
+        <h2 className="text-[14px] font-extrabold uppercase tracking-wider text-black">Edit banner</h2>
+        <div className={`inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider transition ${savedFlash ? 'text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5 opacity-100' : 'opacity-0'}`}>
           ✓ Saved
         </div>
       </div>
@@ -297,7 +306,7 @@ function BannerInlineControls({
           Picking a theme color ALSO clears any prior hero-text color
           override so the "Beautician" word follows the new theme. The
           user can lock a custom color below if they want it different. */}
-      <Section title="Theme color">
+      <Section title="Theme color" icon={<Palette size={16} strokeWidth={2.5} />}>
         <ThemeColorPicker
           value={provider.theme_color ?? null}
           onChange={(hex) => onSave({
@@ -311,7 +320,7 @@ function BannerInlineControls({
       </Section>
 
       {/* Banner image — library + upload */}
-      <Section title="Banner image">
+      <Section title="Banner image" icon={<ImageIcon size={16} strokeWidth={2.5} />}>
         <BannerLibraryPicker
           themeHex={provider.theme_color ?? null}
           selected={provider.cover_image_url ?? null}
@@ -322,11 +331,12 @@ function BannerInlineControls({
           defaultThemeHex="#EC4899"
           purchaseEndpoint="/api/beautician/me/buy-banner"
           selectedAccentHex="#EC4899"
+          userCategoryIds={provider.services_offered ?? undefined}
         />
       </Section>
 
       {/* Text inputs with per-line color picker */}
-      <Section title="Banner text">
+      <Section title="Banner text" icon={<Type size={16} strokeWidth={2.5} />}>
         <div className="space-y-3">
           <FieldWithColor
             label="Top line" max={30}
@@ -342,7 +352,7 @@ function BannerInlineControls({
             onColorChange={(hex) => { setColorFollowsTheme(false); setDraftColor(hex) }}
             colorNote={colorFollowsTheme
               ? <>Following theme <span className="font-mono">{theme}</span>. Pick a color to override.</>
-              : <>Override locked. <button type="button" onClick={() => { setColorFollowsTheme(true); setDraftColor(theme) }} className="text-brand underline font-bold">Reset to theme</button></>
+              : <>Override locked. <button type="button" onClick={() => { setColorFollowsTheme(true); setDraftColor(theme) }} className="text-pink-600 underline font-bold">Reset to theme</button></>
             }
           />
           <FieldWithColor
@@ -356,8 +366,8 @@ function BannerInlineControls({
 
 
       {/* Effect */}
-      <Section title="Text effect (Beautician word)">
-        <div className="grid grid-cols-2 gap-1.5">
+      <Section title="Text effect (Beautician word)" icon={<Sparkles size={16} strokeWidth={2.5} />}>
+        <div className="grid grid-cols-2 gap-2">
           {EFFECTS.map((ef) => {
             const on = draftEffect === ef.id
             return (
@@ -366,11 +376,11 @@ function BannerInlineControls({
                 type="button"
                 onClick={() => setDraftEffect(ef.id)}
                 className={`text-left rounded-xl p-3 border transition active:scale-[0.98] ${
-                  on ? 'bg-pink-500 text-white border-pink-500 shadow-[0_2px_10px_rgba(236,72,153,0.45)]' : 'bg-black/40 text-ink border-white/15 hover:bg-white/5'
+                  on ? 'bg-pink-500 text-white border-pink-500 shadow-[0_2px_10px_rgba(236,72,153,0.35)]' : 'bg-gray-50 text-black border-gray-200 hover:bg-gray-100'
                 }`}
               >
                 <div className="text-[13px] font-extrabold">{ef.label}</div>
-                <div className={`text-[11px] ${on ? 'text-white/80' : 'text-ink/55'}`}>{ef.desc}</div>
+                <div className={`text-[12px] ${on ? 'text-white/85' : 'text-black/55'}`}>{ef.desc}</div>
               </button>
             )
           })}
@@ -379,7 +389,7 @@ function BannerInlineControls({
 
       {/* Running marquee text — the pink ribbon that scrolls under the
           portfolio carousel on the public profile. Max 500 chars. */}
-      <Section title="Running text (marquee under portfolio)">
+      <Section title="Running text (marquee under portfolio)" icon={<Megaphone size={16} strokeWidth={2.5} />}>
         <PromoTextEditor
           value={provider.promo_text ?? ''}
           onChange={(v) => onSave({ promo_text: v || null })}
@@ -388,11 +398,11 @@ function BannerInlineControls({
       </Section>
 
       {/* Quick links — services manager (carousel) and public preview. */}
-      <Section title="More">
+      <Section title="More" icon={<MoreHorizontal size={16} strokeWidth={2.5} />}>
         <div className="grid grid-cols-2 gap-2">
           <Link
             href="/dashboard/beautician/services"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-gray-200 shadow-sm text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-50 border border-gray-200 text-black px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-gray-100 hover:border-pink-300 transition min-h-[44px]"
           >
             Services (carousel)
           </Link>
@@ -400,7 +410,7 @@ function BannerInlineControls({
             href={`/beautician/${provider.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-gray-200 shadow-sm text-ink px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-black/65 hover:border-white/20 shadow-md shadow-black/20 transition"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gray-50 border border-gray-200 text-black px-3 py-3 text-[12px] font-extrabold uppercase tracking-wider hover:bg-gray-100 hover:border-pink-300 transition min-h-[44px]"
           >
             View live profile →
           </a>
@@ -434,7 +444,7 @@ function BannerInlineControls({
       >
         Save changes
       </button>
-      <p className="text-[11px] text-ink/45 text-center mt-1 leading-snug">
+      <p className="text-[12px] text-black/55 text-center mt-1 leading-snug">
         Auto-save also runs in the background — your changes are saved as you type.
       </p>
     </div>
@@ -485,9 +495,9 @@ function PromoTextEditor({
         maxLength={500}
         rows={3}
         placeholder="Write your promo message — appears as scrolling text below your portfolio."
-        className="w-full rounded-xl bg-black/85 border border-white/15 px-3 py-2 text-[13px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand resize-none leading-snug"
+        className="w-full rounded-xl bg-white border border-gray-200 px-3 py-2.5 text-[13px] text-black placeholder:text-black/40 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 resize-none leading-snug"
       />
-      <p className="text-[11px] text-ink/60 leading-snug">
+      <p className="text-[12px] text-black/60 leading-snug">
         Use this for special offers — weddings, birthdays, graduations,
         or seasonal discounts. Tap a suggestion to drop it in.
       </p>
@@ -503,25 +513,32 @@ function PromoTextEditor({
             key={s}
             type="button"
             onClick={() => setDraft(s)}
-            className="text-[11px] text-ink/80 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-2.5 py-1 transition active:scale-[0.97]"
+            className="text-[12px] text-black/80 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1 transition active:scale-[0.97]"
           >
             {s.length > 36 ? s.slice(0, 34) + '…' : s}
           </button>
         ))}
       </div>
-      <div className={`text-[10px] tabular-nums text-right ${draft.length >= 450 ? 'text-amber-300' : 'text-ink/45'}`}>
+      <div className={`text-[12px] tabular-nums text-right ${draft.length >= 450 ? 'text-amber-600' : 'text-black/45'}`}>
         {draft.length} / 500
       </div>
     </div>
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="space-y-2">
-      <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink/80">{title}</div>
+    <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
+      <div className="flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-black/70">
+        {icon && (
+          <span className="w-7 h-7 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
+            {icon}
+          </span>
+        )}
+        <span>{title}</span>
+      </div>
       {children}
-    </div>
+    </section>
   )
 }
 
@@ -545,10 +562,10 @@ function FieldWithColor({
     '#0EA5E9', '#9333EA', '#B91C1C',
   ]
   return (
-    <div className="space-y-1.5 rounded-xl bg-black/40 border border-white/10 p-3">
+    <div className="space-y-2 rounded-xl bg-gray-50 border border-gray-200 p-3">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-extrabold uppercase tracking-wider text-ink">{label}</span>
-        <span className={`text-[10px] tabular-nums ${value.length >= max - 5 ? 'text-amber-300' : 'text-ink/45'}`}>
+        <span className="text-[12px] font-extrabold uppercase tracking-wider text-black">{label}</span>
+        <span className={`text-[12px] tabular-nums ${value.length >= max - 5 ? 'text-amber-600' : 'text-black/45'}`}>
           {value.length} / {max}
         </span>
       </div>
@@ -565,12 +582,10 @@ function FieldWithColor({
           e.currentTarget.select()
         }}
         placeholder={placeholder}
-        className="w-full rounded-xl bg-black/85 border border-white/15 px-3 py-2 text-[13px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand"
+        className="w-full rounded-xl bg-white border border-gray-200 px-3 py-2.5 text-[14px] font-bold placeholder:text-black/35 placeholder:font-normal focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
         // textShadow keeps the colored preview readable when the chosen
-        // color sits close to the input's dark background (e.g. the
-        // default #000000 for Top line / Tagline was invisible without
-        // this halo).
-        style={{ color, textShadow: '0 0 6px rgba(255,255,255,0.55), 0 0 2px rgba(0,0,0,0.55)' }}
+        // color is too light against the white input background.
+        style={{ color, textShadow: '0 0 1px rgba(0,0,0,0.15)' }}
       />
       {/* Per-line color picker — preset swatches + custom hex input */}
       <div className="flex items-center flex-wrap gap-1.5 pt-1">
@@ -582,10 +597,10 @@ function FieldWithColor({
               type="button"
               onClick={() => onColorChange(hex)}
               aria-label={hex}
-              className={`relative w-7 h-7 rounded-full transition active:scale-95 ${on ? 'ring-2 ring-offset-1 ring-offset-bg ring-white' : ''}`}
-              style={{ background: hex, border: hex === '#FFFFFF' ? '1px solid rgba(255,255,255,0.18)' : 'none' }}
+              className={`relative w-8 h-8 rounded-full transition active:scale-95 ${on ? 'ring-2 ring-offset-2 ring-offset-gray-50 ring-gray-900' : 'ring-1 ring-gray-200'}`}
+              style={{ background: hex }}
             >
-              {on && <Check className="absolute inset-0 m-auto w-3 h-3" style={{ color: hex === '#FFFFFF' || hex === '#FACC15' ? '#0A0A0A' : '#FFFFFF' }} strokeWidth={3} />}
+              {on && <Check className="absolute inset-0 m-auto w-3.5 h-3.5" style={{ color: hex === '#FFFFFF' || hex === '#FACC15' ? '#0A0A0A' : '#FFFFFF' }} strokeWidth={3} />}
             </button>
           )
         })}
@@ -594,11 +609,11 @@ function FieldWithColor({
           value={color}
           onChange={(e) => onColorChange(e.target.value.toUpperCase())}
           aria-label="Custom color"
-          className="w-7 h-7 rounded cursor-pointer bg-transparent border border-white/15"
+          className="w-8 h-8 rounded cursor-pointer bg-transparent border border-gray-200"
         />
-        <span className="text-[10px] font-mono text-ink/55">{color}</span>
+        <span className="text-[12px] font-mono text-black/55">{color}</span>
       </div>
-      {colorNote && <p className="text-[10px] text-ink/55 leading-snug">{colorNote}</p>}
+      {colorNote && <p className="text-[12px] text-black/55 leading-snug">{colorNote}</p>}
     </div>
   )
 }

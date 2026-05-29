@@ -1,8 +1,9 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Star, Award, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, BadgeCheck, MapPin, Bike, Sparkles, type LucideIcon } from 'lucide-react'
+import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
+import VisitUsMap from '@/components/profile/VisitUsMap'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
   PortfolioDetailPopup,
@@ -17,29 +18,24 @@ import VisitUsPanel, {
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
+import { Sparkles } from 'lucide-react'
+// Star + Award already imported above for the hero info-card.
 import {
+  MASSAGE_TYPE_GROUPS,
   MASSAGE_TYPE_LABELS,
   type MassageProviderPublic,
+  type MassageType,
 } from '@/lib/massage/types'
+import { countryByCode } from '@/lib/data/countries'
 
-// ============================================================================
-// /massage/[slug] — universal profile flagship build mirroring the
-// beautician page layout (hero + info-card + portfolio + visit-us +
-// reviews + sticky contact). Single-canvas profile for the 10-vertical
-// IndoCity service grid.
-// ============================================================================
-
-// Default theme accent — sky blue evokes wellness / relaxation. Used
-// when the therapist hasn't picked a custom theme_color (mig 0087).
+// Default theme accent — used when the therapist hasn't picked their
+// own theme_color (mig 0087). Therapists choose their accent from the
+// dashboard color palette; the chosen hex flows through every accent
+// surface on this page via the `theme` constant below.
 const DEFAULT_THEME = '#0EA5E9'
 
-// Vertical fallback hero — keeps new signups on-brand instead of a
-// blank gradient when cover_image_url is empty.
-const DEFAULT_MASSAGE_HERO =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
-
-// Review row returned by GET /api/reviews. created_at ISO → formatted
-// in the UI ("Xd ago" / absolute fallback).
+// Review row as returned by GET /api/reviews. created_at is ISO,
+// formatted to "Xd ago" / absolute date in the UI.
 type ReviewRow = {
   id:           string
   reviewer_name:string
@@ -48,13 +44,35 @@ type ReviewRow = {
   created_at:   string
 }
 
-// Duration-tier pill ids (analogue of beautician services_offered).
-type DurationTier = '60min' | '90min' | '120min'
-const DURATION_TIER_LABELS: Record<DurationTier, string> = {
-  '60min':  '60 min',
-  '90min':  '90 min',
-  '120min': '120 min',
+// Photo entry for the per-service carousel. Mirrors the beautician
+// BeauticianServicePhoto shape — same JSONB column shape on both
+// verticals (mig 0104 brought massage to parity).
+type MassageServicePhoto = {
+  url:               string
+  name?:             string
+  description?:      string
+  price_idr?:        number | null
+  object_position?:  string
+  before_image_url?: string
+  after_image_url?:  string
 }
+
+// Flat catalog of massage types — derived from MASSAGE_TYPE_GROUPS so we
+// can iterate categories in deterministic order when flattening the
+// portfolio feed (analogue of BEAUTICIAN_SERVICES_OFFERED).
+const MASSAGE_SERVICES_OFFERED: ReadonlyArray<{ id: MassageType; label: string }> =
+  MASSAGE_TYPE_GROUPS.flatMap((g) => g.items).map((it) => ({ id: it.value, label: it.label }))
+
+// /massage/[slug] — universal profile flagship build. Visual-first
+// category (portfolio matters more than text); the kit's ProfileGallery
+// is the centerpiece. 3-tier pricing (60min/90min/120min) renders only
+// the durations the therapist actually offers.
+
+// Vertical default for the hero. Used when the therapist hasn't set
+// their own cover_image_url yet — keeps the page on-brand instead of
+// showing the generic yellow gradient on every new signup.
+const DEFAULT_BEAUTICIAN_HERO =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 
 export default function MassageProviderPage() {
   const params = useParams<{ slug: string }>()
@@ -64,28 +82,28 @@ export default function MassageProviderPage() {
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
-  // null = show all gallery photos. When a tier id is set we filter
-  // the carousel feed to entries tagged with that tier (the gallery
-  // is a flat URL list today, so the filter is informational only
-  // until the API exposes per-tier groupings — see follow-up note).
-  const [activeTier, setActiveTier] = useState<DurationTier | null>(null)
+  const [showMoreServices, setShowMoreServices] = useState(false)
+  // null = show photos from ALL services (combined). When a service id
+  // is set, the portfolio carousel filters to just that service.
+  const [activeService, setActiveService] = useState<MassageType | null>(null)
   // Selected carousel card — opens the View Details popup when set.
-  const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  const [detailPhoto, setDetailPhoto] = useState<MassageServicePhoto | null>(null)
   // Portfolio layout — flip between auto-drifting carousel + 2-col grid.
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
-  // Reviews view — replaces content area when active.
+  // Reviews view — replaces everything below the floating info-card.
   const [showReviews, setShowReviews] = useState(false)
-  // Visit Us view — replaces content area when active (only available
-  // when the therapist has opted into a physical location).
+  // Visit Us view — also replaces content area when active (only
+  // available when the therapist has opted into a physical location).
   const [showVisitUs, setShowVisitUs] = useState(false)
   const [reviews, setReviews]         = useState<ReviewRow[] | null>(null)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsRefreshCount, setReviewsRefreshCount] = useState(0)
-  // Lifted from ReviewsPanel so the footer Leave Review button can
-  // open the form too.
+  // Lifted from ReviewsPanel so the footer Leave Review button can open
+  // the form too, not just the in-panel trigger.
   const [reviewFormOpen, setReviewFormOpen] = useState(false)
   // Contact popup — opened by both the bottom Contact CTA and the
-  // per-card "View Details" Contact button.
+  // per-service "View Details" Contact button. `contactServiceName`
+  // pre-fills the service field when triggered from a service card.
   const [contactOpen,        setContactOpen]        = useState(false)
   const [contactServiceName, setContactServiceName] = useState<string>('')
 
@@ -106,8 +124,8 @@ export default function MassageProviderPage() {
 
   useProfileViewTracker({ providerType: 'massage', providerId: p?.id })
 
-  // Resolved accent color. p.theme_color (mig 0087) wins; fall back to
-  // sky blue.
+  // Resolved accent color for every accent surface on this page.
+  // p.theme_color (mig 0087) wins; fall back to global default sky blue.
   const theme = p?.theme_color || DEFAULT_THEME
 
   // Fetch reviews only when the panel is first opened, then again
@@ -139,16 +157,25 @@ export default function MassageProviderPage() {
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/massage/${p.slug}`
 
-  // Active tier set — the carousel filter is informational only today
-  // (gallery is flat URL list), but we still surface the tiers the
-  // therapist offers so the pill row reads as a real category filter.
-  const availableTiers: DurationTier[] = [
-    p.price_60min_idr  > 0 ? '60min'  as const : null,
-    p.price_90min_idr  > 0 ? '90min'  as const : null,
-    p.price_120min_idr > 0 ? '120min' as const : null,
-  ].filter((x): x is DurationTier => x !== null)
+  // Resolved offered-services list. marketplace_categories drives the
+  // chip row; when blank we fall back to wrapping the therapist's
+  // primary massage_type so the row never reads empty.
+  const offeredServices: MassageType[] = (() => {
+    const mc = (p.marketplace_categories ?? []) as string[]
+    const allow = new Set<string>(MASSAGE_SERVICES_OFFERED.map((s) => s.id))
+    const filtered = mc.filter((v): v is MassageType => typeof v === 'string' && allow.has(v))
+    if (filtered.length > 0) return filtered
+    if (p.massage_type && allow.has(p.massage_type)) return [p.massage_type]
+    return []
+  })()
 
-  const massageTypeLabel = p.massage_type ? MASSAGE_TYPE_LABELS[p.massage_type] : null
+  // WhatsApp prefill text for the under-carousel contact button.
+  const waText = [
+    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
+    `Saya tertarik untuk booking session pijat.`,
+    partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
+    `Apakah Anda available?`,
+  ].filter(Boolean).join('\n')
 
   return (
     <Shell>
@@ -171,24 +198,66 @@ export default function MassageProviderPage() {
           style={{ aspectRatio: '16 / 9' }}
         >
           <img
-            src={p.cover_image_url || DEFAULT_MASSAGE_HERO}
+            src={p.cover_image_url || DEFAULT_BEAUTICIAN_HERO}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
-          {/* Hero overlay — Professional [Sparkle] / Massage Therapist /
-              tagline. Massage type label drives the tagline so it's
-              specific (e.g. "Pijat Bali (Balinese)"). */}
+          {/* Hero overlay — text now comes from p.hero_text (mig 0104)
+              when set; otherwise falls back to the default copy. */}
           {(() => {
-            const line1   = 'Professional'
-            const line2   = 'Massage Therapist'
-            const tagline = massageTypeLabel
-              ? `${massageTypeLabel} • Relax in your space`
-              : 'Bringing relaxation to your space'
-            const line1Color   = '#000000'
-            const line2Color   = theme
-            const taglineColor = '#000000'
+            const ht = (p.hero_text ?? {}) as Record<string, string | undefined>
+            const line1   = ht.line1   || 'Professional'
+            const line2   = ht.line2   || 'Massage Therapist'
+            const tagline = ht.tagline || 'Bringing relaxation to your space'
+            const line2Color   = ht.color         || theme
+            const line1Color   = ht.line1_color   || '#000000'
+            const taglineColor = ht.tagline_color || '#000000'
+            // Map legacy 'dance' / 'flyin' values to 'none' so old saved
+            // data doesn't break the new effect set.
+            const rawEffect = ht.effect || 'none'
+            const effect = ['none','shimmer','dance','underline'].includes(rawEffect) ? rawEffect : 'none'
             return (
-              <div className="absolute left-4 z-10 select-none leading-none" style={{ top: 31 }}>
+              <div className={`absolute left-4 z-10 select-none leading-none cr-hero-${effect}`} style={{ top: 31 }}>
+                {/* Refined, premium effects — scoped to the line2
+                    (cr-hero-word) span only. */}
+                <style>{`
+                  @keyframes cr-hero-dance {
+                    0%,100% { transform: translate(0,0) rotate(0) }
+                    20%     { transform: translate(-3px, 2px) rotate(-3deg) }
+                    40%     { transform: translate(3px, -2px) rotate(2deg) }
+                    60%     { transform: translate(-2px, -2px) rotate(-2deg) }
+                    80%     { transform: translate(2px, 3px) rotate(3deg) }
+                  }
+                  @keyframes cr-hero-shimmer {
+                    0%   { background-position: 200% center }
+                    100% { background-position: -100% center }
+                  }
+                  @keyframes cr-hero-underline {
+                    0%   { width: 0 }
+                    35%  { width: 100% }
+                    75%  { width: 100% }
+                    100% { width: 0 }
+                  }
+                  .cr-hero-dance .cr-hero-word { animation: cr-hero-dance 1.4s ease-in-out infinite; transform-origin: center; display: inline-block; }
+                  .cr-hero-shimmer .cr-hero-word {
+                    background-image: linear-gradient(95deg, ${line2Color} 0%, ${line2Color} 35%, #FFFFFF 50%, ${line2Color} 65%, ${line2Color} 100%);
+                    background-size: 220% 100%;
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent !important;
+                    animation: cr-hero-shimmer 3s linear infinite;
+                  }
+                  .cr-hero-underline .cr-hero-word { position: relative; }
+                  .cr-hero-underline .cr-hero-word::after {
+                    content: '';
+                    position: absolute;
+                    left: 0; bottom: -4px;
+                    height: 3px;
+                    background: ${line2Color};
+                    border-radius: 2px;
+                    animation: cr-hero-underline 3.2s cubic-bezier(0.4,0,0.2,1) infinite;
+                  }
+                `}</style>
                 <div className="flex items-center gap-0.5 text-[28px] sm:text-[34px] font-normal drop-shadow-[0_2px_6px_rgba(255,255,255,0.55)]" style={{ color: line1Color }}>
                   <span>{line1}</span>
                   <Sparkles
@@ -201,7 +270,7 @@ export default function MassageProviderPage() {
                 <div
                   className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden"
                 >
-                  <span className="inline-block" style={{ color: line2Color }}>
+                  <span className="cr-hero-word inline-block" style={{ color: line2Color }}>
                     {line2}
                   </span>
                 </div>
@@ -210,9 +279,10 @@ export default function MassageProviderPage() {
                 </div>
 
                 {/* Service locations the therapist travels to —
-                    driven by p.service_locations (mig 0088). The row
-                    only renders when explicitly set; missing arrays
-                    hide it so legacy profiles don't advertise
+                    driven by p.service_locations (mig 0088). Each
+                    location is rendered only when explicitly set; a
+                    missing or null array hides the whole row so
+                    legacy profiles without the field don't reveal
                     locations they may not actually serve. */}
                 {(() => {
                   const locs = new Set(p.service_locations ?? [])
@@ -245,14 +315,14 @@ export default function MassageProviderPage() {
           })()}
         </div>
 
-        {/* Reviews toggle — themed pill above the floating card, right
-            side. Click swaps the area below for the reviews list. */}
+        {/* Reviews toggle — themed pill above the floating card, right side.
+            Click swaps the area below for the reviews list. */}
         <div className="px-4 relative z-20 flex justify-end" style={{ marginTop: -56 }}>
           <button
             type="button"
             onClick={() => setShowReviews((v) => !v)}
             aria-pressed={showReviews}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-extrabold shadow-md active:scale-[0.97] transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-extrabold shadow-md active:scale-[0.97] transition"
             style={{ background: theme }}
           >
             <Star className="w-3.5 h-3.5" strokeWidth={0} fill="#FFFFFF" />
@@ -261,8 +331,8 @@ export default function MassageProviderPage() {
         </div>
 
         {/* Floating info card — overlaps the bottom edge of the cover.
-            All 4 corners 15px. Left: avatar. Middle: name / city /
-            rating. Right: "Top Rated Seller" badge. */}
+            All 4 corners 15px. Left: avatar. Middle: name / city / rating.
+            Right: "Top Rated Seller" badge. */}
         <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
           <div
             className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
@@ -278,7 +348,7 @@ export default function MassageProviderPage() {
             ) : (
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center text-white text-[22px] font-black shrink-0 border-2 border-white shadow"
-                style={{ background: theme }}
+                style={{ background: '#EC4899' }}
               >
                 {p.display_name.charAt(0).toUpperCase()}
               </div>
@@ -309,7 +379,7 @@ export default function MassageProviderPage() {
                 <span className="text-[12px] font-extrabold text-black">
                   {p.rating != null && p.rating > 0 ? p.rating.toFixed(1) : '—'}
                 </span>
-                <span className="text-[12px] text-gray-500">
+                <span className="text-[11px] text-gray-500">
                   ({p.rating_count ?? 0} review{(p.rating_count ?? 0) === 1 ? '' : 's'})
                 </span>
               </div>
@@ -317,13 +387,14 @@ export default function MassageProviderPage() {
 
             {/* Top Rated Seller badge — neutral gray pill so the chip
                 stays unchanged across profiles; only the Award icon +
-                text tint the active profile theme color. */}
+                text tint the active profile theme color so each profile
+                shows its own accent. */}
             <div
               className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
               style={{ background: '#F3F4F6' }}
             >
               <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: theme }} />
-              <span className="text-[12px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
+              <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
                 Top Rated Seller
               </span>
             </div>
@@ -343,7 +414,15 @@ export default function MassageProviderPage() {
             instagramUrl={p.instagram_url ?? null}
             tiktokUrl={p.tiktok_url ?? null}
             facebookUrl={p.facebook_url ?? null}
-            busyDates={[]}
+            xUrl={(p as unknown as { x_url?: string | null }).x_url ?? null}
+            snapchatUrl={(p as unknown as { snapchat_url?: string | null }).snapchat_url ?? null}
+            websiteUrl={(p as unknown as { website_url?: string | null }).website_url ?? null}
+            whatsappE164={p.whatsapp_e164 ?? null}
+            telegramHandle={(p as unknown as { telegram_handle?: string | null }).telegram_handle ?? null}
+            wechatId={(p as unknown as { wechat_id?: string | null }).wechat_id ?? null}
+            lineId={(p as unknown as { line_id?: string | null }).line_id ?? null}
+            kakaotalkId={(p as unknown as { kakaotalk_id?: string | null }).kakaotalk_id ?? null}
+            busyDates={(p.busy_dates ?? []) as string[]}
             themeColor={theme}
             onClose={() => setShowVisitUs(false)}
             bottomCta={
@@ -397,7 +476,7 @@ export default function MassageProviderPage() {
               <button
                 type="button"
                 onClick={() => setShowVisitUs(true)}
-                className="inline-flex items-center gap-1 text-[12px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+                className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
                 style={{ color: theme }}
               >
                 <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -418,90 +497,110 @@ export default function MassageProviderPage() {
               >
                 {/* Collapse stray \n in the stored bio to a single
                     space so short sentences don't each sit on their
-                    own line. */}
+                    own line — text now flows naturally and the line
+                    clamp counts true rendered lines. */}
                 {p.bio.replace(/\s*\n\s*/g, ' ')}
               </p>
             ) : (
               <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
             )}
           </div>
-          {/* Massage type + experience secondary line — kept here so the
-              About section reads as a complete intro before the pills. */}
-          {(massageTypeLabel || (typeof p.years_experience === 'number' && p.years_experience > 0)) && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              {massageTypeLabel && (
-                <span
-                  className="inline-flex items-center text-[12px] font-extrabold px-2.5 py-1 rounded-full"
-                  style={{ background: `${theme}1A`, color: theme }}
-                >
-                  {massageTypeLabel}
-                </span>
-              )}
-              {typeof p.years_experience === 'number' && p.years_experience > 0 && (
-                <span className="inline-flex items-center text-[12px] font-bold text-gray-600 px-2.5 py-1 rounded-full bg-gray-100">
-                  {p.years_experience} yrs experience
-                </span>
-              )}
-            </div>
-          )}
         </section>
 
-        {/* Session Lengths — analogue of beautician "Services Provided".
-            One pill per duration tier the therapist actually prices.
-            Active pill filters the portfolio carousel label (the
-            gallery itself is a flat URL list today; the label change
-            reinforces context). */}
-        {availableTiers.length > 0 && (
-          <section className="space-y-2" style={{ marginTop: 15 }}>
-            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-              Session Lengths
-            </h2>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {/* "All" reset chip */}
-              <button
-                type="button"
-                onClick={() => setActiveTier(null)}
-                aria-pressed={activeTier === null}
-                className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
-                style={
-                  activeTier === null
-                    ? { background: theme, color: '#FFFFFF' }
-                    : { background: '#F3F4F6', color: '#374151' }
-                }
-              >
-                All
-              </button>
-              {availableTiers.map((tid) => (
-                <DurationFilterBadge
-                  key={tid}
-                  tier={tid}
-                  active={activeTier === tid}
-                  price={
-                    tid === '60min'  ? p.price_60min_idr  :
-                    tid === '90min'  ? p.price_90min_idr  :
-                                       p.price_120min_idr
-                  }
-                  onClick={() => setActiveTier(activeTier === tid ? null : tid)}
-                  theme={theme}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Portfolio carousel — rich cards (image + name + start price
-            + View Details). Massage has no per-service photo gallery
-            in the API today, so we synthesize cards from
-            gallery_image_urls. */}
+        {/* Services Provided — only renders services that actually have
+            at least one "live" carousel entry (image + description).
+            Empty placeholder services don't deserve a public badge. */}
         {(() => {
-          const photos = buildPortfolioPhotos(p, activeTier)
+          const offered = offeredServices
+          if (offered.length === 0) return null
+          const sp = (p.service_photos ?? {}) as Record<string, unknown[]>
+          const live = offered.filter((sid) => {
+            const arr = sp[sid]
+            if (!Array.isArray(arr)) return false
+            return arr.some((item) =>
+              item && typeof item === 'object'
+              && typeof (item as { url?: unknown }).url === 'string'
+              && (item as { url: string }).url.trim().length > 0
+              && typeof (item as { description?: unknown }).description === 'string'
+              && (item as { description: string }).description.trim().length > 0
+            )
+          })
+          if (live.length === 0) return null
+          const all     = live
+          const visible = all.slice(0, 3)
+          const hidden  = all.slice(3)
+          const hasMore = hidden.length > 0
+          return (
+            <section className="space-y-2" style={{ marginTop: 15 }}>
+              <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                Services Provided
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/* "All" reset chip — clears any active service filter
+                    so the portfolio carousel shows photos from every
+                    category again. Highlighted with the theme when no
+                    filter is active. */}
+                <button
+                  type="button"
+                  onClick={() => { setActiveService(null); setShowMoreServices(false) }}
+                  aria-pressed={activeService === null}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
+                  style={
+                    activeService === null
+                      ? { background: theme, color: '#FFFFFF' }
+                      : { background: '#F3F4F6', color: '#374151' }
+                  }
+                >
+                  All
+                </button>
+                {visible.map((sid) => (
+                  <ServiceFilterBadge
+                    key={sid} sid={sid}
+                    active={activeService === sid}
+                    onClick={() => setActiveService(activeService === sid ? null : sid)}
+                    theme={theme}
+                  />
+                ))}
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreServices((v) => !v)}
+                    aria-label={showMoreServices ? 'Hide other services' : 'Show other services'}
+                    aria-expanded={showMoreServices}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white shrink-0 active:scale-[0.96] transition"
+                    style={{ background: theme }}
+                  >
+                    <Menu className="w-4 h-4" strokeWidth={2.5} />
+                  </button>
+                )}
+              </div>
+              {hasMore && showMoreServices && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {hidden.map((sid) => (
+                    <ServiceFilterBadge
+                      key={sid} sid={sid}
+                      active={activeService === sid}
+                      onClick={() => setActiveService(activeService === sid ? null : sid)}
+                      theme={theme}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )
+        })()}
+
+        {/* Portfolio carousel — rich cards (image + name + 2-line desc
+            + start price + View Details). Cards swipe left-to-right. */}
+        {(() => {
+          const photos = buildPortfolioPhotos(p, activeService, offeredServices)
           if (photos.length === 0) return null
           return (
             <section className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                  {activeTier
-                    ? `${DURATION_TIER_LABELS[activeTier]} — Portfolio`
+                  {activeService
+                    ? `${MASSAGE_TYPE_LABELS[activeService]} — Portfolio`
                     : 'Portfolio'}
                 </h2>
                 <PortfolioViewToggle
@@ -510,14 +609,15 @@ export default function MassageProviderPage() {
                   themeColor={theme}
                 />
               </div>
-              <p className="text-[12px] text-gray-500 italic -mt-1">
+              <p className="text-[11px] text-gray-500 italic -mt-1">
                 Please contact for additional services not listed
               </p>
               <PortfolioCarousel
-                photos={photos}
-                onViewDetails={(ph) => setDetailPhoto(ph)}
+                photos={photos as PortfolioPhoto[]}
+                onViewDetails={(ph) => setDetailPhoto(ph as MassageServicePhoto)}
                 themeColor={theme}
                 view={portfolioView}
+                currencySymbol={countryByCode((p as unknown as { country_code?: string | null }).country_code ?? 'ID').currency_symbol}
               />
             </section>
           )
@@ -525,17 +625,18 @@ export default function MassageProviderPage() {
 
         {/* Running marquee — weekly promo ribbon under the carousel. */}
         <RunningMarquee
-          text={`Message me this week — professional ${massageTypeLabel ? massageTypeLabel.toLowerCase() : 'massage'} delivered to your home, hotel or villa, in the comfort of your stay.`}
+          text={p.promo_text || 'Message me this week — exclusive promo on professional massage session delivered straight to your home, hotel or villa, in the comfort of your stay.'}
         />
 
         {/* CTA row under the carousel — large price on the left,
-            themed Contact button on the right. */}
+            themed Contact button (square w/ rounded corners) on the
+            right. pb-4 leaves breathing room before the accent bar. */}
         <div className="flex items-end justify-between gap-3 pb-4">
           <div className="leading-none pb-3">
             <div className="text-[24px] sm:text-[28px] font-black text-black">
               {formatStartFromPrice(p)}
             </div>
-            <div className="text-[12px] sm:text-[12px] font-medium text-gray-500 mt-1">
+            <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
               Start from
             </div>
           </div>
@@ -598,7 +699,7 @@ export default function MassageProviderPage() {
                   <div className="text-[13px] font-extrabold text-black">
                     {shareCopied ? 'Copied!' : 'Copy link'}
                   </div>
-                  <div className="text-[12px] text-gray-500 truncate">{profileUrl}</div>
+                  <div className="text-[11px] text-gray-500 truncate">{profileUrl}</div>
                 </div>
               </button>
 
@@ -615,7 +716,7 @@ export default function MassageProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">WhatsApp</div>
-                  <div className="text-[12px] text-white/85">Send link to a contact</div>
+                  <div className="text-[11px] text-white/85">Send link to a contact</div>
                 </div>
               </a>
 
@@ -632,12 +733,13 @@ export default function MassageProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">Facebook</div>
-                  <div className="text-[12px] text-white/85">Share to your timeline</div>
+                  <div className="text-[11px] text-white/85">Share to your timeline</div>
                 </div>
               </a>
 
-              {/* Instagram — copy + open IG, since IG doesn't accept
-                  arbitrary URL share. */}
+              {/* Instagram — IG doesn't accept arbitrary URL share. We
+                  copy the link to the clipboard and open IG so the user
+                  can paste into a DM / Story / bio. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -654,7 +756,7 @@ export default function MassageProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">Instagram</div>
-                  <div className="text-[12px] text-white/85">Link copied — paste to DM / Story</div>
+                  <div className="text-[11px] text-white/85">Link copied — paste to DM / Story</div>
                 </div>
               </button>
 
@@ -674,7 +776,7 @@ export default function MassageProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">TikTok</div>
-                  <div className="text-[12px] text-white/85">Link copied — paste to bio / DM</div>
+                  <div className="text-[11px] text-white/85">Link copied — paste to bio / DM</div>
                 </div>
               </button>
             </div>
@@ -683,15 +785,20 @@ export default function MassageProviderPage() {
       )}
 
       {/* Right-edge "back" bar — tall vertical strip flush against the
-          window edge. Yellow, rounded only on the inside (left)
-          corners. Arrow icon top, vertical "BACK" text below. Routes
-          back to /massage. */}
+          window edge (no protrusion into the page content). Yellow,
+          rounded only on the inside (left) corners. Arrow icon top,
+          vertical "BACK" text below. Diverts back to /massage. */}
       <a
         href="/massage"
         aria-label="Back to IndoCity therapists"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
+          /* Anchored beside the About/bio block on first paint so the
+             button never covers the interactive surfaces lower on the
+             page (Services chips, Portfolio carousel, Contact CTA).
+             top 35% + translateY(-50%) puts the 110px button visually
+             at ~30-40% of the viewport — i.e. the bio band. */
           top: '35%',
           transform: 'translateY(-50%)',
           width: 34,
@@ -709,7 +816,7 @@ export default function MassageProviderPage() {
           style={{
             writingMode: 'vertical-rl',
             transform: 'rotate(180deg)',
-            fontSize: 12,
+            fontSize: 11,
             letterSpacing: '0.18em',
           }}
         >
@@ -718,7 +825,9 @@ export default function MassageProviderPage() {
       </a>
 
       {/* Footer Leave Review button — only renders when the Reviews
-          panel is active AND the inline form isn't already open. */}
+          panel is active AND the inline form isn't already open.
+          Hidden while the user is filling the form so it doesn't
+          obscure the Submit button. */}
       {showReviews && !reviewFormOpen && (
         <button
           type="button"
@@ -754,27 +863,23 @@ export default function MassageProviderPage() {
         />
       )}
       {/* Contact / booking popup — opened by both the bottom Contact
-          CTA and any per-card Contact button. Submits a booking
+          CTA and any per-service Contact button. Submits a booking
           request server-side first (so it shows up on the therapist's
           calendar) and then opens WhatsApp with a matching pre-filled
-          message. */}
+          message. Skips busy_dates the therapist has marked. */}
       {contactOpen && p.whatsapp_e164 && (
         <ContactBookingPopup
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
           themeColor={theme}
-          serviceOptions={availableTiers.map((tid) => ({
-            value: DURATION_TIER_LABELS[tid],
-            label: DURATION_TIER_LABELS[tid],
+          serviceOptions={offeredServices.map((sid) => ({
+            value: MASSAGE_TYPE_LABELS[sid] ?? sid,
+            label: MASSAGE_TYPE_LABELS[sid] ?? sid,
           }))}
           presetService={contactServiceName}
-          busyDates={[]}
+          busyDates={(p.busy_dates ?? []) as string[]}
           bookEndpoint={`/api/massage/${p.slug}/book`}
-          copy={{
-            title: `Book ${p.display_name}`,
-            intro: "Pick a date + time and we'll open WhatsApp with your request.",
-          }}
           onClose={() => setContactOpen(false)}
         />
       )}
@@ -782,14 +887,25 @@ export default function MassageProviderPage() {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────
+// PortfolioDetailPopup + ThumbButton now live in
+// @/components/profile/PortfolioCarousel.tsx and are imported at the
+// top of this file.
 
-function DurationFilterBadge({
-  tier, active, onClick, theme, price,
-}: { tier: DurationTier; active: boolean; onClick: () => void; theme: string; price: number }) {
-  const priceLabel = formatPriceIdr(price)
+// ContactBookingPopup now lives in @/components/profile/ContactBookingPopup.tsx
+// Inline copy removed in Phase 2-A4.
+
+// Carousel card — image up top, name + 2-line description + start
+// Portfolio carousel — auto-drifts left at a slow pace and pauses on
+// user interaction so swipe/drag/wheel still works. Cards are
+// duplicated so the loop seam (when scrollLeft passes half-width and
+// wraps back to 0) is invisible.
+// PortfolioCarousel + PortfolioCard now live in
+// @/components/profile/PortfolioCarousel.tsx — imported at the top of
+// this file. Inline copies removed in Phase 2-A2.
+
+function ServiceFilterBadge({
+  sid, active, onClick, theme,
+}: { sid: MassageType; active: boolean; onClick: () => void; theme: string }) {
   return (
     <button
       type="button"
@@ -807,62 +923,76 @@ function DurationFilterBadge({
         strokeWidth={2.5}
         style={{ color: active ? '#FFFFFF' : theme }}
       />
-      {DURATION_TIER_LABELS[tier]}
-      {priceLabel && (
-        <span
-          className="font-bold opacity-80"
-          style={{ color: active ? '#FFFFFF' : '#374151' }}
-        >
-          · {priceLabel}
-        </span>
-      )}
+      {MASSAGE_TYPE_LABELS[sid] ?? sid}
     </button>
   )
 }
 
-// Cheapest of the three tiered prices. Falls back to "Rp 200k" so the
-// CTA never reads empty for a brand-new profile.
+// Cheapest price across all per-photo entries (mig 0104 rich shape).
+// Falls back to the 60/90/120-min columns when no photo prices are set
+// so the CTA never reads empty.
 function formatStartFromPrice(p: MassageProviderPublic): string {
-  const all = [p.price_60min_idr, p.price_90min_idr, p.price_120min_idr]
+  const photoPrices: number[] = []
+  const sp = (p.service_photos ?? {}) as Record<string, unknown[]>
+  for (const arr of Object.values(sp)) {
+    if (!Array.isArray(arr)) continue
+    for (const item of arr) {
+      if (item && typeof item === 'object' && typeof (item as { price_idr?: unknown }).price_idr === 'number') {
+        const n = (item as { price_idr: number }).price_idr
+        if (n > 0) photoPrices.push(n)
+      }
+    }
+  }
+  const fallback = [p.price_60min_idr, p.price_90min_idr, p.price_120min_idr]
     .filter((n): n is number => typeof n === 'number' && n > 0)
+  const all = photoPrices.length > 0 ? photoPrices : fallback
   if (all.length === 0) return 'Rp 200k'
   return formatPriceIdr(Math.min(...all)) ?? 'Rp 200k'
 }
 
-// Builds the portfolio carousel feed from gallery_image_urls. Each
-// URL becomes a card seeded with the therapist's massage type label
-// and cheapest-tier price so cards have meaningful headings + price
-// chips out of the box.
-//
-// activeTier currently just rewrites the implied price/name (no
-// per-tier groupings exist in the API yet — see follow-up note).
+// Normalises one service_photos entry — accepts either a plain URL
+// string (legacy) or the rich object shape, returns the rich shape.
+function normalisePhoto(raw: unknown): MassageServicePhoto | null {
+  if (typeof raw === 'string') return { url: raw }
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const o = raw as Partial<MassageServicePhoto>
+    if (typeof o.url === 'string' && o.url) return { ...o, url: o.url } as MassageServicePhoto
+  }
+  return null
+}
+
+// Combines per-service photos into the carousel feed. When a service
+// filter is active, returns just that service's photos; otherwise
+// flattens every service's photos in catalog order so the carousel
+// stays deterministic. Falls back to the legacy gallery_image_urls
+// (treated as headless URLs) when service_photos is empty.
 function buildPortfolioPhotos(
   p: MassageProviderPublic,
-  active: DurationTier | null,
-): PortfolioPhoto[] {
-  const urls = p.gallery_image_urls ?? []
-  if (urls.length === 0) return []
-  const tierLabel = active ? DURATION_TIER_LABELS[active] : null
-  const tierPrice = active
-    ? (active === '60min'  ? p.price_60min_idr
-      : active === '90min'  ? p.price_90min_idr
-      :                       p.price_120min_idr)
-    : null
-  const fallbackPrice = [p.price_60min_idr, p.price_90min_idr, p.price_120min_idr]
-    .filter((n): n is number => typeof n === 'number' && n > 0)
-  const seedPrice = typeof tierPrice === 'number' && tierPrice > 0
-    ? tierPrice
-    : (fallbackPrice.length > 0 ? Math.min(...fallbackPrice) : null)
-  const massageLabel = p.massage_type ? MASSAGE_TYPE_LABELS[p.massage_type] : null
-  const cardName = tierLabel
-    ? `${massageLabel ?? 'Massage'} · ${tierLabel}`
-    : (massageLabel ?? 'Massage Session')
-  return urls.map((url) => ({
-    url,
-    name:        cardName,
-    description: p.bio?.trim() ? p.bio.replace(/\s*\n\s*/g, ' ').slice(0, 160) : null,
-    price_idr:   seedPrice,
-  }))
+  active: MassageType | null,
+  offeredServices: MassageType[],
+): MassageServicePhoto[] {
+  const sp = (p.service_photos ?? {}) as Record<string, unknown[]>
+  // Only show photos for categories the therapist actually offers.
+  // Old rows can carry leftover keys; those should not surface in the
+  // public carousel.
+  const offered = new Set<MassageType>(offeredServices)
+  if (active) {
+    if (offered.size > 0 && !offered.has(active)) return []
+    const arr = sp[active] ?? []
+    return arr.map(normalisePhoto).filter((x): x is MassageServicePhoto => x !== null)
+  }
+  const ordered: MassageServicePhoto[] = []
+  for (const cat of MASSAGE_SERVICES_OFFERED) {
+    if (offered.size > 0 && !offered.has(cat.id)) continue
+    const arr = sp[cat.id]
+    if (!Array.isArray(arr)) continue
+    for (const raw of arr) {
+      const n = normalisePhoto(raw)
+      if (n) ordered.push(n)
+    }
+  }
+  if (ordered.length > 0) return ordered
+  return (p.gallery_image_urls ?? []).map((url) => ({ url }))
 }
 
 function formatPriceIdr(amount: number | null | undefined): string | null {
@@ -878,10 +1008,10 @@ function formatPriceIdr(amount: number | null | undefined): string | null {
   return `Rp ${amount.toLocaleString('id-ID')}`
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Reviews panel — inline list + leave-review form. Identical UX to the
-// beautician build; provider_type wired to 'massage'.
-// ─────────────────────────────────────────────────────────────────────────
+// VisitUsPanel + AvailabilityCalendarPopup + Social*Icons now live in
+// @/components/profile/VisitUsPanel.tsx — imported at the top of this file.
+// Inline copies removed in Phase 2-A3.
+
 function ReviewsPanel({
   providerId, reviews, loading, formOpen, setFormOpen, onSubmitted, theme,
 }: {
@@ -928,6 +1058,7 @@ function ReviewsPanel({
       })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(j?.error || 'Failed to submit'); return }
+      // Reset + close + refetch via parent.
       setStars(0); setName(''); setWhatsapp(''); setComment(''); setFormOpen(false)
       onSubmitted()
     } finally { setSubmitting(false) }
@@ -947,6 +1078,9 @@ function ReviewsPanel({
         </div>
       )}
 
+      {/* Inline review form — triggered by the footer "Leave Review"
+          button. Renders directly on the page background (no card
+          wrapper) so it doesn't feel like a nested popup. */}
       {formOpen && (
         <div className="space-y-2.5 px-1 pt-1">
           <div className="flex items-center justify-between">
@@ -955,13 +1089,15 @@ function ReviewsPanel({
               type="button"
               onClick={() => { setFormOpen(false); setErr(null) }}
               aria-label="Close form"
-              className="w-11 h-11 rounded-full flex items-center justify-center text-white shadow-sm active:scale-[0.95] transition"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm active:scale-[0.95] transition"
               style={{ background: theme }}
             >
               <X className="w-3.5 h-3.5" strokeWidth={2.5} />
             </button>
           </div>
 
+          {/* 5-star picker — unselected stars are gray; selected stars
+              turn solid yellow so the chosen rating is unambiguous. */}
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => {
               const filled = i < stars
@@ -990,16 +1126,14 @@ function ReviewsPanel({
             maxLength={60}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nama Anda"
-            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none"
-            style={{ minHeight: 44 }}
+            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none focus:border-pink-500"
           />
           <input
             type="tel"
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
             placeholder="WhatsApp (opsional, +62…)"
-            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none"
-            style={{ minHeight: 44 }}
+            className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none focus:border-pink-500"
           />
           <div className="space-y-1">
             <textarea
@@ -1008,9 +1142,9 @@ function ReviewsPanel({
               rows={3}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Tulis pengalaman Anda (max 250 huruf)"
-              className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] resize-none focus:outline-none"
+              className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-pink-500"
             />
-            <div className="text-[12px] text-gray-500 text-right">{comment.length}/250</div>
+            <div className="text-[10px] text-gray-500 text-right">{comment.length}/250</div>
           </div>
 
           {err && (
@@ -1024,13 +1158,16 @@ function ReviewsPanel({
             onClick={submit}
             disabled={submitting}
             className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full text-white text-[13px] font-extrabold disabled:opacity-60 active:scale-[0.98] transition"
-            style={{ background: theme, minHeight: 44 }}
+            style={{ background: theme }}
           >
             {submitting ? 'Submitting…' : 'Submit review'}
           </button>
         </div>
       )}
 
+      {/* List — hidden while the inline review form is open so the
+          user can focus on writing without the existing reviews + the
+          empty-state placeholder taking up screen space below. */}
       {!formOpen && (
       <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
         {loading && visible.length === 0 && (
@@ -1038,11 +1175,7 @@ function ReviewsPanel({
         )}
         {!loading && visible.length === 0 && (
           <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
-            <div className="text-[12px] text-gray-500">
-              {providerId
-                ? 'Belum ada review. Jadilah yang pertama.'
-                : 'Reviews not available yet for this profile.'}
-            </div>
+            <div className="text-[12px] text-gray-500">Belum ada review. Jadilah yang pertama.</div>
           </div>
         )}
         {visible.map((r) => (
@@ -1057,7 +1190,7 @@ function ReviewsPanel({
                 </div>
                 <div className="min-w-0">
                   <div className="text-[12px] font-extrabold text-black truncate">{r.reviewer_name}</div>
-                  <div className="text-[12px] text-gray-500">{formatReviewWhen(r.created_at)}</div>
+                  <div className="text-[10px] text-gray-500">{formatReviewWhen(r.created_at)}</div>
                 </div>
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
@@ -1117,6 +1250,9 @@ function HeroIcon({
 }: { src?: string; icon?: LucideIcon; slogan: string; theme: string }) {
   return (
     <div className="flex-1 flex flex-col items-center text-center min-w-0">
+      {/* Icon sits inside a soft white-tinted squircle so the theme-
+          coloured icon stays readable on any cover-image backdrop
+          (especially dark themes). */}
       <span
         className="inline-flex items-center justify-center rounded-xl bg-white/75 backdrop-blur-sm shadow-sm"
         style={{ width: 44, height: 44 }}
@@ -1134,6 +1270,7 @@ function HeroIcon({
   )
 }
 
+
 function Shell({ children }: { children: React.ReactNode }) {
   // Solid white paints over the global PageBackground (which sits at
   // -z-10) so the courier scene doesn't show through here. min-h-[100dvh]
@@ -1141,7 +1278,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   // can extend past the initial viewport.
   return (
     <main className="relative min-h-[100dvh] bg-white text-ink">
-      {/* Hide the floating dev-toolbar wrench on this page only. */}
+      {/* Hide the floating dev-toolbar wrench on this page only — the
+          page is meant to read as a polished customer-facing profile
+          and the spanner clutters the corner. Scoped to mount lifetime. */}
       <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
       {children}
     </main>

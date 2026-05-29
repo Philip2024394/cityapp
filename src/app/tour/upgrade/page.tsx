@@ -68,7 +68,7 @@ export default function TourGuideUpgradePage() {
             </h1>
             <p className="text-[13px] text-muted leading-snug">
               1 listing tour guide di /tour. Scan QR di bawah, bayar, upload
-              bukti — akun aktif dalam beberapa detik. Driver IndoCity aktif
+              bukti — akun aktif dalam beberapa detik. Driver Kita2u aktif
               sudah include listing tour guide gratis.
             </p>
           </header>

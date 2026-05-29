@@ -165,7 +165,7 @@ export default function ContractTemplates() {
       </div>
 
       <p className="text-[11px] text-muted leading-snug">
-        Template ini hanya saran — IndoCity bukan pihak dalam kontrak antara
+        Template ini hanya saran — Kita2u bukan pihak dalam kontrak antara
         kamu dan penyewa. Untuk kasus besar (motor mahal, sewa panjang) silakan
         konsultasi notaris atau pengacara setempat.
       </p>

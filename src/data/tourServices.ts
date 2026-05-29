@@ -28,6 +28,16 @@ export type TourServiceId =
   | 'diving'
   | 'surfing'
   | 'yoga_retreat'
+  // 2026-05-29 catalogue expansion
+  | 'motorbike_trek'
+  | 'cooking_class'
+  | 'jeep_safari'
+  | 'traditional_market'
+  | 'craft_class'
+  // mig 0136 — "Mixed services" escape-valve (mirrors beautician mig 0133).
+  // tour_guide_listings.services has NO CHECK constraint by design, so this
+  // ID can be saved without a schema change.
+  | 'mixed'
 
 export type TourService = {
   id: TourServiceId
@@ -60,6 +70,13 @@ export const TOUR_SERVICES: readonly TourService[] = [
   { id: 'diving',            label: 'Diving',            emoji: '🐠' },
   { id: 'surfing',           label: 'Surfing',           emoji: '🏄' },
   { id: 'yoga_retreat',      label: 'Yoga Retreat',      emoji: '🧘' },
+  { id: 'motorbike_trek',    label: 'Motorbike Trek',    emoji: '🏍️' },
+  { id: 'cooking_class',     label: 'Cooking Class',     emoji: '🍳' },
+  { id: 'jeep_safari',       label: 'Jeep Safari',       emoji: '🚙' },
+  { id: 'traditional_market',label: 'Traditional Market',emoji: '🥬' },
+  { id: 'craft_class',       label: 'Craft Class',       emoji: '🪚' },
+  // mig 0136 escape-valve — sits at the end of the catalog.
+  { id: 'mixed',             label: 'Mixed services',    emoji: '✨' },
 ] as const
 
 export const TOUR_SERVICE_IDS: readonly TourServiceId[] =

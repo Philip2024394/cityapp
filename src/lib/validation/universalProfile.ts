@@ -8,6 +8,7 @@
 // optional — missing fields aren't validated.
 
 import { isAllowedImageUrl } from '@/lib/validation/images'
+import { countryByCode } from '@/lib/data/countries'
 
 export type UniversalProfileBody = {
   cover_image_url?:    string | null
@@ -15,9 +16,20 @@ export type UniversalProfileBody = {
   instagram_url?:      string | null
   tiktok_url?:         string | null
   facebook_url?:       string | null
+  x_url?:              string | null
+  snapchat_url?:       string | null
+  website_url?:        string | null
   operating_hours?:    Record<string, string> | null
   certifications?:     string[]
   languages?:          string[]
+  // mig 0131
+  country_code?:            string
+  custom_services_offered?: string[]
+  // mig 0132 — chat handles
+  telegram_handle?: string | null
+  wechat_id?:       string | null
+  line_id?:         string | null
+  kakaotalk_id?:    string | null
 }
 
 type Result =
@@ -30,11 +42,15 @@ const MAX_LANG_CODES  = 10
 const VALID_DAY_KEYS  = new Set(['mon','tue','wed','thu','fri','sat','sun'])
 const HOURS_RE        = /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/
 // Allow common social-network hosts only — keeps a tukang from pasting a
-// random URL that the public page renders as "Instagram".
+// random URL that the public page renders as "Instagram". Website is
+// host-agnostic (any https URL) since providers run their own domains.
 const SOCIAL_HOST_RE = {
   instagram: /^https?:\/\/(www\.)?(instagram\.com|instagr\.am)\//i,
   tiktok:    /^https?:\/\/(www\.)?(tiktok\.com|vm\.tiktok\.com)\//i,
   facebook:  /^https?:\/\/(www\.)?(facebook\.com|fb\.com|m\.facebook\.com)\//i,
+  x:         /^https?:\/\/(www\.)?(twitter\.com|x\.com)\//i,
+  snapchat:  /^https?:\/\/(www\.)?(snapchat\.com)\//i,
+  website:   /^https?:\/\/[^\s/$.?#].[^\s]*$/i,
 }
 
 export function validateUniversalProfile(body: UniversalProfileBody): Result {
@@ -60,14 +76,17 @@ export function validateUniversalProfile(body: UniversalProfileBody): Result {
     out.gallery_image_urls = clean
   }
 
-  for (const k of ['instagram_url','tiktok_url','facebook_url'] as const) {
+  for (const k of ['instagram_url','tiktok_url','facebook_url','x_url','snapchat_url','website_url'] as const) {
     if (body[k] === undefined) continue
     const raw = body[k]
     const v = typeof raw === 'string' ? raw.trim() || null : null
     if (v) {
       const host = k === 'instagram_url' ? SOCIAL_HOST_RE.instagram
                  : k === 'tiktok_url'    ? SOCIAL_HOST_RE.tiktok
-                 :                          SOCIAL_HOST_RE.facebook
+                 : k === 'facebook_url'  ? SOCIAL_HOST_RE.facebook
+                 : k === 'x_url'         ? SOCIAL_HOST_RE.x
+                 : k === 'snapchat_url'  ? SOCIAL_HOST_RE.snapchat
+                 :                          SOCIAL_HOST_RE.website
       if (!host.test(v)) return { ok: false, error: `invalid_${k}` }
       if (v.length > 500) return { ok: false, error: `${k}_too_long` }
     }
@@ -119,6 +138,54 @@ export function validateUniversalProfile(body: UniversalProfileBody): Result {
       cleaned.push(v)
     }
     out.languages = cleaned
+  }
+
+  // mig 0131 — ISO 3166-1 alpha-2 country code. countryByCode() falls
+  // back to Indonesia for unknown codes, so reject anything not in our
+  // lookup explicitly to keep the column meaningful for currency/dial.
+  if (body.country_code !== undefined) {
+    if (typeof body.country_code !== 'string') return { ok: false, error: 'invalid_country_code' }
+    const v = body.country_code.trim().toUpperCase()
+    if (!/^[A-Z]{2}$/.test(v)) return { ok: false, error: 'invalid_country_code' }
+    const resolved = countryByCode(v)
+    if (resolved.code !== v) return { ok: false, error: 'unknown_country_code' }
+    out.country_code = v
+  }
+
+  // mig 0131 — Free-form service names the provider added themselves.
+  // De-dupe + trim + length-cap; max 20 entries enforced by DB CHECK.
+  if (body.custom_services_offered !== undefined) {
+    if (!Array.isArray(body.custom_services_offered)) return { ok: false, error: 'invalid_custom_services' }
+    if (body.custom_services_offered.length > 20) return { ok: false, error: 'too_many_custom_services' }
+    const seen = new Set<string>()
+    const cleaned: string[] = []
+    for (const s of body.custom_services_offered) {
+      if (typeof s !== 'string') return { ok: false, error: 'invalid_custom_service_entry' }
+      const v = s.trim()
+      if (!v) continue
+      if (v.length > 60) return { ok: false, error: 'custom_service_too_long' }
+      const key = v.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      cleaned.push(v)
+    }
+    out.custom_services_offered = cleaned
+  }
+
+  // mig 0132 — Chat handles. Free-form text per platform; basic trim +
+  // length cap (60). Telegram accepts @handle, t.me URL, or +phone;
+  // others are platform IDs (alphanumeric + symbols).
+  for (const k of ['telegram_handle','wechat_id','line_id','kakaotalk_id'] as const) {
+    if (body[k] === undefined) continue
+    const raw = body[k]
+    const v = typeof raw === 'string' ? raw.trim() || null : null
+    if (v) {
+      if (v.length > 60) return { ok: false, error: `${k}_too_long` }
+      // Loose accept — strip illegal whitespace, keep printable chars
+      // including @, +, /, ., -, _, digits, letters. Reject anything else.
+      if (!/^[A-Za-z0-9@+./_\-:]+$/.test(v)) return { ok: false, error: `invalid_${k}` }
+    }
+    out[k] = v
   }
 
   return { ok: true, fields: out }

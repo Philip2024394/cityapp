@@ -1,16 +1,15 @@
 'use client'
-import { useState } from 'react'
-import { Upload, Check, X, ImageIcon } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Upload, ImageIcon } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
 // ============================================================================
 // Profile image uploader — sister to KtpUploader but writes to the PUBLIC
 // `profile-images` bucket (mig 0071) and stores the full public URL.
 //
-// Replaces the paste-URL pattern across all 5 provider signup + dashboard
-// edit forms. Profile photos appear on the marketplace so the bucket is
-// public-read; uploads/replaces are RLS-restricted to the user's own
-// uid folder.
+// Layout: a square dashed-line container. Inside the square: a circular
+// avatar preview (image or placeholder) + an explicit "Upload file"
+// button. Matches the light dashboard design system.
 //
 // onChange receives the full public URL (https://<project>.supabase.co/
 // storage/v1/object/public/profile-images/<uid>/<file>) so existing
@@ -26,7 +25,10 @@ export default function ProfileImageUploader({
   userId,
   label = 'Foto profile',
   helpText = 'JPG / PNG / WEBP · max 5MB. Akan ditampilkan di marketplace.',
-  previewShape = 'square',
+  // previewShape is now informational — the layout is always a square
+  // dashed container with a circular preview inside. Kept on the props
+  // surface so existing call sites compile without churn.
+  previewShape: _previewShape = 'circle',
 }: {
   /** Current public URL (or null/empty for no photo). */
   value: string | null
@@ -34,13 +36,11 @@ export default function ProfileImageUploader({
   userId: string
   label?: string
   helpText?: string
-  /** Preview thumbnail shape. 'circle' mirrors the floating-card
-   *  avatar on the public profile page so beauticians see the exact
-   *  look their photo will have when published. */
   previewShape?: 'square' | 'circle'
 }) {
   const [uploading, setUploading] = useState(false)
   const [err, setErr]             = useState<string | null>(null)
+  const inputRef                  = useRef<HTMLInputElement>(null)
 
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -66,14 +66,15 @@ export default function ProfileImageUploader({
       onChange(pub.publicUrl)
     } finally {
       setUploading(false)
+      if (inputRef.current) inputRef.current.value = ''
     }
   }
 
   async function clear() {
     if (!value) return
-    // Best-effort delete of the stored object. We only attempt this if
-    // the URL looks like one of ours (contains the bucket path); legacy
-    // pasted URLs from before mig 0071 just get the form-value cleared.
+    // Best-effort delete of the stored object. Only attempt if the URL
+    // looks like one of ours; legacy pasted URLs (pre-mig 0071) just
+    // get the form value cleared.
     const supabase = getBrowserSupabase()
     if (supabase && value.includes('/storage/v1/object/public/profile-images/')) {
       const idx = value.indexOf('/profile-images/')
@@ -86,52 +87,38 @@ export default function ProfileImageUploader({
   }
 
   return (
-    <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-3">
+    <div className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
       <div className="flex items-start gap-2">
-        <ImageIcon className="w-4 h-4 mt-0.5 text-brand shrink-0" strokeWidth={2.5} />
+        <ImageIcon className="w-4 h-4 mt-0.5 text-pink-500 shrink-0" strokeWidth={2.5} />
         <div className="min-w-0">
-          <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">{label}</div>
-          <p className="text-[11px] text-ink/55 mt-0.5 leading-snug">{helpText}</p>
+          <div className="text-[12px] font-extrabold uppercase tracking-wider text-black/70">{label}</div>
+          <p className="text-[12px] text-black/55 mt-0.5 leading-snug">{helpText}</p>
         </div>
       </div>
 
-      {value ? (
-        <div className="flex items-center gap-3 rounded-lg bg-green-500/10 border border-green-500/40 px-3 py-2.5">
-          {previewShape === 'circle' ? (
+      {/* Square dashed container — circular preview + upload button inside. */}
+      <div className="aspect-square w-full rounded-3xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-4 p-6 transition hover:border-pink-300 hover:bg-pink-50/40">
+        {/* Circular preview — image when set, placeholder icon when empty. */}
+        <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-white border-2 border-gray-200 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
+          {value ? (
             <img
               src={value}
-              alt=""
-              className="w-16 h-16 rounded-full object-cover shrink-0 border-2 border-white shadow"
-              style={{ background: '#0A0A0A' }}
+              alt="Profile preview"
+              className="w-full h-full object-cover"
             />
           ) : (
-            <img
-              src={value}
-              alt=""
-              className="w-12 h-12 rounded-lg object-cover bg-black/30 shrink-0"
-            />
+            <ImageIcon className="w-12 h-12 text-gray-300" strokeWidth={1.75} />
           )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 text-green-300 text-[13px] font-bold">
-              <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
-              Photo uploaded
-            </div>
-            <div className="text-[10px] text-ink/45 mt-0.5 truncate">{value.split('/').pop()}</div>
-          </div>
-          <button
-            type="button"
-            onClick={clear}
-            aria-label="Hapus foto"
-            className="text-ink/55 hover:text-ink p-1.5 shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
-      ) : (
-        <label className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 px-4 py-6 text-[13px] font-bold text-ink/75 cursor-pointer hover:bg-white/5 hover:border-brand/60 transition">
+
+        {/* Upload / change file button + hidden input. */}
+        <label
+          className={`inline-flex items-center justify-center gap-1.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white px-5 py-2.5 text-[13px] font-extrabold uppercase tracking-wider shadow-md shadow-pink-500/25 cursor-pointer transition active:scale-[0.97] min-h-[44px] ${uploading ? 'opacity-60 cursor-wait' : ''}`}
+        >
           <Upload className="w-4 h-4" strokeWidth={2.5} />
-          {uploading ? 'Uploading…' : 'Pilih foto'}
+          {uploading ? 'Uploading…' : value ? 'Change file' : 'Upload file'}
           <input
+            ref={inputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={pick}
@@ -139,10 +126,20 @@ export default function ProfileImageUploader({
             className="hidden"
           />
         </label>
-      )}
+
+        {value && (
+          <button
+            type="button"
+            onClick={clear}
+            className="text-[12px] font-bold text-black/55 hover:text-black/85 underline"
+          >
+            Remove photo
+          </button>
+        )}
+      </div>
 
       {err && (
-        <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[12px] px-3 py-2">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-[12px] px-3 py-2">
           {err}
         </div>
       )}

@@ -14,8 +14,8 @@ import { getLegalEntity } from '@/lib/legal/entity'
 // ============================================================================
 
 export const metadata = {
-  title: 'Contact · IndoCity',
-  description: 'Get in touch with IndoCity — data requests, support, business inquiries.',
+  title: 'Contact · Kita2u',
+  description: 'Get in touch with Kita2u — data requests, support, business inquiries.',
 }
 
 // Fallback contacts when no env-configured legal entity is set. These
@@ -149,7 +149,7 @@ export default function ContactPage() {
           >
             <AlertCircle className="w-4 h-4 text-muted shrink-0 mt-0.5" />
             <div className="text-muted leading-relaxed">
-              IndoCity operates as part of the StreetLocal family of apps from Yogyakarta,
+              Kita2u operates as part of the StreetLocal family of apps from Yogyakarta,
               Indonesia. For formal correspondence, use the email above.
             </div>
           </div>

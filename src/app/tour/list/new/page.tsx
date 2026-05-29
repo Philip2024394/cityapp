@@ -354,7 +354,7 @@ export default function TourGuideListNewPage() {
             <div className="rounded-xl p-4 bg-yellow-900/20 border border-yellow-500/50 space-y-2">
               <div className="text-[14px] font-extrabold text-brand">Akun kamu belum aktif untuk listing tour guide</div>
               <p className="text-[12px] text-bg/80 leading-snug">
-                Kalau kamu sudah IndoCity driver dengan subscription aktif, listing tour guide gratis. Kalau bukan, upgrade ke akun Tour Guide — mulai Rp 38.000/bulan.
+                Kalau kamu sudah Kita2u driver dengan subscription aktif, listing tour guide gratis. Kalau bukan, upgrade ke akun Tour Guide — mulai Rp 38.000/bulan.
               </p>
               <Link href="/tour/upgrade" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-brand to-brand2 text-bg font-extrabold text-[13px] uppercase tracking-wider border border-black/85 shadow-[0_4px_12px_rgba(250,204,21,0.30)] active:scale-[0.99]">
                 Upgrade akun

@@ -7,8 +7,8 @@ import { ChevronLeft } from 'lucide-react'
 // Structured along Indonesian commercial T&C conventions: definitions,
 // scope, parties' roles, payment, liability, data, termination, jurisdiction.
 export const metadata = {
-  title: 'Terms of Service · IndoCity',
-  description: 'Terms of Service for the IndoCity software platform.',
+  title: 'Terms of Service · Kita2u',
+  description: 'Terms of Service for the Kita2u software platform.',
 }
 
 export default function TermsPage() {
@@ -27,13 +27,13 @@ export default function TermsPage() {
         <div>
           <h1 className="text-3xl font-extrabold">Terms of Service</h1>
           <p className="text-muted text-[14px] mt-2">
-            Effective from launch. By using IndoCity, you agree to these terms.
+            Effective from launch. By using Kita2u, you agree to these terms.
           </p>
         </div>
 
         <Clause n="1" title="Definitions">
           <ul className="list-disc list-inside space-y-1">
-            <li><strong>IndoCity</strong> — the software directory platform operated under the StreetLocal family of apps</li>
+            <li><strong>Kita2u</strong> — the software directory platform operated under the StreetLocal family of apps</li>
             <li><strong>Subscriber</strong> — an independent motorcycle courier who pays the monthly fee to be listed</li>
             <li><strong>Customer</strong> — any person who uses the directory to find or contact a Subscriber</li>
             <li><strong>Software</strong> — the website, app, dashboards, and APIs we operate</li>
@@ -41,8 +41,8 @@ export default function TermsPage() {
           </ul>
         </Clause>
 
-        <Clause n="2" title="What IndoCity provides">
-          IndoCity provides software: a public profile, marketplace listing, GPS visibility,
+        <Clause n="2" title="What Kita2u provides">
+          Kita2u provides software: a public profile, marketplace listing, GPS visibility,
           customer database, business tools, lead notifications, analytics, and business-card
           printing. We do not provide transportation services, vehicles, drivers, insurance, or
           payment processing.
@@ -50,7 +50,7 @@ export default function TermsPage() {
 
         <Clause n="3" title="Subscribers are independent businesses">
           Each Subscriber is an independent business operator. No employer-employee, principal-
-          agent, partnership, or franchise relationship exists between IndoCity and any
+          agent, partnership, or franchise relationship exists between Kita2u and any
           Subscriber. Subscribers set their own prices, choose their own hours, accept or decline
           any job, manage their own customers, and are solely responsible for their conduct,
           vehicles, licensing, insurance, taxes, and compliance with local law.
@@ -58,20 +58,20 @@ export default function TermsPage() {
 
         <Clause n="4" title="Customer-Subscriber transactions">
           When a Customer contacts a Subscriber through the directory, they enter a direct service
-          agreement with that Subscriber. IndoCity is not a party to that agreement, does not
+          agreement with that Subscriber. Kita2u is not a party to that agreement, does not
           process the payment, does not guarantee performance, and does not mediate disputes. The
           Customer agrees to settle any matters arising from a trip directly with the Subscriber.
         </Clause>
 
         <Clause n="5" title="Payments">
-          The only payment IndoCity receives is the Subscriber's monthly subscription fee
-          (Rp 38,000), processed by Midtrans. IndoCity never charges Customers, never holds
+          The only payment Kita2u receives is the Subscriber's monthly subscription fee
+          (Rp 38,000), processed by Midtrans. Kita2u never charges Customers, never holds
           deposits, never processes trip fares, and never takes commission on transactions
           between Customers and Subscribers.
         </Clause>
 
         <Clause n="6" title="No transportation liability">
-          IndoCity is not liable for any loss, damage, injury, delay, theft, accident, or other
+          Kita2u is not liable for any loss, damage, injury, delay, theft, accident, or other
           incident arising from a transportation service provided by a Subscriber. Subscribers
           warrant they hold valid SIM C (motorcycle licence), STNK (vehicle registration), and
           any local permits required, and that their vehicle is roadworthy and insured to the
@@ -80,7 +80,7 @@ export default function TermsPage() {
 
         <Clause n="7" title="Subscriber obligations">
           Subscribers agree to: (a) operate only under valid Indonesian licences and permits;
-          (b) maintain accurate, truthful profile information; (c) not impersonate IndoCity or
+          (b) maintain accurate, truthful profile information; (c) not impersonate Kita2u or
           claim affiliation beyond being a subscriber; (d) not engage in fraud, harassment, or
           illegal activity; (e) cancel their subscription if they no longer meet the requirements
           of section 6.
@@ -100,7 +100,7 @@ export default function TermsPage() {
 
         <Clause n="10" title="Data + privacy">
           See <Link href="/privacy" className="text-brand hover:underline">Privacy Policy</Link>.
-          IndoCity complies with UU 27/2022 (Personal Data Protection Law).
+          Kita2u complies with UU 27/2022 (Personal Data Protection Law).
         </Clause>
 
         <Clause n="11" title="Governing law + jurisdiction">

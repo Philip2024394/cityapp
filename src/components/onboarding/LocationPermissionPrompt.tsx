@@ -203,7 +203,7 @@ export default function LocationPermissionPrompt({ open, onComplete }: Props) {
           Set your location
         </h2>
         <p className="mt-2 text-center text-[13px] font-medium text-gray-600 leading-relaxed">
-          See distances, prices, and nearby drivers across IndoCity.
+          See distances, prices, and nearby drivers across Kita2u.
         </p>
 
         {errorMsg && (

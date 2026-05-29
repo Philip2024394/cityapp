@@ -11,8 +11,8 @@ import { WifiOff, RefreshCw } from 'lucide-react'
 // ============================================================================
 
 export const metadata = {
-  title: 'Offline · IndoCity',
-  description: 'You are offline. Reconnect to keep browsing IndoCity.',
+  title: 'Offline · Kita2u',
+  description: 'You are offline. Reconnect to keep browsing Kita2u.',
   robots: { index: false, follow: false },
 }
 
@@ -34,7 +34,7 @@ export default function OfflinePage() {
           <h1 className="text-2xl font-extrabold text-ink">You&apos;re offline</h1>
           <p className="text-[14px] text-muted mt-2 leading-relaxed">
             Cek koneksi internet kamu — WiFi atau data seluler — lalu coba lagi.
-            IndoCity butuh koneksi untuk menampilkan rider yang sedang online.
+            Kita2u butuh koneksi untuk menampilkan rider yang sedang online.
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export default function OfflinePage() {
         </div>
 
         <p className="text-[11px] text-muted/60 pt-4">
-          IndoCity · Marketplace kurir motor Indonesia
+          Kita2u · Marketplace kurir motor Indonesia
         </p>
       </div>
     </main>

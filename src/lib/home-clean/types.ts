@@ -66,12 +66,61 @@ export type HomeCleanProviderPublic = Pick<
   rating_count?: number | null
   // mig 0087 — per-provider accent for the public profile page.
   theme_color?: string | null
-  // mig 0105 — beautician-parity feature columns.
-  service_photos?:        Record<string, string[]> | null
+  // mig 0123 — Services Offered catalog (independent of pricing).
+  services_offered?: HomeCleanService[] | null
+  // mig 0105 — beautician-parity feature columns. service_photos is the
+  // SAME keyed-object shape as beautician mig 0074 — keys are HomeCleanService
+  // IDs, values are arrays of rich photo objects (or legacy URL strings).
+  service_photos?:        Partial<Record<HomeCleanService, HomeCleanServicePhoto[]>> | null
   has_physical_location?: boolean | null
   latitude?:              number | null
   longitude?:             number | null
   busy_dates?:            string[] | null
-  hero_text?:             Record<string, unknown> | null
+  hero_text?:             HomeCleanHeroText | null
   promo_text?:            string | null
+  // Optional travel-location subset — home_clean does not yet have a
+  // dedicated migration, but if/when the column lands the public page
+  // already renders icons for any value present.
+  service_locations?: Array<'home' | 'hotel' | 'villa'> | null
+}
+
+// mig 0123 — Home-clean service catalog. DB CHECK constraint mirrors this
+// list, so adding here requires re-running 0123 with the new entry
+// appended to the allowlist.
+export const HOME_CLEAN_SERVICES_OFFERED = [
+  { id: 'regular_clean',     label: 'Regular Clean'    },
+  { id: 'deep_clean',        label: 'Deep Clean'       },
+  { id: 'move_in_out',       label: 'Move In / Out'    },
+  { id: 'post_construction', label: 'Post-Construction'},
+  { id: 'sofa_carpet',       label: 'Sofa & Carpet'    },
+] as const
+
+export type HomeCleanService = typeof HOME_CLEAN_SERVICES_OFFERED[number]['id']
+
+export const HOME_CLEAN_SERVICE_LABELS: Record<HomeCleanService, string> =
+  Object.fromEntries(
+    HOME_CLEAN_SERVICES_OFFERED.map((s) => [s.id, s.label]),
+  ) as Record<HomeCleanService, string>
+
+// Hero text customisation — mirrors beautician mig 0081.
+export type HomeCleanHeroEffect = 'none' | 'shimmer' | 'dance' | 'underline'
+export type HomeCleanHeroText = {
+  line1?:         string
+  line2?:         string
+  tagline?:       string
+  color?:         string
+  line1_color?:   string
+  tagline_color?: string
+  effect?:        HomeCleanHeroEffect
+}
+
+// Carousel entry — mirrors beautician mig 0074 rich photo shape.
+export type HomeCleanServicePhoto = {
+  url:              string
+  name?:            string
+  description?:     string
+  price_idr?:       number | null
+  object_position?: string
+  before_image_url?: string
+  after_image_url?:  string
 }

@@ -30,12 +30,18 @@ const REAL_COLS = [
   // mig 0072 — universal profile fields
   'cover_image_url','gallery_image_urls',
   'instagram_url','tiktok_url','facebook_url',
+  // mig 0130 — extra socials + custom domain
+  'x_url','snapchat_url','website_url',
+  // mig 0132 — chat handles
+  'telegram_handle','wechat_id','line_id','kakaotalk_id',
   'operating_hours','certifications',
   'last_active_at',
   // mig 0087 — per-guide accent colour
   'theme_color',
   // mig 0107 — feature parity with beautician contract
   'has_physical_location','busy_dates','promo_text',
+  // mig 0131 — country + custom services
+  'country_code','custom_services_offered',
 ].join(', ')
 
 // Mock companion table (mig 0052) — narrower column set. Same keys exist on

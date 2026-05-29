@@ -39,7 +39,7 @@ export default async function TourListAuthGatePage() {
               List as <span className="gradient-text">Tour Guide</span>
             </h1>
             <p className="text-[13px] text-muted leading-snug">
-              Pilih cara masuk untuk mulai listing kamu sebagai tour guide di IndoCity.
+              Pilih cara masuk untuk mulai listing kamu sebagai tour guide di Kita2u.
             </p>
           </header>
 
@@ -85,7 +85,7 @@ export default async function TourListAuthGatePage() {
                 Buat akun baru
               </div>
               <div className="text-[12px] text-muted mt-0.5">
-                Daftar gratis. Sudah jadi IndoCity driver? Listing tour guide gratis.
+                Daftar gratis. Sudah jadi Kita2u driver? Listing tour guide gratis.
                 Kalau bukan driver, Rp 38.000/bulan untuk listing kamu.
               </div>
             </div>
@@ -95,7 +95,7 @@ export default async function TourListAuthGatePage() {
           <div className="card p-4 space-y-2">
             <div className="text-[13px] font-extrabold text-ink">Quota listing</div>
             <ul className="text-[12px] text-muted leading-snug space-y-1">
-              <li>• <span className="font-extrabold text-ink">Driver IndoCity aktif:</span> 1 listing tour guide gratis (sudah termasuk subscription Rp 38K/bulan kamu).</li>
+              <li>• <span className="font-extrabold text-ink">Driver Kita2u aktif:</span> 1 listing tour guide gratis (sudah termasuk subscription Rp 38K/bulan kamu).</li>
               <li>• <span className="font-extrabold text-ink">Tour guide independen:</span> 1 listing, Rp 38.000/bulan atau Rp 350.000/tahun.</li>
               <li>• Pilih max 3 specialties (Temples, Beaches, Mountain, dll).</li>
             </ul>

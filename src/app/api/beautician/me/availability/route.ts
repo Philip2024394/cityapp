@@ -25,13 +25,10 @@ export async function POST(req: Request) {
 
   const { data: row } = await admin
     .from('beautician_providers')
-    .select('id, status')
+    .select('id')
     .eq('user_id', user.id)
     .maybeSingle()
   if (!row) return NextResponse.json({ error: 'no_provider_row' }, { status: 404 })
-  if (next === 'online' && row.status !== 'active') {
-    return NextResponse.json({ error: 'not_verified' }, { status: 403 })
-  }
   const { error } = await admin
     .from('beautician_providers')
     .update({ availability: next, updated_at: new Date().toISOString() })

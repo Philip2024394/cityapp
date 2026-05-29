@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
+import CountryPicker from '@/components/dashboard/CountryPicker'
 import type { HomeCleanProvider, HomeCleanAvailability } from '@/lib/home-clean/types'
 
 
@@ -36,7 +36,7 @@ export default function HomeCleanDashboardPage() {
         body: JSON.stringify({ availability: next }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
-      if (!j.ok) { setP({ ...p, availability: prev }); alert(j.error === 'not_verified' ? 'Awaiting verification.' : 'Update failed.') }
+      if (!j.ok) { setP({ ...p, availability: prev }); alert('Update failed.') }
     } catch { setP({ ...p, availability: prev }) }
   }
 
@@ -61,11 +61,6 @@ export default function HomeCleanDashboardPage() {
         <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{p.display_name}</h1>
           <div className="text-[12px] text-black/60 font-mono mb-3">{p.slug}</div>
-          {p.status !== 'active' && (
-            <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 text-[12px] px-3 py-2 mb-3">
-              <strong>Awaiting verification.</strong> Profile not yet listed on marketplace.
-            </div>
-          )}
           <div className="grid grid-cols-3 gap-2">
             {(['online','busy','offline'] as const).map((a) => {
               const active = p.availability === a
@@ -139,9 +134,13 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
     instagram_url?:      string | null
     tiktok_url?:         string | null
     facebook_url?:       string | null
+    x_url?:              string | null
+    snapchat_url?:       string | null
+    website_url?:        string | null
     operating_hours?:    Record<string, string> | null
     certifications?:     string[] | null
     languages?:          string[] | null
+    country_code?:       string | null
   }
   const [f, setF] = useState<{
     display_name: string
@@ -153,15 +152,18 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
     city: string
     service_area_notes: string
     profile_image_url: string
-    ktp_image_url: string
     cover_image_url:    string | null
     gallery_image_urls: string[]
     instagram_url:      string | null
     tiktok_url:         string | null
     facebook_url:       string | null
+    x_url:              string | null
+    snapchat_url:       string | null
+    website_url:        string | null
     operating_hours:    Record<string, string> | null
     certifications:     string[]
     languages:          string[]
+    country_code:       string
   }>({
     display_name: p.display_name,
     years_experience: p.years_experience,
@@ -172,15 +174,18 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
     city: p.city ?? '',
     service_area_notes: p.service_area_notes ?? '',
     profile_image_url: p.profile_image_url ?? '',
-    ktp_image_url: p.ktp_image_url ?? '',
     cover_image_url:    pp.cover_image_url ?? null,
     gallery_image_urls: pp.gallery_image_urls ?? [],
     instagram_url:      pp.instagram_url ?? null,
     tiktok_url:         pp.tiktok_url ?? null,
     facebook_url:       pp.facebook_url ?? null,
+    x_url:              pp.x_url ?? null,
+    snapchat_url:       pp.snapchat_url ?? null,
+    website_url:        pp.website_url ?? null,
     operating_hours:    pp.operating_hours ?? null,
     certifications:     pp.certifications ?? [],
     languages:          pp.languages ?? [],
+    country_code:       pp.country_code ?? 'ID',
   })
   const [saving, setSaving] = useState(false)
   const [flash, setFlash] = useState(false)
@@ -203,15 +208,18 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
           city: f.city,
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
-          ktp_image_url: f.ktp_image_url,
           cover_image_url:    f.cover_image_url,
           gallery_image_urls: f.gallery_image_urls,
           instagram_url:      f.instagram_url,
           tiktok_url:         f.tiktok_url,
           facebook_url:       f.facebook_url,
+          x_url:              f.x_url,
+          snapchat_url:       f.snapchat_url,
+          website_url:        f.website_url,
           operating_hours:    f.operating_hours,
           certifications:     f.certifications,
           languages:          f.languages,
+          country_code:       f.country_code,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -230,11 +238,11 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
         <PriceInput label="Hour"     v={f.hourly_rate} set={(v) => upd('hourly_rate', v)} />
         <PriceInput label="Day · 8h" v={f.day_rate}    set={(v) => upd('day_rate', v)} />
       </div>
+      <CountryPicker value={f.country_code} onChange={(code) => upd('country_code', code)} />
       <input type="tel"  value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
       {p.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={p.user_id} />}
-      {p.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={p.user_id} />}
       {p.user_id && (
         <UniversalProfileExtrasEditor
           userId={p.user_id}
@@ -244,6 +252,9 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
             instagram_url:      f.instagram_url,
             tiktok_url:         f.tiktok_url,
             facebook_url:       f.facebook_url,
+            x_url:              f.x_url,
+            snapchat_url:       f.snapchat_url,
+            website_url:        f.website_url,
             operating_hours:    f.operating_hours,
             certifications:     f.certifications,
             languages:          f.languages,

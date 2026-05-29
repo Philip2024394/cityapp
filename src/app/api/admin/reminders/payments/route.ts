@@ -349,7 +349,7 @@ function composeWaMessage(args: {
   const planLabel = args.verticalLabel
     ?? (args.plan === 'rental_company' ? 'Rental Company'
       : args.plan === 'tour_guide' ? 'Tour Guide'
-      : 'IndoCity Driver')
+      : 'Kita2u Driver')
 
   const k = args.kind as string
   if (k.endsWith('_t_minus_7')) {
@@ -399,7 +399,7 @@ function composeMessage(args: {
   const planLabel = args.verticalLabel
     ?? (args.plan === 'rental_company' ? 'Rental Company'
       : args.plan === 'tour_guide' ? 'Tour Guide'
-      : 'IndoCity Driver')
+      : 'Kita2u Driver')
 
   // Normalise provider kinds (massage_t_minus_7 etc.) to the matching
   // base offset bucket so the switch below can stay tight. The plan +
@@ -465,7 +465,7 @@ function composeMessage(args: {
       }
     case 'driver_t_plus_7':
       return {
-        subject: `7 hari lewat — last reminder renew IndoCity`,
+        subject: `7 hari lewat — last reminder renew Kita2u`,
         html: renderEmail({
           heading: 'Last reminder',
           preheader: 'Renew dalam 24 jam atau profilmu mungkin di-purge dari sistem.',
@@ -476,11 +476,11 @@ function composeMessage(args: {
       }
     case 'pending_intent_stuck':
       return {
-        subject: `Pembayaran IndoCity belum selesai`,
+        subject: `Pembayaran Kita2u belum selesai`,
         html: renderEmail({
           heading: 'Lanjutkan pembayaran',
           preheader: 'Kamu membuka Snap tapi belum menyelesaikan pembayaran.',
-          bodyHtml: `<p>Hai! Sepertinya kamu mulai pembayaran IndoCity (${planLabel}) pada ${dueLabel} tapi belum selesai. Mulai ulang pembayaran di bawah ini — Snap support QRIS, GoPay, OVO, ShopeePay, kartu kredit, dan VA bank besar.</p>`,
+          bodyHtml: `<p>Hai! Sepertinya kamu mulai pembayaran Kita2u (${planLabel}) pada ${dueLabel} tapi belum selesai. Mulai ulang pembayaran di bawah ini — Snap support QRIS, GoPay, OVO, ShopeePay, kartu kredit, dan VA bank besar.</p>`,
           ctaUrl: args.renewUrl,
           ctaLabel: 'Lanjut bayar',
         }),

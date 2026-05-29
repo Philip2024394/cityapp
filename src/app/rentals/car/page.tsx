@@ -29,11 +29,11 @@ import type { RentalType } from '@/components/marketplace/RentalDriverCard'
 // ============================================================================
 
 export const metadata = {
-  title: 'Car Rentals · IndoCity',
+  title: 'Car Rentals · Kita2u',
   description:
     'Browse car rentals in Indonesia — lepas kunci (self-drive) or with ' +
     'driver. Daily, weekly, monthly rates. Self-published by drivers. ' +
-    'IndoCity is a directory; we never set prices.',
+    'Kita2u is a directory; we never set prices.',
 }
 
 // Server-side render on every request so newly-paid drivers appear without
@@ -291,7 +291,7 @@ export default async function RentalsCarMarketplacePage() {
 
         {/* Compliance footer */}
         <p className="mt-8 text-center text-[12px] text-black/55 leading-relaxed max-w-md mx-auto">
-          All rates self-published by drivers. IndoCity is a software directory
+          All rates self-published by drivers. Kita2u is a software directory
           {' '}— we never set or modify prices. Contact drivers directly via
           WhatsApp to arrange rental.
         </p>
@@ -310,7 +310,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-            alt="IndoCity"
+            alt="Kita2u"
             className="h-8 sm:h-10 w-auto"
           />
         </Link>

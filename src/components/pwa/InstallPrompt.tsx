@@ -107,7 +107,7 @@ export default function InstallPrompt() {
   return (
     <div
       role="dialog"
-      aria-label="Add IndoCity to your home screen"
+      aria-label="Add Kita2u to your home screen"
       className="fixed inset-x-0 z-50 pb-safe"
       style={{ bottom: 0 }}
     >
@@ -129,7 +129,7 @@ export default function InstallPrompt() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[14px] font-black text-black leading-tight">
-              Install IndoCity
+              Install Kita2u
             </div>
             <p className="text-[12px] text-black/65 leading-snug mt-1">
               {ios

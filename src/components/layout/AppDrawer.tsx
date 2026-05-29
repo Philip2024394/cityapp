@@ -123,6 +123,30 @@ const VARIANT_LABEL: Record<Variant, string> = {
   rentals:       'Rental owner navigation',
 }
 
+// Per-variant brand tinting for the nav-item pills. Keep verticals whose
+// public profile defaults to yellow (driver/partner/handyman/tour-guide/
+// rentals) on the master IndoCity yellow so they stay consistent with
+// their public pages. Verticals with non-yellow public defaults
+// (beautician=pink, massage=sky, laundry=blue, home-clean=cyan) get
+// tinted so the drawer feels coherent with the dashboard they live in.
+const VARIANT_BRAND: Record<Variant, {
+  /** Gradient start (light end). */ from: string
+  /** Gradient end (dark end).   */  to:   string
+  /** rgba shadow tint (no alpha — wrap below). */ shadow: string
+  /** Foreground text on the pill (ink-on-color). */ ink: string
+  /** Active-pill ON badge text color (sits on black). */ onPillText: string
+}> = {
+  driver:        { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
+  partner:       { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
+  handyman:      { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
+  'tour-guide':  { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
+  rentals:       { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
+  beautician:    { from: '#F472B6', to: '#DB2777', shadow: '236,72,153',  ink: '#FFFFFF', onPillText: '#F472B6' },
+  massage:       { from: '#38BDF8', to: '#0284C7', shadow: '14,165,233',  ink: '#FFFFFF', onPillText: '#38BDF8' },
+  laundry:       { from: '#60A5FA', to: '#2563EB', shadow: '59,130,246',  ink: '#FFFFFF', onPillText: '#60A5FA' },
+  'home-clean':  { from: '#22D3EE', to: '#0891B2', shadow: '6,182,212',   ink: '#FFFFFF', onPillText: '#22D3EE' },
+}
+
 export default function AppDrawer({
   open,
   onClose,
@@ -245,24 +269,26 @@ export default function AppDrawer({
           </div>
         </div>
 
-        {/* Driver pages — compact yellow brand buttons with a small black
-            icon chip (white lucide icon inside). Active page keeps the
-            "ON" pill so the current location is unambiguous. */}
+        {/* Nav items — per-variant brand gradient (see VARIANT_BRAND).
+            Driver/partner/handyman/tour-guide/rentals stay yellow to
+            match their public profile defaults; beautician/massage/
+            laundry/home-clean tint to their own brand. */}
         <nav className="flex-1 overflow-y-auto px-3 py-3">
           <div className="space-y-1.5">
             {items.map((item) => {
               const Icon = item.icon
               const active = !item.external && isActive(item.href)
+              const brand = VARIANT_BRAND[variant]
               const sharedClass = 'flex items-center gap-2.5 p-1 pr-2.5 rounded-lg transition active:scale-[0.99]'
               const sharedStyle = {
-                background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
-                color: '#0A0A0A',
+                background: `linear-gradient(135deg, ${brand.from} 0%, ${brand.to} 100%)`,
+                color: brand.ink,
                 border: active
                   ? '1px solid rgba(0,0,0,0.55)'
                   : '1px solid rgba(0,0,0,0.20)',
                 boxShadow: active
-                  ? '0 4px 12px rgba(250,204,21,0.35), 0 0 0 1.5px rgba(0,0,0,0.15) inset'
-                  : '0 2px 6px rgba(250,204,21,0.18)',
+                  ? `0 4px 12px rgba(${brand.shadow},0.35), 0 0 0 1.5px rgba(0,0,0,0.15) inset`
+                  : `0 2px 6px rgba(${brand.shadow},0.22)`,
                 minHeight: 44,
               }
               const inner = (
@@ -283,7 +309,7 @@ export default function AppDrawer({
                     <span
                       aria-hidden
                       className="text-[12px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
-                      style={{ background: '#0A0A0A', color: '#FACC15' }}
+                      style={{ background: '#0A0A0A', color: brand.onPillText }}
                     >
                       ON
                     </span>

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Palette, X } from 'lucide-react'
 
-// Theme color picker for beautician profile pages (mig 0078).
+// Theme color picker for provider profile pages (mig 0078 / 0087).
 //
 // Layout:
 //   • Inline row: 4 quick presets + "Custom color" trigger.
@@ -63,12 +63,12 @@ export default function ThemeColorPicker({
   const current = (value ?? '').toUpperCase()
 
   return (
-    <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-3">
+    <div className="rounded-xl bg-white border border-gray-200 p-4 space-y-3 shadow-sm">
       <div>
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-gray-900">
           Theme color
         </div>
-        <p className="text-[11px] text-ink/55 leading-snug mt-0.5">
+        <p className="text-[12px] text-gray-500 leading-snug mt-0.5">
           Pilih 1 dari 4 warna preset atau buka palette untuk pilih sendiri.
           Warna ini muncul di hero text, tombol, dan badge di profile page Anda.
         </p>
@@ -82,7 +82,7 @@ export default function ThemeColorPicker({
               key={p.value}
               type="button"
               onClick={() => onChange(p.value)}
-              className={`relative w-10 h-10 rounded-full transition active:scale-[0.95] ${on ? 'ring-2 ring-offset-2 ring-offset-black/85 ring-white' : ''}`}
+              className={`relative w-11 h-11 rounded-full transition active:scale-[0.95] ${on ? 'ring-2 ring-offset-2 ring-offset-white ring-gray-900' : 'ring-1 ring-gray-200'}`}
               style={{ background: p.value }}
               title={p.label}
               aria-label={`${p.label} preset`}
@@ -93,14 +93,14 @@ export default function ThemeColorPicker({
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full bg-white/10 border border-white/20 text-ink text-[12px] font-extrabold hover:bg-white/15 active:scale-[0.97] transition"
+          className="inline-flex items-center gap-1.5 h-11 px-3 rounded-full bg-gray-50 border border-gray-200 text-gray-900 text-[12px] font-extrabold hover:bg-gray-100 active:scale-[0.97] transition"
         >
           <Palette className="w-4 h-4" strokeWidth={2.5} />
           More colors
         </button>
         {current && (
           <span
-            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full bg-white/5 border border-white/15 text-ink/80 text-[11px] font-bold font-mono"
+            className="inline-flex items-center gap-1.5 h-11 px-3 rounded-full bg-gray-50 border border-gray-200 text-gray-700 text-[12px] font-bold font-mono"
             title="Current theme color"
           >
             <span className="w-3 h-3 rounded-full" style={{ background: current }} />
@@ -111,7 +111,7 @@ export default function ThemeColorPicker({
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="text-[11px] text-ink/55 hover:text-ink/80 underline"
+            className="text-[12px] text-gray-500 hover:text-gray-700 underline"
           >
             Reset to default
           </button>
@@ -123,50 +123,50 @@ export default function ThemeColorPicker({
         <div
           className="fixed inset-0 z-[60] flex"
           onClick={() => setDrawerOpen(false)}
-          style={{ background: 'rgba(0,0,0,0.55)' }}
+          style={{ background: 'rgba(0,0,0,0.35)' }}
         >
           <div
-            className="h-full w-[min(340px,90vw)] bg-black border-r border-white/15 shadow-2xl overflow-y-auto"
+            className="h-full w-[min(340px,90vw)] bg-white border-r border-gray-200 shadow-2xl overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 z-10 bg-black/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center justify-between">
               <div>
-                <div className="text-[13px] font-extrabold uppercase tracking-wider text-ink">
+                <div className="text-[13px] font-extrabold uppercase tracking-wider text-gray-900">
                   Website Palette
                 </div>
-                <div className="text-[10px] text-ink/55 mt-0.5">Lightest → Strongest</div>
+                <div className="text-[12px] text-gray-500 mt-0.5">Lightest → Strongest</div>
               </div>
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close palette"
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition"
+                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition"
               >
-                <X className="w-4 h-4 text-ink" strokeWidth={2.5} />
+                <X className="w-4 h-4 text-gray-900" strokeWidth={2.5} />
               </button>
             </div>
 
             <div className="p-4 space-y-3">
               {PALETTE.map((row) => (
                 <div key={row.name}>
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-ink/65 mb-1.5">
+                  <div className="text-[12px] font-extrabold uppercase tracking-wider text-gray-600 mb-1.5">
                     {row.name}
                   </div>
                   <div className="grid grid-cols-5 gap-1.5">
                     {row.shades.map((hex) => {
                       const on = current === hex.toUpperCase()
                       // White / very light swatches need a visible border so
-                      // they don't disappear into the dark drawer background.
+                      // they don't disappear into the light drawer background.
                       const isLight = ['#FFFFFF','#FEF08A','#FDE68A','#FED7AA','#FECACA','#FECDD3','#FBCFE8','#F5D0FE','#E9D5FF','#DDD6FE','#C7D2FE','#BFDBFE','#BAE6FD','#A5F3FC','#99F6E4','#A7F3D0','#BBF7D0','#D9F99D','#E7E5E4','#E5E7EB','#E2E8F0'].includes(hex.toUpperCase())
                       return (
                         <button
                           key={hex}
                           type="button"
                           onClick={() => { onChange(hex); setDrawerOpen(false) }}
-                          className={`aspect-square rounded-md transition active:scale-[0.95] ${on ? 'ring-2 ring-offset-2 ring-offset-black ring-white' : ''}`}
+                          className={`aspect-square rounded-md transition active:scale-[0.95] ${on ? 'ring-2 ring-offset-2 ring-offset-white ring-gray-900' : ''}`}
                           style={{
                             background: hex,
-                            border: isLight ? '1px solid rgba(255,255,255,0.18)' : undefined,
+                            border: isLight ? '1px solid rgba(0,0,0,0.12)' : undefined,
                           }}
                           title={hex}
                           aria-label={`${row.name} ${hex}`}

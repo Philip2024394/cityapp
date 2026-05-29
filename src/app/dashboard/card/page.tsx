@@ -41,7 +41,7 @@ export default function BusinessCardPage() {
     if (!ME) return
     haptic.tap()
     const shareData = {
-      title: `${ME.name} · IndoCity`,
+      title: `${ME.name} · Kita2u`,
       text: `Motorcycle courier in ${ME.city} · ${ME.bike.make} ${ME.bike.model}. Book directly via WhatsApp.`,
       url: profileUrl,
     }
@@ -126,7 +126,7 @@ export default function BusinessCardPage() {
                   city={ME.city}
                   subtitle={`${ME.bike.make} ${ME.bike.model} · ${ME.area}`}
                   photoUrl={ME.photoUrl}
-                  verticalLabel="IndoCity · Rider"
+                  verticalLabel="Kita2u · Rider"
                   whatsappE164={ME.whatsappE164}
                   priceLine={`From ${idr(ME.pricePerKm)} / km`}
                 />
@@ -134,7 +134,7 @@ export default function BusinessCardPage() {
               <MemberQRActions
                 profileUrl={profileUrl}
                 displayName={ME.name}
-                shareText={`Motorcycle courier in ${ME.city} — book directly on IndoCity. ${profileUrl}`}
+                shareText={`Motorcycle courier in ${ME.city} — book directly on Kita2u. ${profileUrl}`}
               />
             </>
           )}

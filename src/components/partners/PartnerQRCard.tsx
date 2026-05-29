@@ -49,7 +49,7 @@ export default function PartnerQRCard({
     if (!w) return
     w.document.write(`
       <!DOCTYPE html>
-      <html><head><title>${partnerName} — IndoCity QR</title>
+      <html><head><title>${partnerName} — Kita2u QR</title>
       <style>
         body { font-family: Inter, system-ui, sans-serif; padding: 32px; display: flex; justify-content: center; }
         .card { width: 320px; padding: 24px; border: 2px solid #0A0A0A; border-radius: 16px; text-align: center; }
@@ -62,7 +62,7 @@ export default function PartnerQRCard({
         @media print { @page { margin: 12mm; } body { padding: 0; } }
       </style></head><body>
       <div class="card">
-        <div class="brand">IndoCity</div>
+        <div class="brand">Kita2u</div>
         <div class="name">${escapeHtml(partnerName)}</div>
         ${city ? `<div class="city">${escapeHtml(city)}</div>` : ''}
         <div class="qr"><img src="${qrSrc}" style="width:100%;height:100%" alt="QR" /></div>
@@ -81,7 +81,7 @@ export default function PartnerQRCard({
         className="bg-white text-black rounded-2xl border-2 border-black/85 p-6 max-w-[320px] text-center mx-auto"
       >
         <div className="text-[11px] font-extrabold tracking-[0.15em] text-brand2 uppercase mb-1">
-          IndoCity
+          Kita2u
         </div>
         <div className="text-[18px] font-black text-black mb-1 leading-tight">{partnerName}</div>
         {city && <div className="text-[12px] text-gray-600 mb-4">{city}</div>}

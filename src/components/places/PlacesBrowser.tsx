@@ -330,7 +330,7 @@ export default function PlacesBrowser({
         {/* ROW 5 — Compliance disclaimer. Directory-posture copy aligned
             with /car and /cari: "self-listed" + "agree fare with driver". */}
         <p className="mt-3 text-center text-[11px] text-[#52525B] font-bold leading-snug px-2 shrink-0">
-          Self-listed venues · IndoCity is a software directory.
+          Self-listed venues · Kita2u is a software directory.
           Hours and details are owner-published.
         </p>
       </div>

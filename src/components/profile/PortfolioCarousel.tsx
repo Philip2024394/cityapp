@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { MessageCircle, Minus, Plus, ShoppingBag, X } from 'lucide-react'
+import { resolveBadge, type ServicePhotoBadge } from '@/lib/badges'
 
 // Auto-drifting horizontal portfolio carousel + the lightbox popup that
 // opens when a card's View Details is tapped. Extracted from
@@ -17,23 +18,25 @@ export type PortfolioPhoto = {
   object_position?:  string | null
   before_image_url?: string | null
   after_image_url?:  string | null
+  /** Promo badge — top-left corner, edge-anchored, glowing. */
+  badge?:            ServicePhotoBadge | null
 }
 
-function priceLabel(amount: number | null | undefined): string | null {
+function priceLabel(amount: number | null | undefined, symbol: string): string | null {
   if (typeof amount !== 'number' || amount <= 0) return null
   if (amount >= 1_000_000) {
-    const jt = amount / 1_000_000
-    return `Rp ${Number.isInteger(jt) ? jt : jt.toFixed(1)}jt`
+    const m = amount / 1_000_000
+    return `${symbol} ${Number.isInteger(m) ? m : m.toFixed(1)}M`
   }
   if (amount >= 1_000) {
     const k = amount / 1_000
-    return `Rp ${Number.isInteger(k) ? k : k.toFixed(0)}k`
+    return `${symbol} ${Number.isInteger(k) ? k : k.toFixed(0)}k`
   }
-  return `Rp ${amount.toLocaleString('id-ID')}`
+  return `${symbol} ${amount.toLocaleString('en-US')}`
 }
 
 export default function PortfolioCarousel({
-  photos, themeColor, onViewDetails, view = 'carousel',
+  photos, themeColor, onViewDetails, view = 'carousel', currencySymbol = 'Rp',
 }: {
   photos: PortfolioPhoto[]
   themeColor: string
@@ -42,6 +45,9 @@ export default function PortfolioCarousel({
    *  'grid' = static 2-col responsive grid. Same PortfolioCard items in
    *  both modes — toggled from outside via PortfolioViewToggle. */
   view?: 'carousel' | 'grid'
+  /** Currency symbol from the provider's country (mig 0131). Threaded
+   *  through to price labels. Defaults 'Rp' for legacy callers. */
+  currencySymbol?: string
 }) {
   const scrollerRef   = useRef<HTMLDivElement | null>(null)
   const lastInteract  = useRef<number>(0)
@@ -109,6 +115,7 @@ export default function PortfolioCarousel({
         {photos.map((photo, i) => (
           <PortfolioCard
             key={photo.url + i}
+            currencySymbol={currencySymbol}
             photo={photo}
             onViewDetails={() => onViewDetails(photo)}
             themeColor={themeColor}
@@ -129,6 +136,7 @@ export default function PortfolioCarousel({
         {photos.map((photo, i) => (
           <PortfolioCard
             key={photo.url + i}
+            currencySymbol={currencySymbol}
             photo={photo}
             onViewDetails={() => onViewDetails(photo)}
             themeColor={themeColor}
@@ -138,6 +146,7 @@ export default function PortfolioCarousel({
         {photos.map((photo, i) => (
           <PortfolioCard
             key={`d-${photo.url}-${i}`}
+            currencySymbol={currencySymbol}
             photo={photo}
             onViewDetails={() => onViewDetails(photo)}
             themeColor={themeColor}
@@ -149,22 +158,45 @@ export default function PortfolioCarousel({
 }
 
 function PortfolioCard({
-  photo, onViewDetails, themeColor,
+  photo, onViewDetails, themeColor, currencySymbol = 'Rp',
 }: {
   photo: PortfolioPhoto
   onViewDetails: () => void
   themeColor: string
+  currencySymbol?: string
 }) {
-  const price = priceLabel(photo.price_idr)
+  const price = priceLabel(photo.price_idr, currencySymbol)
+  const badge = resolveBadge(photo.badge ?? null)
   return (
     <div className="w-[170px] shrink-0 snap-start rounded-xl overflow-hidden bg-white border border-gray-200 shadow-sm flex flex-col">
-      <img
-        src={photo.url}
-        alt={photo.name || ''}
-        loading="lazy"
-        className="w-full h-[130px] object-cover bg-gray-100"
-        style={{ objectPosition: photo.object_position || 'center' }}
-      />
+      <div className="relative">
+        <img
+          src={photo.url}
+          alt={photo.name || ''}
+          loading="lazy"
+          className="w-full h-[130px] object-cover bg-gray-100"
+          style={{ objectPosition: photo.object_position || 'center' }}
+        />
+        {badge && (
+          <>
+            {/* Corner-anchored promo badge with running glow. The badge
+                sits flush against the left edge so it reads as a sticker
+                attached to the card, not floating. */}
+            <style>{`
+              @keyframes cr-badge-glow-${badge.def.type} {
+                0%, 100% { box-shadow: 0 0 0 0 ${badge.def.glow}, 0 1px 4px rgba(0,0,0,0.25); }
+                50%      { box-shadow: 0 0 16px 4px ${badge.def.glow}, 0 1px 4px rgba(0,0,0,0.25); }
+              }
+            `}</style>
+            <div
+              className={`absolute top-2 left-0 inline-flex items-center px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-r-md ${badge.def.bg} ${badge.def.text}`}
+              style={{ animation: `cr-badge-glow-${badge.def.type} 2.4s ease-in-out infinite` }}
+            >
+              {badge.display}
+            </div>
+          </>
+        )}
+      </div>
       <div className="p-2 flex flex-col gap-1">
         <div className="text-[12px] font-black text-black leading-tight truncate">
           {photo.name || '—'}

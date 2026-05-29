@@ -33,9 +33,6 @@ const METHODS: { value: Method; label: string; sub: string }[] = [
   { value: 'cash',          label: 'Cash on hand',  sub: 'Driver drops cash directly' },
 ]
 
-const PARTNER_BG_URL =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 export default function PartnerPayoutPage() {
   const [partner, setPartner] = useState<Partner | null>(null)
   const [loading, setLoading] = useState(true)
@@ -313,12 +310,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-[100dvh] text-ink overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: `url(${PARTNER_BG_URL})` }}
-      />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/75" />
       <AppNav />
       {children}
     </main>

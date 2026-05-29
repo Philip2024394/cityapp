@@ -1,7 +1,8 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Star } from 'lucide-react'
+import { Sparkles, Star, Plus, X as XIcon, DollarSign, Camera, Tag, Crown } from 'lucide-react'
+import { countryByCode } from '@/lib/data/countries'
 import AppNav from '@/components/layout/AppNav'
 import BeauticianServicePhotosEditor from '@/components/dashboard/BeauticianServicePhotosEditor'
 import {
@@ -72,11 +73,23 @@ export default function BeauticianServicesPage() {
 
   return (
     <Shell>
-      <div className="px-4 pt-3 pb-32 max-w-lg mx-auto">
-        <header className="mb-5">
-          <h1 className="text-[24px] font-black text-black leading-tight">Services & prices</h1>
-          <p className="text-[13px] text-black/70 mt-1">Pick your services, set prices, and add portfolio photos.</p>
-        </header>
+      <div className="px-4 pt-4 pb-32 max-w-lg mx-auto">
+        {/* Brand header — matches the Design Studio pattern on /edit. */}
+        <div className="rounded-3xl border border-pink-200/70 bg-gradient-to-br from-pink-50 to-white p-5 shadow-sm mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-pink-500 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Sparkles size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-[20px] font-black leading-tight text-black truncate">Services & prices</h1>
+              </div>
+              <p className="text-[12.5px] text-black/70 leading-snug">
+                Pick your services, set prices, and add portfolio photos.
+              </p>
+            </div>
+          </div>
+        </div>
 
         <ServicesForm provider={provider} onSaved={reload} />
       </div>
@@ -88,6 +101,7 @@ type ServicesFormState = {
   services_offered: BeauticianServiceOffered[]
   marketplace_categories: BeauticianServiceOffered[]
   service_photos: Partial<Record<BeauticianServiceOffered, BeauticianServicePhoto[]>>
+  custom_services_offered: string[]
   price_makeup_idr: number | string
   price_nail_idr:   number | string
   price_hair_idr:   number | string
@@ -95,17 +109,41 @@ type ServicesFormState = {
 
 function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: () => void }) {
   const theme = provider.theme_color || '#EC4899'
+  // Currency comes from the country picked on /info (mig 0131). Falls
+  // back to Indonesia → Rp when the row hasn't picked one yet.
+  const country = countryByCode((provider as Extras & { country_code?: string | null }).country_code ?? 'ID')
+  const sym = country.currency_symbol
   const [f, setF] = useState<ServicesFormState>({
     services_offered:       provider.services_offered ?? [],
     marketplace_categories: provider.marketplace_categories ?? [],
     service_photos:         provider.service_photos ?? {},
-    // Stored as full IDR but UI shows + accepts ribuan (k).
+    custom_services_offered:
+      (provider as Extras & { custom_services_offered?: string[] | null }).custom_services_offered ?? [],
+    // Stored as full IDR (legacy column name) but UI shows + accepts thousands.
     price_makeup_idr: provider.price_makeup_idr ? provider.price_makeup_idr / 1000 : '',
     price_nail_idr:   provider.price_nail_idr   ? provider.price_nail_idr   / 1000 : '',
     price_hair_idr:   provider.price_hair_idr   ? provider.price_hair_idr   / 1000 : '',
   })
+  const [customDraft, setCustomDraft] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
+
+  function addCustomService() {
+    const v = customDraft.trim()
+    if (!v) return
+    if (v.length > 60) return
+    const lower = v.toLowerCase()
+    if (f.custom_services_offered.some((s) => s.toLowerCase() === lower)) {
+      setCustomDraft('')
+      return
+    }
+    upd('custom_services_offered', [...f.custom_services_offered, v])
+    setCustomDraft('')
+  }
+
+  function removeCustomService(idx: number) {
+    upd('custom_services_offered', f.custom_services_offered.filter((_, i) => i !== idx))
+  }
 
   function upd<K extends keyof ServicesFormState>(k: K, v: ServicesFormState[K]) {
     setF((prev) => ({ ...prev, [k]: v }))
@@ -156,6 +194,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
           services_offered:       f.services_offered,
           marketplace_categories: f.marketplace_categories,
           service_photos:         f.service_photos,
+          custom_services_offered: f.custom_services_offered,
           price_makeup_idr: f.price_makeup_idr === '' ? null : Math.round(Number(f.price_makeup_idr) * 1000),
           price_nail_idr:   f.price_nail_idr   === '' ? null : Math.round(Number(f.price_nail_idr)   * 1000),
           price_hair_idr:   f.price_hair_idr   === '' ? null : Math.round(Number(f.price_hair_idr)   * 1000),
@@ -171,7 +210,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
   return (
     <form onSubmit={save} className="space-y-4">
       {/* 1. Services offered */}
-      <Card title="Services I offer" hint="Tick every service you provide.">
+      <Card title="Services I offer" hint="Tick every service you provide. Need a service that isn't here? Add your own below." icon={<Sparkles size={18} />}>
         <div className="flex flex-wrap gap-1.5">
           {BEAUTICIAN_SERVICES_OFFERED.map((s) => {
             const on = f.services_offered.includes(s.id)
@@ -180,32 +219,76 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                 key={s.id}
                 type="button"
                 onClick={() => toggleService(s.id)}
-                className={`text-[13px] font-extrabold px-3.5 py-2 rounded-full border transition min-h-[40px] ${
+                className={`text-[13px] font-extrabold px-3.5 py-2 rounded-full border transition min-h-[44px] ${
                   on
                     ? 'bg-pink-500 text-white border-pink-500 shadow-sm shadow-pink-400/30'
-                    : 'bg-white/10 text-white/80 border-white/15 hover:bg-white/15 hover:border-pink-300'
+                    : 'bg-gray-50 text-black/80 border-gray-200 hover:bg-gray-100 hover:border-pink-300'
                 }`}
               >
                 {s.label}
               </button>
             )
           })}
+          {f.custom_services_offered.map((name, i) => (
+            <span
+              key={`custom-${i}`}
+              className="inline-flex items-center gap-1 text-[13px] font-extrabold px-3.5 py-2 rounded-full border bg-pink-500 text-white border-pink-500 shadow-sm shadow-pink-400/30 min-h-[44px]"
+            >
+              {name}
+              <button
+                type="button"
+                onClick={() => removeCustomService(i)}
+                aria-label={`Remove ${name}`}
+                className="w-5 h-5 -mr-1 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center transition"
+              >
+                <XIcon className="w-3 h-3" strokeWidth={3} />
+              </button>
+            </span>
+          ))}
         </div>
+
+        {/* Add my service — free-form input. Trimmed, deduped, max 20. */}
+        <div className="mt-2 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Plus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-500" strokeWidth={2.5} />
+            <input
+              type="text"
+              maxLength={60}
+              value={customDraft}
+              onChange={(e) => setCustomDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomService() } }}
+              placeholder="Add my service — e.g. Eyelash extensions"
+              className="w-full rounded-xl bg-gray-50 border border-gray-200 pl-9 pr-3 py-2.5 text-[13px] text-black placeholder:text-black/35 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 min-h-[44px]"
+              disabled={f.custom_services_offered.length >= 20}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addCustomService}
+            disabled={!customDraft.trim() || f.custom_services_offered.length >= 20}
+            className="rounded-xl bg-pink-500 hover:bg-pink-600 text-white px-4 py-2.5 text-[12px] font-extrabold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] transition"
+          >
+            Add
+          </button>
+        </div>
+        {f.custom_services_offered.length >= 20 && (
+          <p className="text-[12px] text-amber-700 leading-snug">Max 20 custom services. Remove one to add another.</p>
+        )}
       </Card>
 
       {/* 2. Base prices (legacy 3) */}
-      <Card title="Base prices" hint="Shown on the public profile. Type thousands — e.g. 235 = Rp 235k, 1200 = Rp 1.2jt (max 9999).">
+      <Card title="Base prices" hint={`Shown on the public profile. Type thousands — e.g. 235 = ${sym} 235k, 1200 = ${sym} 1.2M (max 9999).`} icon={<DollarSign size={18} />}>
         <div className="grid grid-cols-3 gap-2">
           {(['makeup','nail','hair'] as const).map((k) => {
             const raw = f[`price_${k}_idr` as const]
             const n   = raw === '' ? null : Number(raw)
             const isJt = n !== null && Number.isFinite(n) && n >= 1000
-            const suffix = isJt ? 'jt' : 'k'
+            const suffix = isJt ? 'M' : 'k'
             const preview =
               n === null || !Number.isFinite(n) || n <= 0 ? null
               : isJt
-                ? `Rp ${(n / 1000) % 1 === 0 ? (n / 1000).toFixed(0) : (n / 1000).toFixed(1)}jt`
-                : `Rp ${n}k`
+                ? `${sym} ${(n / 1000) % 1 === 0 ? (n / 1000).toFixed(0) : (n / 1000).toFixed(1)}M`
+                : `${sym} ${n}k`
             return (
               <label key={k} className="block">
                 <span className="text-[12px] font-bold text-black/70 mb-1 inline-block uppercase tracking-wide">{k}</span>
@@ -222,11 +305,11 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                     placeholder="—"
                     className={inputCls + ' pr-9 text-center font-bold'}
                   />
-                  <span aria-hidden className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-yellow-300 pointer-events-none select-none">
+                  <span aria-hidden className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-pink-500 pointer-events-none select-none">
                     {suffix}
                   </span>
                 </div>
-                <div className="text-[10px] font-bold text-black/55 text-center mt-1 tabular-nums min-h-[14px]">
+                <div className="text-[12px] font-bold text-black/55 text-center mt-1 tabular-nums min-h-[14px]">
                   {preview ?? ' '}
                 </div>
               </label>
@@ -236,12 +319,13 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
       </Card>
 
       {/* 3. Photos & details per service */}
-      <Card title="Photos & details per service" hint="Up to 4 photos per service with name, description, and starting price.">
+      <Card title="Photos & details per service" hint="Up to 4 photos per service with name, description, starting price, and an optional promo badge." icon={<Camera size={18} />}>
         {provider.user_id && (
           <BeauticianServicePhotosEditor
             userId={provider.user_id}
             servicesOffered={f.services_offered}
             value={f.service_photos}
+            currencySymbol={sym}
             onChange={(next) => upd('service_photos', next)}
           />
         )}
@@ -249,7 +333,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
 
       {/* 4. Set MAIN image — only relevant when at least one service has 2+ photos */}
       {someHasMultiple(f.service_photos) && (
-        <Card title="Main photo per category" hint="The first photo in each category (MAIN) appears in the public carousel. Tap another photo to make it MAIN.">
+        <Card title="Main photo per category" hint="The first photo in each category (MAIN) appears in the public carousel. Tap another photo to make it MAIN." icon={<Star size={18} />}>
           {Object.entries(f.service_photos).map(([sidStr, photos]) => {
             const sid = sidStr as BeauticianServiceOffered
             if (!photos || photos.length < 2) return null
@@ -269,7 +353,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                         className={`relative rounded-lg overflow-hidden border-2 transition aspect-square ${
                           isMain
                             ? 'border-pink-500 cursor-default'
-                            : 'border-white/15 hover:border-pink-300 active:scale-95'
+                            : 'border-gray-200 hover:border-pink-300 active:scale-95'
                         }`}
                       >
                         <img src={p.url} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -291,7 +375,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
 
       {/* 5. Marketplace categories */}
       {f.services_offered.length > 0 && (
-        <Card title="Primary marketplace categories" hint={`Pick max 3 — your profile shows when customers filter these categories. (${f.marketplace_categories.length}/3)`}>
+        <Card title="Primary marketplace categories" hint={`Pick max 3 — your profile shows when customers filter these categories. (${f.marketplace_categories.length}/3)`} icon={<Crown size={18} />}>
           <div className="flex flex-wrap gap-1.5">
             {f.services_offered.map((sid) => {
               const on    = f.marketplace_categories.includes(sid)
@@ -303,12 +387,12 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                   type="button"
                   disabled={atCap}
                   onClick={() => toggleMarket(sid)}
-                  className={`text-[13px] font-extrabold px-3.5 py-2 rounded-full border transition min-h-[40px] ${
+                  className={`text-[13px] font-extrabold px-3.5 py-2 rounded-full border transition min-h-[44px] ${
                     on
-                      ? 'bg-amber-400 text-stone-900 border-amber-400 shadow-sm shadow-amber-300/40'
+                      ? 'bg-pink-500 text-white border-pink-500 shadow-sm shadow-pink-400/30'
                       : atCap
-                        ? 'bg-white/5 text-white/30 border-white/10 cursor-not-allowed'
-                        : 'bg-white/10 text-white/80 border-white/15 hover:bg-white/15 hover:border-amber-400'
+                        ? 'bg-gray-50 text-black/30 border-gray-200 cursor-not-allowed'
+                        : 'bg-gray-50 text-black/80 border-gray-200 hover:bg-gray-100 hover:border-pink-300'
                   }`}
                 >
                   {label}
@@ -320,7 +404,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
       )}
 
       {savedFlash && (
-        <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/15 text-emerald-100 text-[14px] px-4 py-3 font-bold">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-[14px] px-4 py-3 font-bold">
           ✓ Saved
         </div>
       )}
@@ -329,7 +413,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-full bg-pink-500 hover:bg-pink-600 text-white px-6 py-4 text-[15px] font-extrabold uppercase tracking-wider disabled:opacity-60 shadow-lg shadow-pink-500/20"
+          className="w-full rounded-full bg-pink-500 hover:bg-pink-600 text-white px-6 py-4 text-[15px] font-extrabold uppercase tracking-wider disabled:opacity-60 shadow-lg shadow-pink-500/20 min-h-[44px]"
         >
           {saving ? 'Saving…' : 'Save changes'}
         </button>
@@ -342,12 +426,24 @@ function someHasMultiple(sp: Partial<Record<BeauticianServiceOffered, Beautician
   return Object.values(sp).some((arr) => Array.isArray(arr) && arr.length >= 2)
 }
 
-function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Card({ title, hint, icon, children }: {
+  title: string
+  hint?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
-      <div>
-        <h2 className="text-[15px] font-black text-black">{title}</h2>
-        {hint && <p className="text-[12px] text-black/65 leading-snug mt-1">{hint}</p>}
+    <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
+      <div className="flex items-start gap-3">
+        {icon && (
+          <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-pink-100 text-pink-600">
+            {icon}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[15px] font-black text-black leading-tight">{title}</h2>
+          {hint && <p className="text-[12px] text-black/65 leading-snug mt-1">{hint}</p>}
+        </div>
       </div>
       {children}
     </section>
@@ -363,4 +459,4 @@ function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 min-h-[44px]'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-200 px-4 py-3 text-[14px] text-black placeholder:text-black/35 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 min-h-[44px]'

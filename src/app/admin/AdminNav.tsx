@@ -30,7 +30,7 @@ export default function AdminNav({ adminName }: { adminName: string }) {
             <Shield className="w-3.5 h-3.5 text-danger" />
           </div>
           <div className="text-[15px] font-extrabold tracking-tight truncate">
-            IndoCity · <span className="text-danger">Admin</span>
+            <span style={{ color: '#0A0A0A' }}>Kita</span><span style={{ color: '#FACC15' }}>2u</span> · <span className="text-danger">Admin</span>
           </div>
         </div>
         <div className="text-[12px] text-muted truncate hidden sm:block">{adminName}</div>

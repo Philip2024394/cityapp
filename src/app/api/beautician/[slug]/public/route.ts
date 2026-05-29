@@ -15,6 +15,12 @@ const PUBLIC_COLS = [
   // mig 0072 universal profile fields
   'cover_image_url','gallery_image_urls','languages',
   'instagram_url','tiktok_url','facebook_url',
+  // mig 0130 — extra socials + custom domain
+  'x_url','snapchat_url','website_url',
+  // mig 0131 — country (drives currency + WA prefix) + custom services
+  'country_code','custom_services_offered',
+  // mig 0132 — chat handles
+  'telegram_handle','wechat_id','line_id','kakaotalk_id',
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',

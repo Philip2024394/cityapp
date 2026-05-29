@@ -10,6 +10,7 @@ import PortfolioCarousel, {
   type PortfolioPhoto,
 } from '@/components/profile/PortfolioCarousel'
 import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
+import { countryByCode } from '@/lib/data/countries'
 import VisitUsPanel, {
   SocialInstagramIcon,
   SocialTikTokIcon,
@@ -141,7 +142,7 @@ export default function BeauticianProviderPage() {
 
   // WhatsApp prefill text for the under-carousel contact button.
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
+    `Halo ${p.display_name}, saya menemukan profil Anda di Kita2u.`,
     `Saya tertarik untuk booking session beauty service.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
@@ -384,6 +385,14 @@ export default function BeauticianProviderPage() {
             instagramUrl={p.instagram_url ?? null}
             tiktokUrl={p.tiktok_url ?? null}
             facebookUrl={p.facebook_url ?? null}
+            xUrl={(p as unknown as { x_url?: string | null }).x_url ?? null}
+            snapchatUrl={(p as unknown as { snapchat_url?: string | null }).snapchat_url ?? null}
+            websiteUrl={(p as unknown as { website_url?: string | null }).website_url ?? null}
+            whatsappE164={p.whatsapp_e164 ?? null}
+            telegramHandle={(p as unknown as { telegram_handle?: string | null }).telegram_handle ?? null}
+            wechatId={(p as unknown as { wechat_id?: string | null }).wechat_id ?? null}
+            lineId={(p as unknown as { line_id?: string | null }).line_id ?? null}
+            kakaotalkId={(p as unknown as { kakaotalk_id?: string | null }).kakaotalk_id ?? null}
             busyDates={(p.busy_dates ?? []) as string[]}
             themeColor={theme}
             onClose={() => setShowVisitUs(false)}
@@ -579,6 +588,7 @@ export default function BeauticianProviderPage() {
                 onViewDetails={(ph) => setDetailPhoto(ph as BeauticianServicePhoto)}
                 themeColor={theme}
                 view={portfolioView}
+                currencySymbol={countryByCode((p as unknown as { country_code?: string | null }).country_code ?? 'ID').currency_symbol}
               />
             </section>
           )
@@ -666,7 +676,7 @@ export default function BeauticianProviderPage() {
 
               {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di IndoCity: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di Kita2u: ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -751,7 +761,7 @@ export default function BeauticianProviderPage() {
           vertical "BACK" text below. Diverts back to /beautician. */}
       <a
         href="/beautician"
-        aria-label="Back to IndoCity beauticians"
+        aria-label="Back to Kita2u beauticians"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,

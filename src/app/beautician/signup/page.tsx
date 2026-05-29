@@ -39,8 +39,6 @@ const MAIN_SERVICES: ReadonlyArray<{
   { id: 'skin',    label: 'Skin Care',      hint: 'Whitening · acne · anti-age',   icon: Droplet,  fillsIn: ['skin'] },
 ]
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 type AuthState =
   | { status: 'loading' }
   | { status: 'anon' }
@@ -81,8 +79,6 @@ export default function BeauticianSignupPage() {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-[100dvh] text-ink overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/80" />
       <AppNav />
       {children}
     </main>

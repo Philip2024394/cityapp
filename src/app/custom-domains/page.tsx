@@ -49,19 +49,15 @@ export default function CustomDomainsPage() {
           style={{ boxShadow: '0 2px 14px rgba(0,0,0,0.06)' }}
         >
           <div className="font-extrabold text-[16px] text-[#0A0A0A]">Pricing</div>
-          <div className="space-y-2 text-[14px] text-gray-700">
-            <div className="flex items-baseline justify-between gap-3">
-              <span>Domain connection</span>
-              <span className="font-extrabold text-[#0A0A0A]">Rp 99,000 / year</span>
-            </div>
-            <div className="flex items-baseline justify-between gap-3">
-              <span>Custom template changes (per request)</span>
-              <span className="font-extrabold text-[#0A0A0A]">Rp 250,000</span>
-            </div>
-          </div>
-          <p className="text-[12px] text-gray-500 leading-snug pt-1">
-            Placeholder pricing — finalise before launch.
+          <p className="text-[14px] text-gray-700 leading-relaxed">
+            Custom domain pricing varies by country and registrar. Contact our admin team for availability and a quote tailored to your domain.
           </p>
+          <Link
+            href="/contact"
+            className="inline-flex items-center justify-center rounded-full bg-black text-white px-5 py-2.5 text-[13px] font-extrabold uppercase tracking-wider hover:bg-gray-800 transition"
+          >
+            Contact admin
+          </Link>
         </div>
 
         <Link

@@ -153,7 +153,7 @@ function offersHeading(category: PlaceCategory): string {
 function buildMarqueeText(name: string, tags: string[]): string {
   const clean = tags.map((t) => t.trim()).filter(Boolean)
   if (clean.length > 0) return clean.join(' · ')
-  return `Discover ${name} on IndoCity — self-listed venue, agree price directly when you visit.`
+  return `Discover ${name} on Kita2u — self-listed venue, agree price directly when you visit.`
 }
 
 // Cast hours_json (unknown record) to the string-per-day shape VisitUsPanel
@@ -336,7 +336,7 @@ export default function PlaceProfileShell({
   // Pre-filled Indonesian WhatsApp greeting for the optional secondary CTA.
   const waHref = place.whatsappE164
     ? `https://wa.me/${place.whatsappE164.replace(/[^\d]/g, '')}?text=${encodeURIComponent(
-        `Halo, saya tertarik dengan ${place.name} dari IndoCity`,
+        `Halo, saya tertarik dengan ${place.name} dari Kita2u`,
       )}`
     : null
   const showContact = contactEnabled && Boolean(waHref)
@@ -781,7 +781,7 @@ export default function PlaceProfileShell({
               </button>
 
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat ${place.name} di IndoCity: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`Lihat ${place.name} di Kita2u: ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -858,7 +858,7 @@ export default function PlaceProfileShell({
       {/* Right-edge vertical Back button — same as beautician. */}
       <Link
         href="/places"
-        aria-label="Back to IndoCity places"
+        aria-label="Back to Kita2u places"
         className="fixed z-40 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
@@ -960,7 +960,7 @@ export default function PlaceProfileShell({
 
       {/* CART SHEET — bottom-sheet style modal listing every line in
           the cart. Total is a simple sum of offer.price_idr × qty —
-          IndoCity never adds delivery, service, or platform fees. The
+          Kita2u never adds delivery, service, or platform fees. The
           primary CTA builds an Indonesian WhatsApp message and hands
           off to the venue's WhatsApp; we never see the conversation.
           Gated on IS_FOOD_PLACE — non-food places never open this. */}
@@ -991,7 +991,7 @@ export default function PlaceProfileShell({
               return `• ${it.name}  ×${it.qty}  (${unit}) — ${line}`
             })
             const body = [
-              `Halo! Saya pesan dari IndoCity · ${place.name}`,
+              `Halo! Saya pesan dari Kita2u · ${place.name}`,
               '',
               ...linesArr,
               '',
@@ -1093,7 +1093,7 @@ function PlaceReviewsPanel({
         </div>
       </div>
       <p className="text-[11px] text-gray-500 leading-snug">
-        Reviews shown here are aggregated from IndoCity visits. Submitting
+        Reviews shown here are aggregated from Kita2u visits. Submitting
         a review for a venue isn&apos;t open yet — agree price + experience
         directly with the venue when you visit.
       </p>

@@ -37,11 +37,11 @@ import { idrShort } from '@/lib/format/idr'
 // ============================================================================
 
 export const metadata = {
-  title: 'Rentals · IndoCity',
+  title: 'Rentals · Kita2u',
   description:
     'Browse every rental in your city — bike, car, bus, truck — by day, ' +
     'week, or month. Self-published rates. Book direct via WhatsApp. ' +
-    'IndoCity is a software directory; we never set prices.',
+    'Kita2u is a software directory; we never set prices.',
 }
 
 // Force fresh data each request so newly-approved listings appear without
@@ -583,32 +583,13 @@ function Shell({ children }: { children: React.ReactNode }) {
       className="relative min-h-[100dvh]"
       style={{ color: '#0A0A0A' }}
     >
-      {/* Backdrop image — same one /beautician + /explore + landing use for
-          brand continuity. */}
-      <div
-        aria-hidden
-        className="fixed inset-0 -z-10 pointer-events-none"
-        style={{
-          backgroundImage: `url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2011_47_55%20PM.png')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      />
-      {/* Soft white scrim at the top so the dark wordmark stays readable on
-          any backdrop. */}
-      <div
-        aria-hidden
-        className="fixed inset-x-0 top-0 h-32 -z-10 pointer-events-none bg-gradient-to-b from-white/65 to-transparent"
-      />
-
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" aria-label="IndoCity home" className="inline-block hover:opacity-85 transition">
+          <Link href="/" aria-label="Kita2u home" className="inline-block hover:opacity-85 transition">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-              alt="IndoCity"
+              alt="Kita2u"
               className="h-8 sm:h-10 w-auto"
             />
           </Link>

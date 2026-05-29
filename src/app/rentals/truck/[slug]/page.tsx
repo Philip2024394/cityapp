@@ -35,7 +35,7 @@ const CONFIG = {
   headerLabel:       'Truck rental',
   vehicleFallback:   'Truck',
   seoTitleSegment:   'Truck rental',
-  waMessage:         'Halo, saya tertarik menyewa truck/pickup Anda di IndoCity',
+  waMessage:         'Halo, saya tertarik menyewa truck/pickup Anda di Kita2u',
   vehicleIconName:   'truck' as const,
 }
 

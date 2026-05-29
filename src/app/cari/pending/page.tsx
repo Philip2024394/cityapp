@@ -429,10 +429,10 @@ export default function PendingBookingPage() {
       {/* Header */}
       <header className="pt-safe">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="IndoCity home">
+          <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="Kita2u home">
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-              alt="IndoCity"
+              alt="Kita2u"
               className="h-7 sm:h-8 w-auto"
             />
           </Link>
@@ -615,7 +615,7 @@ export default function PendingBookingPage() {
               <p>
                 Chat selanjutnya dilanjutkan langsung di WhatsApp — tarif,
                 jam berangkat, dan pembayaran kamu sepakati dengan driver.
-                IndoCity adalah direktori, bukan operator perjalanan.
+                Kita2u adalah direktori, bukan operator perjalanan.
               </p>
               <ul className="mt-1.5 space-y-0.5 text-muted">
                 <li>· Cek helm tersedia sebelum berangkat</li>

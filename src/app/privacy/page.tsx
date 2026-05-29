@@ -9,8 +9,8 @@ import { ChevronLeft } from 'lucide-react'
 // Google Play Store review for apps declaring ACCESS_BACKGROUND_LOCATION
 // in their AndroidManifest.
 export const metadata = {
-  title: 'Privacy Policy · IndoCity',
-  description: 'How IndoCity handles your personal data, under UU 27/2022.',
+  title: 'Privacy Policy · Kita2u',
+  description: 'How Kita2u handles your personal data, under UU 27/2022.',
 }
 
 export default function PrivacyPage() {
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         <div>
           <h1 className="text-3xl font-extrabold">Privacy Policy</h1>
           <p className="text-muted text-[14px] mt-2">
-            How IndoCity collects, uses, and protects your personal data.
+            How Kita2u collects, uses, and protects your personal data.
             Compliant with UU 27/2022 (Indonesia&apos;s Personal Data Protection Law).
           </p>
         </div>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
 
         <Section title="Customer accounts + saved places (optional)">
           <p>
-            Customers can use IndoCity without creating an account — browse drivers, tap Contact,
+            Customers can use Kita2u without creating an account — browse drivers, tap Contact,
             message on WhatsApp. No signup required for booking.
           </p>
           <p className="mt-2">
@@ -116,7 +116,7 @@ export default function PrivacyPage() {
           <p className="font-bold text-ink/90 mt-3">Your control:</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Toggle &quot;Loud booking alerts&quot; OFF on the dashboard at any time — delivery stops immediately</li>
-            <li>Revoke the Android notification permission in Settings → Apps → IndoCity → Notifications</li>
+            <li>Revoke the Android notification permission in Settings → Apps → Kita2u → Notifications</li>
             <li>Sign out of a specific device to remove its registered FCM token</li>
             <li>Delete your account to remove every registered token across every device</li>
           </ul>
@@ -124,7 +124,7 @@ export default function PrivacyPage() {
 
         <Section title="Background location (Android app only)">
           <p>
-            The IndoCity Android app collects your device&apos;s GPS location
+            The Kita2u Android app collects your device&apos;s GPS location
             <strong className="text-ink"> in the background</strong> — meaning while the app is
             not visible on screen, while the phone is locked, or while you are using other apps.
             This applies <strong className="text-ink">only to riders</strong> who have completed
@@ -147,7 +147,7 @@ export default function PrivacyPage() {
           <p className="font-bold text-ink/90 mt-3">Your control:</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Tap &quot;Go Offline&quot; in the dashboard to stop all location collection immediately</li>
-            <li>Revoke the Android &quot;Allow all the time&quot; location permission in Android Settings → Apps → IndoCity → Permissions</li>
+            <li>Revoke the Android &quot;Allow all the time&quot; location permission in Android Settings → Apps → Kita2u → Permissions</li>
             <li>Uninstall the app to remove all stored location data along with your subscription cancellation</li>
           </ul>
           <p className="text-muted text-[13px] mt-3">
@@ -174,7 +174,7 @@ export default function PrivacyPage() {
             <li>Customer payment details or trip transaction records (we never touch money)</li>
             <li>Rider bank accounts (we don&apos;t need them — drivers are paid by customers direct on WhatsApp)</li>
             <li>SIM (driver licence) or NPWP (tax ID) — drivers self-declare compliance with local transport rules</li>
-            <li>Browsing history outside the IndoCity app</li>
+            <li>Browsing history outside the Kita2u app</li>
           </ul>
           <p className="text-muted text-[13px] mt-2">
             Note on KTP: we DO collect a KTP photo from service providers (massage, beautician,
@@ -264,7 +264,7 @@ export default function PrivacyPage() {
 
         <Section title="Children">
           <p>
-            IndoCity is not directed at users under 18. Riders must be 18+ to subscribe (legal
+            Kita2u is not directed at users under 18. Riders must be 18+ to subscribe (legal
             age to operate a motorcycle commercially in Indonesia). Customers using the directory
             must be of legal age to enter service contracts.
           </p>

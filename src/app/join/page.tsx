@@ -43,7 +43,7 @@ export default function JoinPage() {
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-            alt="IndoCity"
+            alt="Kita2u"
             className="h-8 sm:h-10 w-auto"
           />
         </Link>

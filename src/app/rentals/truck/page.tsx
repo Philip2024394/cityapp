@@ -30,11 +30,11 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // ============================================================================
 
 export const metadata = {
-  title: 'Truck Rentals · IndoCity',
+  title: 'Truck Rentals · Kita2u',
   description:
     'Browse pickup, box-van, and engkel truck rentals across Indonesia — ' +
     'sopir + helper available. Self-published daily rates, WhatsApp the ' +
-    'driver directly. IndoCity is a directory; we never set rental fees.',
+    'driver directly. Kita2u is a directory; we never set rental fees.',
 }
 
 // Force server-side rendering on each request so newly-paid drivers show up
@@ -487,7 +487,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-            alt="IndoCity"
+            alt="Kita2u"
             className="h-8 sm:h-10 w-auto"
           />
         </Link>

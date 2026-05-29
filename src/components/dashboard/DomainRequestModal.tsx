@@ -114,8 +114,7 @@ export default function DomainRequestModal({
               Get your own domain name
             </h2>
             <p className="text-white/70 text-[13px] mt-1.5 leading-snug">
-              We&apos;ll register a <span className="text-white font-bold">.my.id</span> domain on your behalf
-              and connect it to your profile. <span className="text-white font-bold">Rp 150.000 / year</span>.
+              We&apos;ll register a custom domain on your behalf and connect it to your profile. Pricing varies by country — admin will WhatsApp you with availability + a quote.
             </p>
 
             <div className="mt-4 space-y-3">

@@ -19,7 +19,7 @@ export async function GET() {
 
   const { data: bp } = await admin
     .from('beautician_providers')
-    .select('id, busy_dates')
+    .select('id, busy_dates, busy_time_slots')
     .eq('user_id', user.id)
     .maybeSingle()
   if (!bp) return NextResponse.json({ error: 'no_provider' }, { status: 404 })
@@ -37,7 +37,9 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    bookings:   bookings ?? [],
-    busy_dates: Array.isArray(bp.busy_dates) ? bp.busy_dates : [],
+    bookings:        bookings ?? [],
+    busy_dates:      Array.isArray(bp.busy_dates) ? bp.busy_dates : [],
+    // mig 0134 — partial-day busy ranges
+    busy_time_slots: Array.isArray(bp.busy_time_slots) ? bp.busy_time_slots : [],
   })
 }

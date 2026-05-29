@@ -105,7 +105,7 @@ export default async function AdminOverview() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[18px] sm:text-[20px] font-extrabold tracking-tight leading-tight">
-              Admin Mission Control <span className="text-muted font-bold">·</span> <span className="text-brand">IndoCity</span>
+              Admin Mission Control <span className="text-muted font-bold">·</span> <span style={{ color: '#0A0A0A' }}>Kita</span><span style={{ color: '#FACC15' }}>2u</span>
             </div>
             <div className="text-[13px] text-muted flex items-center gap-2 mt-0.5 truncate">
               <Calendar className="w-3 h-3 shrink-0" />

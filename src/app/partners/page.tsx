@@ -10,9 +10,6 @@ import PartnerProgramCTA from '@/components/partners/PartnerProgramCTA'
 // AppNav) renders the partner side drawer + brand header — gives the
 // visitor a way back to dashboard, bookings, and signup.
 
-const PARTNER_BG_URL =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 export const metadata = {
   title: 'Partner Program — IndoCity',
   description: 'Hotels, villas and businesses earn 8% commission when your guests book a IndoCity via your QR or link. Free to join, paid weekly by the driver directly. No platform fee.',
@@ -21,12 +18,6 @@ export const metadata = {
 export default function PartnersLanding() {
   return (
     <main className="relative min-h-[100dvh] text-ink overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: `url(${PARTNER_BG_URL})` }}
-      />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/80" />
       <AppNav />
       <section className="max-w-3xl mx-auto px-5 pt-12 pb-12">
         <div className="inline-block bg-brand text-bg text-[11px] font-extrabold uppercase tracking-[0.15em] px-3 py-1 rounded-full mb-5">

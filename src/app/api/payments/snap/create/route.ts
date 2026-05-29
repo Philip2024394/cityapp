@@ -50,8 +50,8 @@ type Product =
 type Payload = { product?: Product }
 
 const PRICE_BY_PRODUCT: Record<Product, { amount: number; days: number; label: string }> = {
-  subscription:           { amount:  38_000, days:  30, label: 'IndoCity · 30 days'       },
-  subscription_yearly:    { amount: 350_000, days: 365, label: 'IndoCity · 365 days'      },
+  subscription:           { amount:  38_000, days:  30, label: 'Kita2u · 30 days'       },
+  subscription_yearly:    { amount: 350_000, days: 365, label: 'Kita2u · 365 days'      },
   verified:               { amount: 100_000, days:  30, label: 'Tour Verified · 30 d'       },
   rental_company_monthly: { amount:  38_000, days:  30, label: 'Rental Company · 30 days'   },
   rental_company_yearly:  { amount: 350_000, days: 365, label: 'Rental Company · 365 days'  },
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
   // Non-driver products (rental_company, tour_guide) don't require a
   // `drivers` row. Driver-side products still gate on the drivers row
   // so we have business_name + whatsapp for the Midtrans customer block.
-  let customerName = 'IndoCity user'
+  let customerName = 'Kita2u user'
   let customerPhone: string | undefined
   if (NON_DRIVER_PRODUCTS.has(product)) {
     const meta = (user.user_metadata ?? {}) as Record<string, unknown>
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     if (!driver) {
       return NextResponse.json({ error: 'Complete onboarding before paying' }, { status: 403 })
     }
-    customerName = driver.business_name || 'IndoCity driver'
+    customerName = driver.business_name || 'Kita2u driver'
     customerPhone = driver.whatsapp_e164 || undefined
   }
 

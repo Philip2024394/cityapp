@@ -1,11 +1,8 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import {
-  Star, Award, Menu, Home, Building, Building2, Share2, Link2, MessageCircle, X, ChevronLeft,
-  BadgeCheck, MapPin, Bike, Sparkles, type LucideIcon,
-} from 'lucide-react'
+import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, BadgeCheck, MapPin, Bike, type LucideIcon } from 'lucide-react'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
   PortfolioDetailPopup,
@@ -20,20 +17,25 @@ import VisitUsPanel, {
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
-import type { HomeCleanProviderPublic } from '@/lib/home-clean/types'
+import { Sparkles } from 'lucide-react'
+// Star + Award already imported above for the hero info-card.
+import {
+  HOME_CLEAN_SERVICES_OFFERED,
+  HOME_CLEAN_SERVICE_LABELS,
+  type HomeCleanProviderPublic,
+  type HomeCleanService,
+  type HomeCleanServicePhoto,
+} from '@/lib/home-clean/types'
+import { countryByCode } from '@/lib/data/countries'
 
-// /home-clean/[slug] — full visual + layout parity with /beautician/[slug]
-// and /handyman/[slug]. Same hero, floating info-card, services filter,
-// portfolio carousel, reviews + visit panel, sticky Contact CTA. Data is
-// adapted to home-clean's per-jam / per-hari pricing and house / apartment
-// / office service-type pills (keyword-sniffed from bio when no structured
-// field exists yet on this vertical).
-
-// Cyan accent — cleanliness / freshness. Each home-clean cleaner can
-// override via their own `theme_color` once that column is added to the
-// public route.
+// Default theme accent — cyan/cleanliness — used when the cleaner hasn't
+// picked their own theme_color (mig 0087). Cleaners choose their accent
+// from the dashboard color palette; the chosen hex flows through every
+// accent surface on this page via the `theme` constant below.
 const DEFAULT_THEME = '#06B6D4'
 
+// Review row as returned by GET /api/reviews. created_at is ISO,
+// formatted to "Xd ago" / absolute date in the UI.
 type ReviewRow = {
   id:           string
   reviewer_name:string
@@ -42,21 +44,17 @@ type ReviewRow = {
   created_at:   string
 }
 
-// Service-type chips for home-clean. Until a structured field exists in
-// the DB, we sniff the bio for these keywords so the chip row appears
-// only when there's actual signal. Each chip stays purely cosmetic
-// (filters the portfolio carousel by partial name match).
-type CleanServiceType = 'house' | 'apartment' | 'office'
-const CLEAN_SERVICE_TYPES: ReadonlyArray<{
-  id:       CleanServiceType
-  label:    string
-  icon:     LucideIcon
-  keywords: ReadonlyArray<string>
-}> = [
-  { id: 'house',     label: 'House',     icon: Home,       keywords: ['house', 'rumah', 'home'] },
-  { id: 'apartment', label: 'Apartment', icon: Building,   keywords: ['apartment', 'apartemen', 'apt', 'kost', 'condo'] },
-  { id: 'office',    label: 'Office',    icon: Building2,  keywords: ['office', 'kantor', 'commercial', 'kerja'] },
-]
+
+// /home-clean/[slug] — universal profile flagship build. Visual-first
+// category (portfolio matters more than text); the kit's ProfileGallery
+// is the centerpiece. Two-tier hour / day pricing (mig 0123 catalogue)
+// renders only the services the cleaner actually offers.
+
+// Vertical default for the hero. Used when the cleaner hasn't set
+// their own cover_image_url yet — keeps the page on-brand instead of
+// showing the generic cyan gradient on every new signup.
+const DEFAULT_HOME_CLEAN_HERO =
+  'https://images.unsplash.com/photo-1563453392212-326f5e854473'
 
 export default function HomeCleanProviderPage() {
   const params = useParams<{ slug: string }>()
@@ -67,16 +65,28 @@ export default function HomeCleanProviderPage() {
   const [shareOpen, setShareOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [showMoreServices, setShowMoreServices] = useState(false)
-  const [activeService, setActiveService] = useState<CleanServiceType | null>(null)
-  const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
+  // null = show photos from ALL services (combined). When a service id
+  // is set, the portfolio carousel filters to just that service.
+  const [activeService, setActiveService] = useState<HomeCleanService | null>(null)
+  // Selected carousel card — opens the View Details popup when set.
+  const [detailPhoto, setDetailPhoto] = useState<HomeCleanServicePhoto | null>(null)
+  // Portfolio layout — flip between auto-drifting carousel + 2-col grid.
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
+  // Reviews view — replaces everything below the floating info-card.
   const [showReviews, setShowReviews] = useState(false)
+  // Visit Us view — also replaces content area when active (only
+  // available when the cleaner has opted into a physical location).
   const [showVisitUs, setShowVisitUs] = useState(false)
-  const [reviews, setReviews] = useState<ReviewRow[] | null>(null)
+  const [reviews, setReviews]         = useState<ReviewRow[] | null>(null)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsRefreshCount, setReviewsRefreshCount] = useState(0)
+  // Lifted from ReviewsPanel so the footer Leave Review button can open
+  // the form too, not just the in-panel trigger.
   const [reviewFormOpen, setReviewFormOpen] = useState(false)
-  const [contactOpen, setContactOpen] = useState(false)
+  // Contact popup — opened by both the bottom Contact CTA and the
+  // per-service "View Details" Contact button. `contactServiceName`
+  // pre-fills the service field when triggered from a service card.
+  const [contactOpen,        setContactOpen]        = useState(false)
   const [contactServiceName, setContactServiceName] = useState<string>('')
 
   useEffect(() => {
@@ -96,8 +106,12 @@ export default function HomeCleanProviderPage() {
 
   useProfileViewTracker({ providerType: 'home_clean', providerId: p?.id })
 
+  // Resolved accent color for every accent surface on this page.
+  // p.theme_color (mig 0087) wins; fall back to global default cyan.
   const theme = p?.theme_color || DEFAULT_THEME
 
+  // Fetch reviews only when the panel is first opened, then again
+  // after a new submission (bump reviewsRefreshCount).
   useEffect(() => {
     if (!showReviews || !p?.id) return
     setReviewsLoading(true)
@@ -107,17 +121,6 @@ export default function HomeCleanProviderPage() {
       .catch(() => setReviews([]))
       .finally(() => setReviewsLoading(false))
   }, [showReviews, p?.id, reviewsRefreshCount])
-
-  // Service-type chips offered by THIS cleaner — sniffed from bio so the
-  // row only renders when there's signal. Memoised so the same chip set
-  // sticks across re-renders.
-  const offeredTypes = useMemo<CleanServiceType[]>(() => {
-    const bio = (p?.bio ?? '').toLowerCase()
-    if (!bio.trim()) return []
-    return CLEAN_SERVICE_TYPES
-      .filter((t) => t.keywords.some((k) => bio.includes(k)))
-      .map((t) => t.id)
-  }, [p?.bio])
 
   if (notFound) {
     return (
@@ -136,22 +139,19 @@ export default function HomeCleanProviderPage() {
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
   const profileUrl = `${siteOrigin}/home-clean/${p.slug}`
 
-  // Pull optional extended fields the public route may add later
-  // (theme_color, busy_dates, has_physical_location, lat/lng, hero_text,
-  // promo_text, service_photos). All accessed via a typed extension so
-  // missing-field profiles still render the layout cleanly.
-  const ext = p as HomeCleanProviderPublicExt
-  const heroText      = ext.hero_text       ?? null
-  const promoText     = ext.promo_text      ?? null
-  const busyDates     = ext.busy_dates      ?? []
-  const hasLocation   = Boolean(ext.has_physical_location)
-  const latitude      = typeof ext.latitude  === 'number' ? ext.latitude  : null
-  const longitude     = typeof ext.longitude === 'number' ? ext.longitude : null
-  const servicePhotos = Array.isArray(ext.service_photos) ? ext.service_photos : []
+  // WhatsApp prefill text for the under-carousel contact button.
+  const waText = [
+    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
+    `Saya tertarik untuk booking layanan bersih rumah.`,
+    partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
+    `Apakah Anda available?`,
+  ].filter(Boolean).join('\n')
+  void waText
 
   return (
     <Shell>
-      {/* Hero — cover with overlay text + floating info card. */}
+      {/* Hero — cover with overlay text, plus a floating info-card that
+          sits on the bottom edge of the cover (15px rounded corners). */}
       <div className="relative pb-2">
         {/* Top-right share button. */}
         <button
@@ -168,36 +168,29 @@ export default function HomeCleanProviderPage() {
           className="relative w-full overflow-hidden bg-black"
           style={{ aspectRatio: '16 / 9' }}
         >
-          {p.cover_image_url ? (
-            <img
-              src={p.cover_image_url}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="absolute inset-0"
-              style={{ background: `linear-gradient(135deg, ${theme} 0%, #0891B2 100%)` }}
-              aria-hidden
-            />
-          )}
-
-          {/* Hero overlay — defaults to "Professional Cleaner" with a
-              cleanliness-themed tagline. hero_text shape mirrors the
-              other verticals so once the column lands the same JSON
-              drives all three. */}
+          <img
+            src={p.cover_image_url || DEFAULT_HOME_CLEAN_HERO}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* Hero overlay — text now comes from p.hero_text (mig 0105)
+              when set; otherwise falls back to the default copy. */}
           {(() => {
-            const ht = heroText || {}
+            const ht = p.hero_text || {}
             const line1   = ht.line1   || 'Professional'
-            const line2   = ht.line2   || 'Cleaner'
+            const line2   = ht.line2   || 'Home Clean'
             const tagline = ht.tagline || 'A spotless home, every visit'
             const line2Color   = ht.color         || theme
             const line1Color   = ht.line1_color   || '#000000'
             const taglineColor = ht.tagline_color || '#000000'
+            // Map legacy 'dance' / 'flyin' values to 'none' so old saved
+            // data doesn't break the new effect set.
             const rawEffect = ht.effect || 'none'
             const effect = ['none','shimmer','dance','underline'].includes(rawEffect) ? rawEffect : 'none'
             return (
               <div className={`absolute left-4 z-10 select-none leading-none cr-hero-${effect}`} style={{ top: 31 }}>
+                {/* Refined, premium effects — scoped to the line2
+                    (cr-hero-word) span only. */}
                 <style>{`
                   @keyframes cr-hero-dance {
                     0%,100% { transform: translate(0,0) rotate(0) }
@@ -245,7 +238,9 @@ export default function HomeCleanProviderPage() {
                     style={{ color: theme, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))' }}
                   />
                 </div>
-                <div className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden">
+                <div
+                  className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden"
+                >
                   <span className="cr-hero-word inline-block" style={{ color: line2Color }}>
                     {line2}
                   </span>
@@ -253,12 +248,45 @@ export default function HomeCleanProviderPage() {
                 <div className="text-[13px] sm:text-[14px] font-semibold mt-1.5 drop-shadow-[0_1px_3px_rgba(255,255,255,0.55)] whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: taglineColor, maxWidth: 'min(360px, calc(100vw - 32px))' }}>
                   {tagline}
                 </div>
+
+                {/* Service locations the cleaner travels to — driven by
+                    p.service_locations (optional column; column may not
+                    yet exist on home_clean, in which case the array is
+                    absent and only the Office HQ pill renders if the
+                    cleaner has opted into a physical location). */}
+                {(() => {
+                  const locs = new Set(p.service_locations ?? [])
+                  const hasHq = Boolean(p.has_physical_location)
+                  if (locs.size === 0 && !hasHq) return null
+                  const items: Array<{ key: string; icon: typeof Home; label: string }> = []
+                  if (locs.has('home'))  items.push({ key: 'home',  icon: Home,      label: 'Home' })
+                  if (locs.has('hotel')) items.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
+                  if (locs.has('villa')) items.push({ key: 'villa', icon: Building2, label: 'Villa' })
+                  // Office HQ pill — appended when has_physical_location is on.
+                  // When the HQ is the ONLY mode, the label expands to
+                  // "Cleaner HQ" so it's obvious this is in-office only.
+                  if (hasHq) {
+                    const label = locs.size === 0 ? 'Cleaner HQ' : 'Office HQ'
+                    items.push({ key: 'hq', icon: Store, label })
+                  }
+                  return (
+                    <div className="flex items-start gap-2 max-w-[280px]" style={{ marginTop: 15 }}>
+                      {items.map((it, idx) => (
+                        <React.Fragment key={it.key}>
+                          {idx > 0 && <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />}
+                          <HeroIcon icon={it.icon} slogan={it.label} theme={theme} />
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             )
           })()}
         </div>
 
-        {/* Reviews toggle pill */}
+        {/* Reviews toggle — themed pill above the floating card, right side.
+            Click swaps the area below for the reviews list. */}
         <div className="px-4 relative z-20 flex justify-end" style={{ marginTop: -56 }}>
           <button
             type="button"
@@ -272,12 +300,15 @@ export default function HomeCleanProviderPage() {
           </button>
         </div>
 
-        {/* Floating info card — avatar + name + city + rating + badge. */}
+        {/* Floating info card — overlaps the bottom edge of the cover.
+            All 4 corners 15px. Left: avatar. Middle: name / city / rating.
+            Right: "Top Rated Seller" badge. */}
         <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
           <div
             className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
             style={{ borderRadius: 15 }}
           >
+            {/* Profile image */}
             {p.profile_image_url ? (
               <img
                 src={p.profile_image_url}
@@ -293,6 +324,7 @@ export default function HomeCleanProviderPage() {
               </div>
             )}
 
+            {/* Name + city + rating */}
             <div className="min-w-0 flex-1">
               <h1 className="text-[16px] sm:text-[18px] font-black text-black truncate leading-tight flex items-center gap-1">
                 <span className="truncate">{p.display_name}</span>
@@ -323,6 +355,9 @@ export default function HomeCleanProviderPage() {
               </div>
             </div>
 
+            {/* Top Rated Seller badge — neutral gray pill so the chip
+                stays unchanged across profiles; only the Award icon +
+                text tint the active profile theme color. */}
             <div
               className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
               style={{ background: '#F3F4F6' }}
@@ -342,25 +377,32 @@ export default function HomeCleanProviderPage() {
             displayName={p.display_name}
             address={p.service_area_notes ?? p.city ?? null}
             city={p.city ?? null}
-            lat={latitude}
-            lng={longitude}
+            lat={typeof p.latitude  === 'number' ? p.latitude  : null}
+            lng={typeof p.longitude === 'number' ? p.longitude : null}
             hours={p.operating_hours ?? null}
             instagramUrl={p.instagram_url ?? null}
             tiktokUrl={p.tiktok_url ?? null}
             facebookUrl={p.facebook_url ?? null}
-            busyDates={busyDates}
+            xUrl={(p as unknown as { x_url?: string | null }).x_url ?? null}
+            snapchatUrl={(p as unknown as { snapchat_url?: string | null }).snapchat_url ?? null}
+            websiteUrl={(p as unknown as { website_url?: string | null }).website_url ?? null}
+            whatsappE164={p.whatsapp_e164 ?? null}
+            telegramHandle={(p as unknown as { telegram_handle?: string | null }).telegram_handle ?? null}
+            wechatId={(p as unknown as { wechat_id?: string | null }).wechat_id ?? null}
+            lineId={(p as unknown as { line_id?: string | null }).line_id ?? null}
+            kakaotalkId={(p as unknown as { kakaotalk_id?: string | null }).kakaotalk_id ?? null}
+            busyDates={(p.busy_dates ?? []) as string[]}
             themeColor={theme}
             onClose={() => setShowVisitUs(false)}
-            noLocationCopy="Lokasi belum di-pin oleh cleaner."
             bottomCta={
-              (typeof latitude === 'number' && typeof longitude === 'number')
+              (typeof p.latitude === 'number' && typeof p.longitude === 'number')
                 ? {
                     label: 'Book Bike Service',
                     icon: Bike,
                     note: `We'll use your location for pickup and ${p.display_name}'s for drop-off — fare shows on the next screen.`,
                     onClick: () => {
-                      const lat = latitude
-                      const lng = longitude
+                      const lat = p.latitude as number
+                      const lng = p.longitude as number
                       const base = `/cari/rider?dLat=${lat}&dLng=${lng}&dName=${encodeURIComponent(p.display_name)}`
                       const fallback = () => { window.location.href = base }
                       if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
@@ -392,65 +434,118 @@ export default function HomeCleanProviderPage() {
           />
         ) : (
           <>
-            {/* About {name} — 5-line clamped bio + optional Visit Us link. */}
-            <section className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                  About {p.display_name}
-                </h2>
-                {hasLocation && (
-                  <button
-                    type="button"
-                    onClick={() => setShowVisitUs(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
-                    style={{ color: theme }}
-                  >
-                    <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    Visit Us
-                  </button>
-                )}
-              </div>
-              <div className="flex items-start gap-3">
-                {p.bio?.trim() ? (
-                  <p
-                    className="text-[13px] text-gray-600 leading-snug flex-1 min-w-0"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 5,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {p.bio.replace(/\s*\n\s*/g, ' ')}
-                  </p>
-                ) : (
-                  <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
-                )}
-              </div>
-            </section>
+        {/* About {name} — 5-line clamped bio. Black heading + gray body
+            for readability on the white page background. */}
+        <section className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+              About {p.display_name}
+            </h2>
+            {p.has_physical_location && (
+              <button
+                type="button"
+                onClick={() => setShowVisitUs(true)}
+                className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+                style={{ color: theme }}
+              >
+                <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Visit Us
+              </button>
+            )}
+          </div>
+          <div className="flex items-start gap-3">
+            {p.bio?.trim() ? (
+              <p
+                className="text-[13px] text-gray-600 leading-snug flex-1 min-w-0"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 5,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Collapse stray \n in the stored bio to a single
+                    space so short sentences don't each sit on their
+                    own line — text now flows naturally and the line
+                    clamp counts true rendered lines. */}
+                {p.bio.replace(/\s*\n\s*/g, ' ')}
+              </p>
+            ) : (
+              <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
+            )}
+          </div>
+        </section>
 
-            {/* Services Provided — house / apartment / office chips,
-                sniffed from the bio until a structured field exists. */}
-            {offeredTypes.length > 0 && (
-              <section className="space-y-2" style={{ marginTop: 15 }}>
-                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                  Services Provided
-                </h2>
-                <div className="flex flex-wrap items-center gap-1.5">
+        {/* Services Provided — only renders services that actually have
+            at least one "live" carousel entry (image + description).
+            Empty placeholder services don't deserve a public badge. */}
+        {(() => {
+          const offered = (p.services_offered ?? []) as HomeCleanService[]
+          if (offered.length === 0) return null
+          const sp = p.service_photos ?? {}
+          const live = offered.filter((sid) => {
+            const arr = sp[sid]
+            if (!Array.isArray(arr)) return false
+            return arr.some((item) =>
+              item && typeof item === 'object'
+              && typeof (item as { url?: unknown }).url === 'string'
+              && (item as { url: string }).url.trim().length > 0
+              && typeof (item as { description?: unknown }).description === 'string'
+              && (item as { description: string }).description.trim().length > 0
+            )
+          })
+          if (live.length === 0) return null
+          const all     = live
+          const visible = all.slice(0, 3)
+          const hidden  = all.slice(3)
+          const hasMore = hidden.length > 0
+          return (
+            <section className="space-y-2" style={{ marginTop: 15 }}>
+              <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                Services Provided
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/* "All" reset chip — clears any active service filter
+                    so the portfolio carousel shows photos from every
+                    category again. Highlighted with the theme when no
+                    filter is active. */}
+                <button
+                  type="button"
+                  onClick={() => { setActiveService(null); setShowMoreServices(false) }}
+                  aria-pressed={activeService === null}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
+                  style={
+                    activeService === null
+                      ? { background: theme, color: '#FFFFFF' }
+                      : { background: '#F3F4F6', color: '#374151' }
+                  }
+                >
+                  All
+                </button>
+                {visible.map((sid) => (
+                  <ServiceFilterBadge
+                    key={sid} sid={sid}
+                    active={activeService === sid}
+                    onClick={() => setActiveService(activeService === sid ? null : sid)}
+                    theme={theme}
+                  />
+                ))}
+                {hasMore && (
                   <button
                     type="button"
-                    onClick={() => { setActiveService(null); setShowMoreServices(false) }}
-                    aria-pressed={activeService === null}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
-                    style={
-                      activeService === null
-                        ? { background: theme, color: '#FFFFFF' }
-                        : { background: '#F3F4F6', color: '#374151' }
-                    }
+                    onClick={() => setShowMoreServices((v) => !v)}
+                    aria-label={showMoreServices ? 'Hide other services' : 'Show other services'}
+                    aria-expanded={showMoreServices}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white shrink-0 active:scale-[0.96] transition"
+                    style={{ background: theme }}
                   >
-                    All
+                    <Menu className="w-4 h-4" strokeWidth={2.5} />
                   </button>
-                  {offeredTypes.slice(0, 3).map((sid) => (
+                )}
+              </div>
+              {hasMore && showMoreServices && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {hidden.map((sid) => (
                     <ServiceFilterBadge
                       key={sid} sid={sid}
                       active={activeService === sid}
@@ -458,109 +553,77 @@ export default function HomeCleanProviderPage() {
                       theme={theme}
                     />
                   ))}
-                  {offeredTypes.length > 3 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowMoreServices((v) => !v)}
-                      aria-label={showMoreServices ? 'Hide other services' : 'Show other services'}
-                      aria-expanded={showMoreServices}
-                      className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white shrink-0 active:scale-[0.96] transition"
-                      style={{ background: theme }}
-                    >
-                      <Menu className="w-4 h-4" strokeWidth={2.5} />
-                    </button>
-                  )}
                 </div>
-                {offeredTypes.length > 3 && showMoreServices && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {offeredTypes.slice(3).map((sid) => (
-                      <ServiceFilterBadge
-                        key={sid} sid={sid}
-                        active={activeService === sid}
-                        onClick={() => setActiveService(activeService === sid ? null : sid)}
-                        theme={theme}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {/* Portfolio carousel — service_photos when present, otherwise
-                the legacy gallery_image_urls flattened into bare-URL cards. */}
-            {(() => {
-              const photos = buildPortfolioPhotos(p, servicePhotos, activeService)
-              if (photos.length === 0) return null
-              const activeLabel = activeService
-                ? CLEAN_SERVICE_TYPES.find((t) => t.id === activeService)?.label
-                : null
-              return (
-                <section className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                      {activeLabel ? `${activeLabel} — Portfolio` : 'Portfolio'}
-                    </h2>
-                    <PortfolioViewToggle
-                      view={portfolioView}
-                      onChange={setPortfolioView}
-                      themeColor={theme}
-                    />
-                  </div>
-                  <p className="text-[11px] text-gray-500 italic -mt-1">
-                    Please contact for additional services not listed
-                  </p>
-                  <PortfolioCarousel
-                    photos={photos}
-                    onViewDetails={(ph) => setDetailPhoto(ph)}
-                    themeColor={theme}
-                    view={portfolioView}
-                  />
-                </section>
-              )
-            })()}
-
-            {/* Running marquee — weekly promo ribbon under the carousel. */}
-            <RunningMarquee
-              text={promoText || 'Message me this week — professional cleaning for your home, apartment or office. Hourly or full-day rates available.'}
-            />
-
-            {/* CTA row — Start From price on the left, Contact button on the right. */}
-            <div className="flex items-end justify-between gap-3 pb-4">
-              <div className="leading-none pb-3">
-                <div className="text-[24px] sm:text-[28px] font-black text-black">
-                  {formatStartFromPrice(p)}
-                </div>
-                <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
-                  Start from {p.hourly_rate_idr ? '/ jam' : p.day_rate_idr ? '/ hari' : ''}
-                </div>
-              </div>
-              {p.whatsapp_e164 && (
-                <button
-                  type="button"
-                  onClick={() => { setContactServiceName(''); setContactOpen(true) }}
-                  className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
-                  style={{ background: theme }}
-                >
-                  <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
-                  Contact
-                </button>
               )}
-            </div>
+            </section>
+          )
+        })()}
 
-            {partnerTag && (
-              <div
-                className="rounded-xl px-3 py-2 text-[12px]"
-                style={{
-                  background: `${theme}14`,
-                  border: `1px solid ${theme}55`,
-                  color: theme,
-                }}
-              >
-                Referred by partner: <span className="font-extrabold">{partnerTag}</span>
+        {/* Portfolio carousel — rich cards (image + name + 2-line desc
+            + start price + View Details). Cards swipe left-to-right. */}
+        {(() => {
+          const photos = buildPortfolioPhotos(p, activeService)
+          if (photos.length === 0) return null
+          return (
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
+                  {activeService
+                    ? `${HOME_CLEAN_SERVICE_LABELS[activeService]} — Portfolio`
+                    : 'Portfolio'}
+                </h2>
+                <PortfolioViewToggle
+                  view={portfolioView}
+                  onChange={setPortfolioView}
+                  themeColor={theme}
+                />
               </div>
-            )}
+              <p className="text-[11px] text-gray-500 italic -mt-1">
+                Please contact for additional services not listed
+              </p>
+              <PortfolioCarousel
+                photos={photos as PortfolioPhoto[]}
+                onViewDetails={(ph) => setDetailPhoto(ph as HomeCleanServicePhoto)}
+                themeColor={theme}
+                view={portfolioView}
+                currencySymbol={countryByCode((p as unknown as { country_code?: string | null }).country_code ?? 'ID').currency_symbol}
+              />
+            </section>
+          )
+        })()}
+
+        {/* Running marquee — weekly promo ribbon under the carousel. */}
+        <RunningMarquee
+          text={p.promo_text || 'Message me this week — professional home cleaning delivered straight to your home, apartment or office.'}
+        />
+
+        {/* CTA row under the carousel — large price on the left,
+            themed Contact button (square w/ rounded corners) on the
+            right. pb-4 leaves breathing room before the accent bar. */}
+        <div className="flex items-end justify-between gap-3 pb-4">
+          <div className="leading-none pb-3">
+            <div className="text-[24px] sm:text-[28px] font-black text-black">
+              {formatStartFromPrice(p)}
+            </div>
+            <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
+              Start from {p.hourly_rate_idr ? '/ jam' : p.day_rate_idr ? '/ hari' : ''}
+            </div>
+          </div>
+          {p.whatsapp_e164 && (
+            <button
+              type="button"
+              onClick={() => { setContactServiceName(''); setContactOpen(true) }}
+              className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
+              style={{ background: theme }}
+            >
+              <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
+              Contact
+            </button>
+          )}
+        </div>
           </>
         )}
+
       </div>
 
       {shareOpen && (
@@ -588,6 +651,7 @@ export default function HomeCleanProviderPage() {
               Bagikan profil {p.display_name} ke teman atau klien.
             </p>
             <div className="space-y-2">
+              {/* Copy link — single-tap; status flips to "Copied!" for 1.8s. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -608,6 +672,7 @@ export default function HomeCleanProviderPage() {
                 </div>
               </button>
 
+              {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di IndoCity: ${profileUrl}`)}`}
                 target="_blank"
@@ -624,6 +689,7 @@ export default function HomeCleanProviderPage() {
                 </div>
               </a>
 
+              {/* Facebook — accepts URL share via sharer.php. */}
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`}
                 target="_blank"
@@ -640,6 +706,9 @@ export default function HomeCleanProviderPage() {
                 </div>
               </a>
 
+              {/* Instagram — IG doesn't accept arbitrary URL share. We
+                  copy the link to the clipboard and open IG so the user
+                  can paste into a DM / Story / bio. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -660,6 +729,7 @@ export default function HomeCleanProviderPage() {
                 </div>
               </button>
 
+              {/* TikTok — same pattern: copy link, open app. */}
               <button
                 type="button"
                 onClick={async () => {
@@ -683,13 +753,21 @@ export default function HomeCleanProviderPage() {
         </div>
       )}
 
-      {/* Right-edge "back" bar */}
+      {/* Right-edge "back" bar — tall vertical strip flush against the
+          window edge (no protrusion into the page content). Yellow,
+          rounded only on the inside (left) corners. Arrow icon top,
+          vertical "BACK" text below. Diverts back to /home-clean. */}
       <a
         href="/home-clean"
         aria-label="Back to IndoCity cleaners"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
+          /* Anchored beside the About/bio block on first paint so the
+             button never covers the interactive surfaces lower on the
+             page (Services chips, Portfolio carousel, Contact CTA).
+             top 35% + translateY(-50%) puts the 110px button visually
+             at ~30-40% of the viewport — i.e. the bio band. */
           top: '35%',
           transform: 'translateY(-50%)',
           width: 34,
@@ -715,7 +793,10 @@ export default function HomeCleanProviderPage() {
         </span>
       </a>
 
-      {/* Footer Leave Review — only when reviews panel open AND inline form closed. */}
+      {/* Footer Leave Review button — only renders when the Reviews
+          panel is active AND the inline form isn't already open.
+          Hidden while the user is filling the form so it doesn't
+          obscure the Submit button. */}
       {showReviews && !reviewFormOpen && (
         <button
           type="button"
@@ -728,14 +809,15 @@ export default function HomeCleanProviderPage() {
         </button>
       )}
 
-      {/* Bottom accent bar */}
+      {/* Bottom accent bar — fixed to visible viewport edge. */}
       <div
         className="fixed left-0 right-0 z-10"
         style={{ bottom: 0, height: 6, background: theme }}
         aria-hidden
       />
 
-      {/* Portfolio "View Details" popup */}
+      {/* Portfolio "View Details" popup — full image + before/after
+          thumbs (if uploaded) + description + start price + Contact. */}
       {detailPhoto && (
         <PortfolioDetailPopup
           photo={detailPhoto}
@@ -749,29 +831,29 @@ export default function HomeCleanProviderPage() {
           }}
         />
       )}
-
-      {/* Contact / booking popup. The booking endpoint is reserved for
-          when /api/home-clean/[slug]/book lands — until then the POST will
-          surface a graceful error inside the popup; WhatsApp deep-link
-          still fires either way so the customer can reach the cleaner. */}
+      {/* Contact / booking popup — opened by both the bottom Contact
+          CTA and any per-service Contact button. Submits a booking
+          request server-side first (so it shows up on the cleaner's
+          calendar) and then opens WhatsApp with a matching pre-filled
+          message. Skips busy_dates the cleaner has marked. */}
       {contactOpen && p.whatsapp_e164 && (
         <ContactBookingPopup
           providerSlug={p.slug}
           providerName={p.display_name}
           whatsapp={p.whatsapp_e164}
           themeColor={theme}
-          serviceOptions={offeredTypes.map((sid) => {
-            const t = CLEAN_SERVICE_TYPES.find((x) => x.id === sid)
-            const label = t?.label ?? sid
-            return { value: label, label }
-          })}
+          serviceOptions={(p.services_offered ?? []).map((sid) => ({
+            value: HOME_CLEAN_SERVICE_LABELS[sid] ?? sid,
+            label: HOME_CLEAN_SERVICE_LABELS[sid] ?? sid,
+          }))}
           presetService={contactServiceName}
-          busyDates={busyDates}
+          busyDates={(p.busy_dates ?? []) as string[]}
           bookEndpoint={`/api/home-clean/${p.slug}/book`}
           copy={{
             whatsappMessage: ({ service, date, time, notes }) => [
-              `Halo ${p.display_name}, saya ingin booking ${service.trim() || 'cleaning service'} `,
-              `pada ${date} jam ${time}.`,
+              `Halo ${p.display_name}, saya ingin booking layanan bersih rumah`,
+              service.trim() ? ` (${service.trim()})` : '',
+              ` pada ${date} jam ${time}.`,
               notes.trim() ? `\nCatatan: ${notes.trim()}` : '',
               `\n\n— Sent via indocity.id`,
             ].join(''),
@@ -783,48 +865,25 @@ export default function HomeCleanProviderPage() {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Typed extension — public-route may eventually add these fields.
-// Keeping the extension shape local so the rewrite ships without an
-// imports / types-file change (per the edit-only constraint).
-// ─────────────────────────────────────────────────────────────────────
-type HomeCleanPortfolioPhoto = {
-  url:               string
-  name?:             string
-  description?:      string
-  price_idr?:        number | null
-  object_position?:  string
-  before_image_url?: string
-  after_image_url?:  string
-}
-type HomeCleanProviderPublicExt = HomeCleanProviderPublic & {
-  hero_text?: {
-    line1?:         string
-    line2?:         string
-    tagline?:       string
-    color?:         string
-    line1_color?:   string
-    tagline_color?: string
-    effect?:        'none' | 'shimmer' | 'dance' | 'underline'
-  } | null
-  promo_text?:           string | null
-  busy_dates?:           string[] | null
-  has_physical_location?: boolean | null
-  latitude?:             number | null
-  longitude?:            number | null
-  service_photos?:       HomeCleanPortfolioPhoto[] | null
-}
+// PortfolioDetailPopup + ThumbButton now live in
+// @/components/profile/PortfolioCarousel.tsx and are imported at the
+// top of this file.
 
-// ─────────────────────────────────────────────────────────────────────
-// Service-type filter chip
-// ─────────────────────────────────────────────────────────────────────
+// ContactBookingPopup now lives in @/components/profile/ContactBookingPopup.tsx
+// Inline copy removed in Phase 2-A4.
+
+// Carousel card — image up top, name + 2-line description + start
+// Portfolio carousel — auto-drifts left at a slow pace and pauses on
+// user interaction so swipe/drag/wheel still works. Cards are
+// duplicated so the loop seam (when scrollLeft passes half-width and
+// wraps back to 0) is invisible.
+// PortfolioCarousel + PortfolioCard now live in
+// @/components/profile/PortfolioCarousel.tsx — imported at the top of
+// this file. Inline copies removed in Phase 2-A2.
 
 function ServiceFilterBadge({
   sid, active, onClick, theme,
-}: { sid: CleanServiceType; active: boolean; onClick: () => void; theme: string }) {
-  const meta = CLEAN_SERVICE_TYPES.find((t) => t.id === sid)
-  const Icon = meta?.icon ?? Sparkles
-  const label = meta?.label ?? sid
+}: { sid: HomeCleanService; active: boolean; onClick: () => void; theme: string }) {
   return (
     <button
       type="button"
@@ -837,57 +896,81 @@ function ServiceFilterBadge({
           : { background: 'rgba(229, 231, 235, 0.95)', color: '#0A0A0A' }
       }
     >
-      <Icon
+      <Sparkles
         className="w-3.5 h-3.5"
         strokeWidth={2.5}
         style={{ color: active ? '#FFFFFF' : theme }}
       />
-      {label}
+      {HOME_CLEAN_SERVICE_LABELS[sid] ?? sid}
     </button>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Pricing + portfolio helpers
-// ─────────────────────────────────────────────────────────────────────
-
+// Cheapest price across all per-photo entries (mig 0105 rich shape).
+// Falls back to the hourly/day rate columns when no photo prices
+// are set so the CTA never reads empty.
 function formatStartFromPrice(p: HomeCleanProviderPublic): string {
-  const candidates: number[] = []
-  if (typeof p.hourly_rate_idr === 'number' && p.hourly_rate_idr > 0) candidates.push(p.hourly_rate_idr)
-  if (typeof p.day_rate_idr    === 'number' && p.day_rate_idr    > 0) candidates.push(p.day_rate_idr)
-  if (candidates.length === 0) return 'Rp 50k'
-  return formatPriceIdr(Math.min(...candidates)) ?? 'Rp 50k'
+  const photoPrices: number[] = []
+  const sp = p.service_photos ?? {}
+  for (const arr of Object.values(sp)) {
+    if (!Array.isArray(arr)) continue
+    for (const item of arr) {
+      if (item && typeof item === 'object' && typeof (item as { price_idr?: unknown }).price_idr === 'number') {
+        const n = (item as { price_idr: number }).price_idr
+        if (n > 0) photoPrices.push(n)
+      }
+    }
+  }
+  const fallback = [p.hourly_rate_idr, p.day_rate_idr]
+    .filter((n): n is number => typeof n === 'number' && n > 0)
+  const all = photoPrices.length > 0 ? photoPrices : fallback
+  if (all.length === 0) return 'Rp 50k'
+  return formatPriceIdr(Math.min(...all)) ?? 'Rp 50k'
 }
 
+// Normalises one service_photos entry — accepts either a plain URL
+// string (legacy) or the rich object shape, returns the rich shape.
+function normalisePhoto(raw: unknown): HomeCleanServicePhoto | null {
+  if (typeof raw === 'string') return { url: raw }
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const o = raw as Partial<HomeCleanServicePhoto>
+    if (typeof o.url === 'string' && o.url) return { ...o, url: o.url } as HomeCleanServicePhoto
+  }
+  return null
+}
+
+// Combines per-service photos into the carousel feed. When a service
+// filter is active, returns just that service's photos; otherwise
+// flattens every service's photos in catalog order so the carousel
+// stays deterministic. Falls back to the legacy gallery_image_urls
+// (treated as headless URLs) when service_photos is empty.
 function buildPortfolioPhotos(
   p: HomeCleanProviderPublic,
-  servicePhotos: HomeCleanPortfolioPhoto[],
-  active: CleanServiceType | null,
-): PortfolioPhoto[] {
-  const photos: PortfolioPhoto[] = servicePhotos
-    .map((o): PortfolioPhoto | null => {
-      if (!o || typeof o !== 'object') return null
-      if (typeof o.url !== 'string' || !o.url.trim()) return null
-      return o as PortfolioPhoto
-    })
-    .filter((x): x is PortfolioPhoto => x !== null)
-
-  if (!active) {
-    if (photos.length > 0) return photos
-    return (p.gallery_image_urls ?? []).map((url) => ({ url }))
+  active: HomeCleanService | null,
+): HomeCleanServicePhoto[] {
+  const sp = p.service_photos ?? {}
+  // Only show photos for categories the cleaner actually offers.
+  // Old rows can carry leftover keys (e.g. shared seed packs put
+  // deep_clean photos on a regular-only profile); those should not
+  // surface in the public carousel.
+  const offered = new Set<HomeCleanService>(p.services_offered ?? [])
+  if (active) {
+    if (offered.size > 0 && !offered.has(active)) return []
+    const arr = sp[active] ?? []
+    return arr.map(normalisePhoto).filter((x): x is HomeCleanServicePhoto => x !== null)
   }
-
-  // Partial-name match — when a cleaner names a photo "Apartment cleaning
-  // - Sudirman Park" we keep it on the Apartment filter. Empty match set
-  // falls back to all photos so the carousel never collapses to zero
-  // when the filter and photo data diverge.
-  const meta = CLEAN_SERVICE_TYPES.find((t) => t.id === active)
-  const keywords = meta?.keywords ?? [active.toString()]
-  const matched = photos.filter((ph) => {
-    const n = (ph.name ?? '').toLowerCase()
-    return keywords.some((k) => n.includes(k))
-  })
-  return matched.length > 0 ? matched : photos
+  const ordered: HomeCleanServicePhoto[] = []
+  for (const cat of HOME_CLEAN_SERVICES_OFFERED) {
+    if (offered.size > 0 && !offered.has(cat.id)) continue
+    const arr = sp[cat.id]
+    if (!Array.isArray(arr)) continue
+    for (const raw of arr) {
+      const n = normalisePhoto(raw)
+      if (n) ordered.push(n)
+    }
+  }
+  if (ordered.length > 0) return ordered
+  return (p.gallery_image_urls ?? []).map((url) => ({ url }))
 }
 
 function formatPriceIdr(amount: number | null | undefined): string | null {
@@ -903,9 +986,9 @@ function formatPriceIdr(amount: number | null | undefined): string | null {
   return `Rp ${amount.toLocaleString('id-ID')}`
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Reviews panel (inline list + leave-review form)
-// ─────────────────────────────────────────────────────────────────────
+// VisitUsPanel + AvailabilityCalendarPopup + Social*Icons now live in
+// @/components/profile/VisitUsPanel.tsx — imported at the top of this file.
+// Inline copies removed in Phase 2-A3.
 
 function ReviewsPanel({
   providerId, reviews, loading, formOpen, setFormOpen, onSubmitted, theme,
@@ -953,6 +1036,7 @@ function ReviewsPanel({
       })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(j?.error || 'Failed to submit'); return }
+      // Reset + close + refetch via parent.
       setStars(0); setName(''); setWhatsapp(''); setComment(''); setFormOpen(false)
       onSubmitted()
     } finally { setSubmitting(false) }
@@ -972,6 +1056,9 @@ function ReviewsPanel({
         </div>
       )}
 
+      {/* Inline review form — triggered by the footer "Leave Review"
+          button. Renders directly on the page background (no card
+          wrapper) so it doesn't feel like a nested popup. */}
       {formOpen && (
         <div className="space-y-2.5 px-1 pt-1">
           <div className="flex items-center justify-between">
@@ -987,6 +1074,8 @@ function ReviewsPanel({
             </button>
           </div>
 
+          {/* 5-star picker — unselected stars are gray; selected stars
+              turn solid yellow so the chosen rating is unambiguous. */}
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => {
               const filled = i < stars
@@ -1054,54 +1143,59 @@ function ReviewsPanel({
         </div>
       )}
 
+      {/* List — hidden while the inline review form is open so the
+          user can focus on writing without the existing reviews + the
+          empty-state placeholder taking up screen space below. */}
       {!formOpen && (
-        <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
-          {loading && visible.length === 0 && (
-            <div className="text-[12px] text-gray-500 italic">Loading reviews…</div>
-          )}
-          {!loading && visible.length === 0 && (
-            <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
-              <div className="text-[12px] text-gray-500">Belum ada review. Jadilah yang pertama.</div>
-            </div>
-          )}
-          {visible.map((r) => (
-            <div key={r.id} className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-black shrink-0"
-                    style={{ background: theme }}
-                  >
-                    {r.reviewer_name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[12px] font-extrabold text-black truncate">{r.reviewer_name}</div>
-                    <div className="text-[10px] text-gray-500">{formatReviewWhen(r.created_at)}</div>
-                  </div>
+      <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
+        {loading && visible.length === 0 && (
+          <div className="text-[12px] text-gray-500 italic">Loading reviews…</div>
+        )}
+        {!loading && visible.length === 0 && (
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
+            <div className="text-[12px] text-gray-500">Belum ada review. Jadilah yang pertama.</div>
+          </div>
+        )}
+        {visible.map((r) => (
+          <div key={r.id} className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-black shrink-0"
+                  style={{ background: theme }}
+                >
+                  {r.reviewer_name.charAt(0).toUpperCase()}
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <Star
-                      key={j}
-                      className="w-3 h-3"
-                      strokeWidth={0}
-                      fill={j < r.rating ? theme : '#E5E7EB'}
-                      style={{ color: j < r.rating ? theme : '#E5E7EB' }}
-                    />
-                  ))}
+                <div className="min-w-0">
+                  <div className="text-[12px] font-extrabold text-black truncate">{r.reviewer_name}</div>
+                  <div className="text-[10px] text-gray-500">{formatReviewWhen(r.created_at)}</div>
                 </div>
               </div>
-              {r.comment && (
-                <p className="text-[12px] text-gray-700 leading-snug">{r.comment}</p>
-              )}
+              <div className="flex items-center gap-0.5 shrink-0">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <Star
+                    key={j}
+                    className="w-3 h-3"
+                    strokeWidth={0}
+                    fill={j < r.rating ? theme : '#E5E7EB'}
+                    style={{ color: j < r.rating ? theme : '#E5E7EB' }}
+                  />
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+            {r.comment && (
+              <p className="text-[12px] text-gray-700 leading-snug">{r.comment}</p>
+            )}
+          </div>
+        ))}
+      </div>
       )}
     </section>
   )
 }
 
+// Stable per-browser session id for review dedup. Reused across leave-
+// review submissions; the API rejects same-session-same-provider dupes.
 function readOrMakeReviewSessionId(): string {
   try {
     let v = localStorage.getItem('cr-review-sid')
@@ -1129,9 +1223,42 @@ function formatReviewWhen(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function HeroIcon({
+  src, icon: Icon, slogan, theme,
+}: { src?: string; icon?: LucideIcon; slogan: string; theme: string }) {
+  return (
+    <div className="flex-1 flex flex-col items-center text-center min-w-0">
+      {/* Icon sits inside a soft white-tinted squircle so the theme-
+          coloured icon stays readable on any cover-image backdrop
+          (especially dark themes). */}
+      <span
+        className="inline-flex items-center justify-center rounded-xl bg-white/75 backdrop-blur-sm shadow-sm"
+        style={{ width: 44, height: 44 }}
+      >
+        {src
+          ? <img src={src} alt="" className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] object-contain" />
+          : Icon
+            ? <Icon className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px]" strokeWidth={2.25} style={{ color: theme }} />
+            : null}
+      </span>
+      <div className="mt-1.5 text-[13px] sm:text-[14px] font-bold text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
+        {slogan}
+      </div>
+    </div>
+  )
+}
+
+
 function Shell({ children }: { children: React.ReactNode }) {
+  // Solid white paints over the global PageBackground (which sits at
+  // -z-10) so the courier scene doesn't show through here. min-h-[100dvh]
+  // lets the page scroll naturally so panels like Visit Us / Reviews
+  // can extend past the initial viewport.
   return (
     <main className="relative min-h-[100dvh] bg-white text-ink">
+      {/* Hide the floating dev-toolbar wrench on this page only — the
+          page is meant to read as a polished customer-facing profile
+          and the spanner clutters the corner. Scoped to mount lifetime. */}
       <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
       {children}
     </main>

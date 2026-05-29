@@ -1,13 +1,14 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Locate, Camera, User, Phone, MapPin, ShieldCheck } from 'lucide-react'
+import { Locate, Camera, User, Phone, MapPin, Sparkles, Globe2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
 import { INDONESIAN_CITIES } from '@/data/indonesianCities'
 import { type BeauticianProvider } from '@/lib/beautician/types'
+import { countryByCode } from '@/lib/data/countries'
+import CountryPicker from '@/components/dashboard/CountryPicker'
 
 // Profile Info — basic personal details only. Theme/banner/photos live
 // on /dashboard/beautician/edit. Services + prices live on
@@ -22,6 +23,17 @@ type Extras = {
   instagram_url?: string | null
   tiktok_url?:    string | null
   facebook_url?:  string | null
+  x_url?:         string | null
+  snapchat_url?:  string | null
+  website_url?:   string | null
+  // mig 0131
+  country_code?:            string | null
+  custom_services_offered?: string[] | null
+  // mig 0132 — chat handles
+  telegram_handle?: string | null
+  wechat_id?:       string | null
+  line_id?:         string | null
+  kakaotalk_id?:    string | null
   service_locations?: Array<'home' | 'hotel' | 'villa'> | null
 }
 type FullProvider = BeauticianProvider & Extras
@@ -67,11 +79,23 @@ export default function BeauticianInfoPage() {
 
   return (
     <Shell>
-      <div className="px-4 pt-3 pb-28 max-w-lg mx-auto">
-        <header className="mb-5">
-          <h1 className="text-[24px] font-black text-black leading-tight">Profile info</h1>
-          <p className="text-[13px] text-black/70 mt-1">What customers see first — name, photo, contact, and service area.</p>
-        </header>
+      <div className="px-4 pt-4 pb-28 max-w-lg mx-auto">
+        {/* Brand header — matches the Design Studio pattern on /edit. */}
+        <div className="rounded-3xl border border-pink-200/70 bg-gradient-to-br from-pink-50 to-white p-5 shadow-sm mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-pink-500 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Sparkles size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-[20px] font-black leading-tight text-black truncate">Profile info</h1>
+              </div>
+              <p className="text-[12.5px] text-black/70 leading-snug">
+                What customers see first — name, photo, contact, and service area.
+              </p>
+            </div>
+          </div>
+        </div>
 
         <InfoForm provider={provider} onSaved={reload} />
       </div>
@@ -87,13 +111,20 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     city: string
     service_area_notes: string
     profile_image_url: string
-    ktp_image_url: string
     has_physical_location: boolean
     latitude:  number | null
     longitude: number | null
     instagram_url: string
     tiktok_url:    string
     facebook_url:  string
+    x_url:         string
+    snapchat_url:  string
+    website_url:   string
+    country_code:  string
+    telegram_handle: string
+    wechat_id:       string
+    line_id:         string
+    kakaotalk_id:    string
     service_locations: Array<'home' | 'hotel' | 'villa'>
   }
   const [f, setF] = useState<FormState>({
@@ -103,13 +134,20 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     city:                provider.city ?? '',
     service_area_notes:  provider.service_area_notes ?? '',
     profile_image_url:   provider.profile_image_url ?? '',
-    ktp_image_url:       provider.ktp_image_url ?? '',
     has_physical_location: provider.has_physical_location ?? false,
     latitude:            provider.latitude  ?? null,
     longitude:           provider.longitude ?? null,
     instagram_url:       provider.instagram_url ?? '',
     tiktok_url:          provider.tiktok_url    ?? '',
     facebook_url:        provider.facebook_url  ?? '',
+    x_url:               (provider as Extras & { x_url?: string | null }).x_url               ?? '',
+    snapchat_url:        (provider as Extras & { snapchat_url?: string | null }).snapchat_url ?? '',
+    website_url:         (provider as Extras & { website_url?: string | null }).website_url   ?? '',
+    country_code:        (provider as Extras).country_code ?? 'ID',
+    telegram_handle:     (provider as Extras).telegram_handle ?? '',
+    wechat_id:           (provider as Extras).wechat_id       ?? '',
+    line_id:             (provider as Extras).line_id         ?? '',
+    kakaotalk_id:        (provider as Extras).kakaotalk_id    ?? '',
     service_locations:   provider.service_locations ?? ['home','hotel','villa'],
   })
   const [saving, setSaving] = useState(false)
@@ -175,13 +213,20 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
           city:                  f.city,
           service_area_notes:    f.service_area_notes,
           profile_image_url:     f.profile_image_url,
-          ktp_image_url:         f.ktp_image_url,
           has_physical_location: f.has_physical_location,
           latitude:              f.latitude,
           longitude:             f.longitude,
           instagram_url:         f.instagram_url.trim() || null,
           tiktok_url:            f.tiktok_url.trim()    || null,
           facebook_url:          f.facebook_url.trim()  || null,
+          x_url:                 f.x_url.trim()         || null,
+          snapchat_url:          f.snapchat_url.trim()  || null,
+          website_url:           f.website_url.trim()   || null,
+          country_code:          f.country_code,
+          telegram_handle:       f.telegram_handle.trim() || null,
+          wechat_id:             f.wechat_id.trim()       || null,
+          line_id:               f.line_id.trim()         || null,
+          kakaotalk_id:          f.kakaotalk_id.trim()    || null,
           service_locations:     f.service_locations,
         }),
       })
@@ -224,22 +269,42 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
 
       {/* Contact & area */}
       <Card title="Contact & service area" hint="Customers contact you directly via WhatsApp." icon={<Phone size={18} />}>
-        <Field label="WhatsApp number" hint="The +62 country code is added automatically — type the number that follows.">
+        <Field label="Country" hint="Drives your WhatsApp prefix + currency symbol everywhere on the dashboard.">
+          <CountryPicker
+            value={f.country_code}
+            onChange={(code) => {
+              const prev = countryByCode(f.country_code)
+              const next = countryByCode(code)
+              upd('country_code', next.code)
+              // Re-stitch the WA number when the dial code changes.
+              const digits = f.whatsapp_e164.replace(/^\+/, '').replace(/\D/g, '')
+              const trimmed = digits.startsWith(prev.dial_code) ? digits.slice(prev.dial_code.length) : digits
+              upd('whatsapp_e164', trimmed ? `+${next.dial_code}${trimmed}` : '')
+            }}
+          />
+        </Field>
+        <Field label="WhatsApp number" hint={`The +${countryByCode(f.country_code).dial_code} country code is added automatically — type the number that follows.`}>
           <div className="relative">
             <span
               aria-hidden
               className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-extrabold text-black/55 pointer-events-none select-none"
             >
-              +62
+              +{countryByCode(f.country_code).dial_code}
             </span>
             <input
               type="tel"
-              value={f.whatsapp_e164.startsWith('+62') ? f.whatsapp_e164.slice(3) : f.whatsapp_e164.replace(/^\+/, '')}
+              value={(() => {
+                const dial = countryByCode(f.country_code).dial_code
+                const digits = f.whatsapp_e164.replace(/^\+/, '')
+                return digits.startsWith(dial) ? digits.slice(dial.length) : digits.replace(/\D/g, '')
+              })()}
               onChange={(e) => {
                 const rest = e.target.value.replace(/\D/g, '')
-                upd('whatsapp_e164', rest ? `+62${rest}` : '')
+                const dial = countryByCode(f.country_code).dial_code
+                upd('whatsapp_e164', rest ? `+${dial}${rest}` : '')
               }}
-              className={inputCls + ' pl-12'}
+              className={inputCls}
+              style={{ paddingLeft: `${(countryByCode(f.country_code).dial_code.length + 1) * 9 + 18}px` }}
               placeholder="81234567890"
               inputMode="numeric"
             />
@@ -306,6 +371,99 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
             spellCheck={false}
           />
         </Field>
+        <Field label="X (Twitter) URL">
+          <input
+            type="url"
+            value={f.x_url}
+            onChange={(e) => upd('x_url', e.target.value)}
+            className={inputCls}
+            placeholder="https://x.com/yourhandle"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <Field label="Snapchat URL">
+          <input
+            type="url"
+            value={f.snapchat_url}
+            onChange={(e) => upd('snapchat_url', e.target.value)}
+            className={inputCls}
+            placeholder="https://snapchat.com/add/yourhandle"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <Field label="Website / custom domain">
+          <input
+            type="url"
+            value={f.website_url}
+            onChange={(e) => upd('website_url', e.target.value)}
+            className={inputCls}
+            placeholder="https://your-domain.com"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+      </Card>
+
+      {/* Chat handles — WhatsApp is the primary number above. These four
+          give Chinese / Korean / Japanese / Western tourists their own
+          app. Each shows a button on the public profile only when set. */}
+      <Card title="Chat handles (optional)" hint="Add any chat apps you use beyond WhatsApp. Public profile shows each as its own button." icon={<Phone size={18} />}>
+        <Field label="Telegram" hint="@handle, t.me URL, or +phone">
+          <input
+            type="text"
+            value={f.telegram_handle}
+            onChange={(e) => upd('telegram_handle', e.target.value)}
+            className={inputCls}
+            placeholder="@mybeauty"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <Field label="WeChat ID">
+          <input
+            type="text"
+            value={f.wechat_id}
+            onChange={(e) => upd('wechat_id', e.target.value)}
+            className={inputCls}
+            placeholder="wxid_xxx"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <Field label="Line ID">
+          <input
+            type="text"
+            value={f.line_id}
+            onChange={(e) => upd('line_id', e.target.value)}
+            className={inputCls}
+            placeholder="lineid"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <Field label="KakaoTalk ID">
+          <input
+            type="text"
+            value={f.kakaotalk_id}
+            onChange={(e) => upd('kakaotalk_id', e.target.value)}
+            className={inputCls}
+            placeholder="kakao-id"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
       </Card>
 
       {/* Service modes — unified four-toggle group.
@@ -345,12 +503,12 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
                 aria-pressed={on}
                 className={`flex flex-col items-start justify-center gap-1 rounded-xl p-3 border transition min-h-[68px] text-left ${
                   on
-                    ? 'bg-yellow-400 border-yellow-300 text-yellow-900 shadow-md shadow-yellow-400/30'
-                    : 'bg-gray-100 border-gray-200 text-black/80 hover:bg-gray-200'
+                    ? 'bg-pink-500 border-pink-500 text-white shadow-md shadow-pink-500/25'
+                    : 'bg-gray-50 border-gray-200 text-black/80 hover:bg-gray-100'
                 }`}
               >
                 <span className="text-[13px] font-extrabold leading-tight">{opt.label}</span>
-                <span className={`text-[10.5px] leading-tight ${on ? 'text-yellow-900/70' : 'text-black/55'}`}>
+                <span className={`text-[12px] leading-tight ${on ? 'text-white/80' : 'text-black/55'}`}>
                   {opt.hint}
                 </span>
               </button>
@@ -358,19 +516,19 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
           })}
         </div>
         {!f.has_physical_location && f.service_locations.length === 0 && (
-          <p className="text-[11px] text-amber-700 leading-snug">
+          <p className="text-[12px] text-amber-700 leading-snug">
             ⚠ With none selected, your card and profile won&apos;t show any service icons.
           </p>
         )}
 
         {f.has_physical_location && (
           <div className="pt-3 space-y-2">
-            <span className="text-[13px] font-bold text-white/85 inline-block">Pick a location</span>
+            <span className="text-[13px] font-bold text-black/85 inline-block">Pick a location</span>
             <button
               type="button"
               onClick={useMyGps}
               disabled={gpsLoading}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-yellow-900 px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition disabled:opacity-60 shadow-md shadow-yellow-400/20"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-white px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition disabled:opacity-60 shadow-md shadow-pink-500/25"
             >
               <Locate size={16} className={gpsLoading ? 'animate-pulse' : ''} />
               {gpsLoading
@@ -380,13 +538,13 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
                   : 'Use my current location'}
             </button>
             {gpsError && (
-              <div className="rounded-lg border border-rose-400/40 bg-rose-500/15 text-rose-100 text-[12px] px-3 py-2">
+              <div className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-[12px] px-3 py-2">
                 {gpsError}
               </div>
             )}
             <div className="flex items-center gap-2">
               <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-[11px] text-black/40 uppercase tracking-wider font-bold">or type address</span>
+              <span className="text-[12px] text-black/45 uppercase tracking-wider font-bold">or type address</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
             <PlaceAutocomplete
@@ -400,12 +558,12 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
               countryCodes={['id']}
               placeholder="Type address or place name…"
               ariaLabel="Search location"
-              className="w-full rounded-xl bg-gray-100 border border-gray-200 px-3 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-pink-400"
+              className="w-full rounded-xl bg-gray-50 border border-gray-200 px-3 py-3 text-[14px] text-black placeholder:text-black/35 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
             />
             {f.latitude != null && f.longitude != null ? (
-              <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-500/15 border border-emerald-400/40 px-3 py-2">
-                <div className="text-[13px] text-emerald-100 leading-snug min-w-0 flex-1 truncate">
-                  ✓ Pinned at <span className="font-mono text-[12px] text-emerald-200">{f.latitude.toFixed(4)}, {f.longitude.toFixed(4)}</span>
+              <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
+                <div className="text-[13px] text-emerald-700 leading-snug min-w-0 flex-1 truncate">
+                  ✓ Pinned at <span className="font-mono text-[12px] text-emerald-800">{f.latitude.toFixed(4)}, {f.longitude.toFixed(4)}</span>
                 </div>
                 <button
                   type="button"
@@ -428,19 +586,8 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
         )}
       </Card>
 
-      {/* KTP */}
-      <Card title="ID verification (KTP)" hint="Admin reviews within 24 hours. Your profile appears on the marketplace once verified." icon={<ShieldCheck size={18} />}>
-        {provider.user_id && (
-          <KtpUploader
-            value={f.ktp_image_url || null}
-            onChange={(v) => upd('ktp_image_url', v ?? '')}
-            userId={provider.user_id}
-          />
-        )}
-      </Card>
-
       {savedFlash && (
-        <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/15 text-emerald-100 text-[14px] px-4 py-3 font-bold">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-[14px] px-4 py-3 font-bold">
           ✓ Saved
         </div>
       )}
@@ -450,7 +597,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 px-6 py-4 text-[15px] font-extrabold uppercase tracking-wider disabled:opacity-60 shadow-lg shadow-yellow-400/30"
+          className="w-full rounded-full bg-pink-500 hover:bg-pink-600 text-white px-6 py-4 text-[15px] font-extrabold uppercase tracking-wider disabled:opacity-60 shadow-lg shadow-pink-500/25 min-h-[44px]"
         >
           {saving ? 'Saving…' : 'Save changes'}
         </button>
@@ -466,10 +613,10 @@ function Card({ title, hint, icon, children }: {
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 shadow-lg shadow-black/20 space-y-3">
+    <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
       <div className="flex items-start gap-3">
         {icon && (
-          <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-yellow-400 text-yellow-900 shadow-md shadow-yellow-400/20">
+          <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-pink-100 text-pink-600">
             {icon}
           </div>
         )}
@@ -486,7 +633,7 @@ function Card({ title, hint, icon, children }: {
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-[13px] font-bold text-white/85 block">{label}</span>
+      <span className="text-[13px] font-bold text-black/85 block">{label}</span>
       {children}
       {hint && <span className="text-[12px] text-black/55 leading-snug block">{hint}</span>}
     </label>
@@ -502,4 +649,4 @@ function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 min-h-[44px]'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-200 px-4 py-3 text-[14px] text-black placeholder:text-black/35 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 min-h-[44px]'

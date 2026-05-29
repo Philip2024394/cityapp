@@ -7,7 +7,7 @@ import { Bike, Car, Bus, Truck } from 'lucide-react'
 // IndoCity is a software directory only — we never set or modify prices.
 
 export const metadata = {
-  title: 'Rentals · IndoCity',
+  title: 'Rentals · Kita2u',
   description:
     'Vehicle hire by-day across Indonesia. Self-drive (lepas kunci) or with driver. ' +
     'Compare daily rates self-published by drivers and contact them directly via WhatsApp.',
@@ -59,7 +59,7 @@ export default function RentalsHubPage() {
         <Link href="/" aria-label="Home" className="inline-block">
           <img
             src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-            alt="IndoCity"
+            alt="Kita2u"
             className="h-8 sm:h-10 w-auto"
           />
         </Link>
@@ -111,7 +111,7 @@ export default function RentalsHubPage() {
         </div>
 
         <p className="text-[13px] text-[#0F172A]/55 text-center mt-10 leading-snug max-w-lg mx-auto">
-          All rates self-published by drivers. IndoCity is a software
+          All rates self-published by drivers. Kita2u is a software
           directory — we never set or modify prices.
         </p>
       </div>

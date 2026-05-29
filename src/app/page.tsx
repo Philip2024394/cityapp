@@ -33,14 +33,14 @@ const STRINGS: Record<Locale, {
   signIn: string
 }> = {
   id: {
-    h1Line1: 'IndoCity,',
+    h1Line1: 'Kita2u,',
     h1Line2: 'Indonesia.',
     lede: 'Pasar harian Indonesia — pesan kendaraan, sewa jasa, atau daftarkan bisnismu.',
     enter: 'Masuk Aplikasi',
     signIn: 'Masuk',
   },
   en: {
-    h1Line1: 'IndoCity,',
+    h1Line1: 'Kita2u,',
     h1Line2: 'Indonesia.',
     lede: "Indonesia's everyday marketplace — find a ride, hire a service, or list your own.",
     enter: 'Enter App',

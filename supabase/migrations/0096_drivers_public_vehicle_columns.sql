@@ -8,15 +8,19 @@
 -- them — making it impossible to filter Bike vs Car drivers on the
 -- public surface.
 --
--- Postgres `create or replace view` cannot reorder columns, so the new
--- columns are APPENDED at the end of the existing column list. Payment
--- instruments (qr_payment_url, transfer_details) remain OMITTED for
--- the same security-protective reasons as 0067.
+-- Postgres `create or replace view` cannot reorder OR ADD columns to an
+-- existing view's projection — only same-shape replacement works. Since
+-- the original 0067 view was created BEFORE the new columns existed,
+-- the only safe path is `drop view ... cascade` followed by a fresh
+-- `create view`. The cascade clears any dependent objects (none today,
+-- but defensive). Payment instruments (qr_payment_url, transfer_details)
+-- remain OMITTED for the same security-protective reasons as 0067.
 -- ============================================================================
 
-create or replace view public.drivers_public
-  with (security_invoker = true)
-as
+drop view if exists public.drivers_public cascade;
+
+create view public.drivers_public
+  with (security_invoker = true) as
   select
     user_id, slug, business_name, bio, whatsapp_e164,
     brand_logo_url, city, area,

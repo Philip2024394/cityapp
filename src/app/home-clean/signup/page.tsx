@@ -8,8 +8,6 @@ import AppNav from '@/components/layout/AppNav'
 import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 
-const BG_URL = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2019,%202026,%2004_57_59%20AM.png?updatedAt=1779141503106'
-
 type AuthState =
   | { status: 'loading' } | { status: 'anon' }
   | { status: 'signedIn'; userId: string } | { status: 'alreadyProvider' }
@@ -44,8 +42,6 @@ export default function HomeCleanSignupPage() {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-[100dvh] text-ink overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(${BG_URL})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-black/80" />
       <AppNav />
       {children}
     </main>

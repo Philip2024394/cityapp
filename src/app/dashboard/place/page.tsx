@@ -32,7 +32,7 @@ import type { PlaceCategory } from '@/lib/places/types'
 const SUBSCRIPTION_IDR     = 38_000
 const ADMIN_WHATSAPP_E164  = '6285183600015' // streetlocallive admin line
 const ADMIN_WA_RENEW = `https://wa.me/${ADMIN_WHATSAPP_E164}?text=${encodeURIComponent(
-  'Halo admin, saya mau bayar/renew langganan listing place IndoCity (Rp 38.000/bulan).',
+  'Halo admin, saya mau bayar/renew langganan listing place Kita2u (Rp 38.000/bulan).',
 )}`
 // Founder will swap this to the real merchant QRIS image when ready. Swap
 // this single constant — no other code changes needed.
@@ -289,7 +289,7 @@ function Dashboard({
         <header className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{row.name || 'Place'}</h1>
           <div className="text-[13px] text-black/60">
-            Place owner dashboard · IndoCity is a software directory — your listing rates and details are self-published.
+            Place owner dashboard · Kita2u is a software directory — your listing rates and details are self-published.
           </div>
         </header>
 
@@ -424,7 +424,7 @@ function SubscriptionBanner({ sub, onPay }: { sub: SubStatus; onPay: () => void 
             </a>
           </div>
           <p className="text-[12px] text-yellow-900/65 leading-snug mt-3">
-            IndoCity is a software directory. We do not custody or process funds.
+            Kita2u is a software directory. We do not custody or process funds.
           </p>
         </div>
       </div>
@@ -1419,7 +1419,7 @@ function FreeDeliveryToggleSection({ row, onSaved }: { row: PlaceRow; onSaved: (
           <p className="text-[13px] text-black/65 leading-relaxed mt-1">
             When on, the customer&rsquo;s cart sheet shows &ldquo;Free delivery
             by venue&rdquo; instead of the bike-rider estimate. You arrange
-            delivery yourself — IndoCity does not book or pay for it.
+            delivery yourself — Kita2u does not book or pay for it.
           </p>
         </div>
         <button
@@ -1782,7 +1782,7 @@ function QrisPaymentModal({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={QRIS_IMAGE_URL}
-                alt="IndoCity QRIS payment code"
+                alt="Kita2u QRIS payment code"
                 width={200}
                 height={200}
                 className="w-[200px] h-[200px] object-contain block"
@@ -1862,7 +1862,7 @@ function QrisPaymentModal({
           </button>
 
           <p className="mt-3 text-[12px] text-black/55 leading-snug">
-            Payment is between you and your bank/wallet. IndoCity is a software directory — we do not custody or process funds.
+            Payment is between you and your bank/wallet. Kita2u is a software directory — we do not custody or process funds.
           </p>
 
           <div className="mt-3 text-center">

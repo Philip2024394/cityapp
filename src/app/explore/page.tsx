@@ -16,7 +16,7 @@ import ExploreClient from './ExploreClient'
 // ============================================================================
 
 export const metadata: Metadata = {
-  title: 'Explore · IndoCity',
+  title: 'Explore · Kita2u',
   description: 'Browse rides, rentals, places, and services across Indonesia.',
 }
 

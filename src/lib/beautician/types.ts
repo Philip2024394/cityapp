@@ -63,6 +63,18 @@ export type BeauticianProviderPublic = Pick<
   instagram_url?:      string | null
   tiktok_url?:         string | null
   facebook_url?:       string | null
+  // mig 0130 — extra socials + custom domain
+  x_url?:              string | null
+  snapchat_url?:       string | null
+  website_url?:        string | null
+  // mig 0131
+  country_code?:            string | null
+  custom_services_offered?: string[] | null
+  // mig 0132 — chat handles
+  telegram_handle?: string | null
+  wechat_id?:       string | null
+  line_id?:         string | null
+  kakaotalk_id?:    string | null
   operating_hours?:    Record<string, string> | null
   certifications?:     string[] | null
   last_active_at?:     string | null
@@ -132,6 +144,11 @@ export type BeauticianServicePhoto = {
    *  simply don't render. */
   before_image_url?: string
   after_image_url?:  string
+  /** Optional promo badge (mig 0131). Rendered top-left on the public
+   *  card with a slow corner-glow animation. Six types live in
+   *  src/lib/badges: discount, new_listing, appointment_only,
+   *  low_stock, bridal_special, trending. */
+  badge?: { type: string; value?: number } | null
 }
 
 export const SERVICE_LABELS = {
@@ -166,6 +183,12 @@ export const BEAUTICIAN_SERVICES_OFFERED = [
   { id: 'microblading',     label: 'Microblading'     },
   { id: 'smoothing',        label: 'Smoothing'        },
   { id: 'permanent_makeup', label: 'Permanent Makeup' },
+  // mig 0133 — "Mixed services" catch-all. When a beautician picks
+  // this, the dashboard banner picker shows every category with
+  // banners (not just those matching the beautician's other picked
+  // services). Lets do-it-all beauticians opt out of the filter
+  // without ticking every chip.
+  { id: 'mixed',            label: 'Mixed services'   },
 ] as const
 
 export type BeauticianServiceOffered = typeof BEAUTICIAN_SERVICES_OFFERED[number]['id']

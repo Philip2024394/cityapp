@@ -158,7 +158,7 @@ export default function BeauticianWelcomePage() {
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`Cek profil saya di IndoCity: ${profileUrl}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`Cek profil saya di Kita2u: ${profileUrl}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-extrabold text-white shrink-0"

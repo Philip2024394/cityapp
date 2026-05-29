@@ -16,11 +16,8 @@ export async function POST(req: Request) {
   if (!next || !['online','busy','offline'].includes(next)) {
     return NextResponse.json({ error: 'invalid_availability' }, { status: 400 })
   }
-  const { data: row } = await admin.from('home_clean_providers').select('id, status').eq('user_id', user.id).maybeSingle()
+  const { data: row } = await admin.from('home_clean_providers').select('id').eq('user_id', user.id).maybeSingle()
   if (!row) return NextResponse.json({ error: 'no_provider_row' }, { status: 404 })
-  if (next === 'online' && row.status !== 'active') {
-    return NextResponse.json({ error: 'not_verified' }, { status: 403 })
-  }
   const { error } = await admin
     .from('home_clean_providers')
     .update({ availability: next, updated_at: new Date().toISOString() })

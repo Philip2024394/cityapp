@@ -152,7 +152,7 @@ export default function RentalSection({
         Your rental rates · Self-published
       </h2>
       <p className="text-[13px] text-black/70 leading-snug">
-        IndoCity displays them as-is — we never set or modify driver prices.
+        Kita2u displays them as-is — we never set or modify driver prices.
         Customers agree the rental terms directly with you.
       </p>
       <form onSubmit={onSubmit} className="space-y-3">

@@ -554,10 +554,10 @@ export default function SignupCarPage() {
             <>
               <Header
                 title="Your published rates"
-                sub="These are YOUR rates. IndoCity displays them as-is — we never set or modify driver prices."
+                sub="These are YOUR rates. Kita2u displays them as-is — we never set or modify driver prices."
               />
               <ComplianceNote>
-                IndoCity is a software directory. Customers select drivers and agree fares directly. We never set, compute, or modify driver prices.
+                Kita2u is a software directory. Customers select drivers and agree fares directly. We never set, compute, or modify driver prices.
               </ComplianceNote>
               <Field label="Price per km (Rp)" hint="What you charge per kilometre.">
                 <input
@@ -599,7 +599,7 @@ export default function SignupCarPage() {
             <>
               <Header
                 title="Payment methods accepted"
-                sub="Tell customers how you accept payment. IndoCity never handles funds — payments go directly between you and the customer."
+                sub="Tell customers how you accept payment. Kita2u never handles funds — payments go directly between you and the customer."
               />
               <Toggle label="Accept cash" checked={acceptsCash} onChange={setAcceptsCash} />
               <Toggle label="Accept QR (QRIS)" checked={acceptsQr} onChange={setAcceptsQr} />
@@ -674,8 +674,8 @@ export default function SignupCarPage() {
                 />
                 <span className="text-[13px] text-black/75 leading-relaxed">
                   By creating my listing, I confirm I have a valid <strong className="text-black">SIM A</strong> and <strong className="text-black">STNK</strong> for the vehicle above.
-                  IndoCity is a software directory and does not verify driving licences.
-                  I am an independent driver business — not an employee or contractor of IndoCity.
+                  Kita2u is a software directory and does not verify driving licences.
+                  I am an independent driver business — not an employee or contractor of Kita2u.
                 </span>
               </label>
 

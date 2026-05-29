@@ -3,10 +3,10 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
+import CountryPicker from '@/components/dashboard/CountryPicker'
 import {
   ALL_SPECIALTIES, SPECIALTY_LABELS, MAX_HANDYMAN_SPECIALTIES,
   type HandymanProvider, type HandymanAvailability, type HandymanSpecialty,
@@ -173,9 +173,13 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
     instagram_url?:      string | null
     tiktok_url?:         string | null
     facebook_url?:       string | null
+    x_url?:              string | null
+    snapchat_url?:       string | null
+    website_url?:        string | null
     operating_hours?:    Record<string, string> | null
     certifications?:     string[] | null
     languages?:          string[] | null
+    country_code?:       string | null
   }
   const [f, setF] = useState<{
     display_name: string
@@ -189,15 +193,18 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
     city: string
     service_area_notes: string
     profile_image_url: string
-    ktp_image_url: string
     cover_image_url:    string | null
     gallery_image_urls: string[]
     instagram_url:      string | null
     tiktok_url:         string | null
     facebook_url:       string | null
+    x_url:              string | null
+    snapchat_url:       string | null
+    website_url:        string | null
     operating_hours:    Record<string, string> | null
     certifications:     string[]
     languages:          string[]
+    country_code:       string
   }>({
     display_name: p.display_name,
     years_experience: p.years_experience,
@@ -210,15 +217,18 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
     city: p.city ?? '',
     service_area_notes: p.service_area_notes ?? '',
     profile_image_url: p.profile_image_url ?? '',
-    ktp_image_url: p.ktp_image_url ?? '',
     cover_image_url:    pe.cover_image_url ?? null,
     gallery_image_urls: pe.gallery_image_urls ?? [],
     instagram_url:      pe.instagram_url ?? null,
     tiktok_url:         pe.tiktok_url ?? null,
     facebook_url:       pe.facebook_url ?? null,
+    x_url:              pe.x_url ?? null,
+    snapchat_url:       pe.snapchat_url ?? null,
+    website_url:        pe.website_url ?? null,
     operating_hours:    pe.operating_hours ?? null,
     certifications:     pe.certifications ?? [],
     languages:          pe.languages ?? [],
+    country_code:       pe.country_code ?? 'ID',
   })
   const [saving, setSaving] = useState(false)
   const [flash, setFlash] = useState(false)
@@ -250,15 +260,18 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
           city: f.city,
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
-          ktp_image_url: f.ktp_image_url,
           cover_image_url:    f.cover_image_url,
           gallery_image_urls: f.gallery_image_urls,
           instagram_url:      f.instagram_url,
           tiktok_url:         f.tiktok_url,
           facebook_url:       f.facebook_url,
+          x_url:              f.x_url,
+          snapchat_url:       f.snapchat_url,
+          website_url:        f.website_url,
           operating_hours:    f.operating_hours,
           certifications:     f.certifications,
           languages:          f.languages,
+          country_code:       f.country_code,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -302,11 +315,11 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
         <input type="checkbox" checked={f.has_own_tools} onChange={(e) => upd('has_own_tools', e.target.checked)} className="accent-brand w-4 h-4" />
         Own tools
       </label>
+      <CountryPicker value={f.country_code} onChange={(code) => upd('country_code', code)} />
       <input type="tel"  value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
       {p.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={p.user_id} />}
-      {p.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={p.user_id} />}
       {p.user_id && (
         <BannerLibraryPicker
           themeHex={'#FACC15'}
@@ -329,6 +342,9 @@ function EditForm({ p, onSaved }: { p: HandymanProvider; onSaved: () => void }) 
             instagram_url:      f.instagram_url,
             tiktok_url:         f.tiktok_url,
             facebook_url:       f.facebook_url,
+            x_url:              f.x_url,
+            snapchat_url:       f.snapchat_url,
+            website_url:        f.website_url,
             operating_hours:    f.operating_hours,
             certifications:     f.certifications,
             languages:          f.languages,

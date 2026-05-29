@@ -12,6 +12,10 @@ const PUBLIC_COLS = [
   // mig 0072 universal profile fields
   'cover_image_url','gallery_image_urls','languages',
   'instagram_url','tiktok_url','facebook_url',
+  // mig 0130 — extra socials + custom domain
+  'x_url','snapchat_url','website_url',
+  // mig 0132 — chat handles
+  'telegram_handle','wechat_id','line_id','kakaotalk_id',
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',
@@ -22,6 +26,8 @@ const PUBLIC_COLS = [
   'has_physical_location','latitude','longitude',
   // mig 0091 — customisable hero overlay text
   'hero_text',
+  // mig 0131 — country + custom services
+  'country_code','custom_services_offered',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

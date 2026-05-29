@@ -418,23 +418,6 @@ function Shell({ children }: { children: React.ReactNode }) {
       className="relative min-h-[100dvh]"
       style={{ color: '#0A0A0A' }}
     >
-      {/* Backdrop image — same one used on /beautician + /explore + landing for brand continuity */}
-      <div
-        aria-hidden
-        className="fixed inset-0 -z-10 pointer-events-none"
-        style={{
-          backgroundImage: `url('https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2011_47_55%20PM.png')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      />
-      {/* Soft white scrim at the top so the dark wordmark stays readable on any image */}
-      <div
-        aria-hidden
-        className="fixed inset-x-0 top-0 h-32 -z-10 pointer-events-none bg-gradient-to-b from-white/65 to-transparent"
-      />
-
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" aria-label="IndoCity home" className="inline-block hover:opacity-85 transition">

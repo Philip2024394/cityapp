@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
+import CountryPicker from '@/components/dashboard/CountryPicker'
 import type { LaundryProvider, LaundryAvailability } from '@/lib/laundry/types'
 
 
@@ -40,7 +40,7 @@ export default function LaundryDashboardPage() {
       const j = await r.json() as { ok?: boolean; error?: string }
       if (!j.ok) {
         setProvider({ ...provider, availability: prev })
-        alert(j.error === 'not_verified' ? 'Awaiting admin verification.' : 'Could not update availability.')
+        alert('Could not update availability.')
       }
     } catch { setProvider({ ...provider, availability: prev }) }
   }
@@ -74,12 +74,6 @@ export default function LaundryDashboardPage() {
         <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{provider.display_name}</h1>
           <div className="text-[12px] text-black/60 font-mono mb-3">{provider.slug}</div>
-
-          {provider.status !== 'active' && (
-            <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 text-[12px] px-3 py-2 mb-3">
-              <strong>Awaiting verification.</strong> Profile not yet listed on marketplace.
-            </div>
-          )}
 
           <div className="grid grid-cols-3 gap-2">
             {(['online','busy','offline'] as const).map((a) => {
@@ -159,9 +153,13 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
     instagram_url?:      string | null
     tiktok_url?:         string | null
     facebook_url?:       string | null
+    x_url?:              string | null
+    snapchat_url?:       string | null
+    website_url?:        string | null
     operating_hours?:    Record<string, string> | null
     certifications?:     string[] | null
     languages?:          string[] | null
+    country_code?:       string | null
   }
   const [f, setF] = useState({
     display_name: provider.display_name,
@@ -176,15 +174,18 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
     city: provider.city ?? '',
     service_area_notes: provider.service_area_notes ?? '',
     profile_image_url: provider.profile_image_url ?? '',
-    ktp_image_url: provider.ktp_image_url ?? '',
     cover_image_url:    (p.cover_image_url ?? '') as string | null,
     gallery_image_urls: p.gallery_image_urls ?? [],
     instagram_url:      (p.instagram_url ?? '') as string | null,
     tiktok_url:         (p.tiktok_url ?? '')    as string | null,
     facebook_url:       (p.facebook_url ?? '')  as string | null,
+    x_url:              (p.x_url ?? '')         as string | null,
+    snapchat_url:       (p.snapchat_url ?? '')  as string | null,
+    website_url:        (p.website_url ?? '')   as string | null,
     operating_hours:    (p.operating_hours ?? null) as Record<string, string> | null,
     certifications:     p.certifications ?? [],
     languages:          p.languages ?? [],
+    country_code:       p.country_code ?? 'ID',
   })
   const [saving, setSaving] = useState(false)
   const [flash, setFlash] = useState(false)
@@ -210,15 +211,18 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
           city: f.city,
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
-          ktp_image_url: f.ktp_image_url,
           cover_image_url:    f.cover_image_url,
           gallery_image_urls: f.gallery_image_urls,
           instagram_url:      f.instagram_url,
           tiktok_url:         f.tiktok_url,
           facebook_url:       f.facebook_url,
+          x_url:              f.x_url,
+          snapchat_url:       f.snapchat_url,
+          website_url:        f.website_url,
           operating_hours:    f.operating_hours,
           certifications:     f.certifications,
           languages:          f.languages,
+          country_code:       f.country_code,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -242,11 +246,11 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
         <input type="number" step="0.1" min="0" value={f.min_kg as string | number} onChange={(e) => upd('min_kg', e.target.value)} placeholder="Min kg" className={inputCls} />
         <input type="number" min="1" max="168" value={f.turnaround_hours as string | number} onChange={(e) => upd('turnaround_hours', e.target.value)} placeholder="Turnaround (h)" className={inputCls} />
       </div>
+      <CountryPicker value={f.country_code} onChange={(code) => upd('country_code', code)} />
       <input type="tel" value={f.whatsapp_e164} onChange={(e) => upd('whatsapp_e164', e.target.value)} className={inputCls} />
       <input type="text" value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="City" className={inputCls} />
       <input type="text" value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Service area" className={inputCls} />
       {provider.user_id && <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={provider.user_id} />}
-      {provider.user_id && <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={provider.user_id} />}
       {provider.user_id && (
         <UniversalProfileExtrasEditor
           userId={provider.user_id}
@@ -256,6 +260,9 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
             instagram_url:      f.instagram_url,
             tiktok_url:         f.tiktok_url,
             facebook_url:       f.facebook_url,
+            x_url:              f.x_url,
+            snapchat_url:       f.snapchat_url,
+            website_url:        f.website_url,
             operating_hours:    f.operating_hours,
             certifications:     f.certifications,
             languages:          f.languages,

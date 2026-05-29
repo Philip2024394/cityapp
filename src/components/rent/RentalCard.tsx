@@ -66,7 +66,7 @@ function transmissionLabel(t: BikeRental['transmission']): string {
 function whatsappLink(e164: string, name: string, brand: string, model: string): string {
   const phone = e164.replace(/[^\d]/g, '')
   const text = encodeURIComponent(
-    `Halo ${name}, saya tertarik dengan rental ${brand} ${model} di IndoCity. Apakah masih tersedia?`,
+    `Halo ${name}, saya tertarik dengan rental ${brand} ${model} di Kita2u. Apakah masih tersedia?`,
   )
   return `https://wa.me/${phone}?text=${text}`
 }

@@ -109,7 +109,7 @@ function LoginInner() {
           <div>
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-              alt="IndoCity"
+              alt="Kita2u"
               className="h-10 sm:h-12 w-auto mb-3"
               loading="eager"
             />

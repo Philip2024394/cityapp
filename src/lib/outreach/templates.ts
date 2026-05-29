@@ -23,7 +23,7 @@ export const WHATSAPP_TEMPLATES: Record<OutreachCategory, Template[]> = {
   bike_rental: [
     {
       id: 'rental-id-1', lang: 'id', label: 'Bahasa — intro singkat',
-      body: `Halo {{name}}, saya Philip dari IndoCity.
+      body: `Halo {{name}}, saya Philip dari Kita2u.
 
 Kami platform baru yang list rental motor di {{city}} untuk turis lokal & asing — kontak langsung lewat WhatsApp, 0% komisi.
 
@@ -33,7 +33,7 @@ Boleh saya kirim contoh listing-nya?`,
     },
     {
       id: 'rental-en-1', lang: 'en', label: 'English — quick intro',
-      body: `Hi {{name}}, I'm Philip from IndoCity.
+      body: `Hi {{name}}, I'm Philip from Kita2u.
 
 We're a new listing platform for bike rentals in {{city}} — direct WhatsApp contact, 0% commission per booking.
 
@@ -45,7 +45,7 @@ Can I send you an example listing?`,
   driver: [
     {
       id: 'driver-id-1', lang: 'id', label: 'Bahasa — untuk driver',
-      body: `Bro/Sis {{name}}, saya Philip dari IndoCity.
+      body: `Bro/Sis {{name}}, saya Philip dari Kita2u.
 
 Platform untuk rider independen — kamu yang set harga, customer kontak kamu langsung lewat WhatsApp. Gak ada komisi per order.
 
@@ -57,7 +57,7 @@ Mau saya kirim link daftarnya?`,
   massage: [
     {
       id: 'massage-id-1', lang: 'id', label: 'Bahasa — terapis',
-      body: `Halo {{name}}, saya Philip dari IndoCity Wellness.
+      body: `Halo {{name}}, saya Philip dari Kita2u Wellness.
 
 Kami list terapis pijat untuk panggilan ke hotel dan rumah di {{city}}. Customer kontak langsung lewat WhatsApp, harga 60/90/120 menit kamu yang atur.
 
@@ -69,7 +69,7 @@ Boleh saya jelaskan lebih lanjut?`,
   tour_guide: [
     {
       id: 'tour-id-1', lang: 'id', label: 'Bahasa — tour guide',
-      body: `Halo {{name}}, saya Philip dari IndoCity Tours.
+      body: `Halo {{name}}, saya Philip dari Kita2u Tours.
 
 Platform untuk tour guide independen di {{city}} — pasang spesialisasi, harga harian, customer kontak langsung via WhatsApp.
 
@@ -81,9 +81,9 @@ Mau saya kirim contoh profil?`,
   partner_venue: [
     {
       id: 'partner-id-1', lang: 'id', label: 'Bahasa — hotel/villa partner',
-      body: `Halo {{name}}, saya Philip dari IndoCity Partner Program.
+      body: `Halo {{name}}, saya Philip dari Kita2u Partner Program.
 
-Gratis untuk hotel/villa: cetak QR di lobby, tamu kamu booking kurir/rental/massage via IndoCity, kamu dapat 8% komisi otomatis tiap booking.
+Gratis untuk hotel/villa: cetak QR di lobby, tamu kamu booking kurir/rental/massage via Kita2u, kamu dapat 8% komisi otomatis tiap booking.
 
 Driver bayar mingguan ke rekening kamu langsung — kami cuma platform ledger.
 

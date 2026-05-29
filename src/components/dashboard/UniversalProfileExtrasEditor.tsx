@@ -49,6 +49,15 @@ export type UniversalProfileExtras = {
   instagram_url?:      string | null
   tiktok_url?:         string | null
   facebook_url?:       string | null
+  // mig 0130 — extra socials + custom domain
+  x_url?:              string | null
+  snapchat_url?:       string | null
+  website_url?:        string | null
+  // mig 0132 — chat handles
+  telegram_handle?:    string | null
+  wechat_id?:          string | null
+  line_id?:            string | null
+  kakaotalk_id?:       string | null
   operating_hours?:    Record<string, string> | null
   certifications?:     string[]
   languages?:          string[]
@@ -138,6 +147,33 @@ export default function UniversalProfileExtrasEditor({
           className={inputCls} />
         <input type="url" placeholder="https://facebook.com/yourpage" value={value.facebook_url ?? ''}
           onChange={(e) => onChange({ ...value, facebook_url: e.target.value.trim() || null })}
+          className={inputCls} />
+        <input type="url" placeholder="https://x.com/yourhandle" value={value.x_url ?? ''}
+          onChange={(e) => onChange({ ...value, x_url: e.target.value.trim() || null })}
+          className={inputCls} />
+        <input type="url" placeholder="https://snapchat.com/add/yourhandle" value={value.snapchat_url ?? ''}
+          onChange={(e) => onChange({ ...value, snapchat_url: e.target.value.trim() || null })}
+          className={inputCls} />
+        <input type="url" placeholder="https://your-domain.com" value={value.website_url ?? ''}
+          onChange={(e) => onChange({ ...value, website_url: e.target.value.trim() || null })}
+          className={inputCls} />
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+          Chat handles (optional) — WhatsApp lives in the main contact field
+        </div>
+        <input type="text" placeholder="Telegram — @handle, t.me URL, or +phone" value={value.telegram_handle ?? ''}
+          onChange={(e) => onChange({ ...value, telegram_handle: e.target.value.trim() || null })}
+          className={inputCls} />
+        <input type="text" placeholder="WeChat ID" value={value.wechat_id ?? ''}
+          onChange={(e) => onChange({ ...value, wechat_id: e.target.value.trim() || null })}
+          className={inputCls} />
+        <input type="text" placeholder="Line ID" value={value.line_id ?? ''}
+          onChange={(e) => onChange({ ...value, line_id: e.target.value.trim() || null })}
+          className={inputCls} />
+        <input type="text" placeholder="KakaoTalk ID" value={value.kakaotalk_id ?? ''}
+          onChange={(e) => onChange({ ...value, kakaotalk_id: e.target.value.trim() || null })}
           className={inputCls} />
       </div>
 

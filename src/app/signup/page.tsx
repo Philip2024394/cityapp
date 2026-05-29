@@ -65,7 +65,7 @@ export default function SignupPage() {
       return
     }
     if (!age18) {
-      setError('You must confirm you are 18 years or older to use IndoCity')
+      setError('You must confirm you are 18 years or older to use Kita2u')
       return
     }
     const supabase = getBrowserSupabase()
@@ -162,7 +162,7 @@ export default function SignupPage() {
               <>
                 <div>
                   <div className="chip mb-3"><Sparkles className="w-3.5 h-3.5" /> {TRIAL_LABEL_EN} · No card needed</div>
-                  <h1 className="text-2xl font-extrabold">Welcome to IndoCity</h1>
+                  <h1 className="text-2xl font-extrabold">Welcome to <span style={{ color: '#0A0A0A' }}>Kita</span><span style={{ color: '#FACC15' }}>2u</span></h1>
                   <p className="text-muted text-[14px] mt-1">Pick what you want to do.</p>
                 </div>
 
@@ -231,7 +231,7 @@ export default function SignupPage() {
                       />
                       <span className="text-[13px] text-muted leading-relaxed">
                         I confirm I am an <strong className="text-ink">independent rider business</strong>,
-                        not an employee or contractor of IndoCity. I am responsible for my own
+                        not an employee or contractor of Kita2u. I am responsible for my own
                         licences (SIM C, STNK), vehicle, insurance, taxes, and conduct. I agree to the{' '}
                         <Link href="/terms" target="_blank" className="text-brand hover:underline">Terms</Link>{' '}
                         and{' '}
@@ -343,7 +343,7 @@ export default function SignupPage() {
             <div className="card p-4">
               <div className="text-[12px] text-dim uppercase tracking-wider font-bold mb-2">After trial</div>
               <div className="text-[14px]">
-                <span className="font-extrabold text-brand">Rp 38.000/month</span> or <span className="font-extrabold text-brand">Rp 350.000/year</span> · paid directly to IndoCity. Cancel anytime.
+                <span className="font-extrabold text-brand">Rp 38.000/month</span> or <span className="font-extrabold text-brand">Rp 350.000/year</span> · paid directly to Kita2u. Cancel anytime.
               </div>
             </div>
           )}

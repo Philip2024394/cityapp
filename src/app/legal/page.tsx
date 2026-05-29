@@ -6,8 +6,8 @@ import { getLegalEntity } from '@/lib/legal/entity'
 // links out to the 3 pillars: About (positioning), Terms, Privacy.
 // Plus a short, public-facing summary of our regulatory posture.
 export const metadata = {
-  title: 'Legal info · IndoCity',
-  description: 'How IndoCity operates as a software platform under Indonesian law.',
+  title: 'Legal info · Kita2u',
+  description: 'How Kita2u operates as a software platform under Indonesian law.',
 }
 
 export default function LegalIndexPage() {
@@ -28,14 +28,14 @@ export default function LegalIndexPage() {
         <div>
           <h1 className="text-3xl font-extrabold">Legal information</h1>
           <p className="text-muted text-[14px] mt-2">
-            How IndoCity operates and what we are responsible for under Indonesian law.
+            How Kita2u operates and what we are responsible for under Indonesian law.
           </p>
         </div>
 
         <Tile
           href="/about"
           icon={<Info className="w-5 h-5 text-brand" />}
-          title="About IndoCity"
+          title="About Kita2u"
           sub="What we are + what we're not"
         />
         <Tile
@@ -54,7 +54,7 @@ export default function LegalIndexPage() {
         <section className="card p-5 space-y-3 text-[14px] leading-relaxed">
           <h2 className="font-extrabold text-[16px]">Our regulatory position</h2>
           <p className="text-ink/85">
-            IndoCity is a booking software platform for independent motorcycle riders. We do
+            Kita2u is a booking software platform for independent motorcycle riders. We do
             not own vehicles, employ riders, set prices, assign customers to riders, process
             payments, or take commission. Each rider on this directory is an independent business,
             solely responsible for their own licences, vehicle, insurance, taxes, and conduct.

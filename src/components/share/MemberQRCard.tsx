@@ -275,8 +275,8 @@ export function MemberQRActions({
 
   async function onShare() {
     const data: ShareData = {
-      title: shareTitle ?? `${displayName} · IndoCity`,
-      text:  shareText  ?? `Find me on IndoCity — scan the QR or visit ${profileUrl}`,
+      title: shareTitle ?? `${displayName} · Kita2u`,
+      text:  shareText  ?? `Find me on Kita2u — scan the QR or visit ${profileUrl}`,
       url:   profileUrl,
     }
     if (navigator.share) {

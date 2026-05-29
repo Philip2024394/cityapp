@@ -60,7 +60,7 @@ export default function DashboardRenewPage() {
 
           <header className="space-y-2">
             <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight leading-tight">
-              Renew <span className="gradient-text">IndoCity</span>
+              Renew <span style={{ color: '#0A0A0A' }}>Kita</span><span style={{ color: '#FACC15' }}>2u</span>
             </h1>
             <p className="text-[13px] text-muted leading-snug">
               Bayar Rp 38.000/bulan atau Rp 350.000/tahun lewat QRIS. Scan QR,
@@ -87,7 +87,7 @@ export default function DashboardRenewPage() {
                   <div className="text-[13px] font-extrabold text-ink">Termasuk dalam subscription</div>
                 </div>
                 <ul className="text-[12px] text-bg/80 leading-snug space-y-1">
-                  <li>• Tampil di /cari/rider untuk semua pelanggan IndoCity</li>
+                  <li>• Tampil di /cari/rider untuk semua pelanggan Kita2u</li>
                   <li>• Push notification untuk setiap booking customer</li>
                   <li>• 1 listing tour guide gratis (di /tour) — bonus driver perk</li>
                   <li>• Akses dashboard hotspots + ROI tracking</li>
