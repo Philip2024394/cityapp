@@ -35,10 +35,28 @@ const DEFAULT_HERO = {
 }
 const DEFAULT_HERO_IMAGE = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 
-// Empty banner library — tour vertical has no curated banners yet, but
-// the picker still renders the "Upload my own" tile so guides can
-// supply their own cover photo.
-const TOUR_BANNER_LIBRARY: BannerLibrary = {}
+// Tour banner library — same shape as beautician's BANNER_LIBRARY and
+// handyman's HANDYMAN_BANNER_LIBRARY. Default theme amber (#F59E0B).
+// Filenames with a clear category hint (rice paddy, jimbaran beach)
+// sit under the matching TourServiceId; opaque uploads sit under
+// 'mixed' so they show as universally available.
+const TOUR_BANNER_LIBRARY: BannerLibrary = {
+  '#F59E0B': {
+    rice_paddy: [
+      'https://ik.imagekit.io/7grri5v7d/indonisea%20bali%20paddie.png?updatedAt=1761742312003',
+      'https://ik.imagekit.io/7grri5v7d/indonisea%20bali%20rice%20er.png?updatedAt=1761742046025',
+      'https://ik.imagekit.io/7grri5v7d/indonisea%20bali%20rice%20fields.png?updatedAt=1761741529395',
+    ],
+    beaches: [
+      'https://ik.imagekit.io/7grri5v7d/jimbaran%20indonisea.png?updatedAt=1761742702514',
+    ],
+    mixed: [
+      'https://ik.imagekit.io/7grri5v7d/strehdjdewweedsdsEESSSSSS.png?updatedAt=1773523933499',
+      'https://ik.imagekit.io/7grri5v7d/strehdjdewwee.png?updatedAt=1773522458062',
+      'https://ik.imagekit.io/7grri5v7d/strehdjdew.png?updatedAt=1773521508514',
+    ],
+  },
+}
 
 type TourHeroEffect = 'none' | 'shimmer' | 'dance' | 'underline'
 type TourHeroText = {

@@ -5,10 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Star, BadgeCheck, Award, MapPin, Bike, Car as CarIcon,
   Share2, Link2, X, ChevronLeft, MessageCircle, ArrowRight,
-  ShoppingBag, Minus, Plus, Trash2,
 } from 'lucide-react'
-import { haversineKm } from '@/lib/geo/haversine'
-import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
   PortfolioDetailPopup,
@@ -22,7 +19,9 @@ import VisitUsPanel, {
 } from '@/components/profile/VisitUsPanel'
 import { CATEGORIES } from '@/lib/places/categories'
 import type { PlaceCategory } from '@/lib/places/types'
-import { usePlaceCart, type PlaceCartItem } from '@/components/profile/usePlaceCart'
+import { useVendorCart } from '@/components/cart/useVendorCart'
+import VendorCartButton from '@/components/cart/VendorCartButton'
+import VendorCartSheet from '@/components/cart/VendorCartSheet'
 
 // =============================================================================
 // PlaceProfileShell — 1:1 visual + functional mirror of
@@ -110,21 +109,13 @@ export type PlaceProfileShellProps = {
 }
 
 // =============================================================================
-// Bike-delivery estimate — display-only constants.
-//
-// `DEFAULT_BIKE_PER_KM` is a market-norm hint (2,500 IDR/km) used as the
-// per-km multiplier when /api/drivers/lowest-fare doesn't return a usable
-// per-km rate. The API currently returns min_fee (a flat floor), not a
-// per-km rate, so we use this constant as a transparent default. Founder
-// can revisit when the API exposes a real per-km aggregation.
-//
-// `DEFAULT_MIN_FEE_IDR` is the fallback floor when the API call fails
-// entirely — customers should still see a sensible estimate even if the
-// network blip means we couldn't fetch the actual drivers' min_fee.
+// Bike-delivery estimate constants (DEFAULT_BIKE_PER_KM / DEFAULT_MIN_FEE_IDR
+// / DELIVERY_HIDE_KEY) were removed alongside the in-file PlaceCartSheet
+// during the vendor-cart generalization. The generic VendorCartSheet
+// doesn't render a delivery row — if the food UX needs the estimate
+// back, layer it on top at the places call site rather than reviving a
+// places-specific sheet here.
 // =============================================================================
-const DEFAULT_BIKE_PER_KM = 2500
-const DEFAULT_MIN_FEE_IDR = 10_000
-const DELIVERY_HIDE_KEY = 'indocity:cart:delivery-estimate-hidden'
 
 // Map a PlaceCategory to the offers-section heading. Mirrors the
 // beautician page's "Portfolio" / "Services Provided" headings.
@@ -247,14 +238,16 @@ export default function PlaceProfileShell({
     place.category === 'club'
 
   // Cart state — per-place localStorage cart for the WhatsApp handoff.
-  const cart = usePlaceCart(place.id)
+  // Now backed by the vendor-agnostic useVendorCart with a composite
+  // key (vendorType:vendorId) so the same hook serves every vertical.
+  const cart = useVendorCart(`place:${place.id}`)
   const [cartOpen, setCartOpen] = useState(false)
 
   // Auto-clear cart on unmount (founder direction: leaving the profile
   // page resets the cart so a customer who navigates away never sees
   // stale items on their next visit). The "Clear cart" button is gone;
   // cleanup happens via unmount + a tab-hide listener so closing the
-  // tab also clears. `clear` is a stable useCallback in usePlaceCart so
+  // tab also clears. `clear` is a stable useCallback in useVendorCart so
   // capturing it once at mount is safe.
   const clearRef = useRef(cart.clear)
   clearRef.current = cart.clear
@@ -362,31 +355,11 @@ export default function PlaceProfileShell({
             <Share2 className="w-4 h-4" strokeWidth={2.5} />
           </button>
           {IS_FOOD_PLACE && (
-            <button
-              type="button"
+            <VendorCartButton
+              totalQty={cart.totalQty}
+              themeColor={BRAND_YELLOW}
               onClick={() => setCartOpen(true)}
-              aria-label={cart.totalQty > 0
-                ? `Open cart (${cart.totalQty} item${cart.totalQty === 1 ? '' : 's'})`
-                : 'Open cart'}
-              className="relative w-10 h-10 rounded-full flex items-center justify-center text-black shadow-md active:scale-[0.96] transition"
-              style={{
-                background: 'rgba(255,255,255,0.92)',
-                backdropFilter: 'blur(6px)',
-                WebkitBackdropFilter: 'blur(6px)',
-                minWidth: 44, minHeight: 44,
-              }}
-            >
-              <ShoppingBag className="w-4 h-4" strokeWidth={2.5} />
-              {cart.totalQty > 0 && (
-                <span
-                  aria-hidden
-                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-black leading-none shadow"
-                  style={{ background: BRAND_YELLOW, color: BRAND_NAVY, border: '1.5px solid #FFFFFF' }}
-                >
-                  {cart.totalQty > 99 ? '99+' : cart.totalQty}
-                </span>
-              )}
-            </button>
+            />
           )}
         </div>
 
@@ -958,56 +931,31 @@ export default function PlaceProfileShell({
         )
       })()}
 
-      {/* CART SHEET — bottom-sheet style modal listing every line in
-          the cart. Total is a simple sum of offer.price_idr × qty —
-          Kita2u never adds delivery, service, or platform fees. The
-          primary CTA builds an Indonesian WhatsApp message and hands
-          off to the venue's WhatsApp; we never see the conversation.
-          Gated on IS_FOOD_PLACE — non-food places never open this. */}
-      {IS_FOOD_PLACE && cartOpen && (
-        <PlaceCartSheet
-          placeName={place.name}
-          whatsappE164={place.whatsappE164}
-          contactEnabled={contactEnabled}
-          freeDelivery={freeDelivery}
-          venueLat={place.lat}
-          venueLng={place.lng}
+      {/* CART SHEET — vendor-agnostic VendorCartSheet handles the line
+          list + WhatsApp handoff. Places never run a paid checkout (per
+          founder direction: Kita2u never touches money for food orders),
+          so paymentProvider stays 'none' and WhatsApp is the only CTA.
+          Gated on IS_FOOD_PLACE — non-food categories never open this.
+          When contactEnabled=false we hide the WA fallback by passing a
+          null whatsappE164 so the sheet renders the "vendor doesn't
+          accept WhatsApp orders" hint. */}
+      {IS_FOOD_PLACE && (
+        <VendorCartSheet
+          open={cartOpen}
+          onClose={() => setCartOpen(false)}
           items={cart.items}
+          setQty={cart.setQty}
+          remove={cart.remove}
+          clear={cart.clear}
           totalIdr={cart.totalIdr}
           totalQty={cart.totalQty}
-          theme={theme}
-          onSetQty={cart.setQty}
-          onRemove={cart.remove}
-          onClear={() => { cart.clear() }}
-          onClose={() => setCartOpen(false)}
-          onSend={() => {
-            // Build the order body. Each line: "• Name ×qty (Rp price) — Rp lineTotal"
-            // The trailing "Alamat saya" / "Catatan" lines are blank so
-            // the customer fills them in inside WhatsApp itself — no
-            // address auto-detection per spec.
-            const linesArr = cart.items.map((it) => {
-              const unit  = formatRpExact(it.price_idr)
-              const line  = formatRpExact(it.price_idr * it.qty)
-              return `• ${it.name}  ×${it.qty}  (${unit}) — ${line}`
-            })
-            const body = [
-              `Halo! Saya pesan dari Kita2u · ${place.name}`,
-              '',
-              ...linesArr,
-              '',
-              `Total: ${formatRpExact(cart.totalIdr)}`,
-              'Alamat saya: ____________',
-              'Catatan: ____________',
-            ].join('\n')
-            const digits = (place.whatsappE164 || '').replace(/[^\d]/g, '')
-            if (!digits) return
-            const url = `https://wa.me/${digits}?text=${encodeURIComponent(body)}`
-            window.open(url, '_blank', 'noopener,noreferrer')
-            // Keep the cart populated so the customer can re-send if
-            // WhatsApp eats the prefill on some Android builds. They
-            // can hit Clear cart manually when they're done.
-            setCartOpen(false)
-          }}
+          themeColor={theme}
+          currencySymbol="Rp"
+          vendorName={place.name}
+          whatsappE164={contactEnabled ? place.whatsappE164 : null}
+          paymentProvider="none"
+          vendorType="place"
+          vendorId={place.id}
         />
       )}
 
@@ -1031,17 +979,6 @@ export default function PlaceProfileShell({
       )}
     </Shell>
   )
-}
-
-// =============================================================================
-// Helpers — exact-rupiah formatter used by the WhatsApp message body and
-// the cart sheet total. We DON'T re-use the abbreviated `Start from` label
-// here because the customer needs to see the precise amount they're
-// agreeing to pay (Rp 102,000 not "Rp 102k").
-// =============================================================================
-function formatRpExact(amount: number): string {
-  if (!Number.isFinite(amount) || amount <= 0) return 'Rp 0'
-  return `Rp ${Math.round(amount).toLocaleString('id-ID')}`
 }
 
 // =============================================================================
@@ -1102,408 +1039,6 @@ function PlaceReviewsPanel({
 }
 
 // =============================================================================
-// PlaceCartSheet — bottom-anchored review + WhatsApp handoff sheet.
-// Empty state, line items with steppers + remove, total, send + clear.
-//
-// The "Send via WhatsApp" CTA is disabled when the venue has opted out
-// of contact (contactEnabled=false) or has no whatsapp_e164 — the
-// tooltip explains why, no silent failure.
-// =============================================================================
-function PlaceCartSheet({
-  placeName, whatsappE164, contactEnabled, freeDelivery,
-  venueLat, venueLng, items, totalIdr, totalQty,
-  theme, onSetQty, onRemove, onClear, onClose, onSend,
-}: {
-  placeName:       string
-  whatsappE164:    string | null
-  contactEnabled:  boolean
-  freeDelivery:    boolean
-  venueLat:        number
-  venueLng:        number
-  items:           PlaceCartItem[]
-  totalIdr:        number
-  totalQty:        number
-  theme:           string
-  onSetQty:        (offer_id: string, qty: number) => void
-  onRemove:        (offer_id: string) => void
-  onClear:         () => void
-  onClose:         () => void
-  onSend:          () => void
-}) {
-  const empty = items.length === 0
-  const sendDisabled = empty || !contactEnabled || !whatsappE164
-  const sendDisabledReason = !contactEnabled || !whatsappE164
-    ? "This venue doesn't accept WhatsApp orders."
-    : empty
-      ? 'Add an item to send an order.'
-      : ''
-
-  // ----------------------------------------------------------------------
-  // Delivery estimate row state — only relevant when venue does NOT
-  // offer free delivery. We intentionally DON'T auto-request GPS — the
-  // customer taps a "Tap to estimate" CTA inside the row, which fires
-  // geo.request() and then triggers the lowest-fare fetch. Hidden via
-  // a localStorage flag so the customer can opt out per device.
-  // ----------------------------------------------------------------------
-  const geo = useGeolocation(false)
-  const [estimateHidden, setEstimateHidden] = useState(false)
-  const [perKmIdr, setPerKmIdr] = useState<number>(DEFAULT_BIKE_PER_KM)
-  const [minFeeIdr, setMinFeeIdr] = useState<number>(DEFAULT_MIN_FEE_IDR)
-  const [estimateLoading, setEstimateLoading] = useState(false)
-  const [estimateError, setEstimateError] = useState<string | null>(null)
-  const [estimateFetched, setEstimateFetched] = useState(false)
-
-  // Read the hide flag on mount. Defensive — localStorage can throw
-  // in private/incognito modes; we just default to "show".
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const v = window.localStorage.getItem(DELIVERY_HIDE_KEY)
-      if (v === '1') setEstimateHidden(true)
-    } catch { /* ignore */ }
-  }, [])
-
-  function persistHidden(next: boolean) {
-    setEstimateHidden(next)
-    if (typeof window === 'undefined') return
-    try {
-      if (next) window.localStorage.setItem(DELIVERY_HIDE_KEY, '1')
-      else      window.localStorage.removeItem(DELIVERY_HIDE_KEY)
-    } catch { /* ignore */ }
-  }
-
-  // Distance (km) — derived from geo.coords + venue location. Falls
-  // back to null until the customer has granted GPS.
-  const distanceKm: number | null = (geo.coords && Number.isFinite(venueLat) && Number.isFinite(venueLng))
-    ? haversineKm(
-        { lat: geo.coords.lat, lng: geo.coords.lng },
-        { lat: venueLat, lng: venueLng },
-      )
-    : null
-
-  // Estimate (rounded to nearest 1,000 IDR, floored at min_fee).
-  const estimateIdr: number | null = (() => {
-    if (distanceKm == null) return null
-    const raw = perKmIdr * distanceKm
-    const rounded = Math.round(raw / 1000) * 1000
-    return Math.max(rounded, minFeeIdr)
-  })()
-
-  // Trigger fetching the lowest-fare data once we have GPS. Cancels
-  // if the customer closes the sheet mid-fetch.
-  async function fetchLowestFare(coords: GeoPoint) {
-    setEstimateLoading(true)
-    setEstimateError(null)
-    try {
-      const url = `/api/drivers/lowest-fare?vehicleType=bike&lat=${coords.lat}&lng=${coords.lng}&radiusKm=30`
-      const res = await fetch(url, { cache: 'no-store' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json() as { lowestFareIdr: number | null; driverCount: number }
-      if (typeof json.lowestFareIdr === 'number' && json.lowestFareIdr > 0) {
-        // The API returns min_fee (a flat floor), not a per-km rate.
-        // We keep the hardcoded DEFAULT_BIKE_PER_KM multiplier and
-        // surface the API value as the min-fee floor only. Founder
-        // direction: market-norm per-km, transparent floor.
-        setMinFeeIdr(json.lowestFareIdr)
-      }
-      setEstimateFetched(true)
-    } catch (err) {
-      setEstimateError(err instanceof Error ? err.message : 'Could not fetch estimate')
-    } finally {
-      setEstimateLoading(false)
-    }
-  }
-
-  async function handleTapToEstimate() {
-    const point = await geo.request()
-    if (point) await fetchLowestFare(point)
-  }
-
-  // Render flag — only render the delivery row inside the cart body
-  // when (a) the customer has at least one item AND (b) we're not
-  // showing the free-delivery pill instead.
-  const showEstimateRow  = !empty && !freeDelivery && !estimateHidden
-  const showFreeDelivery = !empty && freeDelivery
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.55)' }}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Your order"
-    >
-      <div
-        className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl relative flex flex-col max-h-[90dvh]"
-        style={{ borderTop: `4px solid ${theme}` }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header — brand-yellow ShoppingBag icon on the LEFT mirroring
-            the cart icon in the hero top-right, name + count in the
-            middle, X close on the right. */}
-        <div className="px-5 pt-4 pb-2 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span
-              className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full"
-              style={{ background: theme }}
-              aria-hidden
-            >
-              <ShoppingBag className="w-4 h-4 text-black" strokeWidth={2.5} />
-            </span>
-            <div className="min-w-0">
-              <h3 className="text-[15px] font-black text-black truncate">
-                Your order · <span className="font-extrabold">{placeName}</span>
-              </h3>
-              <div className="text-[11px] text-gray-500 mt-0.5">
-                {totalQty > 0
-                  ? `${totalQty} item${totalQty === 1 ? '' : 's'}`
-                  : 'No items yet'}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close cart"
-            className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0"
-            style={{ minWidth: 44, minHeight: 44 }}
-          >
-            <X className="w-4 h-4 text-gray-600" strokeWidth={2.5} />
-          </button>
-        </div>
-
-        {/* Body — scrollable line items or empty state. */}
-        <div className="px-5 py-2 overflow-y-auto flex-1">
-          {empty ? (
-            <div
-              className="text-center py-10 px-4 rounded-xl border border-dashed border-gray-300 bg-gray-50"
-            >
-              <ShoppingBag className="w-7 h-7 mx-auto text-gray-400 mb-2" strokeWidth={2} />
-              <div className="text-[13px] font-extrabold text-gray-700">
-                Your cart is empty.
-              </div>
-              <div className="text-[12px] text-gray-500 mt-1">
-                Tap a menu item to add.
-              </div>
-            </div>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {items.map((it) => (
-                <li key={it.offer_id} className="py-3 flex items-start gap-3">
-                  {it.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={it.image_url}
-                      alt={it.name}
-                      className="w-14 h-14 rounded-lg object-cover bg-gray-100 shrink-0 border border-gray-200"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-lg bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
-                      <ShoppingBag className="w-5 h-5 text-gray-400" strokeWidth={2} />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-extrabold text-black leading-tight line-clamp-2">
-                      {it.name}
-                    </div>
-                    <div className="text-[12px] text-gray-500 mt-0.5">
-                      {formatRpExact(it.price_idr)} each
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onSetQty(it.offer_id, it.qty - 1)}
-                          aria-label={`Decrease quantity of ${it.name}`}
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-black active:scale-[0.95] transition"
-                          style={{ minWidth: 44, minHeight: 44, background: theme }}
-                        >
-                          <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
-                        </button>
-                        <span
-                          className="text-[14px] font-black text-black tabular-nums"
-                          style={{ minWidth: 22, textAlign: 'center' }}
-                          aria-live="polite"
-                        >
-                          {it.qty}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onSetQty(it.offer_id, Math.min(99, it.qty + 1))}
-                          aria-label={`Increase quantity of ${it.name}`}
-                          disabled={it.qty >= 99}
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-black active:scale-[0.95] transition disabled:opacity-40 disabled:active:scale-100"
-                          style={{ minWidth: 44, minHeight: 44, background: theme }}
-                        >
-                          <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-                        </button>
-                      </div>
-                      <div className="text-[13px] font-black text-black tabular-nums">
-                        {formatRpExact(it.price_idr * it.qty)}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onRemove(it.offer_id)}
-                    aria-label={`Remove ${it.name}`}
-                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white active:scale-[0.95] transition"
-                    style={{ minWidth: 44, minHeight: 44, background: '#B91C1C' }}
-                  >
-                    <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Footer — total + actions + compliance line. */}
-        <div className="px-5 pt-3 pb-5 border-t border-gray-200 shrink-0 space-y-3">
-          {/* DELIVERY ROW — three states:
-              (A) Venue offers free delivery → green pill.
-              (B) Venue doesn't, customer hasn't hidden → gray estimate row.
-              (C) Customer hidden → row gone, "Show delivery estimate" link
-                  rendered just below the action buttons instead.
-              The estimate is INFORMATIONAL ONLY — it is never added to
-              Total, never appended to the WhatsApp message body. The
-              customer pays the rider directly and agrees fare in chat. */}
-          {showFreeDelivery && (
-            <div
-              className="rounded-xl border bg-green-50 border-green-200 text-green-700 px-3 py-2 flex items-center gap-2"
-              role="note"
-            >
-              <Bike className="w-4 h-4 shrink-0" strokeWidth={2.25} aria-hidden />
-              <span className="text-[13px] font-extrabold leading-snug">
-                Free delivery by venue
-              </span>
-            </div>
-          )}
-
-          {showEstimateRow && (
-            <div className="rounded-xl border bg-gray-50 border-gray-200 px-3 py-2.5">
-              <div className="flex items-start gap-2">
-                <Bike
-                  className="w-4 h-4 shrink-0 text-gray-700 mt-0.5"
-                  strokeWidth={2.25}
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-extrabold text-black leading-snug">
-                    Bike delivery — estimate
-                  </div>
-                  {/* Always-on display. When GPS is granted we show the
-                      precise haversine km + estimate; otherwise we fall
-                      back to a typical 3km city-trip assumption so the
-                      customer always sees a hint. No tap required. */}
-                  <div className="mt-0.5">
-                    {(() => {
-                      const TYPICAL_KM = 3
-                      const km =
-                        geo.status === 'granted' && distanceKm != null
-                          ? distanceKm
-                          : TYPICAL_KM
-                      const idr =
-                        geo.status === 'granted' && estimateIdr != null
-                          ? estimateIdr
-                          : Math.max(
-                              DEFAULT_MIN_FEE_IDR,
-                              Math.round((km * DEFAULT_BIKE_PER_KM) / 1000) * 1000,
-                            )
-                      const labelTail =
-                        geo.status === 'granted' && distanceKm != null
-                          ? `~${km.toFixed(1)} km from you`
-                          : 'typical short trip'
-                      return (
-                        <div className="text-[13px] text-black tabular-nums leading-snug">
-                          <span className="font-black">~{formatRpExact(idr)}</span>
-                          <span className="text-gray-500"> · </span>
-                          <span className="text-gray-700">{labelTail}</span>
-                        </div>
-                      )
-                    })()}
-                    <p className="text-[12px] text-gray-500 mt-1 leading-snug">
-                      Pay rider directly · agree fare in chat
-                    </p>
-                  </div>
-                </div>
-
-                {/* Hide button — small text link on the right. Persists
-                    via localStorage so the customer's choice survives
-                    cart re-opens. */}
-                <button
-                  type="button"
-                  onClick={() => persistHidden(true)}
-                  className="shrink-0 text-[12px] text-gray-500 underline-offset-2 hover:underline font-bold"
-                  style={{ minHeight: 44, minWidth: 44 }}
-                  aria-label="Hide delivery estimate"
-                >
-                  Hide
-                </button>
-              </div>
-            </div>
-          )}
-
-          {!empty && (
-            <div className="flex items-baseline justify-between gap-2">
-              <div className="text-[13px] font-extrabold uppercase tracking-wider text-gray-500">
-                Total
-              </div>
-              <div className="text-[20px] font-black text-black tabular-nums">
-                {formatRpExact(totalIdr)}
-              </div>
-            </div>
-          )}
-
-          {/* "Clear cart" button removed per founder direction. The cart
-              auto-clears when the customer navigates away from the
-              place profile page (effect cleanup in PlaceProfileShell),
-              so manual clearing is no longer needed. Per-item trash
-              still works for editing on the way to checkout. */}
-          <button
-            type="button"
-            onClick={onSend}
-            disabled={sendDisabled}
-            title={sendDisabled ? sendDisabledReason : undefined}
-            aria-disabled={sendDisabled}
-            className="inline-flex items-center justify-center gap-1.5 w-full px-4 py-3 rounded-xl text-[13px] font-extrabold shadow-md active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
-            style={{
-              background: BRAND_YELLOW,
-              color: BRAND_NAVY,
-              minHeight: 48,
-            }}
-          >
-            <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-            Send via WhatsApp
-          </button>
-
-          {/* Re-enable link — only renders when the customer previously
-              hid the estimate AND the venue doesn't offer free delivery.
-              Brings the estimate row back without forcing the customer
-              to clear localStorage manually. */}
-          {!empty && !freeDelivery && estimateHidden && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => persistHidden(false)}
-                className="text-[12px] text-gray-500 underline-offset-2 hover:underline font-bold"
-                style={{ minHeight: 44 }}
-              >
-                Show delivery estimate
-              </button>
-            </div>
-          )}
-
-          <p className="text-[11px] text-gray-500 leading-snug text-center">
-            You pay the venue directly · agree delivery with them.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// =============================================================================
 // Shell — solid white page so the global PageBackground doesn't bleed
 // through, plus the dev-toolbar hide rule. Mirrors beautician's Shell.
 // =============================================================================
@@ -1515,3 +1050,4 @@ function Shell({ children }: { children: import('react').ReactNode }) {
     </main>
   )
 }
+

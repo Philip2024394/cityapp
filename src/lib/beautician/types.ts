@@ -117,6 +117,17 @@ export type BeauticianProviderPublic = Pick<
   // light up the prominent hero avatar in src/components/profile/
   // AvatarFrame.tsx.
   avatar_frame_style?: 'none' | 'gradient' | 'pulse' | 'rainbow' | null
+  // mig 0142 — vendor's payment rail. 'none' = WhatsApp-only profile;
+  // 'stripe' / 'midtrans' enable the cart + paid checkout CTA.
+  payment_provider?: 'none' | 'stripe' | 'midtrans' | null
+  // mig 0142 — vendor-authored FAQ. Renders as an accordion above the
+  // contact form when faq_enabled is true AND faq_items is non-empty.
+  faq_items?:   Array<{ q: string; a: string }> | null
+  faq_enabled?: boolean | null
+  // mig 0142 — vendor-authored legal pages. Plain-text, rendered in a
+  // scrollable modal triggered by the contact-section footer links.
+  legal_terms?:   string | null
+  legal_privacy?: string | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.
@@ -251,6 +262,11 @@ export const BANNER_LIBRARY: Record<string, Partial<Record<BeauticianServiceOffe
       'https://ik.imagekit.io/nepgaxllc/Untitledasdadasddsdasdasdsadasd.png',
       'https://ik.imagekit.io/nepgaxllc/Untitledasdadasddsdasdasd.png',
       'https://ik.imagekit.io/nepgaxllc/Untitledasdadasdds.png',
+      'https://ik.imagekit.io/7grri5v7d/phil%201.png?updatedAt=1771624598125',
+      'https://ik.imagekit.io/7grri5v7d/phil%202.png?updatedAt=1771624569672',
+      'https://ik.imagekit.io/7grri5v7d/phil%203.png?updatedAt=1771624551780',
+      'https://ik.imagekit.io/7grri5v7d/phil%205.png?updatedAt=1771624516872',
+      'https://ik.imagekit.io/7grri5v7d/beauty%20woman.png?updatedAt=1773339036755',
     ],
     nails: [
       'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2003_57_21%20PM.png?updatedAt=1779699457510',

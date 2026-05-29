@@ -48,6 +48,12 @@ const PUBLIC_COLS = [
   'cta_button_effect',
   // mig 0141 animated avatar frame style
   'avatar_frame_style',
+  // mig 0142 — payment provider (drives cart/checkout CTA on public profile)
+  'payment_provider',
+  // mig 0142 — vendor-authored FAQ + legal copy. FAQ accordion renders
+  // above the contact form when faq_enabled is true. Terms / Privacy
+  // surface as footer links + an in-page modal viewer.
+  'faq_items','faq_enabled','legal_terms','legal_privacy',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

@@ -22,6 +22,7 @@ export const runtime = 'nodejs'
 
 const NAME_MAX = 80
 const EMAIL_MAX = 254
+const PHONE_MAX = 32
 const MSG_MAX = 4000
 const RATE_LIMIT_PER_HOUR = 5
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
@@ -30,6 +31,7 @@ type Body = {
   slug?:         string
   sender_name?:  string
   sender_email?: string
+  sender_phone?: string
   message?:      string
 }
 
@@ -53,6 +55,7 @@ export async function POST(req: Request) {
   const slug         = (body.slug ?? '').trim().toLowerCase()
   const sender_name  = (body.sender_name ?? '').trim()
   const sender_email = (body.sender_email ?? '').trim()
+  const sender_phone = (body.sender_phone ?? '').trim()
   const message      = (body.message ?? '').trim()
 
   if (!slug || !/^[a-z0-9_-]+$/.test(slug)) {
@@ -63,6 +66,9 @@ export async function POST(req: Request) {
   }
   if (sender_email.length > EMAIL_MAX || !EMAIL_RE.test(sender_email)) {
     return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
+  }
+  if (sender_phone.length > PHONE_MAX) {
+    return NextResponse.json({ error: 'invalid_phone' }, { status: 400 })
   }
   if (message.length < 1 || message.length > MSG_MAX) {
     return NextResponse.json({ error: 'invalid_message' }, { status: 400 })
@@ -109,6 +115,7 @@ export async function POST(req: Request) {
       provider_id:   provider.id,
       sender_name,
       sender_email,
+      sender_phone:  sender_phone || null,
       message,
       source_ip:     sourceIp,
       user_agent:    userAgent,
@@ -123,6 +130,7 @@ export async function POST(req: Request) {
     to:             provider.contact_email,
     senderName:     sender_name,
     senderEmail:    sender_email,
+    senderPhone:    sender_phone || null,
     message,
     providerName:   provider.display_name,
   }).catch((e) => {
@@ -133,11 +141,12 @@ export async function POST(req: Request) {
 }
 
 async function sendResendEmail({
-  to, senderName, senderEmail, message, providerName,
+  to, senderName, senderEmail, senderPhone, message, providerName,
 }: {
   to:           string
   senderName:   string
   senderEmail:  string
+  senderPhone:  string | null
   message:      string
   providerName: string
 }) {
@@ -148,21 +157,26 @@ async function sendResendEmail({
     return
   }
 
-  const escaped = message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>')
+  const escapeHtml = (s: string) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const escaped = escapeHtml(message).replace(/\n/g, '<br/>')
   const subject = `New message from ${senderName} via your Kita2u page`
+  const phoneRow = senderPhone
+    ? `<p style="font-size:14px;margin:0 0 8px"><strong>Phone:</strong> ${escapeHtml(senderPhone)}</p>`
+    : ''
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0a0a0a;max-width:560px">
       <p style="font-size:16px;margin:0 0 16px;font-weight:700">
         New message for ${providerName}
       </p>
       <p style="font-size:14px;margin:0 0 8px">
-        <strong>From:</strong> ${senderName} &lt;${senderEmail}&gt;
+        <strong>From:</strong> ${escapeHtml(senderName)} &lt;${escapeHtml(senderEmail)}&gt;
       </p>
+      ${phoneRow}
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
       <div style="font-size:14px;white-space:pre-wrap">${escaped}</div>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
       <p style="font-size:12px;color:#6b7280">
-        Reply directly to this email to respond — it will go straight to ${senderName}.
+        Reply directly to this email to respond — it will go straight to ${escapeHtml(senderName)}.
       </p>
     </div>
   `

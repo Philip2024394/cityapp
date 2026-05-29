@@ -16,6 +16,7 @@ import VisitUsPanel, {
 } from '@/components/profile/VisitUsPanel'
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
+import { bannerSrc } from '@/lib/banners/transform'
 import { Sparkles } from 'lucide-react'
 
 // /property/[slug] — mirrors /beautician/[slug] visually 1:1.
@@ -256,7 +257,7 @@ export default function PropertyProviderPage() {
           style={{ aspectRatio: '16 / 9' }}
         >
           <img
-            src={p.cover_image_url || DEFAULT_PROPERTY_HERO}
+            src={bannerSrc(p.cover_image_url) || DEFAULT_PROPERTY_HERO}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />

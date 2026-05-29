@@ -11,6 +11,7 @@ import {
   Sparkles, Store, UserCog,
   Compass, Map, KeyRound, Palette, Shirt, Wrench, Brush, Pencil, Layers,
   Globe2, ExternalLink, Calendar,
+  CreditCard, HelpCircle, FileText, ShieldCheck,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -81,6 +82,13 @@ const BEAUTICIAN_NAV_SECTIONS: ReadonlyArray<NavSection> = [
     items: [
       { href: '/dashboard/beautician/services', label: 'Services & prices', icon: Layers },
       { href: '/dashboard/beautician/bookings', label: 'Bookings',          icon: Calendar },
+      { href: '/dashboard/beautician/orders',   label: 'Cart orders',       icon: Package },
+    ],
+  },
+  {
+    header: 'Payments',
+    items: [
+      { href: '/dashboard/beautician/payments', label: 'Accept payments', icon: CreditCard },
     ],
   },
   {
@@ -89,6 +97,14 @@ const BEAUTICIAN_NAV_SECTIONS: ReadonlyArray<NavSection> = [
       { href: '/dashboard/beautician/promos', label: 'Promo pages',  icon: Sparkles },
       { href: '/dashboard/beautician/qr',     label: 'Profile QR',   icon: QrCode },
       { href: '/dashboard/beautician/stats',  label: 'Stats',        icon: Flame },
+    ],
+  },
+  {
+    header: 'Trust & legal',
+    items: [
+      { href: '/dashboard/beautician/faq',     label: 'FAQ',                 icon: HelpCircle },
+      { href: '/dashboard/beautician/terms',   label: 'Terms & conditions',  icon: FileText },
+      { href: '/dashboard/beautician/privacy', label: 'Privacy policy',      icon: ShieldCheck },
     ],
   },
   {
@@ -131,7 +147,83 @@ const RENTAL_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/rent/list/new',      label: 'List a new bike',   icon: Sparkles },
 ]
 
-type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals'
+// Facial + Skincare verticals — clone of beautician's section shape so
+// the Trust & legal + Payments groups are present from day one.
+const FACIAL_NAV_SECTIONS: ReadonlyArray<NavSection> = [
+  {
+    header: 'My profile',
+    items: [
+      { href: '/dashboard/facial',      label: 'Facial dashboard', icon: UserCog },
+      { href: '/dashboard/facial/edit', label: 'Page design',      icon: Pencil },
+    ],
+  },
+  {
+    header: 'Orders',
+    items: [
+      { href: '/dashboard/facial/orders', label: 'Cart orders', icon: Package },
+    ],
+  },
+  {
+    header: 'Payments',
+    items: [
+      { href: '/dashboard/facial/payments', label: 'Accept payments', icon: CreditCard },
+    ],
+  },
+  {
+    header: 'Trust & legal',
+    items: [
+      { href: '/dashboard/facial/faq',     label: 'FAQ',                 icon: HelpCircle },
+      { href: '/dashboard/facial/terms',   label: 'Terms & conditions',  icon: FileText },
+      { href: '/dashboard/facial/privacy', label: 'Privacy policy',      icon: ShieldCheck },
+    ],
+  },
+  {
+    header: 'More',
+    items: [
+      { href: '/facial',         label: 'Marketplace',     icon: Store },
+      { href: '/facial/signup',  label: 'Register facial', icon: Sparkles },
+    ],
+  },
+]
+
+const SKINCARE_NAV_SECTIONS: ReadonlyArray<NavSection> = [
+  {
+    header: 'My profile',
+    items: [
+      { href: '/dashboard/skincare',      label: 'Skincare dashboard', icon: UserCog },
+      { href: '/dashboard/skincare/edit', label: 'Page design',        icon: Pencil },
+    ],
+  },
+  {
+    header: 'Orders',
+    items: [
+      { href: '/dashboard/skincare/orders', label: 'Cart orders', icon: Package },
+    ],
+  },
+  {
+    header: 'Payments',
+    items: [
+      { href: '/dashboard/skincare/payments', label: 'Accept payments', icon: CreditCard },
+    ],
+  },
+  {
+    header: 'Trust & legal',
+    items: [
+      { href: '/dashboard/skincare/faq',     label: 'FAQ',                 icon: HelpCircle },
+      { href: '/dashboard/skincare/terms',   label: 'Terms & conditions',  icon: FileText },
+      { href: '/dashboard/skincare/privacy', label: 'Privacy policy',      icon: ShieldCheck },
+    ],
+  },
+  {
+    header: 'More',
+    items: [
+      { href: '/skincare',         label: 'Marketplace',       icon: Store },
+      { href: '/skincare/signup',  label: 'Register skincare', icon: Sparkles },
+    ],
+  },
+]
+
+type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals' | 'facial' | 'skincare'
 const VARIANT_TITLE: Record<Variant, string> = {
   driver:        'Driver menu',
   partner:       'Partner menu',
@@ -142,6 +234,8 @@ const VARIANT_TITLE: Record<Variant, string> = {
   'home-clean':  'Cleaner menu',
   'tour-guide':  'Tour Guide menu',
   rentals:       'Rental owner menu',
+  facial:        'Facial menu',
+  skincare:      'Skincare menu',
 }
 const VARIANT_LABEL: Record<Variant, string> = {
   driver:        'Driver navigation',
@@ -153,6 +247,8 @@ const VARIANT_LABEL: Record<Variant, string> = {
   'home-clean':  'Cleaner navigation',
   'tour-guide':  'Tour Guide navigation',
   rentals:       'Rental owner navigation',
+  facial:        'Facial navigation',
+  skincare:      'Skincare navigation',
 }
 
 // Per-variant brand tinting for the nav-item pills. Keep verticals whose
@@ -177,6 +273,8 @@ const VARIANT_BRAND: Record<Variant, {
   massage:       { from: '#38BDF8', to: '#0284C7', shadow: '14,165,233',  ink: '#FFFFFF', onPillText: '#38BDF8' },
   laundry:       { from: '#60A5FA', to: '#2563EB', shadow: '59,130,246',  ink: '#FFFFFF', onPillText: '#60A5FA' },
   'home-clean':  { from: '#22D3EE', to: '#0891B2', shadow: '6,182,212',   ink: '#FFFFFF', onPillText: '#22D3EE' },
+  facial:        { from: '#F472B6', to: '#DB2777', shadow: '236,72,153',  ink: '#FFFFFF', onPillText: '#F472B6' },
+  skincare:      { from: '#F472B6', to: '#DB2777', shadow: '236,72,153',  ink: '#FFFFFF', onPillText: '#F472B6' },
 }
 
 export default function AppDrawer({
@@ -203,6 +301,8 @@ export default function AppDrawer({
     variant === 'home-clean'   ? [{ items: HOME_CLEAN_NAV_ITEMS }] :
     variant === 'tour-guide'   ? [{ items: TOUR_GUIDE_NAV_ITEMS }] :
     variant === 'rentals'      ? [{ items: RENTAL_NAV_ITEMS }] :
+    variant === 'facial'       ? FACIAL_NAV_SECTIONS :
+    variant === 'skincare'     ? SKINCARE_NAV_SECTIONS :
                                  [{ items: DRIVER_NAV_ITEMS }]
 
   // Active match supports hrefs with query strings. Path piece must match
@@ -432,6 +532,8 @@ export function AppDrawerTrigger({
     variant === 'home-clean' ? 'Open cleaner menu' :
     variant === 'tour-guide' ? 'Open tour guide menu' :
     variant === 'rentals'    ? 'Open rental owner menu' :
+    variant === 'facial'     ? 'Open facial menu' :
+    variant === 'skincare'   ? 'Open skincare menu' :
     'Open driver menu'
   return (
     <button

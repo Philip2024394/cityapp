@@ -11,6 +11,10 @@ import {
   type MassageProvider,
   type MassageType,
 } from '@/lib/massage/types'
+import {
+  MASSAGE_BANNER_LIBRARY,
+  MASSAGE_BANNER_CATEGORIES,
+} from '@/lib/massage/banners'
 
 // WYSIWYG profile editor — therapist sees a live preview of their
 // public profile hero/banner section and taps an Edit pencil to open
@@ -325,16 +329,18 @@ function BannerInlineControls({
         />
       </Section>
 
-      {/* Banner image — library + upload. Massage has no curated banner
-          library yet, so the picker shows just the upload tile. */}
+      {/* Banner image — library + upload. Curated massage banners live
+          in src/lib/massage/banners.ts (theme hex → MassageType → URLs).
+          The picker shows every category header that has at least one
+          banner, regardless of the therapist's own massage_type. */}
       <Section title="Banner image" icon={<ImageIcon size={16} strokeWidth={2.5} />}>
         <BannerLibraryPicker
           themeHex={provider.theme_color ?? null}
           selected={provider.cover_image_url ?? null}
           onChange={(url) => onSave({ cover_image_url: url })}
           userId={provider.user_id ?? null}
-          library={{}}
-          categories={[]}
+          library={MASSAGE_BANNER_LIBRARY}
+          categories={MASSAGE_BANNER_CATEGORIES}
           defaultThemeHex="#EC4899"
           selectedAccentHex="#EC4899"
           userCategoryIds={provider.massage_type ? [provider.massage_type] : undefined}

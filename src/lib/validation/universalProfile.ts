@@ -37,6 +37,11 @@ export type UniversalProfileBody = {
   cta_button_effect?: 'none' | 'pulse' | 'glow' | 'shake' | null
   // mig 0141 — Animated avatar frame style
   avatar_frame_style?: 'none' | 'gradient' | 'pulse' | 'rainbow' | null
+  // mig 0142 — Legal pages + FAQ stored on the provider row
+  legal_terms?:   string | null
+  legal_privacy?: string | null
+  faq_items?:     Array<{ q: string; a: string }> | null
+  faq_enabled?:   boolean
 }
 
 type Result =
@@ -234,6 +239,51 @@ export function validateUniversalProfile(body: UniversalProfileBody): Result {
       return { ok: false, error: 'invalid_avatar_frame_style' }
     }
     out.avatar_frame_style = v ?? 'none'
+  }
+
+  // mig 0142 — Long-form legal copy stored on the provider row. ~20k
+  // char ceiling apiece keeps a single profile payload sane. Empty
+  // strings clear the column so the public footer hides the link.
+  for (const k of ['legal_terms','legal_privacy'] as const) {
+    if (body[k] === undefined) continue
+    const raw = body[k]
+    if (raw === null) { out[k] = null; continue }
+    if (typeof raw !== 'string') return { ok: false, error: `invalid_${k}` }
+    const v = raw.replace(/\r\n/g, '\n')
+    if (v.length > 20000) return { ok: false, error: `${k}_too_long` }
+    out[k] = v.trim() ? v : null
+  }
+
+  // mig 0142 — FAQ list (array of {q,a}). Trim, drop empty entries, and
+  // enforce a 30-question / 200-char Q / 2000-char A ceiling so a single
+  // jsonb column doesn't bloat. Empty array clears the FAQ entirely.
+  if (body.faq_items !== undefined) {
+    if (body.faq_items === null) {
+      out.faq_items = []
+    } else if (!Array.isArray(body.faq_items)) {
+      return { ok: false, error: 'invalid_faq_items' }
+    } else if (body.faq_items.length > 30) {
+      return { ok: false, error: 'too_many_faq_items' }
+    } else {
+      const cleaned: Array<{ q: string; a: string }> = []
+      for (const item of body.faq_items) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          return { ok: false, error: 'invalid_faq_entry' }
+        }
+        const q = typeof item.q === 'string' ? item.q.trim() : ''
+        const a = typeof item.a === 'string' ? item.a.trim() : ''
+        if (q.length > 200) return { ok: false, error: 'faq_q_too_long' }
+        if (a.length > 2000) return { ok: false, error: 'faq_a_too_long' }
+        if (!q && !a) continue
+        cleaned.push({ q, a })
+      }
+      out.faq_items = cleaned
+    }
+  }
+
+  if (body.faq_enabled !== undefined) {
+    if (typeof body.faq_enabled !== 'boolean') return { ok: false, error: 'invalid_faq_enabled' }
+    out.faq_enabled = body.faq_enabled
   }
 
   return { ok: true, fields: out }

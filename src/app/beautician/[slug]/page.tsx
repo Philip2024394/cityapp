@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, Mail, type LucideIcon } from 'lucide-react'
+import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, ChevronDown, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, Mail, FileText, ShieldCheck, HelpCircle, type LucideIcon } from 'lucide-react'
 import VisitUsMap from '@/components/profile/VisitUsMap'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
@@ -30,6 +30,10 @@ import {
   type BeauticianServiceOffered,
   type BeauticianServicePhoto,
 } from '@/lib/beautician/types'
+import { useVendorCart } from '@/components/cart/useVendorCart'
+import VendorCartButton from '@/components/cart/VendorCartButton'
+import VendorCartSheet from '@/components/cart/VendorCartSheet'
+import { bannerSrc } from '@/lib/banners/transform'
 
 // Default theme accent — used when the beautician hasn't picked their
 // own theme_color (mig 0078). Beauticians choose their accent from the
@@ -96,6 +100,22 @@ export default function BeauticianProviderPage() {
   // pre-fills the service field when triggered from a service card.
   const [contactOpen,        setContactOpen]        = useState(false)
   const [contactServiceName, setContactServiceName] = useState<string>('')
+  // Cart sheet visibility — top-right pill toggles it; sheet is mounted
+  // only when the vendor has a paid payment_provider configured.
+  const [cartOpen, setCartOpen] = useState(false)
+  // Legal viewer modal — opened by Terms / Privacy footer links under the
+  // contact form. Renders vendor-authored plaintext in a scrollable popup
+  // so the customer never leaves the profile page.
+  const [legalView, setLegalView] = useState<null | 'terms' | 'privacy'>(null)
+  // FAQ accordion — controls which question is expanded above the
+  // contact form. Null = all collapsed (default), so the section reads
+  // as a clean list of questions on first paint.
+  const [faqOpenIdx, setFaqOpenIdx] = useState<number | null>(null)
+  // Vendor cart — keyed on the provider id so each beautician keeps its
+  // own cart even if the same customer browses several profiles. Hook is
+  // called unconditionally with a placeholder until `p` loads so hook
+  // order stays stable across renders.
+  const cart = useVendorCart(`beautician:${p?.id ?? '_loading'}`)
 
   useEffect(() => {
     capturePartnerFromUrl()
@@ -155,28 +175,46 @@ export default function BeauticianProviderPage() {
     `Apakah Anda available?`,
   ].filter(Boolean).join('\n')
 
+  // Cart UI lights up only when the vendor has opted into Stripe or
+  // Midtrans on /dashboard/beautician/payments. 'none' keeps the profile
+  // in pure WhatsApp mode — the contact CTA below is unchanged.
+  const paymentProvider = (p.payment_provider ?? 'none') as 'none' | 'stripe' | 'midtrans'
+  const cartEnabled = paymentProvider !== 'none'
+  const currencySymbol = countryByCode(
+    (p as unknown as { country_code?: string | null }).country_code ?? 'ID',
+  ).currency_symbol
+
   return (
     <Shell>
       {/* Hero — cover with overlay text, plus a floating info-card that
           sits on the bottom edge of the cover (15px rounded corners). */}
       <div className="relative pb-2">
-        {/* Top-right share button. */}
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          aria-label="Share profile"
-          className="absolute top-3 right-3 z-30 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md active:scale-[0.96] transition"
-          style={{ background: theme }}
-        >
-          <Share2 className="w-4 h-4" strokeWidth={2.5} />
-        </button>
+        {/* Top-right action stack — Share + (optional) Cart pill. */}
+        <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            aria-label="Share profile"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md active:scale-[0.96] transition"
+            style={{ background: theme }}
+          >
+            <Share2 className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+          {cartEnabled && (
+            <VendorCartButton
+              totalQty={cart.totalQty}
+              themeColor={theme}
+              onClick={() => setCartOpen(true)}
+            />
+          )}
+        </div>
 
         <div
           className="relative w-full overflow-hidden bg-black"
           style={{ aspectRatio: '16 / 9' }}
         >
           <img
-            src={p.cover_image_url || DEFAULT_BEAUTICIAN_HERO}
+            src={bannerSrc(p.cover_image_url) || DEFAULT_BEAUTICIAN_HERO}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -469,12 +507,35 @@ export default function BeauticianProviderPage() {
                 Close
               </button>
             </div>
+            {/* FAQ — sits ABOVE the contact form so customers can self-
+                serve answers before sending a message. Only renders when
+                the vendor enabled it AND added at least one entry. */}
+            {p.faq_enabled && (p.faq_items?.length ?? 0) > 0 && (
+              <FaqAccordion
+                items={p.faq_items as Array<{ q: string; a: string }>}
+                openIdx={faqOpenIdx}
+                onToggle={(i) => setFaqOpenIdx((cur) => (cur === i ? null : i))}
+                themeColor={theme}
+              />
+            )}
             <ContactFormPanel
               displayName={p.display_name}
               themeColor={theme}
               endpoint="/api/beautician/contact"
               providerSlug={p.slug}
             />
+            {/* Legal footer — Terms / Privacy links. Tapping opens an
+                in-page modal viewer; the customer never leaves the page.
+                Each link is gated on the vendor having authored the
+                corresponding page in /dashboard/beautician/{terms,privacy}. */}
+            {(p.legal_terms?.trim() || p.legal_privacy?.trim()) && (
+              <LegalFooter
+                hasTerms={Boolean(p.legal_terms?.trim())}
+                hasPrivacy={Boolean(p.legal_privacy?.trim())}
+                onOpen={(kind) => setLegalView(kind)}
+                themeColor={theme}
+              />
+            )}
           </section>
         ) : showReviews ? (
           <ReviewsPanel
@@ -906,18 +967,81 @@ export default function BeauticianProviderPage() {
       />
 
       {/* Portfolio "View Details" popup — full image + before/after
-          thumbs (if uploaded) + description + start price + Contact. */}
-      {detailPhoto && (
-        <PortfolioDetailPopup
-          photo={detailPhoto}
+          thumbs (if uploaded) + description + start price + Contact.
+          When the vendor has paid checkout enabled AND the photo carries
+          a price, the popup also renders the qty stepper + "Add to cart"
+          CTA. offer_id is derived from the photo URL (stable, unique
+          within the vendor's own catalog). */}
+      {detailPhoto && (() => {
+        const offerId = detailPhoto.url
+        const inCart  = cart.items.find((it) => it.offer_id === offerId)
+        const canAddToCart = cartEnabled
+          && typeof detailPhoto.price_idr === 'number'
+          && detailPhoto.price_idr > 0
+        return (
+          <PortfolioDetailPopup
+            photo={detailPhoto}
+            themeColor={theme}
+            canContact={Boolean(p.whatsapp_e164)}
+            currencySymbol={currencySymbol}
+            cartQty={inCart?.qty}
+            onAddToCart={canAddToCart ? (qty) => {
+              cart.add(
+                {
+                  offer_id:  offerId,
+                  name:      detailPhoto.name || 'Service',
+                  price_idr: detailPhoto.price_idr as number,
+                  image_url: detailPhoto.url,
+                },
+                qty,
+              )
+              setDetailPhoto(null)
+              setCartOpen(true)
+            } : undefined}
+            onClose={() => setDetailPhoto(null)}
+            onContact={() => {
+              setContactServiceName(detailPhoto.name ?? '')
+              setDetailPhoto(null)
+              setContactOpen(true)
+            }}
+          />
+        )
+      })()}
+
+      {/* Legal viewer modal — renders the vendor-authored Terms or
+          Privacy text in a scrollable popup. White-space preserved so
+          the plaintext line breaks read like a document. */}
+      {legalView && (
+        <LegalViewer
+          title={legalView === 'terms' ? 'Terms & conditions' : 'Privacy policy'}
+          body={(legalView === 'terms' ? p.legal_terms : p.legal_privacy) ?? ''}
           themeColor={theme}
-          canContact={Boolean(p.whatsapp_e164)}
-          onClose={() => setDetailPhoto(null)}
-          onContact={() => {
-            setContactServiceName(detailPhoto.name ?? '')
-            setDetailPhoto(null)
-            setContactOpen(true)
-          }}
+          onClose={() => setLegalView(null)}
+        />
+      )}
+
+      {/* Cart sheet — only mounted when the vendor has a paid provider
+          configured. WhatsApp fallback is still surfaced inside the
+          sheet so the customer can fall back to a chat-based order even
+          on a paid profile. */}
+      {cartEnabled && (
+        <VendorCartSheet
+          open={cartOpen}
+          onClose={() => setCartOpen(false)}
+          items={cart.items}
+          setQty={cart.setQty}
+          remove={cart.remove}
+          clear={cart.clear}
+          totalIdr={cart.totalIdr}
+          totalQty={cart.totalQty}
+          themeColor={theme}
+          currencySymbol={currencySymbol}
+          vendorName={p.display_name}
+          whatsappE164={p.whatsapp_e164 ?? null}
+          paymentProvider={paymentProvider}
+          checkoutEndpoint="/api/checkout"
+          vendorType="beautician"
+          vendorId={p.id ?? ''}
         />
       )}
       {/* Contact / booking popup — opened by both the bottom Contact
@@ -1342,5 +1466,149 @@ function Shell({ children }: { children: React.ReactNode }) {
       <style>{`[aria-label="Open dev toolbar"]{display:none!important}`}</style>
       {children}
     </main>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// FAQ accordion — renders above ContactFormPanel when the vendor has
+// enabled it and authored at least one entry. Single-open behaviour
+// (clicking an open question closes it); no in-page scroll lock.
+// ─────────────────────────────────────────────────────────────────────
+function FaqAccordion({
+  items, openIdx, onToggle, themeColor,
+}: {
+  items:      Array<{ q: string; a: string }>
+  openIdx:    number | null
+  onToggle:   (i: number) => void
+  themeColor: string
+}) {
+  return (
+    <section className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-2.5">
+      <div className="flex items-center gap-2">
+        <HelpCircle className="w-4 h-4 shrink-0" style={{ color: themeColor }} strokeWidth={2.5} />
+        <div className="text-[13px] font-extrabold text-black">Frequently asked</div>
+      </div>
+      <ul className="space-y-1.5">
+        {items.map((it, i) => {
+          const open = openIdx === i
+          return (
+            <li key={i} className="rounded-lg bg-white border border-gray-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => onToggle(i)}
+                aria-expanded={open}
+                className="w-full text-left flex items-center gap-2 px-3 py-2.5 min-h-[44px] active:scale-[0.995] transition"
+              >
+                <span className="flex-1 text-[13px] font-extrabold text-black leading-snug">
+                  {it.q || '(no question)'}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+                  style={{ color: themeColor }}
+                  strokeWidth={2.5}
+                />
+              </button>
+              {open && (
+                <div className="px-3 pb-3 pt-1 text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap border-t border-gray-100">
+                  {it.a || '—'}
+                </div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Legal footer — pair of links surfaced under the contact form. Each
+// link is gated by the parent on the vendor actually authoring the
+// corresponding plaintext page. Tapping a link opens an in-page modal
+// viewer; the customer never leaves the profile.
+// ─────────────────────────────────────────────────────────────────────
+function LegalFooter({
+  hasTerms, hasPrivacy, onOpen, themeColor,
+}: {
+  hasTerms:   boolean
+  hasPrivacy: boolean
+  onOpen:     (kind: 'terms' | 'privacy') => void
+  themeColor: string
+}) {
+  return (
+    <div className="pt-1">
+      <div className="flex items-center justify-center gap-4 text-[12px] text-gray-600">
+        {hasTerms && (
+          <button
+            type="button"
+            onClick={() => onOpen('terms')}
+            className="inline-flex items-center gap-1 font-bold hover:underline active:scale-[0.97] transition"
+            style={{ color: themeColor, minHeight: 32 }}
+          >
+            <FileText className="w-3.5 h-3.5" strokeWidth={2.5} />
+            Terms &amp; conditions
+          </button>
+        )}
+        {hasTerms && hasPrivacy && <span aria-hidden className="text-gray-300">·</span>}
+        {hasPrivacy && (
+          <button
+            type="button"
+            onClick={() => onOpen('privacy')}
+            className="inline-flex items-center gap-1 font-bold hover:underline active:scale-[0.97] transition"
+            style={{ color: themeColor, minHeight: 32 }}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
+            Privacy policy
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Legal viewer — modal that shows the vendor's authored Terms or
+// Privacy text. Plain pre-wrap so the document's own line breaks /
+// paragraphing render exactly as the vendor typed it.
+// ─────────────────────────────────────────────────────────────────────
+function LegalViewer({
+  title, body, themeColor, onClose,
+}: {
+  title:      string
+  body:       string
+  themeColor: string
+  onClose:    () => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.55)' }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div
+        className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl relative flex flex-col max-h-[92dvh]"
+        style={{ borderTop: `4px solid ${themeColor}` }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-3 shrink-0 border-b border-gray-100">
+          <h3 className="text-[15px] font-black text-black truncate">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0"
+            style={{ minWidth: 44, minHeight: 44 }}
+          >
+            <X className="w-4 h-4 text-gray-600" strokeWidth={2.5} />
+          </button>
+        </div>
+        <div className="px-5 py-4 overflow-y-auto flex-1 text-[13px] text-gray-800 leading-relaxed whitespace-pre-wrap">
+          {body.trim() || 'This vendor has not provided a document yet.'}
+        </div>
+      </div>
+    </div>
   )
 }

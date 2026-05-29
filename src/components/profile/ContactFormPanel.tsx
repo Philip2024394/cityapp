@@ -4,10 +4,10 @@ import { Mail, Send, Check, AlertCircle } from 'lucide-react'
 
 // Public-profile contact form (mig 0137). Renders as a sibling card
 // directly below VisitUsPanel when the provider has opted in via the
-// dashboard /info "Contact form" Card. Three fields — name, sender
-// email, message — POSTs to the vertical's contact endpoint, which
-// stores the submission in contact_messages and sends a Resend
-// notification email to the provider's contact_email.
+// dashboard /info "Contact form" Card. Four fields — name, sender
+// email, phone (optional), message — POSTs to the vertical's contact
+// endpoint, which stores the submission in contact_messages and sends
+// a Resend notification email to the provider's contact_email.
 
 export type ContactFormPanelProps = {
   displayName: string
@@ -27,6 +27,7 @@ type SendState =
   | { kind: 'error'; message: string }
 
 const NAME_MAX    = 80
+const PHONE_MAX   = 32
 const MSG_MAX     = 4000
 const EMAIL_RE    = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
@@ -35,12 +36,14 @@ export default function ContactFormPanel({
 }: ContactFormPanelProps) {
   const [name,    setName]    = useState('')
   const [email,   setEmail]   = useState('')
+  const [phone,   setPhone]   = useState('')
   const [message, setMessage] = useState('')
   const [state,   setState]   = useState<SendState>({ kind: 'idle' })
 
   const valid =
     name.trim().length >= 1 && name.trim().length <= NAME_MAX
     && EMAIL_RE.test(email.trim())
+    && phone.trim().length <= PHONE_MAX
     && message.trim().length >= 1 && message.trim().length <= MSG_MAX
 
   async function submit(e: React.FormEvent) {
@@ -55,6 +58,7 @@ export default function ContactFormPanel({
           slug:         providerSlug,
           sender_name:  name.trim(),
           sender_email: email.trim(),
+          sender_phone: phone.trim() || undefined,
           message:      message.trim(),
         }),
       })
@@ -69,6 +73,7 @@ export default function ContactFormPanel({
       setState({ kind: 'sent' })
       setName('')
       setEmail('')
+      setPhone('')
       setMessage('')
     } catch {
       setState({ kind: 'error', message: 'Network error. Please try again or contact via WhatsApp.' })
@@ -132,6 +137,16 @@ export default function ContactFormPanel({
           spellCheck={false}
           className={inputCls}
           required
+        />
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          maxLength={PHONE_MAX}
+          placeholder="Phone (optional)"
+          inputMode="tel"
+          autoComplete="tel"
+          className={inputCls}
         />
         <textarea
           value={message}

@@ -8,7 +8,6 @@ import AppNav from '@/components/layout/AppNav'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
 import ThemeColorPicker from '@/components/dashboard/ThemeColorPicker'
 import DomainRequestModal from '@/components/dashboard/DomainRequestModal'
-import type { BannerLibrary } from '@/lib/banners/library'
 
 // WYSIWYG profile editor — place owner sees a live preview of their
 // public listing hero/banner section. Same studio surface as the
@@ -23,11 +22,14 @@ const DEFAULT_HERO = {
 }
 const DEFAULT_HERO_IMAGE = 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 
-// Places banner library — no curated banners shipped yet, so the picker
-// renders with the upload tile only. When a library lands at
-// `@/lib/places/banners`, swap the empty objects below.
-const PLACES_BANNER_LIBRARY: BannerLibrary = {}
-const PLACES_BANNER_CATEGORIES: Array<{ id: string; label: string }> = []
+// Places banner library — curated banners live in @/lib/places/banners
+// keyed by theme hex → cuisine id. Picker shows the category header for
+// any cuisine bucket that has at least one banner; empty buckets are
+// hidden by the picker automatically.
+import {
+  PLACES_BANNER_LIBRARY,
+  PLACES_BANNER_CATEGORIES,
+} from '@/lib/places/banners'
 
 type PlaceHeroEffect = 'none' | 'shimmer' | 'dance' | 'underline'
 type PlaceHeroText = {

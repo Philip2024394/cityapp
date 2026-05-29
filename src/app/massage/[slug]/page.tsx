@@ -18,6 +18,7 @@ import VisitUsPanel, {
 } from '@/components/profile/VisitUsPanel'
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
+import { bannerSrc } from '@/lib/banners/transform'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { Sparkles } from 'lucide-react'
 // Star + Award already imported above for the hero info-card.
@@ -199,7 +200,7 @@ export default function MassageProviderPage() {
           style={{ aspectRatio: '16 / 9' }}
         >
           <img
-            src={p.cover_image_url || DEFAULT_BEAUTICIAN_HERO}
+            src={bannerSrc(p.cover_image_url) || DEFAULT_BEAUTICIAN_HERO}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />

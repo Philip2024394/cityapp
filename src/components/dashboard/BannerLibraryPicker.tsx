@@ -8,6 +8,7 @@ import {
   type BannerLibrary,
   type BannerLibraryEntry,
 } from '@/lib/banners/library'
+import { bannerSrc } from '@/lib/banners/transform'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
 // QRIS placeholder — replace with the founder's actual static QRIS
@@ -172,7 +173,7 @@ export default function BannerLibraryPicker({
                     }}
                   >
                     <img
-                      src={b.url}
+                      src={bannerSrc(b.url) ?? b.url}
                       alt=""
                       loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover"
@@ -298,7 +299,7 @@ function UploadOwnButton({
         className="relative rounded-xl overflow-hidden"
         style={{ aspectRatio: '16 / 9', border: '2px solid rgba(250,204,21,0.7)' }}
       >
-        <img src={previewUrl} alt="Your uploaded banner" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={bannerSrc(previewUrl) ?? previewUrl} alt="Your uploaded banner" className="absolute inset-0 w-full h-full object-cover" />
         {/* Selected check + meta strip overlay */}
         <div className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider text-black shadow"
           style={{ background: 'linear-gradient(135deg, #FACC15, #F59E0B)' }}>
@@ -442,7 +443,7 @@ function PremiumBannerModal({
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {/* Banner preview — always visible */}
           <div className="rounded-xl overflow-hidden border border-white/10" style={{ aspectRatio: "16 / 9" }}>
-            <img src={bannerUrl} alt="" className="w-full h-full object-cover" />
+            <img src={bannerSrc(bannerUrl) ?? bannerUrl} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="text-center">
             <div className="text-[15px] font-black">Make this your very own profile banner</div>
