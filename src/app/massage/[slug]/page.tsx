@@ -10,6 +10,7 @@ import PortfolioCarousel, {
   type PortfolioPhoto,
 } from '@/components/profile/PortfolioCarousel'
 import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
+import ContactFormPanel from '@/components/profile/ContactFormPanel'
 import VisitUsPanel, {
   SocialInstagramIcon,
   SocialTikTokIcon,
@@ -404,55 +405,81 @@ export default function MassageProviderPage() {
 
       <div className="px-4 pb-6 max-w-2xl mx-auto space-y-3 pt-3">
         {showVisitUs ? (
-          <VisitUsPanel
-            displayName={p.display_name}
-            address={p.service_area_notes ?? p.city ?? null}
-            city={p.city ?? null}
-            lat={typeof p.latitude  === 'number' ? p.latitude  : null}
-            lng={typeof p.longitude === 'number' ? p.longitude : null}
-            hours={p.operating_hours ?? null}
-            instagramUrl={p.instagram_url ?? null}
-            tiktokUrl={p.tiktok_url ?? null}
-            facebookUrl={p.facebook_url ?? null}
-            xUrl={(p as unknown as { x_url?: string | null }).x_url ?? null}
-            snapchatUrl={(p as unknown as { snapchat_url?: string | null }).snapchat_url ?? null}
-            websiteUrl={(p as unknown as { website_url?: string | null }).website_url ?? null}
-            whatsappE164={p.whatsapp_e164 ?? null}
-            telegramHandle={(p as unknown as { telegram_handle?: string | null }).telegram_handle ?? null}
-            wechatId={(p as unknown as { wechat_id?: string | null }).wechat_id ?? null}
-            lineId={(p as unknown as { line_id?: string | null }).line_id ?? null}
-            kakaotalkId={(p as unknown as { kakaotalk_id?: string | null }).kakaotalk_id ?? null}
-            busyDates={(p.busy_dates ?? []) as string[]}
-            themeColor={theme}
-            onClose={() => setShowVisitUs(false)}
-            bottomCta={
-              (typeof p.latitude === 'number' && typeof p.longitude === 'number')
-                ? {
-                    label: 'Book Bike Service',
-                    icon: Bike,
-                    note: `We'll use your location for pickup and ${p.display_name}'s for drop-off — fare shows on the next screen.`,
-                    onClick: () => {
-                      const lat = p.latitude as number
-                      const lng = p.longitude as number
-                      const base = `/cari/rider?dLat=${lat}&dLng=${lng}&dName=${encodeURIComponent(p.display_name)}`
-                      const fallback = () => { window.location.href = base }
-                      if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-                        fallback(); return
-                      }
-                      navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                          const pLat = pos.coords.latitude.toFixed(6)
-                          const pLng = pos.coords.longitude.toFixed(6)
-                          window.location.href = `${base}&pLat=${pLat}&pLng=${pLng}&pName=${encodeURIComponent('My location')}`
+          <>
+            {p.has_physical_location && (
+              <VisitUsPanel
+                displayName={p.display_name}
+                address={p.service_area_notes ?? p.city ?? null}
+                city={p.city ?? null}
+                lat={typeof p.latitude  === 'number' ? p.latitude  : null}
+                lng={typeof p.longitude === 'number' ? p.longitude : null}
+                hours={p.operating_hours ?? null}
+                instagramUrl={p.instagram_url ?? null}
+                tiktokUrl={p.tiktok_url ?? null}
+                facebookUrl={p.facebook_url ?? null}
+                xUrl={(p as unknown as { x_url?: string | null }).x_url ?? null}
+                snapchatUrl={(p as unknown as { snapchat_url?: string | null }).snapchat_url ?? null}
+                websiteUrl={(p as unknown as { website_url?: string | null }).website_url ?? null}
+                whatsappE164={p.whatsapp_e164 ?? null}
+                telegramHandle={(p as unknown as { telegram_handle?: string | null }).telegram_handle ?? null}
+                wechatId={(p as unknown as { wechat_id?: string | null }).wechat_id ?? null}
+                lineId={(p as unknown as { line_id?: string | null }).line_id ?? null}
+                kakaotalkId={(p as unknown as { kakaotalk_id?: string | null }).kakaotalk_id ?? null}
+                busyDates={(p.busy_dates ?? []) as string[]}
+                themeColor={theme}
+                onClose={() => setShowVisitUs(false)}
+                bottomCta={
+                  (typeof p.latitude === 'number' && typeof p.longitude === 'number')
+                    ? {
+                        label: 'Book Bike Service',
+                        icon: Bike,
+                        note: `We'll use your location for pickup and ${p.display_name}'s for drop-off — fare shows on the next screen.`,
+                        onClick: () => {
+                          const lat = p.latitude as number
+                          const lng = p.longitude as number
+                          const base = `/cari/rider?dLat=${lat}&dLng=${lng}&dName=${encodeURIComponent(p.display_name)}`
+                          const fallback = () => { window.location.href = base }
+                          if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+                            fallback(); return
+                          }
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              const pLat = pos.coords.latitude.toFixed(6)
+                              const pLng = pos.coords.longitude.toFixed(6)
+                              window.location.href = `${base}&pLat=${pLat}&pLng=${pLng}&pName=${encodeURIComponent('My location')}`
+                            },
+                            fallback,
+                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+                          )
                         },
-                        fallback,
-                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
-                      )
-                    },
-                  }
-                : null
-            }
-          />
+                      }
+                    : null
+                }
+              />
+            )}
+            {/* Contact form (mig 0137) — sibling card. */}
+            {Boolean((p as unknown as { contact_form_enabled?: boolean }).contact_form_enabled
+                  && (p as unknown as { contact_email?: string | null }).contact_email) && (
+              <ContactFormPanel
+                displayName={p.display_name}
+                themeColor={theme}
+                endpoint="/api/massage/contact"
+                providerSlug={p.slug}
+              />
+            )}
+            {!p.has_physical_location
+              && !((p as unknown as { contact_form_enabled?: boolean }).contact_form_enabled
+                && (p as unknown as { contact_email?: string | null }).contact_email)
+              && (
+                <button
+                  type="button"
+                  onClick={() => setShowVisitUs(false)}
+                  className="text-[12px] font-bold text-gray-500 underline"
+                >
+                  Back
+                </button>
+            )}
+          </>
         ) : showReviews ? (
           <ReviewsPanel
             providerId={p.id ?? ''}
@@ -472,17 +499,28 @@ export default function MassageProviderPage() {
             <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
               About {p.display_name}
             </h2>
-            {p.has_physical_location && (
-              <button
-                type="button"
-                onClick={() => setShowVisitUs(true)}
-                className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
-                style={{ color: theme }}
-              >
-                <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                Visit Us
-              </button>
-            )}
+            {(() => {
+              // mig 0137 — Visit Us / Contact Us button picks its label
+              // based on what the provider has set up.
+              const hasVisitUs = Boolean(p.has_physical_location)
+              const hasContactForm = Boolean(
+                (p as unknown as { contact_form_enabled?: boolean }).contact_form_enabled
+                && (p as unknown as { contact_email?: string | null }).contact_email,
+              )
+              if (!hasVisitUs && !hasContactForm) return null
+              const label = hasVisitUs ? 'Visit Us' : 'Contact Us'
+              return (
+                <button
+                  type="button"
+                  onClick={() => setShowVisitUs(true)}
+                  className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+                  style={{ color: theme }}
+                >
+                  <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  {label}
+                </button>
+              )
+            })()}
           </div>
           <div className="flex items-start gap-3">
             {p.bio?.trim() ? (

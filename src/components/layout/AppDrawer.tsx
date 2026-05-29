@@ -28,6 +28,15 @@ type NavItem = {
   external?: boolean
 }
 
+// Sectioned nav — used by beautician (and any future variant) to group
+// items under section headers. Flat NavItem[] is normalised to a single
+// header-less section at render time so the existing variants keep
+// working without change.
+type NavSection = {
+  header?: string
+  items: ReadonlyArray<NavItem>
+}
+
 const DRIVER_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/dashboard',              label: 'Dashboard',          icon: LayoutDashboard },
   { href: '/profile',                label: 'Profile + bike',     icon: User },
@@ -58,15 +67,38 @@ const MASSAGE_NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: '/massage/signup',    label: 'Register therapist',  icon: Sparkles },
 ]
 
-const BEAUTICIAN_NAV_ITEMS: ReadonlyArray<NavItem> = [
-  { href: '/dashboard/beautician',          label: 'Beautician dashboard', icon: UserCog },
-  { href: '/dashboard/beautician/info',     label: 'Profile info',         icon: User },
-  { href: '/dashboard/beautician/services', label: 'Services & prices',    icon: Layers },
-  { href: '/dashboard/beautician/edit',     label: 'Page design',          icon: Pencil },
-  { href: '/dashboard/beautician/bookings', label: 'Bookings',             icon: Calendar },
-  { href: '/dashboard/beautician/domain',   label: 'Buy custom domain',    icon: Globe2 },
-  { href: '/beautician',                    label: 'Marketplace',          icon: Store },
-  { href: '/beautician/signup',             label: 'Register beautician',  icon: Palette },
+const BEAUTICIAN_NAV_SECTIONS: ReadonlyArray<NavSection> = [
+  {
+    header: 'My profile',
+    items: [
+      { href: '/dashboard/beautician',      label: 'Beautician dashboard', icon: UserCog },
+      { href: '/dashboard/beautician/info', label: 'Profile info',         icon: User },
+      { href: '/dashboard/beautician/edit', label: 'Page design',          icon: Pencil },
+    ],
+  },
+  {
+    header: 'Bookings & services',
+    items: [
+      { href: '/dashboard/beautician/services', label: 'Services & prices', icon: Layers },
+      { href: '/dashboard/beautician/bookings', label: 'Bookings',          icon: Calendar },
+    ],
+  },
+  {
+    header: 'Marketing',
+    items: [
+      { href: '/dashboard/beautician/promos', label: 'Promo pages',  icon: Sparkles },
+      { href: '/dashboard/beautician/qr',     label: 'Profile QR',   icon: QrCode },
+      { href: '/dashboard/beautician/stats',  label: 'Stats',        icon: Flame },
+    ],
+  },
+  {
+    header: 'More',
+    items: [
+      { href: '/dashboard/beautician/domain', label: 'Buy custom domain',   icon: Globe2 },
+      { href: '/beautician',                  label: 'Marketplace',         icon: Store },
+      { href: '/beautician/signup',           label: 'Register beautician', icon: Palette },
+    ],
+  },
 ]
 
 const LAUNDRY_NAV_ITEMS: ReadonlyArray<NavItem> = [
@@ -160,16 +192,18 @@ export default function AppDrawer({
   const searchParams = useSearchParams()
   const currentSearch = searchParams?.toString() ?? ''
   const [email, setEmail] = useState<string | null>(null)
-  const items =
-    variant === 'partner'      ? PARTNER_NAV_ITEMS :
-    variant === 'massage'      ? MASSAGE_NAV_ITEMS :
-    variant === 'beautician'   ? BEAUTICIAN_NAV_ITEMS :
-    variant === 'laundry'      ? LAUNDRY_NAV_ITEMS :
-    variant === 'handyman'     ? HANDYMAN_NAV_ITEMS :
-    variant === 'home-clean'   ? HOME_CLEAN_NAV_ITEMS :
-    variant === 'tour-guide'   ? TOUR_GUIDE_NAV_ITEMS :
-    variant === 'rentals'      ? RENTAL_NAV_ITEMS :
-    DRIVER_NAV_ITEMS
+  // Normalize: every variant renders as NavSection[]. Flat arrays become
+  // a single header-less section so the rendering branch stays uniform.
+  const sections: ReadonlyArray<NavSection> =
+    variant === 'partner'      ? [{ items: PARTNER_NAV_ITEMS }] :
+    variant === 'massage'      ? [{ items: MASSAGE_NAV_ITEMS }] :
+    variant === 'beautician'   ? BEAUTICIAN_NAV_SECTIONS :
+    variant === 'laundry'      ? [{ items: LAUNDRY_NAV_ITEMS }] :
+    variant === 'handyman'     ? [{ items: HANDYMAN_NAV_ITEMS }] :
+    variant === 'home-clean'   ? [{ items: HOME_CLEAN_NAV_ITEMS }] :
+    variant === 'tour-guide'   ? [{ items: TOUR_GUIDE_NAV_ITEMS }] :
+    variant === 'rentals'      ? [{ items: RENTAL_NAV_ITEMS }] :
+                                 [{ items: DRIVER_NAV_ITEMS }]
 
   // Active match supports hrefs with query strings. Path piece must match
   // (or be a prefix), and if the item carries a `?…` the current location's
@@ -272,78 +306,90 @@ export default function AppDrawer({
         {/* Nav items — per-variant brand gradient (see VARIANT_BRAND).
             Driver/partner/handyman/tour-guide/rentals stay yellow to
             match their public profile defaults; beautician/massage/
-            laundry/home-clean tint to their own brand. */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3">
-          <div className="space-y-1.5">
-            {items.map((item) => {
-              const Icon = item.icon
-              const active = !item.external && isActive(item.href)
-              const brand = VARIANT_BRAND[variant]
-              const sharedClass = 'flex items-center gap-2.5 p-1 pr-2.5 rounded-lg transition active:scale-[0.99]'
-              const sharedStyle = {
-                background: `linear-gradient(135deg, ${brand.from} 0%, ${brand.to} 100%)`,
-                color: brand.ink,
-                border: active
-                  ? '1px solid rgba(0,0,0,0.55)'
-                  : '1px solid rgba(0,0,0,0.20)',
-                boxShadow: active
-                  ? `0 4px 12px rgba(${brand.shadow},0.35), 0 0 0 1.5px rgba(0,0,0,0.15) inset`
-                  : `0 2px 6px rgba(${brand.shadow},0.22)`,
-                minHeight: 44,
-              }
-              const inner = (
-                <>
-                  <span
-                    className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-                    style={{
-                      background: '#0A0A0A',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.30) inset',
-                    }}
-                  >
-                    <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2.25} />
-                  </span>
-                  <span className="text-[13px] font-extrabold flex-1 min-w-0 truncate">
-                    {item.label}
-                  </span>
-                  {active && (
-                    <span
-                      aria-hidden
-                      className="text-[12px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
-                      style={{ background: '#0A0A0A', color: brand.onPillText }}
+            laundry/home-clean tint to their own brand. Section headers
+            (when present) split the list into logical groups; 8px gap
+            between adjacent buttons keeps every tap target's 44px touch
+            box clear of its neighbour's per WCAG 2.5.5. */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          {sections.map((section, sIdx) => (
+            <div key={section.header ?? `s-${sIdx}`}>
+              {section.header && (
+                <div className="px-1 mb-2 text-[11px] uppercase tracking-[0.08em] font-extrabold text-gray-500">
+                  {section.header}
+                </div>
+              )}
+              <div className="space-y-2">
+                {section.items.map((item) => {
+                  const Icon = item.icon
+                  const active = !item.external && isActive(item.href)
+                  const brand = VARIANT_BRAND[variant]
+                  const sharedClass = 'flex items-center gap-2.5 p-1 pr-2.5 rounded-lg transition active:scale-[0.99]'
+                  const sharedStyle = {
+                    background: `linear-gradient(135deg, ${brand.from} 0%, ${brand.to} 100%)`,
+                    color: brand.ink,
+                    border: active
+                      ? '1px solid rgba(0,0,0,0.55)'
+                      : '1px solid rgba(0,0,0,0.20)',
+                    boxShadow: active
+                      ? `0 4px 12px rgba(${brand.shadow},0.35), 0 0 0 1.5px rgba(0,0,0,0.15) inset`
+                      : `0 2px 6px rgba(${brand.shadow},0.22)`,
+                    minHeight: 44,
+                  }
+                  const inner = (
+                    <>
+                      <span
+                        className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                        style={{
+                          background: '#0A0A0A',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.30) inset',
+                        }}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2.25} />
+                      </span>
+                      <span className="text-[13px] font-extrabold flex-1 min-w-0 truncate">
+                        {item.label}
+                      </span>
+                      {active && (
+                        <span
+                          aria-hidden
+                          className="text-[12px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
+                          style={{ background: '#0A0A0A', color: brand.onPillText }}
+                        >
+                          ON
+                        </span>
+                      )}
+                    </>
+                  )
+                  if (item.external) {
+                    return (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={sharedClass}
+                        style={sharedStyle}
+                      >
+                        {inner}
+                      </a>
+                    )
+                  }
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onClose}
+                      className={sharedClass}
+                      style={sharedStyle}
                     >
-                      ON
-                    </span>
-                  )}
-                </>
-              )
-              if (item.external) {
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={sharedClass}
-                    style={sharedStyle}
-                  >
-                    {inner}
-                  </a>
-                )
-              }
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onClose}
-                  className={sharedClass}
-                  style={sharedStyle}
-                >
-                  {inner}
-                </Link>
-              )
-            })}
-          </div>
+                      {inner}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Sign out at the bottom (only when signed in) */}

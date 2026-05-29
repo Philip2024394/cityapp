@@ -234,6 +234,8 @@ type Patch = Partial<{
   latitude:              number | null
   longitude:             number | null
   country_code:          string
+  contact_form_enabled:  boolean
+  contact_email:         string | null
 }>
 
 function EditForm({
@@ -261,6 +263,8 @@ function EditForm({
     has_physical_location?: boolean | null
     latitude?:              number | null
     longitude?:             number | null
+    contact_form_enabled?:  boolean | null
+    contact_email?:         string | null
   }
   const [f, setF] = useState<{
     display_name: string
@@ -291,6 +295,8 @@ function EditForm({
     latitude:              number | null
     longitude:             number | null
     country_code:          string
+    contact_form_enabled:  boolean
+    contact_email:         string | null
   }>({
     display_name: provider.display_name,
     gender: provider.gender,
@@ -320,6 +326,8 @@ function EditForm({
     latitude:              p.latitude ?? null,
     longitude:             p.longitude ?? null,
     country_code:          (p as { country_code?: string | null }).country_code ?? 'ID',
+    contact_form_enabled:  Boolean(p.contact_form_enabled),
+    contact_email:         p.contact_email ?? null,
   })
 
   function upd<K extends keyof typeof f>(k: K, v: typeof f[K]) {
@@ -434,6 +442,8 @@ function EditForm({
             operating_hours:    f.operating_hours,
             certifications:     f.certifications,
             languages:          f.languages,
+            contact_form_enabled: f.contact_form_enabled,
+            contact_email:        f.contact_email,
           }}
           onChange={(patch) => setF((prev) => ({ ...prev, ...patch }))}
         />

@@ -30,6 +30,13 @@ export type UniversalProfileBody = {
   wechat_id?:       string | null
   line_id?:         string | null
   kakaotalk_id?:    string | null
+  // mig 0137 — contact form opt-in
+  contact_form_enabled?: boolean
+  contact_email?:        string | null
+  // mig 0140 — primary CTA animation
+  cta_button_effect?: 'none' | 'pulse' | 'glow' | 'shake' | null
+  // mig 0141 — Animated avatar frame style
+  avatar_frame_style?: 'none' | 'gradient' | 'pulse' | 'rainbow' | null
 }
 
 type Result =
@@ -186,6 +193,47 @@ export function validateUniversalProfile(body: UniversalProfileBody): Result {
       if (!/^[A-Za-z0-9@+./_\-:]+$/.test(v)) return { ok: false, error: `invalid_${k}` }
     }
     out[k] = v
+  }
+
+  // mig 0137 — Contact form opt-in. Both fields validated independently
+  // so partial saves (e.g. just setting the email, then later toggling
+  // on) don't 400. The public profile gates the button on
+  // (contact_form_enabled AND contact_email) so a missing email simply
+  // hides the button without an error.
+  if (body.contact_form_enabled !== undefined) {
+    if (typeof body.contact_form_enabled !== 'boolean') return { ok: false, error: 'invalid_contact_form_enabled' }
+    out.contact_form_enabled = body.contact_form_enabled
+  }
+  if (body.contact_email !== undefined) {
+    const raw = body.contact_email
+    const v = typeof raw === 'string' ? raw.trim() || null : null
+    if (v) {
+      if (v.length > 254) return { ok: false, error: 'contact_email_too_long' }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return { ok: false, error: 'invalid_contact_email' }
+    }
+    out.contact_email = v
+  }
+
+  // mig 0140 — Primary CTA button animation. Must be one of the four
+  // allowlisted values; DB CHECK enforces this independently but the
+  // route shouldn't 500 on a typo from the client.
+  if (body.cta_button_effect !== undefined) {
+    const v = body.cta_button_effect
+    if (v !== null && v !== 'none' && v !== 'pulse' && v !== 'glow' && v !== 'shake') {
+      return { ok: false, error: 'invalid_cta_button_effect' }
+    }
+    out.cta_button_effect = v ?? 'none'
+  }
+
+  // mig 0141 — Animated avatar frame style. Same defensive pattern as
+  // cta_button_effect above: DB CHECK is the source of truth, but
+  // catching invalid values here gives the client a 400 instead of a 500.
+  if (body.avatar_frame_style !== undefined) {
+    const v = body.avatar_frame_style
+    if (v !== null && v !== 'none' && v !== 'gradient' && v !== 'pulse' && v !== 'rainbow') {
+      return { ok: false, error: 'invalid_avatar_frame_style' }
+    }
+    out.avatar_frame_style = v ?? 'none'
   }
 
   return { ok: true, fields: out }

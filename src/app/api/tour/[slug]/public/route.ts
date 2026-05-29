@@ -34,6 +34,8 @@ const REAL_COLS = [
   'x_url','snapchat_url','website_url',
   // mig 0132 — chat handles
   'telegram_handle','wechat_id','line_id','kakaotalk_id',
+  // mig 0137 — contact form opt-in
+  'contact_form_enabled','contact_email',
   'operating_hours','certifications',
   'last_active_at',
   // mig 0087 — per-guide accent colour

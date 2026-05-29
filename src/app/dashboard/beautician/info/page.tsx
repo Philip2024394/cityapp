@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Locate, Camera, User, Phone, MapPin, Sparkles, Globe2 } from 'lucide-react'
+import { Locate, Camera, User, Phone, MapPin, Sparkles, Globe2, Mail } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
@@ -34,6 +34,9 @@ type Extras = {
   wechat_id?:       string | null
   line_id?:         string | null
   kakaotalk_id?:    string | null
+  // mig 0137 — contact form opt-in
+  contact_form_enabled?: boolean | null
+  contact_email?:        string | null
   service_locations?: Array<'home' | 'hotel' | 'villa'> | null
 }
 type FullProvider = BeauticianProvider & Extras
@@ -125,6 +128,8 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     wechat_id:       string
     line_id:         string
     kakaotalk_id:    string
+    contact_form_enabled: boolean
+    contact_email:        string
     service_locations: Array<'home' | 'hotel' | 'villa'>
   }
   const [f, setF] = useState<FormState>({
@@ -148,6 +153,8 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     wechat_id:           (provider as Extras).wechat_id       ?? '',
     line_id:             (provider as Extras).line_id         ?? '',
     kakaotalk_id:        (provider as Extras).kakaotalk_id    ?? '',
+    contact_form_enabled: Boolean((provider as Extras).contact_form_enabled),
+    contact_email:       (provider as Extras).contact_email   ?? '',
     service_locations:   provider.service_locations ?? ['home','hotel','villa'],
   })
   const [saving, setSaving] = useState(false)
@@ -227,6 +234,8 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
           wechat_id:             f.wechat_id.trim()       || null,
           line_id:               f.line_id.trim()         || null,
           kakaotalk_id:          f.kakaotalk_id.trim()    || null,
+          contact_form_enabled:  f.contact_form_enabled,
+          contact_email:         f.contact_email.trim()   || null,
           service_locations:     f.service_locations,
         }),
       })
@@ -410,6 +419,41 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
             spellCheck={false}
           />
         </Field>
+      </Card>
+
+      {/* Contact form — public profile shows a form when enabled +
+          email set. Submissions hit /api/beautician/contact, get logged
+          in contact_messages, and Resend emails contact_email with
+          reply-to set to the sender so you can reply in your inbox. */}
+      <Card title="Contact form (optional)" hint="Let visitors send you an email message from your public page. Off by default." icon={<Mail size={18} />}>
+        <Field label="Email for notifications" hint="Messages forwarded here. Reply-to is set to the sender so you can reply from your inbox.">
+          <input
+            type="email"
+            value={f.contact_email}
+            onChange={(e) => upd('contact_email', e.target.value)}
+            className={inputCls}
+            placeholder="you@example.com"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        </Field>
+        <label className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 border border-gray-200 p-3 cursor-pointer">
+          <div className="min-w-0">
+            <div className="text-[13px] font-extrabold text-black">Show contact form on my public page</div>
+            <div className="text-[12px] text-black/55 leading-snug">When on, visitors see a "Contact Us" form below the Visit Us section. Requires the email above.</div>
+          </div>
+          <input
+            type="checkbox"
+            checked={f.contact_form_enabled}
+            onChange={(e) => upd('contact_form_enabled', e.target.checked)}
+            disabled={!f.contact_email.trim()}
+            className="w-5 h-5 accent-pink-500"
+          />
+        </label>
+        {f.contact_form_enabled && !f.contact_email.trim() && (
+          <p className="text-[12px] text-amber-700 leading-snug">⚠ Set an email above before enabling.</p>
+        )}
       </Card>
 
       {/* Chat handles — WhatsApp is the primary number above. These four

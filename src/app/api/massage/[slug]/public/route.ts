@@ -23,6 +23,8 @@ const PUBLIC_COLS = [
   'x_url','snapchat_url','website_url',
   // mig 0132 — chat handles
   'telegram_handle','wechat_id','line_id','kakaotalk_id',
+  // mig 0137 — contact form opt-in
+  'contact_form_enabled','contact_email',
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',
@@ -52,7 +54,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     .from('massage_providers')
     .select(PUBLIC_COLS)
     .eq('slug', slug)
-    .eq('status', 'active')
+    // status='active' gate removed — KTP verification gone (see
+    // project_indocity_no_ktp_required memory). Profile is direct-link.
     .maybeSingle()
 
   if (error) return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })

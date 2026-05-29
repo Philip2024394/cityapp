@@ -160,6 +160,8 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
     certifications?:     string[] | null
     languages?:          string[] | null
     country_code?:       string | null
+    contact_form_enabled?: boolean | null
+    contact_email?:        string | null
   }
   const [f, setF] = useState({
     display_name: provider.display_name,
@@ -186,6 +188,8 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
     certifications:     p.certifications ?? [],
     languages:          p.languages ?? [],
     country_code:       p.country_code ?? 'ID',
+    contact_form_enabled: Boolean(p.contact_form_enabled),
+    contact_email:        (p.contact_email ?? null) as string | null,
   })
   const [saving, setSaving] = useState(false)
   const [flash, setFlash] = useState(false)
@@ -223,6 +227,8 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
           certifications:     f.certifications,
           languages:          f.languages,
           country_code:       f.country_code,
+          contact_form_enabled: f.contact_form_enabled,
+          contact_email:        f.contact_email,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -266,6 +272,8 @@ function EditForm({ provider, onSaved }: { provider: LaundryProvider; onSaved: (
             operating_hours:    f.operating_hours,
             certifications:     f.certifications,
             languages:          f.languages,
+            contact_form_enabled: f.contact_form_enabled,
+            contact_email:        f.contact_email,
           }}
           onChange={(patch) => setF((prev) => ({ ...prev, ...patch }))}
         />

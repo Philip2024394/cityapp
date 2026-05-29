@@ -58,6 +58,9 @@ export type UniversalProfileExtras = {
   wechat_id?:          string | null
   line_id?:            string | null
   kakaotalk_id?:       string | null
+  // mig 0137 — public-page contact form opt-in
+  contact_form_enabled?: boolean
+  contact_email?:        string | null
   operating_hours?:    Record<string, string> | null
   certifications?:     string[]
   languages?:          string[]
@@ -175,6 +178,32 @@ export default function UniversalProfileExtrasEditor({
         <input type="text" placeholder="KakaoTalk ID" value={value.kakaotalk_id ?? ''}
           onChange={(e) => onChange({ ...value, kakaotalk_id: e.target.value.trim() || null })}
           className={inputCls} />
+      </div>
+
+      {/* Contact form (mig 0137) — optional public form on the profile
+          page. Toggle is disabled until contact_email has a value so
+          the panel never renders without a destination. */}
+      <div className="space-y-2">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+          Contact form (optional)
+        </div>
+        <input
+          type="email"
+          placeholder="Email for notifications (you@example.com)"
+          value={value.contact_email ?? ''}
+          onChange={(e) => onChange({ ...value, contact_email: e.target.value.trim() || null })}
+          className={inputCls}
+        />
+        <label className="flex items-center justify-between gap-3 rounded-xl bg-white/5 border border-white/10 p-3 cursor-pointer">
+          <span className="text-[13px] text-ink/85">Show contact form on my public page</span>
+          <input
+            type="checkbox"
+            checked={Boolean(value.contact_form_enabled)}
+            onChange={(e) => onChange({ ...value, contact_form_enabled: e.target.checked })}
+            disabled={!value.contact_email?.trim()}
+            className="w-5 h-5"
+          />
+        </label>
       </div>
 
       {/* Operating hours */}

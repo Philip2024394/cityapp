@@ -75,6 +75,9 @@ export type BeauticianProviderPublic = Pick<
   wechat_id?:       string | null
   line_id?:         string | null
   kakaotalk_id?:    string | null
+  // mig 0137 — contact form opt-in
+  contact_form_enabled?: boolean | null
+  contact_email?:        string | null
   operating_hours?:    Record<string, string> | null
   certifications?:     string[] | null
   last_active_at?:     string | null
@@ -105,6 +108,15 @@ export type BeauticianProviderPublic = Pick<
   // willing to travel to. Drives the location-icon row on the public
   // profile hero + the bottom-left icons on marketplace cards.
   service_locations?: Array<'home' | 'hotel' | 'villa'> | null
+  // mig 0140 — Animation applied to the primary public-profile CTA
+  // (the Contact / WhatsApp button under the portfolio). 'none' keeps
+  // the existing static button. Effects honour prefers-reduced-motion.
+  cta_button_effect?: 'none' | 'pulse' | 'glow' | 'shake' | null
+  // mig 0141 — Animated ring style around the public-profile avatar.
+  // 'none' keeps the existing static look; gradient/pulse/rainbow each
+  // light up the prominent hero avatar in src/components/profile/
+  // AvatarFrame.tsx.
+  avatar_frame_style?: 'none' | 'gradient' | 'pulse' | 'rainbow' | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.

@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, Minus, Plus, ShoppingBag, X } from 'lucide-react'
+import { ArrowLeftRight, MessageCircle, Minus, Plus, ShoppingBag, X } from 'lucide-react'
 import { resolveBadge, type ServicePhotoBadge } from '@/lib/badges'
+import BeforeAfterSlider from './BeforeAfterSlider'
 
 // Auto-drifting horizontal portfolio carousel + the lightbox popup that
 // opens when a card's View Details is tapped. Extracted from
@@ -238,24 +239,18 @@ function PortfolioCard({
 
 export function PortfolioDetailPopup({
   photo, themeColor, canContact, onClose, onContact,
-  onAddToCart, cartQty,
+  onAddToCart, cartQty, currencySymbol = 'Rp',
 }: {
   photo:      PortfolioPhoto
   themeColor: string
   canContact: boolean
   onClose:    () => void
   onContact:  () => void
-  /** Optional. When supplied AND photo has a positive price, the popup
-   *  renders a quantity stepper + "Add to cart" CTA below the price.
-   *  Beautician + handyman call sites omit this prop entirely and the
-   *  cart UI is invisible — no regression there. */
   onAddToCart?: (qty: number) => void
-  /** Initial quantity when opening the popup. Useful for items already
-   *  in the cart (parent can pass the current line qty so editing feels
-   *  continuous). Defaults to 1 otherwise. */
   cartQty?: number
+  currencySymbol?: string
 }) {
-  type View = 'main' | 'before' | 'after'
+  type View = 'main' | 'before' | 'after' | 'compare'
   const [view, setView] = useState<View>('main')
   // Local stepper qty — only matters when onAddToCart is supplied.
   // Clamped to 1..99 so a user can't ship a 0-quantity order or fat-
@@ -264,6 +259,7 @@ export function PortfolioDetailPopup({
   const [qty, setQty] = useState<number>(initialQty)
   const hasBefore = Boolean(photo.before_image_url)
   const hasAfter  = Boolean(photo.after_image_url)
+  const hasCompare = hasBefore && hasAfter
   const showThumbs = hasBefore || hasAfter
   const priceIdr  = typeof photo.price_idr === 'number' && photo.price_idr > 0 ? photo.price_idr : null
   const showCartUi = Boolean(onAddToCart) && priceIdr != null
@@ -294,19 +290,29 @@ export function PortfolioDetailPopup({
         </button>
 
         <div className="relative">
-          <img
-            src={mainSrc || photo.url}
-            alt={photo.name || ''}
-            className="w-full aspect-square object-cover transition-opacity"
-            style={{ objectPosition: mainPosition }}
-          />
-          {view !== 'main' && (
-            <div
-              className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white shadow"
-              style={{ background: themeColor }}
-            >
-              {view === 'before' ? 'Before' : 'After'}
-            </div>
+          {view === 'compare' && hasCompare ? (
+            <BeforeAfterSlider
+              beforeUrl={photo.before_image_url ?? ''}
+              afterUrl={photo.after_image_url ?? ''}
+              themeColor={themeColor}
+            />
+          ) : (
+            <>
+              <img
+                src={mainSrc || photo.url}
+                alt={photo.name || ''}
+                className="w-full aspect-square object-cover transition-opacity"
+                style={{ objectPosition: mainPosition }}
+              />
+              {view !== 'main' && (
+                <div
+                  className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white shadow"
+                  style={{ background: themeColor }}
+                >
+                  {view === 'before' ? 'Before' : 'After'}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -315,7 +321,7 @@ export function PortfolioDetailPopup({
             <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 mb-1.5">
               Compare
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className={`grid gap-2 ${hasCompare ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <ThumbButton
                 label="Main"
                 src={photo.url}
@@ -342,6 +348,16 @@ export function PortfolioDetailPopup({
                   themeColor={themeColor}
                 />
               )}
+              {hasCompare && (
+                <ThumbButton
+                  label="Compare"
+                  src={photo.after_image_url ?? ''}
+                  active={view === 'compare'}
+                  onClick={() => setView('compare')}
+                  themeColor={themeColor}
+                  overlayIcon
+                />
+              )}
             </div>
           </div>
         )}
@@ -355,10 +371,10 @@ export function PortfolioDetailPopup({
               {photo.description}
             </p>
           )}
-          {priceLabel(photo.price_idr) && (
+          {priceLabel(photo.price_idr, currencySymbol) && (
             <div className="leading-none">
               <div className="text-[22px] font-black text-black">
-                {priceLabel(photo.price_idr)}
+                {priceLabel(photo.price_idr, currencySymbol)}
               </div>
               <div className="text-[11px] font-medium text-gray-500 mt-1">Start from</div>
             </div>
@@ -410,7 +426,7 @@ export function PortfolioDetailPopup({
                 style={{ background: '#FACC15', color: '#0F172A', minHeight: 44 }}
               >
                 <ShoppingBag className="w-4 h-4" strokeWidth={2.5} />
-                Add {qty} to cart · {priceLabel(totalIdr)}
+                Add {qty} to cart · {priceLabel(totalIdr, currencySymbol)}
               </button>
             </>
           )}
@@ -433,7 +449,7 @@ export function PortfolioDetailPopup({
 }
 
 function ThumbButton({
-  label, src, active, onClick, themeColor, objectPosition,
+  label, src, active, onClick, themeColor, objectPosition, overlayIcon,
 }: {
   label:           string
   src:             string
@@ -441,6 +457,10 @@ function ThumbButton({
   onClick:         () => void
   themeColor:      string
   objectPosition?: string
+  /** When true, overlays an ArrowLeftRight glyph on the thumb so the
+   *  user can tell at a glance this is the interactive comparison view,
+   *  not just another static "After" shot. */
+  overlayIcon?:    boolean
 }) {
   return (
     <button
@@ -461,6 +481,19 @@ function ThumbButton({
         className="absolute inset-0 w-full h-full object-cover"
         style={{ objectPosition: objectPosition || 'center' }}
       />
+      {overlayIcon && (
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.25)' }}
+        >
+          <div
+            className="rounded-full bg-white flex items-center justify-center shadow"
+            style={{ width: 24, height: 24, border: `2px solid ${themeColor}` }}
+          >
+            <ArrowLeftRight className="w-3 h-3" strokeWidth={2.5} style={{ color: themeColor }} />
+          </div>
+        </div>
+      )}
       <div
         className="absolute bottom-0 inset-x-0 text-center text-[10px] font-black uppercase tracking-wider py-0.5"
         style={{

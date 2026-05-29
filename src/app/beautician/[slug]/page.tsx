@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, type LucideIcon } from 'lucide-react'
+import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, Mail, type LucideIcon } from 'lucide-react'
 import VisitUsMap from '@/components/profile/VisitUsMap'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioCarousel, {
@@ -11,12 +11,14 @@ import PortfolioCarousel, {
 } from '@/components/profile/PortfolioCarousel'
 import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
 import { countryByCode } from '@/lib/data/countries'
+import ContactFormPanel from '@/components/profile/ContactFormPanel'
 import VisitUsPanel, {
   SocialInstagramIcon,
   SocialTikTokIcon,
   SocialFacebookIcon,
 } from '@/components/profile/VisitUsPanel'
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
+import AvatarFrame from '@/components/profile/AvatarFrame'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { Sparkles } from 'lucide-react'
@@ -78,6 +80,11 @@ export default function BeauticianProviderPage() {
   // Visit Us view — also replaces content area when active (only
   // available when the beautician has opted into a physical location).
   const [showVisitUs, setShowVisitUs] = useState(false)
+  // Contact form view — toggled by the brand-coloured "Contact Us"
+  // badge in the info card (replaces Top Rated Seller when the
+  // provider has opted in via /info). Renders ContactFormPanel as
+  // the page's main content, fully separate from Visit Us.
+  const [showContactForm, setShowContactForm] = useState(false)
   const [reviews, setReviews]         = useState<ReviewRow[] | null>(null)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsRefreshCount, setReviewsRefreshCount] = useState(0)
@@ -309,21 +316,18 @@ export default function BeauticianProviderPage() {
             className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
             style={{ borderRadius: 15 }}
           >
-            {/* Profile image */}
-            {p.profile_image_url ? (
-              <img
-                src={p.profile_image_url}
-                alt={p.display_name}
-                className="w-16 h-16 rounded-full object-cover shrink-0 border-2 border-white shadow"
-              />
-            ) : (
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white text-[22px] font-black shrink-0 border-2 border-white shadow"
-                style={{ background: '#EC4899' }}
-              >
-                {p.display_name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            {/* Profile image — wrapped in AvatarFrame so the optional
+                animated ring (mig 0141) renders around the photo. Size
+                64px keeps parity with the previous w-16 h-16 footprint. */}
+            <AvatarFrame
+              src={p.profile_image_url ?? null}
+              alt={p.display_name}
+              size={64}
+              style={p.avatar_frame_style ?? 'none'}
+              themeColor={theme}
+              fallbackInitial={p.display_name?.[0]?.toUpperCase()}
+            />
+
 
             {/* Name + city + rating */}
             <div className="min-w-0 flex-1">
@@ -356,19 +360,42 @@ export default function BeauticianProviderPage() {
               </div>
             </div>
 
-            {/* Top Rated Seller badge — neutral gray pill so the chip
-                stays unchanged across profiles; only the Award icon +
-                text tint the active profile theme color so Mira/Ayu/
-                Rina/Dewi each show their own accent. */}
-            <div
-              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
-              style={{ background: '#F3F4F6' }}
-            >
-              <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: theme }} />
-              <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
-                Top Rated Seller
-              </span>
-            </div>
+            {/* Top Rated Seller badge — flips to a brand-coloured
+                Contact Us button when the provider has opted into the
+                email contact form (mig 0137). Tapping it switches the
+                page's main content to the ContactForm panel, leaving
+                Visit Us untouched. */}
+            {(() => {
+              const hasContactForm = Boolean(
+                (p as unknown as { contact_form_enabled?: boolean }).contact_form_enabled
+                && (p as unknown as { contact_email?: string | null }).contact_email,
+              )
+              if (hasContactForm) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setShowContactForm(true); setShowVisitUs(false); setShowReviews(false) }}
+                    aria-pressed={showContactForm}
+                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-white shadow-sm active:scale-[0.96] transition"
+                    style={{ background: theme }}
+                  >
+                    <Mail className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    <span className="text-[11px] font-extrabold whitespace-nowrap">Contact Us</span>
+                  </button>
+                )
+              }
+              return (
+                <div
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
+                  style={{ background: '#F3F4F6' }}
+                >
+                  <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: theme }} />
+                  <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
+                    Top Rated Seller
+                  </span>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>
@@ -424,6 +451,31 @@ export default function BeauticianProviderPage() {
                 : null
             }
           />
+        ) : showContactForm ? (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wider text-black">
+                <Mail className="w-3.5 h-3.5" strokeWidth={2.5} style={{ color: theme }} />
+                Contact Us
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowContactForm(false)}
+                aria-label="Close"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.96] transition"
+                style={{ color: theme }}
+              >
+                <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Close
+              </button>
+            </div>
+            <ContactFormPanel
+              displayName={p.display_name}
+              themeColor={theme}
+              endpoint="/api/beautician/contact"
+              providerSlug={p.slug}
+            />
+          </section>
         ) : showReviews ? (
           <ReviewsPanel
             providerId={p.id ?? ''}
@@ -443,10 +495,13 @@ export default function BeauticianProviderPage() {
             <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
               About {p.display_name}
             </h2>
+            {/* Visit Us button — original behaviour: gated on
+                has_physical_location only. Contact Us moved to the
+                brand-coloured badge near the rating (mig 0137 v2). */}
             {p.has_physical_location && (
               <button
                 type="button"
-                onClick={() => setShowVisitUs(true)}
+                onClick={() => { setShowVisitUs(true); setShowContactForm(false); setShowReviews(false) }}
                 className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
                 style={{ color: theme }}
               >
@@ -612,15 +667,47 @@ export default function BeauticianProviderPage() {
             </div>
           </div>
           {p.whatsapp_e164 && (
-            <button
-              type="button"
-              onClick={() => { setContactServiceName(''); setContactOpen(true) }}
-              className="inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0"
-              style={{ background: theme }}
-            >
-              <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
-              Contact
-            </button>
+            <>
+              {/* mig 0140 — Optional animation on the primary CTA. Keyframes
+                  inlined here so the public page stays self-contained;
+                  prefers-reduced-motion disables them per WCAG. */}
+              <style>{`
+                @keyframes cr-cta-pulse {
+                  0%, 100% { transform: scale(1); }
+                  50%      { transform: scale(1.05); }
+                }
+                @keyframes cr-cta-glow {
+                  0%, 100% { box-shadow: 0 0 0 0 ${theme}00, 0 2px 8px rgba(0,0,0,0.15); }
+                  50%      { box-shadow: 0 0 18px 4px ${theme}80, 0 2px 8px rgba(0,0,0,0.15); }
+                }
+                @keyframes cr-cta-shake {
+                  0%, 92%, 100% { transform: translateX(0); }
+                  94%           { transform: translateX(-2px); }
+                  96%           { transform: translateX(2px); }
+                  98%           { transform: translateX(-2px); }
+                }
+                .cr-cta-pulse { animation: cr-cta-pulse 2s ease-in-out infinite; transform-origin: center; }
+                .cr-cta-glow  { animation: cr-cta-glow  2s ease-in-out infinite; }
+                .cr-cta-shake { animation: cr-cta-shake 4s ease-in-out infinite; }
+                @media (prefers-reduced-motion: reduce) {
+                  .cr-cta-pulse, .cr-cta-glow, .cr-cta-shake { animation: none !important; }
+                }
+              `}</style>
+              <button
+                type="button"
+                onClick={() => { setContactServiceName(''); setContactOpen(true) }}
+                className={`inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0 ${
+                  p.cta_button_effect === 'pulse' ? 'cr-cta-pulse'
+                : p.cta_button_effect === 'glow'  ? 'cr-cta-glow'
+                : p.cta_button_effect === 'shake' ? 'cr-cta-shake'
+                : ''
+                }`}
+                style={{ background: theme }}
+              >
+                <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
+                Contact
+              </button>
+            </>
           )}
         </div>
           </>

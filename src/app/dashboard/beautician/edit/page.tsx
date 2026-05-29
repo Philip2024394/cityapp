@@ -2,12 +2,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal } from 'lucide-react'
+import { ChevronLeft, Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal, Zap, UserCircle2 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
 import ThemeColorPicker from '@/components/dashboard/ThemeColorPicker'
 import DomainRequestModal from '@/components/dashboard/DomainRequestModal'
+import AvatarFrame, { type AvatarFrameStyle } from '@/components/profile/AvatarFrame'
 import {
   BANNER_LIBRARY,
   BEAUTICIAN_SERVICES_OFFERED,
@@ -42,6 +43,10 @@ type Extras = {
   promo_text?:      string | null
   services_offered?: BeauticianServiceOffered[] | null
   service_photos?: Partial<Record<BeauticianServiceOffered, BeauticianServicePhoto[]>> | null
+  // mig 0140 — primary CTA button animation
+  cta_button_effect?: 'none' | 'pulse' | 'glow' | 'shake' | null
+  // mig 0141 — animated avatar ring style
+  avatar_frame_style?: 'none' | 'gradient' | 'pulse' | 'rainbow' | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -290,6 +295,26 @@ function BannerInlineControls({
     { id: 'underline', label: 'Underline',     desc: 'Elegant accent line' },
   ]
 
+  // mig 0140 — Animation applied to the primary public-profile CTA
+  // (the Contact button under the portfolio). Saved immediately when
+  // the beautician taps a card, no debounce.
+  const CTA_EFFECTS: Array<{ id: 'none' | 'pulse' | 'glow' | 'shake'; label: string; desc: string }> = [
+    { id: 'none',  label: 'None',  desc: 'Static' },
+    { id: 'pulse', label: 'Pulse', desc: 'Gentle scale pulse' },
+    { id: 'glow',  label: 'Glow',  desc: 'Glowing shadow' },
+    { id: 'shake', label: 'Shake', desc: 'Subtle nudge' },
+  ]
+
+  // mig 0141 — Animated ring around the public-profile avatar. Pick-one
+  // saved immediately; the rendering lives in
+  // src/components/profile/AvatarFrame.tsx.
+  const AVATAR_FRAMES: Array<{ id: 'none' | 'gradient' | 'pulse' | 'rainbow'; label: string; desc: string }> = [
+    { id: 'none',     label: 'None',     desc: 'Plain ring' },
+    { id: 'gradient', label: 'Gradient', desc: 'Instagram-style' },
+    { id: 'pulse',    label: 'Pulse',    desc: 'Pulsing brand colour' },
+    { id: 'rainbow',  label: 'Rainbow',  desc: 'Spinning conic gradient' },
+  ]
+
   return (
     <div className="mt-4 space-y-4">
       {/* Auto-save badge */}
@@ -381,6 +406,60 @@ function BannerInlineControls({
               >
                 <div className="text-[13px] font-extrabold">{ef.label}</div>
                 <div className={`text-[12px] ${on ? 'text-white/85' : 'text-black/55'}`}>{ef.desc}</div>
+              </button>
+            )
+          })}
+        </div>
+      </Section>
+
+      {/* CTA button effect — animation for the primary Contact button on
+          the public profile (mig 0140). Same pick-one UX as the text
+          effect section above. Saves immediately on tap. */}
+      <Section title="CTA button effect" icon={<Zap size={16} strokeWidth={2.5} />}>
+        <div className="grid grid-cols-2 gap-2">
+          {CTA_EFFECTS.map((ef) => {
+            const current = (provider.cta_button_effect ?? 'none') as 'none' | 'pulse' | 'glow' | 'shake'
+            const on = current === ef.id
+            return (
+              <button
+                key={ef.id}
+                type="button"
+                onClick={() => onSave({ cta_button_effect: ef.id })}
+                className={`text-left rounded-xl p-3 border transition active:scale-[0.98] ${
+                  on ? 'bg-pink-500 text-white border-pink-500 shadow-[0_2px_10px_rgba(236,72,153,0.35)]' : 'bg-gray-50 text-black border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <div className="text-[13px] font-extrabold">{ef.label}</div>
+                <div className={`text-[12px] ${on ? 'text-white/85' : 'text-black/55'}`}>{ef.desc}</div>
+              </button>
+            )
+          })}
+        </div>
+      </Section>
+
+      {/* Avatar frame — animated ring around the public-profile avatar
+          (mig 0141). Same pick-one UX as the text + CTA effect sections.
+          Each tile shows a tiny preview of the ring style so the
+          beautician can see the effect without leaving the dashboard. */}
+      <Section title="Avatar frame" icon={<UserCircle2 size={16} strokeWidth={2.5} />}>
+        <div className="grid grid-cols-2 gap-2">
+          {AVATAR_FRAMES.map((af) => {
+            const current = (provider.avatar_frame_style ?? 'none') as 'none' | 'gradient' | 'pulse' | 'rainbow'
+            const on = current === af.id
+            return (
+              <button
+                key={af.id}
+                type="button"
+                onClick={() => onSave({ avatar_frame_style: af.id })}
+                className={`text-left rounded-xl p-3 border transition active:scale-[0.98] flex items-center gap-3 ${
+                  on ? 'bg-pink-500 text-white border-pink-500 shadow-[0_2px_10px_rgba(236,72,153,0.35)]' : 'bg-gray-50 text-black border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <AvatarFramePreview style={af.id} themeColor={theme} />
+                <div className="min-w-0">
+                  <div className="text-[13px] font-extrabold truncate">{af.label}</div>
+                  <div className={`text-[12px] ${on ? 'text-white/85' : 'text-black/55'} truncate`}>{af.desc}</div>
+                </div>
               </button>
             )
           })}
@@ -522,6 +601,24 @@ function PromoTextEditor({
       <div className={`text-[12px] tabular-nums text-right ${draft.length >= 450 ? 'text-amber-600' : 'text-black/45'}`}>
         {draft.length} / 500
       </div>
+    </div>
+  )
+}
+
+// Small inline preview of an avatar frame for the pick-one tiles. Uses
+// the same AvatarFrame renderer the public profile uses, so what the
+// beautician sees in the dashboard matches the live result exactly.
+function AvatarFramePreview({ style, themeColor }: { style: AvatarFrameStyle; themeColor: string }) {
+  return (
+    <div className="shrink-0">
+      <AvatarFrame
+        src={null}
+        alt=""
+        size={32}
+        style={style}
+        themeColor={themeColor}
+        fallbackInitial="A"
+      />
     </div>
   )
 }

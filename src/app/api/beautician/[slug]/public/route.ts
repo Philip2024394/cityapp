@@ -21,6 +21,8 @@ const PUBLIC_COLS = [
   'country_code','custom_services_offered',
   // mig 0132 — chat handles
   'telegram_handle','wechat_id','line_id','kakaotalk_id',
+  // mig 0137 — contact form opt-in
+  'contact_form_enabled','contact_email',
   'operating_hours','certifications',
   'last_active_at','created_at',
   'subscription_status',
@@ -42,6 +44,10 @@ const PUBLIC_COLS = [
   'busy_dates',
   // mig 0086 service locations (home / hotel / villa subset)
   'service_locations',
+  // mig 0140 primary CTA button animation
+  'cta_button_effect',
+  // mig 0141 animated avatar frame style
+  'avatar_frame_style',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
@@ -52,11 +58,14 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ error: 'service_role_not_configured' }, { status: 503 })
 
+  // status='active' gate intentionally omitted — KTP verification was
+  // removed (see project_indocity_no_ktp_required memory). The app
+  // belongs to the user; their profile is renderable as soon as they
+  // create it, no admin approval step.
   const { data, error } = await admin
     .from('beautician_providers')
     .select(PUBLIC_COLS)
     .eq('slug', slug)
-    .eq('status', 'active')
     .maybeSingle()
   if (error) {
     console.error('[beautician/slug/public] fetch failed', { code: error.code, message: error.message })

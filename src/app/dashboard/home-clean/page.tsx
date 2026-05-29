@@ -141,6 +141,8 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
     certifications?:     string[] | null
     languages?:          string[] | null
     country_code?:       string | null
+    contact_form_enabled?: boolean | null
+    contact_email?:        string | null
   }
   const [f, setF] = useState<{
     display_name: string
@@ -164,6 +166,8 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
     certifications:     string[]
     languages:          string[]
     country_code:       string
+    contact_form_enabled: boolean
+    contact_email:        string | null
   }>({
     display_name: p.display_name,
     years_experience: p.years_experience,
@@ -186,6 +190,8 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
     certifications:     pp.certifications ?? [],
     languages:          pp.languages ?? [],
     country_code:       pp.country_code ?? 'ID',
+    contact_form_enabled: Boolean(pp.contact_form_enabled),
+    contact_email:        pp.contact_email ?? null,
   })
   const [saving, setSaving] = useState(false)
   const [flash, setFlash] = useState(false)
@@ -220,6 +226,8 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
           certifications:     f.certifications,
           languages:          f.languages,
           country_code:       f.country_code,
+          contact_form_enabled: f.contact_form_enabled,
+          contact_email:        f.contact_email,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -258,6 +266,8 @@ function EditForm({ p, onSaved }: { p: HomeCleanProvider; onSaved: () => void })
             operating_hours:    f.operating_hours,
             certifications:     f.certifications,
             languages:          f.languages,
+            contact_form_enabled: f.contact_form_enabled,
+            contact_email:        f.contact_email,
           }}
           onChange={(patch) => setF((prev) => ({ ...prev, ...patch }))}
         />

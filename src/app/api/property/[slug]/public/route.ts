@@ -39,6 +39,8 @@ const PUBLIC_COLS = [
   'whatsapp_e164',
   // mig 0135 — property-only backfill of the mig 0132 chat handles
   'telegram_handle','wechat_id','line_id','kakaotalk_id',
+  // mig 0137 — contact form opt-in
+  'contact_form_enabled','contact_email',
   'rating','rating_count',
   // Compliance
   'agent_license_no','verified',
@@ -58,7 +60,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     .from('property_listings')
     .select(PUBLIC_COLS)
     .eq('slug', slug)
-    .eq('status', 'active')
+    // status='active' gate removed — KTP verification gone (see
+    // project_indocity_no_ktp_required memory). Profile is direct-link.
     .maybeSingle()
   if (error) {
     console.error('[property/slug/public] fetch failed', { code: error.code, message: error.message })
