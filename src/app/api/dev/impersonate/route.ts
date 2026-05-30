@@ -27,6 +27,9 @@ function isLocalHost(host: string | null): boolean {
 }
 
 export async function GET(req: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse('Not found', { status: 404 })
+  }
   const host = req.headers.get('host')
   if (!isLocalHost(host)) {
     return new NextResponse('Not found', { status: 404 })

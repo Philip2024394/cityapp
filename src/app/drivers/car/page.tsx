@@ -19,8 +19,8 @@ import {
   UserRound,
   Package,
 } from 'lucide-react'
-import FounderCohortCounter from '@/components/pricing/FounderCohortCounter'
 import EarningModeCard from '@/components/recruitment/EarningModeCard'
+import { getSupportWhatsApp } from '@/lib/support/contacts'
 import {
   MONTHLY_PRICE_LABEL,
   YEARLY_PRICE_LABEL,
@@ -33,9 +33,7 @@ const HERO_URL =
 const BRAND_LOGO_URL =
   'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
 
-// Public WhatsApp number for driver-side support. Shared with the
-// motorbike landing; replace with the real ops line when provisioned.
-const WA_HELP = '6281234567890'
+// Public WhatsApp number for driver-side support — sourced from env via getSupportWhatsApp().
 
 export const metadata = {
   title: 'Drive your car with CityRiders — Airport, rental, tours',
@@ -155,7 +153,7 @@ export default function CarDriversLandingPage() {
                   <ArrowRight className="w-4 h-4" strokeWidth={3} />
                 </Link>
                 <a
-                  href={`https://wa.me/${WA_HELP}?text=${encodeURIComponent(
+                  href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
                     "Hi, I'm interested in listing my car on CityRiders. Can I get more info?",
                   )}`}
                   target="_blank"
@@ -369,9 +367,9 @@ export default function CarDriversLandingPage() {
             Ready to make your car earn?
           </h2>
           <p className="mt-3 text-[14px] sm:text-[16px] text-white/70 max-w-xl mx-auto">
-            Join the first 1,000 founder drivers and lock in
-            {' '}{MONTHLY_PRICE_LABEL}/month for life. Price goes up for
-            new signups once the cohort fills.
+            Early founder drivers get
+            {' '}{MONTHLY_PRICE_LABEL}/month locked in for life. Price goes up
+            for new signups once the early cohort fills.
           </p>
           <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
             <Link
@@ -383,7 +381,7 @@ export default function CarDriversLandingPage() {
               <ArrowRight className="w-4 h-4" strokeWidth={3} />
             </Link>
             <a
-              href={`https://wa.me/${WA_HELP}?text=${encodeURIComponent(
+              href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
                 "Hi, I'm interested in listing my car on CityRiders. Can I get more info?",
               )}`}
               target="_blank"

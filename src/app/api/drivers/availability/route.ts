@@ -27,11 +27,12 @@ export async function POST(req: Request) {
   const userClient = await getServerSupabase()
   if (!userClient) return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
 
+  const isProd = process.env.NODE_ENV === 'production'
   let actingUserId: string | null = null
   const { data: { user } } = await userClient.auth.getUser()
   if (user) {
     actingUserId = user.id
-  } else if (isLocalHost(req.headers.get('host'))) {
+  } else if (!isProd && isLocalHost(req.headers.get('host'))) {
     const cookieStore = await cookies()
     const devUid = cookieStore.get('cr-dev-uid')?.value
     if (devUid) actingUserId = devUid

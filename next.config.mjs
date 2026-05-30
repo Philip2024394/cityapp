@@ -81,11 +81,14 @@ const SECURITY_HEADERS = [
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
-  // Temporary: pre-existing WIP type/lint errors in the marketplace expansion
-  // commit (driver banners, tour API, DriverProfileShell split). Runtime is
-  // verified working in dev — clean up types in a follow-up pass before the
-  // next non-WIP release.
-  typescript: { ignoreBuildErrors: true },
+  // Typecheck is now enforced at build time (verified clean via `tsc --noEmit`
+  // on 2026-05-30). If a build fails here, fix the type error — do NOT flip
+  // this back to `true` without a follow-up ticket.
+  typescript: { ignoreBuildErrors: false },
+  // ESLint is still suppressed: the repo has no eslint config checked in, so
+  // `next build` cannot run lint without first scaffolding `.eslintrc.json` +
+  // adding eslint + eslint-config-next as devDependencies. Tracked separately;
+  // flip to `false` once the config + deps land.
   eslint: { ignoreDuringBuilds: true },
   // Hide the floating "N" build-status indicator Next.js shows on the
   // bottom-left in `next dev`. The badge competes with our profile-page

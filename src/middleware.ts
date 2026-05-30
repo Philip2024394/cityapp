@@ -62,7 +62,8 @@ export async function middleware(req: NextRequest) {
   // as "signed in" to avoid an immediate redirect to /login.
   const host = req.headers.get('host') || ''
   const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1')
-  const devUid = isLocalhost ? req.cookies.get('cr-dev-uid')?.value : null
+  const isProd = process.env.NODE_ENV === 'production'
+  const devUid = !isProd && isLocalhost ? req.cookies.get('cr-dev-uid')?.value : null
   const effectivelySignedIn = !!user || !!devUid
 
   // Redirect logged-in users away from auth pages

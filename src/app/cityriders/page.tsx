@@ -32,6 +32,7 @@ import {
   ArrowRight, MessageCircle, Search, Smartphone, Wallet,
   ShieldCheck, Sparkles, Bike, Car,
 } from 'lucide-react'
+import { getSupportWhatsApp } from '@/lib/support/contacts'
 
 // Customer hero — young Indonesian man between a yellow car and a
 // yellow motorbike at golden hour with a Bali gate backdrop. Signals
@@ -53,8 +54,7 @@ const PARCEL_CTA_ART_URL =
 const B2B_CTA_ART_URL =
   'https://ik.imagekit.io/nepgaxllc/asdasasasddasdasddasdasdasd-removebg-preview.png'
 
-// Customer support WhatsApp line — same as driver-side for now.
-const WA_HELP = '6281234567890'
+// Customer support WhatsApp line — sourced from env via getSupportWhatsApp().
 
 export const metadata = {
   title: 'CityRiders — Local drivers. Direct WhatsApp. No app needed.',
@@ -359,7 +359,7 @@ export default function CityRidersHomePage() {
               </p>
               <p>
                 <a
-                  href={`https://wa.me/${WA_HELP}?text=${encodeURIComponent(
+                  href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
                     'Hi, I need help with CityRiders.',
                   )}`}
                   target="_blank"

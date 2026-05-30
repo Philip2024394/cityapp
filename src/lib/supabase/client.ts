@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // Returns null in dev when env not configured so the app boots in demo mode.
 // Deliberately untyped against the Database schema (see lib/supabase/admin.ts
 // for the same tradeoff) — we validate inserts/updates at the call site.
+// Typed client migration is staged — see docs/SUPABASE_TYPES_MIGRATION.md.
 let cached: SupabaseClient | null = null
 
 export function getBrowserSupabase(): SupabaseClient | null {

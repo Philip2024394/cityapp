@@ -165,6 +165,11 @@ export async function fetchActiveDriversBrowser(
     .select('*, subscriptions(status, trial_ends_at, current_period_end)')
     .eq('status', 'active')
     .eq('vehicle_type', vehicleType)
+    // Subscription gate — exclude drivers whose paid_until has lapsed.
+    // paid_until NULL = legacy / never paid → keep showing for now.
+    // paid_until in future = active subscription.
+    // paid_until in past = expired, hide from marketplace.
+    .or(`paid_until.is.null,paid_until.gte.${new Date().toISOString().slice(0, 10)}`)
     .or(`online_until.is.null,online_until.gt.${nowIso}`)
     .order('availability', { ascending: true })
     .order('last_active_at', { ascending: false, nullsFirst: false })

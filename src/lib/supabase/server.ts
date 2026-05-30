@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // Use in Server Components, Server Actions, Route Handlers.
 // Returns null when env not configured so callers can fall through to demo data.
 // Untyped against Database schema — validate at the call site.
+// Typed client migration is staged — see docs/SUPABASE_TYPES_MIGRATION.md.
 export async function getServerSupabase(): Promise<SupabaseClient | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

@@ -10,6 +10,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 // Note: deliberately UNTYPED against the Database schema. Runtime validation
 // in each API route enforces the shape; we trade compile-time table-name
 // safety for working type inference on insert/upsert payloads in v2.49+.
+// Typed client migration is staged — see docs/SUPABASE_TYPES_MIGRATION.md
+// for the rollout plan against src/types/supabase.ts.
 let cached: SupabaseClient | null = null
 
 export function getAdminSupabase(): SupabaseClient | null {
