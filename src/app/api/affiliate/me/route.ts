@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { verifyAffiliateToken, bearerFromHeader } from '@/lib/affiliate/session'
 import { corsHeadersFor } from '@/lib/affiliate/cors'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // GET    /api/affiliate/me
@@ -70,7 +71,7 @@ export async function PATCH(req: Request) {
 
   // Whitelist + light sanitisation. Reject anything outside the allowed
   // set rather than silently ignoring — keeps the API contract clear.
-  const update: Record<string, unknown> = {}
+  const update: TableUpdate<'affiliate_agents'> = {}
   for (const k of Object.keys(body)) {
     if (!PATCHABLE.has(k)) {
       return NextResponse.json({ error: `Field not patchable: ${k}` }, { status: 400, headers: cors })
@@ -79,7 +80,7 @@ export async function PATCH(req: Request) {
     if (typeof v !== 'string' && v !== null) {
       return NextResponse.json({ error: `Field ${k} must be a string or null` }, { status: 400, headers: cors })
     }
-    update[k] = typeof v === 'string' ? v.trim() : null
+    ;(update as Record<string, unknown>)[k] = typeof v === 'string' ? v.trim() : null
   }
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400, headers: cors })

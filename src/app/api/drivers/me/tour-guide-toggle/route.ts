@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { TOUR_LANGUAGES } from '@/data/tourLanguages'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/drivers/me/tour-guide-toggle
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
     .maybeSingle()
   const prior = priorRaw as PriorRow | null
 
-  const update: Record<string, unknown> = { tour_guide_enabled: body.enabled }
+  const update: TableUpdate<'drivers'> = { tour_guide_enabled: body.enabled }
 
   // Day rate — clamp + default on first enable.
   if (body.dayRateIdr !== undefined) {

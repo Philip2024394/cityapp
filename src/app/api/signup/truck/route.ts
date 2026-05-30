@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isValidSlug, slugify } from '@/lib/slug'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/signup/truck
@@ -200,7 +201,7 @@ export async function POST(req: Request) {
 
   // 1. Ensure profile.role = driver. Also stash the full_name when the
   //    signer didn't already set it via auth metadata.
-  const profileUpdate: Record<string, unknown> = { role: 'driver' }
+  const profileUpdate: TableUpdate<'profiles'> = { role: 'driver' }
   if (body.full_name && body.full_name.trim()) {
     profileUpdate.full_name = body.full_name.trim()
   }

@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { encryptKey, previewLast4 } from '@/lib/security/keyVault'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 export const runtime = 'nodejs'
 
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
 
-  const update: Record<string, unknown> = {}
+  const update: TableUpdate<'beautician_providers'> = {}
 
   if (body.payment_provider !== undefined) {
     if (body.payment_provider !== 'none' && body.payment_provider !== 'stripe' && body.payment_provider !== 'midtrans') {

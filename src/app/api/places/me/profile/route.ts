@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl } from '@/lib/validation/images'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // POST /api/places/me/profile — partial update of the signed-in user's
 // place row. Mirrors /api/beautician/me/profile, but writes into the
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
 
-  const update: Record<string, unknown> = {}
+  const update: TableUpdate<'places'> = {}
 
   if (typeof body.name === 'string') {
     const v = body.name.trim()

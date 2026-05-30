@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import type { AvailabilityState } from '@/types/database'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/drivers/availability
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     .maybeSingle()
 
   const now = new Date().toISOString()
-  const update: Record<string, unknown> = {
+  const update: TableUpdate<'drivers'> = {
     availability: body.availability,
     last_active_at: now,
     // No shift expiry — driver toggles offline when finished.

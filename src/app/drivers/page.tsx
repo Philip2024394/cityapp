@@ -26,10 +26,28 @@ const BRAND_LOGO_URL =
 
 // Public WhatsApp number for driver-side support — sourced from env via getSupportWhatsApp().
 
+const PAGE_TITLE = 'Drive with CityRiders — Your earnings, your rules'
+const PAGE_DESCRIPTION =
+  'Join CityRiders as a motorbike driver. Customers pay you directly via WhatsApp. No per-trip commission, no algorithm cutting your fare.'
+const PAGE_URL = 'https://indocity.id/drivers'
+
 export const metadata = {
-  title: 'Drive with CityRiders — Your earnings, your rules',
-  description:
-    'Join CityRiders as a motorbike driver. Customers pay you directly via WhatsApp. No per-trip commission, no algorithm cutting your fare.',
+  title:       PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates:  { canonical: PAGE_URL },
+  openGraph: {
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    type:        'website',
+    url:         PAGE_URL,
+    images:      [{ url: HERO_URL }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images:      [HERO_URL],
+  },
 }
 
 export default function DriversLandingPage() {

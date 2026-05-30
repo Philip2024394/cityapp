@@ -915,7 +915,7 @@ export default function FacialProviderPage() {
           window edge (no protrusion into the page content). Yellow,
           rounded only on the inside (left) corners. Arrow icon top,
           vertical "BACK" text below. Diverts back to /facial. */}
-      <a
+      <Link
         href="/facial"
         aria-label="Back to Kita2u facial pros"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
@@ -949,7 +949,7 @@ export default function FacialProviderPage() {
         >
           Back
         </span>
-      </a>
+      </Link>
 
       {/* Footer Leave Review button — only renders when the Reviews
           panel is active AND the inline form isn't already open.

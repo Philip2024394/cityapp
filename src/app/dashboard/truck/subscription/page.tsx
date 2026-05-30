@@ -149,7 +149,7 @@ export default function TruckSubscriptionPage() {
     // Fetch payment history (best-effort — table may be RLS'd to admin
     // only on some envs; we silently degrade to empty list in that case).
     let payments: PaymentRow[] = []
-    let screenshots: Record<string, string> = {}
+    const screenshots: Record<string, string> = {}
     try {
       const { data: rows } = await supabase
         .from('subscription_payments')

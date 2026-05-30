@@ -36,7 +36,7 @@ import {
   Loader2, User, Pencil, Layers, CreditCard, Wallet, Flame,
   Sparkles, HelpCircle, FileText, ShieldCheck, ArrowRight,
   CheckCircle2, AlertTriangle, Clock, MessageCircle, ExternalLink,
-  BarChart3, Share2, Map as MapIcon,
+  BarChart3, Share2, Map as MapIcon, X,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -597,6 +597,10 @@ function MarketPositionCard({
 
 // ─── Sub-components ──────────────────────────────────────────────────
 
+// localStorage key for the gentle "<=7 days left" nudge. Snoozes for 24h.
+// CRITICAL states (never / expired) ignore this and always render.
+const SUB_BANNER_SNOOZE_KEY = 'cr_sub_banner_dismissed_until'
+
 function SubscriptionBanner({
   sub, renewHref, config,
 }: {
@@ -605,6 +609,36 @@ function SubscriptionBanner({
   config:    DashboardVerticalConfig
 }) {
   const isUrgent = sub.kind !== 'active'
+  // Only the soft "<=7 days" nudge can be dismissed. Never/expired must
+  // stay visible — driver is non-functional until they renew.
+  const isDismissible = !isUrgent
+
+  // null = "still deciding" — render nothing until the first effect reads
+  // localStorage, so the banner doesn't flash then hide. Once decided,
+  // boolean reflects current visibility.
+  const [hidden, setHidden] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (!isDismissible) { setHidden(false); return }
+    try {
+      const raw = localStorage.getItem(SUB_BANNER_SNOOZE_KEY)
+      if (!raw) { setHidden(false); return }
+      const until = new Date(raw).getTime()
+      setHidden(Number.isFinite(until) && Date.now() < until)
+    } catch {
+      setHidden(false)
+    }
+  }, [isDismissible])
+
+  if (hidden) return null
+
+  const onDismiss = () => {
+    try {
+      const until = new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+      localStorage.setItem(SUB_BANNER_SNOOZE_KEY, until)
+    } catch { /* localStorage unavailable — just hide for this session */ }
+    setHidden(true)
+  }
+
   const heading =
     sub.kind === 'never'   ? 'Activate your subscription' :
     sub.kind === 'expired' ? 'Subscription expired' :
@@ -642,6 +676,17 @@ function SubscriptionBanner({
         <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
         Renew
       </a>
+      {isDismissible && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss renewal reminder for 24 hours"
+          className="shrink-0 inline-flex items-center justify-center rounded-full text-[#0A0A0A]/55 hover:text-[#0A0A0A] hover:bg-black/5 transition"
+          style={{ width: 44, height: 44, marginLeft: -4, marginRight: -4 }}
+        >
+          <X className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+      )}
     </section>
   )
 }

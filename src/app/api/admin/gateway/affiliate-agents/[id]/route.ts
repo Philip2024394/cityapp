@@ -1,5 +1,6 @@
 import { withGateway, ok, fail } from '@/lib/admin/gateway'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // PATCH /api/admin/gateway/affiliate-agents/[id]
@@ -45,9 +46,9 @@ export const PATCH = withGateway(async (req) => {
   try { body = (await req.json()) as Record<string, unknown> }
   catch { return fail('Invalid JSON', 400) }
 
-  const patch: Partial<Record<Field, unknown>> = {}
+  const patch: TableUpdate<'affiliate_agents'> = {}
   for (const key of EDITABLE) {
-    if (key in body) patch[key] = body[key]
+    if (key in body) (patch as Record<Field, unknown>)[key] = body[key]
   }
   if (Object.keys(patch).length === 0) return fail('No editable fields supplied', 400)
 

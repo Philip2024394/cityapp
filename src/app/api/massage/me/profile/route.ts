@@ -3,6 +3,7 @@ import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 import { validateUniversalProfile } from '@/lib/validation/universalProfile'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // POST /api/massage/me/profile
 // Owner-only update of editable profile fields. NEVER touches status,
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
 
-  const update: Record<string, unknown> = {}
+  const update: TableUpdate<'massage_providers'> = {}
 
   if (typeof body.display_name === 'string') {
     const v = body.display_name.trim()

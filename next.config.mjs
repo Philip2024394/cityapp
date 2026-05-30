@@ -45,9 +45,16 @@ const FRAME_ANCESTORS = [
   'http://localhost:5178',
 ].join(' ')
 
+// 'unsafe-eval' previously appeared on script-src for legacy tooling.
+// Dropped on 2026-05-30 — Next 15 app-router and the currently-used libs
+// (Midtrans Snap, maplibre-gl) run without eval. If a runtime error like
+// "Refused to evaluate a string as JavaScript because 'unsafe-eval' is
+// not an allowed source of script in the following CSP directive" shows
+// up in Sentry tied to a real flow, re-add it AND document the offender
+// in a comment so it can be removed for good when that lib is replaced.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com",
+  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
@@ -66,14 +73,16 @@ const SECURITY_HEADERS = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  // geolocation=self  : we use it for marketplace search + driver pings
-  // camera=()         : never used
-  // microphone=()     : never used
-  // payment=()        : Midtrans Snap is iframe-based, not Payment Request API
-  // interest-cohort=(): no FLoC / Topics
+  // geolocation=self   : we use it for marketplace search + driver pings
+  // camera=()          : never used
+  // microphone=()      : never used
+  // payment=()         : Midtrans Snap is iframe-based, not Payment Request API
+  // browsing-topics=() : replaces the dead `interest-cohort` (Chrome retired
+  //                     FLoC in favor of the Topics API; browsing-topics is
+  //                     the modern opt-out token).
   {
     key: 'Permissions-Policy',
-    value: 'geolocation=(self), camera=(), microphone=(), payment=(), interest-cohort=()',
+    value: 'geolocation=(self), camera=(), microphone=(), payment=(), browsing-topics=()',
   },
 ]
 
@@ -85,11 +94,10 @@ const nextConfig = {
   // on 2026-05-30). If a build fails here, fix the type error — do NOT flip
   // this back to `true` without a follow-up ticket.
   typescript: { ignoreBuildErrors: false },
-  // ESLint is still suppressed: the repo has no eslint config checked in, so
-  // `next build` cannot run lint without first scaffolding `.eslintrc.json` +
-  // adding eslint + eslint-config-next as devDependencies. Tracked separately;
-  // flip to `false` once the config + deps land.
-  eslint: { ignoreDuringBuilds: true },
+  // ESLint is now enforced at build time. The flat config in `eslint.config.mjs`
+  // returns 0 errors (warnings allowed). If a build fails here, fix the lint
+  // error — do NOT flip this back to `true` without a follow-up ticket.
+  eslint: { ignoreDuringBuilds: false },
   // Hide the floating "N" build-status indicator Next.js shows on the
   // bottom-left in `next dev`. The badge competes with our profile-page
   // chrome (back button, accent bar, social row) for the same corner.

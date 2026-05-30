@@ -17,6 +17,10 @@ import {
   PROPERTY_TYPE_ALLOWLIST,
   type PropertyVariant,
 } from '@/lib/property/variants'
+// NOTE(phase-2): property_listings has typed Json columns (hero_text,
+// service_photos) and nullable-vs-required nuances (city, whatsapp_e164)
+// that the looser builder pattern handles correctly at runtime. Keep payload
+// as Record<string,unknown> until the schema/types reconcile (Phase 1 follow-up).
 
 const CERT_SET  = new Set<string>(CERTIFICATE_OPTIONS)
 const FURN_SET  = new Set<string>(FURNISHED_OPTIONS)

@@ -4,6 +4,10 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl } from '@/lib/validation/images'
 import { validateUniversalProfile } from '@/lib/validation/universalProfile'
 import { TOUR_SERVICE_IDS, MAX_TOUR_SERVICES } from '@/data/tourServices'
+// NOTE(phase-2): tour_guide_listings has live runtime columns (hero_text,
+// promo_text, theme_color) that the regenerated typed schema is missing.
+// Keep payload as Record<string,unknown> until those land in
+// src/types/supabase.ts (Phase 1 follow-up).
 
 // /api/tour/me/profile — partial-update PATCH-as-POST for the signed-in
 // user's tour_guide_listings row. Mirrors /api/beautician/me/profile but

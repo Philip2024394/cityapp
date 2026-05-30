@@ -903,7 +903,7 @@ export default function SkincareProviderPage() {
           window edge. Yellow, rounded only on the inside (left)
           corners. Arrow icon top, vertical "BACK" text below. Diverts
           back to /skincare. */}
-      <a
+      <Link
         href="/skincare"
         aria-label="Back to Kita2u skincare"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
@@ -932,7 +932,7 @@ export default function SkincareProviderPage() {
         >
           Back
         </span>
-      </a>
+      </Link>
 
       {/* Footer Leave Review button — only renders when the Reviews
           panel is active AND the inline form isn't already open. */}

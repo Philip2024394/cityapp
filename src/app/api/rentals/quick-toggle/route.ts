@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { suggestedDailyRate, deriveWeeklyMonthly } from '@/data/bikeRentalDefaults'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/rentals/quick-toggle
@@ -124,7 +125,7 @@ export async function POST(req: Request) {
   if (existing) {
     // Update mode + availability; don't clobber custom pricing the
     // driver may have already set.
-    const update: Record<string, unknown> = {
+    const update: TableUpdate<'bike_rentals'> = {
       rental_mode: body.mode,
       available_now: true,
     }

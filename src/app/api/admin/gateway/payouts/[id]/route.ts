@@ -1,5 +1,6 @@
 import { withGateway, ok, fail } from '@/lib/admin/gateway'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // PATCH /api/admin/gateway/payouts/[id]
@@ -32,7 +33,7 @@ export const PATCH = withGateway(async (req) => {
     return fail(`status must be one of: ${[...ALLOWED].join(', ')}`, 400)
   }
 
-  const patch: Record<string, unknown> = { status: body.status }
+  const patch: TableUpdate<'affiliate_payouts'> = { status: body.status }
   if (body.provider_txn_id !== undefined) patch.provider_txn_id = body.provider_txn_id || null
   if (body.notes !== undefined) patch.notes = body.notes || null
   if (body.status === 'paid') patch.paid_at = new Date().toISOString()

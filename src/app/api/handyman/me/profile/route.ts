@@ -4,6 +4,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import { ALL_SPECIALTIES, MAX_HANDYMAN_SPECIALTIES } from '@/lib/handyman/types'
 import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 import { validateUniversalProfile } from '@/lib/validation/universalProfile'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 export const runtime = 'nodejs'
 
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
   let body: Body
   try { body = await req.json() } catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }) }
 
-  const update: Record<string, unknown> = {}
+  const update: TableUpdate<'handyman_providers'> = {}
   if (typeof body.display_name === 'string') {
     const v = body.display_name.trim()
     if (v.length < 2) return NextResponse.json({ error: 'name_too_short' }, { status: 400 })

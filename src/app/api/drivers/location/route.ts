@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/security/rateLimit'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/drivers/location
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
 
   const nowIso = new Date().toISOString()
 
-  const update: Record<string, unknown> = {
+  const update: TableUpdate<'drivers'> = {
     current_lat: lat,
     current_lng: lng,
     current_location_updated_at: nowIso,

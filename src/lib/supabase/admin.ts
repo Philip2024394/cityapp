@@ -12,6 +12,11 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 // safety for working type inference on insert/upsert payloads in v2.49+.
 // Typed client migration is staged — see docs/SUPABASE_TYPES_MIGRATION.md
 // for the rollout plan against src/types/supabase.ts.
+//
+// Phase 2 (2026-05-30): dynamic update payloads in API routes are now
+// annotated with `TableUpdate<'T'>` aliases from src/lib/supabase/typed-helpers.ts
+// so they will be ready to flip to typed once the remaining Phase 3
+// (dynamic-from-narrowing) callsites are fixed.
 let cached: SupabaseClient | null = null
 
 export function getAdminSupabase(): SupabaseClient | null {

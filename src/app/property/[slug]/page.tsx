@@ -780,7 +780,7 @@ export default function PropertyProviderPage() {
       )}
 
       {/* Right-edge "back" bar — flush against the window edge. */}
-      <a
+      <Link
         href="/property"
         aria-label="Back to Kita2u property listings"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
@@ -809,7 +809,7 @@ export default function PropertyProviderPage() {
         >
           Back
         </span>
-      </a>
+      </Link>
 
       {/* Footer Leave Review button — only renders when the Reviews
           panel is active AND the inline form isn't already open. */}

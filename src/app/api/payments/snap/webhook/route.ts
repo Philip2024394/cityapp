@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { midtransStatusToInternal, verifyNotificationSignature } from '@/lib/midtrans/snap'
 import { fireAlertServer } from '@/lib/ops/alert'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/payments/snap/webhook
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, ignored: 'unmapped status' })
   }
 
-  const update: Record<string, unknown> = {
+  const update: TableUpdate<'payment_intents'> = {
     status: next,
     raw_notification: body as Record<string, unknown>,
   }

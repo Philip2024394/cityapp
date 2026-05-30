@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/drivers/me/business-toggle
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  const update: Record<string, unknown> = { business_contract_enabled: body.enabled }
+  const update: TableUpdate<'drivers'> = { business_contract_enabled: body.enabled }
 
   // Services — filter to whitelist; preserves prior if not in body.
   if (Array.isArray(body.services)) {

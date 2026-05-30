@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { assertAdminFromCookies, writeAudit } from '@/lib/admin/guard'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // PATCH /api/admin/payouts/[id]
@@ -42,7 +43,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (beforeErr) return NextResponse.json({ error: beforeErr.message }, { status: 500 })
   if (!before)   return NextResponse.json({ error: 'Payout not found' }, { status: 404 })
 
-  let update: Record<string, unknown> = {}
+  let update: TableUpdate<'affiliate_payouts'> = {}
 
   switch (body.action) {
     case 'mark_paid':

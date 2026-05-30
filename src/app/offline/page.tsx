@@ -40,14 +40,14 @@ export default function OfflinePage() {
 
         <div className="flex flex-col gap-2">
           {/* No-JS reload — the browser handles this natively. */}
-          <a
+          <Link
             href="/"
             className="rounded-2xl py-3 inline-flex items-center justify-center gap-2 font-extrabold text-[14px] text-bg bg-gradient-to-r from-brand to-brand2 active:scale-95 transition"
             style={{ minHeight: 48 }}
           >
             <RefreshCw className="w-4 h-4" />
             Try again
-          </a>
+          </Link>
           <Link
             href="/"
             className="rounded-2xl py-3 inline-flex items-center justify-center gap-2 font-extrabold text-[13px] transition"

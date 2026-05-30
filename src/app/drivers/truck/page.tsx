@@ -35,10 +35,28 @@ const BRAND_LOGO_URL =
 
 // Public WhatsApp number for driver-side support — sourced from env via getSupportWhatsApp().
 
+const PAGE_TITLE = 'Drive your truck with CityRiders — Pindahan, distribusi, bulk parcel'
+const PAGE_DESCRIPTION =
+  'Join CityRiders as a truck driver. You set the daily rate. Customers pay you directly via WhatsApp. Built for pindahan, distribusi, and bulk parcel delivery.'
+const PAGE_URL = 'https://indocity.id/drivers/truck'
+
 export const metadata = {
-  title: 'Drive your truck with CityRiders — Pindahan, distribusi, bulk parcel',
-  description:
-    'Join CityRiders as a truck driver. You set the daily rate. Customers pay you directly via WhatsApp. Built for pindahan, distribusi, and bulk parcel delivery.',
+  title:       PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates:  { canonical: PAGE_URL },
+  openGraph: {
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    type:        'website',
+    url:         PAGE_URL,
+    images:      [{ url: HERO_URL }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images:      [HERO_URL],
+  },
 }
 
 export default function TruckDriversLandingPage() {

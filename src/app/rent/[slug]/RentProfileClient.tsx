@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Star, Award, Hotel, Building2, Share2, Link2, MessageCircle, X, ChevronLeft, BadgeCheck, MapPin, Bike, Sparkles, type LucideIcon } from 'lucide-react'
 import RunningMarquee from '@/components/profile/RunningMarquee'
 import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
@@ -650,7 +651,7 @@ export default function RentProfileClient({ row: r }: { row: BikeRentalPublic })
       )}
 
       {/* Right-edge "back" bar — diverts to /rent marketplace. */}
-      <a
+      <Link
         href="/rent"
         aria-label="Back to Kita2u bike rentals"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
@@ -679,7 +680,7 @@ export default function RentProfileClient({ row: r }: { row: BikeRentalPublic })
         >
           Back
         </span>
-      </a>
+      </Link>
 
       {/* Footer Leave Review button — only renders when the Reviews
           panel is active AND the inline form isn't already open. */}

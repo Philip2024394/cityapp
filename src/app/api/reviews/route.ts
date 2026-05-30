@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { getTrustedClientIp } from '@/lib/security/clientIp'
+import type { TableInsert } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/reviews
@@ -147,7 +148,7 @@ export async function POST(req: Request) {
 
   // Insert. Unique index from migration 0013 catches duplicate session
   // submissions for the same driver (returns 23505).
-  const insertRow: Record<string, unknown> = {
+  const insertRow: TableInsert<'reviews'> = {
     reviewer_name: body.reviewer_name.trim().slice(0, 60),
     reviewer_country: body.reviewer_country?.trim().slice(0, 2) || null,
     reviewer_whatsapp: reviewerWhatsapp,

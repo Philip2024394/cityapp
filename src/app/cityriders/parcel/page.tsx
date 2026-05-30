@@ -34,10 +34,28 @@ import ParcelHubBrowser, {
 const BRAND_LOGO_URL =
   'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
 
+const PAGE_TITLE = 'Parcel delivery Yogyakarta — Direct WhatsApp to driver'
+const PAGE_DESCRIPTION =
+  'Bike, car, and truck drivers for bulk parcel delivery in Yogyakarta. From Rp 4,500/parcel. No platform commission.'
+const PAGE_URL = 'https://indocity.id/cityriders/parcel'
+
 export const metadata = {
-  title: 'Parcel delivery Yogyakarta — Direct WhatsApp to driver',
-  description:
-    'Bike, car, and truck drivers for bulk parcel delivery in Yogyakarta. From Rp 4,500/parcel. No platform commission.',
+  title:       PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates:  { canonical: PAGE_URL },
+  openGraph: {
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    type:        'website',
+    url:         PAGE_URL,
+    images:      [{ url: BRAND_LOGO_URL }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images:      [BRAND_LOGO_URL],
+  },
 }
 
 // Always SSR per request so a driver who just enabled parcel_b2b shows up

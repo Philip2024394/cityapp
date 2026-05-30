@@ -799,7 +799,7 @@ export default function HandymanProviderPage() {
           window edge (no protrusion into the page content). Yellow,
           rounded only on the inside (left) corners. Arrow icon top,
           vertical "BACK" text below. Diverts back to /handyman. */}
-      <a
+      <Link
         href="/handyman"
         aria-label="Back to IndoCity tukang"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
@@ -833,7 +833,7 @@ export default function HandymanProviderPage() {
         >
           Back
         </span>
-      </a>
+      </Link>
 
       {/* Footer Leave Review button — only renders when the Reviews
           panel is active AND the inline form isn't already open.

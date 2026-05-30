@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     (STANDARD_PROVIDER_TABLES.has(table) && action === 'toggle_mock_visibility')
 
   let update: Record<string, unknown> = {}
-  let auditAction = `admin.${table}.${action}`
+  const auditAction = `admin.${table}.${action}`
 
   switch (action) {
     case 'approve':

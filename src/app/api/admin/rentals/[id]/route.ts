@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { assertAdminFromCookies, writeAudit } from '@/lib/admin/guard'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // PATCH /api/admin/rentals/[id]
@@ -46,7 +47,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (beforeErr) return NextResponse.json({ error: beforeErr.message }, { status: 500 })
   if (!before)   return NextResponse.json({ error: 'Rental not found' }, { status: 404 })
 
-  let update: Record<string, unknown> = {}
+  let update: TableUpdate<'bike_rentals'> = {}
 
   switch (body.action) {
     case 'approve': {

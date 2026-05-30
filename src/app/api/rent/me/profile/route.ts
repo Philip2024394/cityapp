@@ -3,6 +3,10 @@ import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl } from '@/lib/validation/images'
 import { validateUniversalProfile } from '@/lib/validation/universalProfile'
+// NOTE(phase-2): bike_rentals has live runtime columns (theme_color,
+// hero_text, promo_text, services_offered, has_physical_location) that the
+// regenerated typed schema is missing. Keep payload as Record<string,unknown>
+// until those columns are added to src/types/supabase.ts (Phase 1 follow-up).
 
 export const runtime = 'nodejs'
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // ============================================================================
 // POST /api/drivers/me/booking-alerts-consent
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  const update: Record<string, unknown> = { booking_alerts_enabled: body.enabled }
+  const update: TableUpdate<'drivers'> = { booking_alerts_enabled: body.enabled }
   if (
     body.enabled &&
     !(prior as { booking_alerts_consented_at?: string | null } | null)?.booking_alerts_consented_at

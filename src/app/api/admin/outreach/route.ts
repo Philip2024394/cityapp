@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { assertAdminFromCookies } from '@/lib/admin/guard'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // Outreach CRM — admin-only.
 //   GET    /api/admin/outreach            → list (optional ?status, ?category, ?city)
@@ -97,7 +98,7 @@ export async function PATCH(req: Request) {
   }
   if (!body.id) return NextResponse.json({ error: 'id_required' }, { status: 400 })
 
-  const update: Record<string, unknown> = {}
+  const update: TableUpdate<'outreach_contacts'> = {}
   if (body.status && ALLOWED_STATUS.has(body.status)) {
     update.status = body.status
     if (body.status === 'contacted') update.contacted_at = new Date().toISOString()

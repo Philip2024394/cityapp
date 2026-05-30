@@ -3,6 +3,7 @@
 // or runtime error before it reaches the browser default error page,
 // forwards it to Sentry, then renders a minimal recovery UI.
 import * as Sentry from '@sentry/nextjs'
+import Link from 'next/link'
 import { useEffect } from 'react'
 
 export default function GlobalError({
@@ -59,7 +60,7 @@ export default function GlobalError({
               >
                 Coba lagi
               </button>
-              <a
+              <Link
                 href="/"
                 style={{
                   display: 'inline-flex',
@@ -79,7 +80,7 @@ export default function GlobalError({
                 }}
               >
                 Buka marketplace
-              </a>
+              </Link>
             </div>
             {error.digest && (
               <p style={{ fontSize: 11, marginTop: 16, fontFamily: 'monospace', color: 'rgba(255,255,255,0.35)' }}>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 
 // POST /api/partners/me/settle
 // Body: { bookingId: string, action: 'settled' | 'disputed' | 'waived', reason?: string }
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'already_settled' }, { status: 409 })
   }
 
-  const update: Record<string, unknown> = { status: action }
+  const update: TableUpdate<'partner_bookings'> = { status: action }
   if (action === 'settled') {
     update.settled_at = new Date().toISOString()
     update.settled_by = user.id

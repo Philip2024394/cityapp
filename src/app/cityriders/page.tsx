@@ -56,10 +56,28 @@ const B2B_CTA_ART_URL =
 
 // Customer support WhatsApp line — sourced from env via getSupportWhatsApp().
 
+const PAGE_TITLE = 'CityRiders — Local drivers. Direct WhatsApp. No app needed.'
+const PAGE_DESCRIPTION =
+  'Find local Indonesian drivers in Yogyakarta, Bali, and Jogja. Tap WhatsApp, agree the fare, get a ride. No app install, no surge pricing.'
+const PAGE_URL = 'https://indocity.id/cityriders'
+
 export const metadata = {
-  title: 'CityRiders — Local drivers. Direct WhatsApp. No app needed.',
-  description:
-    'Find local Indonesian drivers in Yogyakarta, Bali, and Jogja. Tap WhatsApp, agree the fare, get a ride. No app install, no surge pricing.',
+  title:       PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates:  { canonical: PAGE_URL },
+  openGraph: {
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    type:        'website',
+    url:         PAGE_URL,
+    images:      [{ url: HERO_URL }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images:      [HERO_URL],
+  },
 }
 
 export default function CityRidersHomePage() {
