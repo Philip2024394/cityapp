@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import { CAR_BANNERS, getDefaultBanner } from '@/lib/drivers/banners'
 
 // ----------------------------------------------------------------------------
@@ -47,6 +48,10 @@ export default function CarEditPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) { setState({ kind: 'ready', row: dev.driver as unknown as DriverRow }); return }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()

@@ -22,6 +22,7 @@ import {
 import QRCode from 'qrcode'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 
 const SITE_HOST = 'cityriders.id'
 const BRAND_YELLOW = '#FACC15'
@@ -59,6 +60,15 @@ export default function RiderQrPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) {
+      const row = dev.driver as unknown as DriverMeta
+      if (!row.slug) { setState({ kind: 'no_slug' }); return }
+      setState({ kind: 'ready', driver: row })
+      return
+    }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user } } = await supabase.auth.getUser()

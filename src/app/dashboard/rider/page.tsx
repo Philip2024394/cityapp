@@ -1,9 +1,16 @@
 'use client'
 // ============================================================================
-// /dashboard/rider — Rider (motorbike) dashboard home
+// /dashboard/rider — Rider (motorbike) dashboard home (redesigned 2026-05-30)
 // ----------------------------------------------------------------------------
-// Mirror of /dashboard/car for bike drivers. Shows overview + jump-off
-// links to focused subpages. High signal, low noise.
+// First-screen layout (above the fold on a 360x800 phone):
+//   1. Compact identity row — biz name, vehicle, city + public link
+//   2. AvailabilitySwitcher — big active pill + 2 secondary buttons with a
+//      3-second hold-to-confirm gate on Online -> Busy / Online -> Offline
+//   3. 2-col coaching grid — Account Health (completeness + share clicks)
+//      and Market Position (vs city avg km rate)
+//
+// Below the fold (still scrollable): subscription banner, KPI strip, the
+// six-page grid, secondary nav.
 //
 // Regulatory posture: this surface NEVER renders Stripe/Midtrans wiring
 // for ride fares (Permenhub 118/2018). The "Payment methods" tile
@@ -17,11 +24,12 @@ import {
   Loader2, Bike, User, Pencil, Layers, CreditCard, Wallet, Flame,
   Sparkles, HelpCircle, FileText, ShieldCheck, ArrowRight,
   CheckCircle2, AlertTriangle, Clock, MessageCircle, ExternalLink,
-  BarChart3,
+  BarChart3, Share2,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
+import AvailabilitySwitcher from '@/components/dashboard/AvailabilitySwitcher'
 
 const ADMIN_WHATSAPP_E164 = '6285183600015'
 const ADMIN_WA_RENEW = `https://wa.me/${ADMIN_WHATSAPP_E164}?text=${encodeURIComponent(
@@ -86,6 +94,28 @@ export default function RiderDashboardHomePage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — when /api/dev/impersonate has set a cr-dev-uid cookie
+    // on localhost, fetch the driver row via /api/dev/driver (which uses
+    // the admin client server-side) and render. Skips Supabase auth.
+    if (typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      try {
+        const r = await fetch('/api/dev/driver', { cache: 'no-store' })
+        if (r.ok) {
+          const j = await r.json() as { driver: RiderOverview | null }
+          if (j.driver) {
+            const row = j.driver
+            if (row.vehicle_type && !['bike'].includes(row.vehicle_type)) {
+              setState({ kind: 'wrong_type', type: row.vehicle_type })
+              return
+            }
+            setState({ kind: 'ready', row })
+            return
+          }
+        }
+      } catch { /* fall through to normal auth */ }
+    }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
@@ -102,8 +132,6 @@ export default function RiderDashboardHomePage() {
     if (error) { setState({ kind: 'error', message: error.message }); return }
     if (!data) { setState({ kind: 'no_driver' }); return }
     const row = data as unknown as RiderOverview
-    // Only riders (bikes) belong on /dashboard/rider — car/truck/bus
-    // drivers route to /dashboard/car.
     if (row.vehicle_type && !['bike'].includes(row.vehicle_type)) {
       setState({ kind: 'wrong_type', type: row.vehicle_type })
       return
@@ -127,21 +155,15 @@ export default function RiderDashboardHomePage() {
 
 function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => void }) {
   const sub = useMemo(() => classifySubscription(row.paid_until), [row.paid_until])
-  const vehicleLabel = useMemo(() => {
-    const parts = [row.bike_make, row.bike_model, row.bike_year ? String(row.bike_year) : null].filter(Boolean)
-    return parts.length ? parts.join(' ') : 'Bike not set'
-  }, [row.bike_make, row.bike_model, row.bike_year])
 
   // Bike public profiles always live at /r/<slug>. Riders don't have
   // /car / /bus / /truck variants.
   const profileHref = row.slug ? `/r/${row.slug}` : null
-
   const photoCount = (row.vehicle_photos ?? []).filter((u) => typeof u === 'string' && u.trim()).length
   const hasRate    = (row.price_per_km ?? 0) > 0 || (row.min_fee ?? 0) > 0
 
   // Completeness — a soft 0-100 score guiding the rider toward setup
-  // gaps. Pure presentation; no DB write yet. Surfaces are: business
-  // name, bike, photos (>=1), rate, cover image.
+  // gaps. Surfaces are: business name, bike, photos (>=1), rate, cover image.
   const completeness = useMemo(() => {
     let score = 0
     if (row.business_name?.trim())    score += 20
@@ -155,42 +177,28 @@ function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => 
   return (
     <Shell>
       <PWAInstallCard />
-      {/* Hero strip — name + availability + completeness */}
-      <section
-        className="rounded-3xl p-5 sm:p-6 mb-4"
-        style={{
-          background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
-          color: '#0A0A0A',
-          boxShadow: '0 12px 32px rgba(250,204,21,0.30)',
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] opacity-70">
-              Rider
-            </div>
-            <h1 className="text-[22px] sm:text-[26px] font-black leading-tight truncate mt-0.5">
-              {row.business_name || 'Set your business name'}
-            </h1>
-            <div className="text-[12.5px] font-bold opacity-80 mt-1 truncate">
-              {vehicleLabel}
-              {row.bike_cc ? ` · ${row.bike_cc}cc` : ''}
-              {row.area || row.city ? ` · ${[row.area, row.city].filter(Boolean).join(', ')}` : ''}
-            </div>
-          </div>
-          <AvailabilityBadge value={row.availability ?? 'offline'} onChange={onReload} />
-        </div>
 
-        {/* Completeness bar — encourages full profile without nagging */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider opacity-80">
-            <span>Profile completeness</span>
-            <span>{completeness}%</span>
-          </div>
-          <div className="mt-1.5 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(10,10,10,0.18)' }}>
-            <div className="h-full rounded-full transition-[width]" style={{ width: `${completeness}%`, background: '#0A0A0A' }} />
-          </div>
-        </div>
+      {/* Compact identity row — replaces the big yellow hero */}
+      <IdentityRow row={row} profileHref={profileHref} />
+
+      {/* AVAILABILITY SWITCHER — the centerpiece */}
+      <AvailabilitySwitcher
+        value={row.availability ?? 'offline'}
+        onChange={() => onReload()}
+      />
+
+      {/* 2-column micro grid — Account Health + Market Position */}
+      <section className="grid grid-cols-2 gap-2 mb-4">
+        <AccountHealthCard
+          completeness={completeness}
+          userId={row.user_id}
+          socialHref="/dashboard/rider/social"
+        />
+        <MarketPositionCard
+          pricePerKm={row.price_per_km}
+          city={row.city}
+          vehicleType="bike"
+        />
       </section>
 
       {/* Subscription banner — only when attention is required */}
@@ -201,9 +209,8 @@ function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => 
         <SubscriptionBanner sub={sub} />
       )}
 
-      {/* KPI strip — quick stats the rider wants to see at a glance.
-          Phase 1B will replace the static placeholders here with real
-          numbers from a new /api/dashboard/rider/overview endpoint. */}
+      {/* KPI strip — quick stats the rider wants to see at a glance. Pushed
+          below the fold; the first-screen value lives in the cards above. */}
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
         <Kpi
           label="Rating"
@@ -227,8 +234,7 @@ function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => 
         />
       </section>
 
-      {/* Public profile link — surfaced near the top so riders preview
-          what customers see at a glance. */}
+      {/* Public profile preview link */}
       {profileHref && (
         <section className="mb-4">
           <Link
@@ -245,9 +251,7 @@ function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => 
         </section>
       )}
 
-      {/* The Six Pages — the founder-prioritised core surfaces. Compact
-          tiles, 2-col on mobile / 3-col on sm+, each ~60-80px tall, with
-          a yellow-accent icon chip + charcoal title. */}
+      {/* The Six Pages */}
       <section className="mb-4">
         <SectionLabel>Your six pages</SectionLabel>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
@@ -260,8 +264,6 @@ function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => 
         </div>
       </section>
 
-      {/* Secondary surfaces — design, payments, subscription. Still useful
-          but not on the founder's six-page priority list. */}
       <section className="mb-4">
         <SectionLabel>More tools</SectionLabel>
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -280,6 +282,226 @@ function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => 
         </div>
       </section>
     </Shell>
+  )
+}
+
+// ─── First-screen pieces ─────────────────────────────────────────────
+
+function IdentityRow({
+  row, profileHref,
+}: {
+  row: RiderOverview
+  profileHref: string | null
+}) {
+  const vehicleLabel = useMemo(() => {
+    const parts = [row.bike_make, row.bike_model].filter(Boolean)
+    return parts.length ? parts.join(' ') : 'Bike'
+  }, [row.bike_make, row.bike_model])
+  const place = [row.area, row.city].filter(Boolean).join(', ') || 'Set city'
+
+  return (
+    <section className="mb-3 px-1">
+      <div className="text-[13px] font-extrabold text-[#0A0A0A] leading-tight truncate">
+        {row.business_name || 'Set your business name'}
+        <span className="text-black/55 font-bold"> · {vehicleLabel} · {place}</span>
+      </div>
+      {profileHref && (
+        <Link
+          href={profileHref}
+          className="inline-flex items-center gap-1 text-[11px] text-black/55 mt-0.5 hover:text-[#0A0A0A] transition"
+        >
+          cityriders.id{profileHref}
+          <span className="text-[#EAB308] font-extrabold">· View →</span>
+        </Link>
+      )}
+    </section>
+  )
+}
+
+// ─── Account Health card ─────────────────────────────────────────────
+
+function AccountHealthCard({
+  completeness, userId, socialHref,
+}: {
+  completeness: number
+  userId:       string
+  socialHref:   string
+}) {
+  const [shares, setShares] = useState<number | null>(null)
+  const [windowLabel, setWindowLabel] = useState<string>('this week')
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const supabase = getBrowserSupabase()
+      if (!supabase) return
+      const since = new Date(Date.now() - 7 * 86_400_000).toISOString()
+      // Primary: count share_click rows in the last 7 days.
+      const primary = await supabase
+        .from('provider_profile_views')
+        .select('*', { count: 'exact', head: true })
+        .eq('provider_type', 'driver')
+        .eq('provider_id',   userId)
+        .eq('source',        'wa_share')
+        .gte('viewed_at',    since)
+      if (!cancelled && !primary.error && primary.count != null) {
+        setShares(primary.count)
+        setWindowLabel('this week')
+        return
+      }
+      // Fallback: all-time wa_share count.
+      const fallback = await supabase
+        .from('provider_profile_views')
+        .select('*', { count: 'exact', head: true })
+        .eq('provider_type', 'driver')
+        .eq('provider_id',   userId)
+        .eq('source',        'wa_share')
+      if (!cancelled && !fallback.error && fallback.count != null) {
+        setShares(fallback.count)
+        setWindowLabel('all-time')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [userId])
+
+  return (
+    <div className="rounded-2xl bg-white border border-black/10 p-3 flex flex-col gap-1.5">
+      <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/55">
+        ACCOUNT HEALTH
+      </div>
+      <div className="text-[22px] font-black text-[#0A0A0A] leading-none tabular-nums">
+        {completeness}%
+      </div>
+      <div className="h-1.5 rounded-full bg-[#F4F4F5] overflow-hidden">
+        <div
+          className="h-full transition-[width]"
+          style={{ width: `${completeness}%`, background: '#FACC15' }}
+        />
+      </div>
+      <div className="text-[11px] font-bold text-black/65 leading-snug">
+        Profile shares: <span className="text-[#0A0A0A] font-black tabular-nums">{shares ?? '—'}</span>{' '}
+        {windowLabel}
+      </div>
+      <Link
+        href={socialHref}
+        className="inline-flex items-center gap-1 text-[11px] font-extrabold leading-snug text-[#854D0E] hover:text-[#0A0A0A] transition mt-0.5"
+      >
+        <Share2 className="w-3 h-3" strokeWidth={2.5} />
+        Tip — Share your profile daily.
+      </Link>
+    </div>
+  )
+}
+
+// ─── Market Position card ────────────────────────────────────────────
+
+function MarketPositionCard({
+  pricePerKm, city, vehicleType,
+}: {
+  pricePerKm:  number | null
+  city:        string | null
+  vehicleType: 'bike' | 'car'
+}) {
+  const [avg, setAvg] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const supabase = getBrowserSupabase()
+      if (!supabase || !city) { setLoading(false); return }
+      const { data, error } = await supabase
+        .from('drivers')
+        .select('price_per_km')
+        .eq('vehicle_type', vehicleType)
+        .eq('status',       'active')
+        .eq('city',         city)
+        .gt('price_per_km', 0)
+      if (cancelled) return
+      setLoading(false)
+      if (error || !data || data.length === 0) { setAvg(null); return }
+      const sum = data.reduce((a, r) => a + (Number(r.price_per_km) || 0), 0)
+      setAvg(Math.round(sum / data.length))
+    })()
+    return () => { cancelled = true }
+  }, [city, vehicleType])
+
+  // No rate set → nudge user to set it.
+  if (!pricePerKm || pricePerKm <= 0) {
+    return (
+      <div className="rounded-2xl bg-white border border-black/10 p-3 flex flex-col gap-1.5">
+        <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/55">
+          MARKET POSITION
+        </div>
+        <div className="text-[13px] font-black text-[#0A0A0A] leading-tight">No rate yet</div>
+        <p className="text-[11px] text-black/65 leading-snug">
+          Set your km rate in Services to compare.
+        </p>
+        <Link
+          href={`/dashboard/${vehicleType === 'bike' ? 'rider' : 'car'}/services`}
+          className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] transition mt-auto"
+        >
+          Set rate →
+        </Link>
+      </div>
+    )
+  }
+
+  const yourRate = pricePerKm
+  const cityLabel = city || 'your city'
+
+  let verdict: { tone: 'good' | 'avg' | 'high'; line: string; coaching: string | null } | null = null
+  if (avg != null && avg > 0) {
+    const diffPct = ((yourRate - avg) / avg) * 100
+    if (diffPct <= -10) {
+      verdict = {
+        tone: 'good',
+        line: `✓ ${Math.round(Math.abs(diffPct))}% below — good for new drivers`,
+        coaching: 'Keep rates competitive while building your customer base.',
+      }
+    } else if (diffPct >= 10) {
+      verdict = {
+        tone: 'high',
+        line: `↑ ${Math.round(diffPct)}% above — may slow first bookings`,
+        coaching: 'Keep rates competitive while building your customer base.',
+      }
+    } else {
+      verdict = { tone: 'avg', line: '≈ around market average', coaching: null }
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border border-black/10 p-3 flex flex-col gap-1">
+      <div className="text-[11px] font-extrabold uppercase tracking-wider text-black/55">
+        MARKET POSITION
+      </div>
+      <div className="text-[13px] font-black text-[#0A0A0A] leading-tight tabular-nums">
+        Your rate Rp {yourRate.toLocaleString('id-ID')}
+      </div>
+      <div className="text-[11px] font-bold text-black/65 leading-snug truncate">
+        Avg in {cityLabel}: {loading ? '…' : avg != null ? `Rp ${avg.toLocaleString('id-ID')}` : '—'}
+      </div>
+      {verdict && (
+        <span
+          className="inline-block text-[11px] font-extrabold leading-snug px-1.5 py-0.5 rounded-md mt-0.5 w-fit max-w-full truncate"
+          style={{
+            background:
+              verdict.tone === 'good' ? '#DCFCE7' :
+              verdict.tone === 'high' ? '#FEF3C7' : '#F4F4F5',
+            color:
+              verdict.tone === 'good' ? '#15803D' :
+              verdict.tone === 'high' ? '#92400E' : '#52525B',
+          }}
+        >
+          {verdict.line}
+        </span>
+      )}
+      {verdict?.coaching && (
+        <p className="text-[10.5px] text-black/55 leading-snug mt-0.5">
+          {verdict.coaching}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -328,29 +550,6 @@ function SubscriptionBanner({ sub }: { sub: SubStatus }) {
   )
 }
 
-function AvailabilityBadge({ value, onChange }: { value: 'online' | 'busy' | 'offline'; onChange: () => void }) {
-  // Phase 1A: read-only badge. Phase 1B will wire the actual three-way
-  // selector into /dashboard/rider/info (Availability section) — for now,
-  // tapping the badge bounces the user there.
-  const map = {
-    online:  { dot: '#10B981', label: 'Online' },
-    busy:    { dot: '#F59E0B', label: 'Busy' },
-    offline: { dot: '#71717A', label: 'Offline' },
-  } as const
-  const s = map[value]
-  return (
-    <Link
-      href="/dashboard/rider/info"
-      onClick={onChange}
-      className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white text-[#0A0A0A] text-[11px] font-extrabold uppercase tracking-wider transition active:scale-[0.97]"
-      style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.10)' }}
-    >
-      <span className="w-2 h-2 rounded-full" style={{ background: s.dot }} aria-hidden />
-      {s.label}
-    </Link>
-  )
-}
-
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-2xl bg-white border border-black/10 p-3 sm:p-4">
@@ -369,9 +568,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-// Compact 60-80px tile for the "Your six pages" grid. Single row layout
-// (icon + title) — no hint text, no arrow — so the six fit cleanly in a
-// 2×3 grid above the fold on mobile.
 function SixCard({ href, icon, title }: { href: string; icon: React.ReactNode; title: string }) {
   return (
     <Link
@@ -382,9 +578,9 @@ function SixCard({ href, icon, title }: { href: string; icon: React.ReactNode; t
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{
-          background: '#FFFBEA',
-          color: '#EAB308',
-          border: '1px solid rgba(250,204,21,0.45)',
+          background: '#FACC15',
+          color: '#0A0A0A',
+          boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
         }}
       >
         {icon}
@@ -416,9 +612,9 @@ function ActionCard({
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center"
           style={{
-            background: highlight ? '#FACC15' : '#FFFBEA',
-            color:      highlight ? '#0A0A0A' : '#EAB308',
-            border:     highlight ? 'none' : '1px solid rgba(250,204,21,0.45)',
+            background: '#FACC15',
+            color: '#0A0A0A',
+            boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
           }}
         >
           {icon}

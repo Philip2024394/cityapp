@@ -98,18 +98,16 @@ export default function PlaceAutocomplete({
             (dropdownDirection === 'down' ? 'top-full mt-1.5' : 'bottom-full mb-1.5')
           }
           style={{
-            background: 'rgba(10,10,12,0.96)',
-            border: '1px solid rgba(250,204,21,0.25)',
+            background:  '#F5F5F4',
+            border:      '1px solid #E4E4E7',
             boxShadow:
               dropdownDirection === 'down'
-                ? '0 14px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)'
-                : '0 -14px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(18px) saturate(1.3)',
-            WebkitBackdropFilter: 'blur(18px) saturate(1.3)',
+                ? '0 12px 28px rgba(15,23,42,0.18), 0 2px 6px rgba(15,23,42,0.06)'
+                : '0 -12px 28px rgba(15,23,42,0.18), 0 -2px 6px rgba(15,23,42,0.06)',
           }}
         >
           {loading && suggestions.length === 0 && (
-            <div className="px-3 py-2.5 text-[12px] text-dim font-bold">Searching…</div>
+            <div className="px-3 py-2.5 text-[12px] font-bold text-[#71717A]">Searching…</div>
           )}
           {suggestions.map((s) => (
             <button
@@ -120,12 +118,19 @@ export default function PlaceAutocomplete({
                 onSelect(s)
                 setFocused(false)
               }}
-              className="w-full text-left px-3 py-2.5 flex items-start gap-2.5 hover:bg-white/5 active:bg-white/10 transition border-b border-line/30 last:border-b-0"
+              className="w-full text-left px-3 py-2.5 flex items-start gap-2.5 hover:bg-white active:bg-white transition border-b border-[#E4E4E7] last:border-b-0"
             >
-              <MapPin className="w-4 h-4 text-brand shrink-0 mt-0.5" />
+              <MapPin
+                className="w-4 h-4 shrink-0 mt-0.5"
+                strokeWidth={2.5}
+                style={{ color: '#DC2626' }}
+                fill="#DC2626"
+              />
               <span className="flex-1 min-w-0">
-                <span className="block text-[14px] font-extrabold text-ink truncate">{s.label}</span>
-                <span className="block text-[11px] text-dim truncate">{s.detail}</span>
+                <span className="block text-[13.5px] font-extrabold text-[#0A0A0A] truncate">{s.label}</span>
+                {s.detail && (
+                  <span className="block text-[11px] font-bold text-[#71717A] truncate">{s.detail}</span>
+                )}
               </span>
             </button>
           ))}

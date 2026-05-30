@@ -13,8 +13,10 @@ import {
   Star,
   UserRound,
   X,
+  Zap,
 } from 'lucide-react'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
+import DriverDotsOverlay from '@/components/cari/DriverDotsOverlay'
 import { useGeolocation, type GeoPoint } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -22,6 +24,7 @@ import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/l
 import { haversineKm } from '@/lib/geo/haversine'
 import { logNav } from '@/lib/perf/navTiming'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
+import { isHourlyTimeAvailable, HOURLY_TIERS } from '@/lib/pricing/hourlyHire'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
 import { fireConnectIntent } from '@/lib/connectIntent'
 import type { Rider, ServiceType } from '@/types/rider'
@@ -75,9 +78,11 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
 }
 
 function parseService(raw: string | null): ServiceType {
-  if (raw === 'parcel' || raw === 'food' || raw === 'car' || raw === 'bus') return raw
+  if (raw === 'person' || raw === 'parcel' || raw === 'food' || raw === 'car' || raw === 'bus') return raw
   // New layout defaults to 'car' per founder spec (Car tile shown active
   // first in the vehicle toggle). Legacy entries still resolve correctly.
+  // NOTE: 'person' MUST be in the recognised set above — the Bike toggle
+  // navigates to ?service=person and we need vehicleType to flip to 'bike'.
   return 'car'
 }
 
@@ -282,12 +287,99 @@ function PlanTripPageInner() {
   // a parcel job; the customer signals intent via the WhatsApp message
   // prefix. For ride mode we don't filter either (drivers without an
   // explicit 'person' service still get bookings via direct contact).
+  // Hourly-hire filter — when the customer arrives here from a driver
+  // profile whose working window didn't fit, the URL carries
+  // ?hourlyTier=3h|6h|8h & ?hourlyDate & ?hourlyTime. We narrow the
+  // list to drivers of the same vehicle type whose working window
+  // accommodates the requested interval. Mocks (hourly_enabled == null)
+  // are always treated as available so the demo surface stays populated.
+  const hourlyFilter = useMemo(() => {
+    const tier = params.get('hourlyTier')
+    const date = params.get('hourlyDate')
+    const time = params.get('hourlyTime')
+    if (!tier || !date || !time) return null
+    const hours = tier === '8h' ? 8 : tier === '6h' ? 6 : 3
+    return { tier, date, time, hours }
+  }, [params])
+
   const visibleDrivers = useMemo(() => {
+    let list = drivers
     if (mode === 'parcel' && vehicleType === 'bike') {
-      return drivers.filter((d) => d.services?.includes('parcel'))
+      list = list.filter((d) => d.services?.includes('parcel'))
     }
-    return drivers
-  }, [drivers, mode, vehicleType])
+    if (hourlyFilter) {
+      list = list.filter((d) => {
+        const isMock = d.isMock === true
+        const enabled = d.hourlyEnabled === true
+        if (!enabled && !isMock) return false
+        return isHourlyTimeAvailable({
+          workingHoursStart: d.workingHoursStart ?? null,
+          workingHoursEnd:   d.workingHoursEnd ?? null,
+          startTime:         hourlyFilter.time,
+          tierHours:         hourlyFilter.hours,
+        })
+      })
+    }
+    return list
+  }, [drivers, mode, vehicleType, hourlyFilter])
+
+  // Count of vehicles online RIGHT NOW for the header pill. Combines
+  // real drivers (drivers_public, availability='online') and the
+  // visible mock pool — so customers always see a credible "X
+  // vehicles online" figure regardless of real supply ramp. Re-derives
+  // whenever the customer flips Car/Bike or Ride/Parcel.
+  const onlineCount = useMemo(
+    () => visibleDrivers.filter((d) => d.isOnline || d.availability === 'online').length,
+    [visibleDrivers],
+  )
+
+  // Sort by distance-to-customer (fastest first), break ties with
+  // min_fee ascending (cheapest after that). When the customer hasn't
+  // typed a pickup AND hasn't granted GPS, fall back to fee-only sort
+  // so the list still feels intentional. Also derive the fastest +
+  // cheapest IDs so the card row can render the matching badges in
+  // the top-right corner.
+  const customerOrigin = useMemo(
+    () => pickup ?? geo.coords ?? null,
+    [pickup, geo.coords],
+  )
+  const sortedDrivers = useMemo(() => {
+    if (visibleDrivers.length === 0) return visibleDrivers
+    const withDist = visibleDrivers.map((d) => {
+      const dist = customerOrigin && d.lat && d.lng
+        ? haversineKm({ lat: customerOrigin.lat, lng: customerOrigin.lng }, { lat: d.lat, lng: d.lng })
+        : Number.POSITIVE_INFINITY
+      const fee = d.minFee ?? d.pricePerKm ?? Number.POSITIVE_INFINITY
+      return { d, dist, fee }
+    })
+    withDist.sort((a, b) => {
+      if (a.dist !== b.dist) return a.dist - b.dist
+      return a.fee - b.fee
+    })
+    return withDist.map((x) => x.d)
+  }, [visibleDrivers, customerOrigin])
+
+  const fastestId = useMemo(() => {
+    if (!customerOrigin) return null
+    let best: { id: string; dist: number } | null = null
+    for (const d of visibleDrivers) {
+      if (!d.lat || !d.lng) continue
+      const km = haversineKm({ lat: customerOrigin.lat, lng: customerOrigin.lng }, { lat: d.lat, lng: d.lng })
+      if (!Number.isFinite(km)) continue
+      if (!best || km < best.dist) best = { id: d.id, dist: km }
+    }
+    return best?.id ?? null
+  }, [visibleDrivers, customerOrigin])
+
+  const cheapestId = useMemo(() => {
+    let best: { id: string; fee: number } | null = null
+    for (const d of visibleDrivers) {
+      const fee = d.minFee ?? d.pricePerKm ?? null
+      if (fee == null || !Number.isFinite(fee)) continue
+      if (!best || fee < best.fee) best = { id: d.id, fee }
+    }
+    return best?.id ?? null
+  }, [visibleDrivers])
 
   // Selection state for the cheapest-by-default booking pattern. /cari
   // is the ride / parcel surface — speed-driven (Gojek/Grab style: pick
@@ -482,7 +574,12 @@ function PlanTripPageInner() {
           backgroundRepeat: 'no-repeat',
         }}
         aria-hidden
-      />
+      >
+        {/* Live availability dots — yellow (online) + red (busy). Count
+            varies by hour: few in early morning, many in afternoon /
+            evening. See DriverDotsOverlay header for the schedule. */}
+        <DriverDotsOverlay />
+      </div>
 
       {/* HEADER — CityRiders brand mark on the left, nearby pill on the
           right. Logo + wordmark style matches the /cityriders, /drivers,
@@ -512,18 +609,18 @@ function PlanTripPageInner() {
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
             style={{
-              background: '#000',
-              border: '1px solid rgba(250,204,21,0.30)',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.55)',
+              background: '#FFFFFF',
+              border: '1.5px solid #FACC15',
+              boxShadow: '0 6px 16px rgba(15,23,42,0.18), 0 0 0 3px rgba(250,204,21,0.18)',
               minHeight: 32,
             }}
           >
-            <span className="relative inline-flex items-center justify-center" style={{ width: 10, height: 10 }}>
+            <span className="relative inline-flex items-center justify-center" style={{ width: 12, height: 12 }}>
               <span
                 aria-hidden
                 className="absolute inset-0 rounded-full"
                 style={{
-                  background: 'rgba(236,72,153,0.55)',
+                  background: 'rgba(34,197,94,0.55)',
                   animation: 'ridePing 2.2s ease-out infinite',
                 }}
               />
@@ -531,18 +628,21 @@ function PlanTripPageInner() {
                 aria-hidden
                 className="absolute rounded-full"
                 style={{
-                  width: 7, height: 7,
-                  background: '#22C55E',
-                  boxShadow: '0 0 6px rgba(34,197,94,0.95)',
+                  width: 8, height: 8,
+                  background: '#16A34A',
+                  boxShadow: '0 0 6px rgba(34,197,94,0.95), 0 0 0 1.5px #FFFFFF',
                 }}
               />
             </span>
-            <span className="text-[13px] font-extrabold text-brand uppercase tracking-wider">
-              {nearbyCount == null
-                ? 'Cek nearby…'
-                : nearbyCount === 0
-                  ? 'No driver online'
-                  : `${nearbyCount} nearby`}
+            <span
+              className="text-[12.5px] font-extrabold uppercase tracking-wider tabular-nums"
+              style={{ color: '#0A0A0A' }}
+            >
+              {driversLoading && onlineCount === 0
+                ? 'Loading…'
+                : onlineCount === 0
+                  ? `No ${vehicleType === 'car' ? 'cars' : 'riders'} online`
+                  : `${onlineCount} ${vehicleType === 'car' ? 'car' : 'bike'}${onlineCount === 1 ? '' : 's'} online`}
             </span>
           </div>
         </div>
@@ -650,6 +750,7 @@ function PlanTripPageInner() {
                     ariaLabel="Pick up location"
                     clearOnFocus
                     dropdownDirection="down"
+                    maxResults={3}
                     rightSlot={
                       <span
                         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
@@ -675,6 +776,7 @@ function PlanTripPageInner() {
                     ariaLabel="Drop off location"
                     clearOnFocus
                     dropdownDirection="down"
+                    maxResults={3}
                     rightSlot={
                       <span
                         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
@@ -756,6 +858,41 @@ function PlanTripPageInner() {
               />
             </div>
 
+            {/* Hourly-filter banner — surfaces when the customer arrived
+                here from a driver profile whose working window didn't
+                fit their requested (tier, date, time). Lists ONLY drivers
+                of the same vehicle type whose window does fit. */}
+            {hourlyFilter && (
+              <div
+                className="mt-3 rounded-xl px-3 py-2.5 flex items-start gap-2"
+                style={{ background: '#FEF9C3', border: '1px solid #FDE68A', color: '#854D0E' }}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider">
+                    Hourly hire · available drivers
+                  </div>
+                  <div className="text-[12px] font-bold leading-snug mt-0.5">
+                    Showing {vehicleType === 'car' ? 'cars' : 'bikes'} available for the{' '}
+                    {HOURLY_TIERS.find((t) => t.id === hourlyFilter.tier)?.label ?? hourlyFilter.tier} on{' '}
+                    {hourlyFilter.date} starting {hourlyFilter.time}.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sp = new URLSearchParams(params.toString())
+                    sp.delete('hourlyTier'); sp.delete('hourlyDate'); sp.delete('hourlyTime')
+                    router.replace(`/cari${sp.toString() ? `?${sp.toString()}` : ''}`)
+                  }}
+                  aria-label="Clear hourly filter"
+                  className="shrink-0 inline-flex items-center justify-center rounded-full text-[11px] font-extrabold px-2 py-1"
+                  style={{ background: '#0A0A0A', color: '#FACC15' }}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
             {/* ROW 4 — Scrollable driver list. Filtered by vehicleType.
                 Custom yellow scrollbar (`cari-driver-scroll`) — thin
                 rail + short rounded thumb so customers see the scroll
@@ -777,13 +914,15 @@ function PlanTripPageInner() {
                     : `No ${vehicleType === 'car' ? 'car' : 'bike'} drivers online right now.`}
                 </div>
               )}
-              {visibleDrivers.map((d) => (
+              {sortedDrivers.map((d) => (
                 <DriverCard
                   key={d.id}
                   driver={d}
                   vehicleType={vehicleType}
                   pickup={pickup}
                   selected={d.id === selectedDriverId}
+                  isFastest={d.id === fastestId}
+                  isCheapest={d.id === cheapestId}
                   onSelect={() => {
                     setSelectedDriverId(d.id)
                     haptic.tap()
@@ -871,7 +1010,7 @@ function PlanTripPageInner() {
             })()}
 
             <p className="mt-3 shrink-0 text-center text-[11px] text-[#52525B] font-bold leading-snug px-2">
-              Self-published rates · Kita2u is a software directory.
+              Self-published rates · CityRiders is a software directory.
               You agree the fare directly with the driver.
             </p>
           </div>
@@ -930,13 +1069,17 @@ function DriverCard({
   vehicleType,
   pickup,
   selected,
+  isFastest,
+  isCheapest,
   onSelect,
 }: {
-  driver: Rider
-  vehicleType: 'car' | 'bike'
-  pickup: GeoPoint | null
-  selected: boolean
-  onSelect: () => void
+  driver:     Rider
+  vehicleType:'car' | 'bike'
+  pickup:     GeoPoint | null
+  selected:   boolean
+  isFastest:  boolean
+  isCheapest: boolean
+  onSelect:   () => void
 }) {
   // Title: vehicle make + model when set, otherwise business name. The
   // Rider shape stores the vehicle on `bike` (legacy name — table covers
@@ -1001,8 +1144,8 @@ function DriverCard({
   // affordance from the prior design so customers can still see which
   // card is interactive.
   const cardClass = selected
-    ? 'w-full text-left flex items-center gap-3 p-2.5 rounded-xl transition border-2 border-[#FACC15] bg-[#FFFBEA] scale-[1.01] shadow-[0_4px_14px_rgba(250,204,21,0.30)]'
-    : 'w-full text-left flex items-center gap-3 p-2.5 rounded-xl active:scale-[0.99] transition border border-[#E4E4E7] bg-white hover:border-[#FACC15]'
+    ? 'relative w-full text-left flex items-center gap-3 p-2.5 rounded-xl transition border-2 border-[#FACC15] bg-[#FFFBEA] scale-[1.01] shadow-[0_4px_14px_rgba(250,204,21,0.30)]'
+    : 'relative w-full text-left flex items-center gap-3 p-2.5 rounded-xl active:scale-[0.99] transition border border-[#E4E4E7] bg-white hover:border-[#FACC15]'
 
   // NOTE: card body is a div+role="button" rather than a real <button>
   // because we need to embed a <Link> (Profile pill) inside it — and
@@ -1025,6 +1168,45 @@ function DriverCard({
       className={`${cardClass} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]`}
       style={{ minHeight: 72 }}
     >
+      {/* Top-right badges — FASTEST (charcoal pill with bolt) on the
+          nearest driver; CHEAPEST (yellow pill) on the lowest-fee
+          driver. A single driver can carry both if they win on both
+          axes; in that case the FASTEST badge stacks above the
+          CHEAPEST one. Absolute-positioned so the rest of the card
+          row layout doesn't shift. */}
+      {(isFastest || isCheapest) && (
+        <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-end gap-1 pointer-events-none">
+          {isFastest && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+              style={{
+                background: '#0A0A0A',
+                color:      '#FACC15',
+                boxShadow:  '0 4px 10px rgba(10,10,10,0.32)',
+                lineHeight: 1,
+                minHeight:  18,
+              }}
+            >
+              <Zap className="w-2.5 h-2.5" strokeWidth={3} fill="#FACC15" />
+              Fastest
+            </span>
+          )}
+          {isCheapest && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+              style={{
+                background: '#FACC15',
+                color:      '#0A0A0A',
+                boxShadow:  '0 4px 10px rgba(250,204,21,0.45)',
+                lineHeight: 1,
+                minHeight:  18,
+              }}
+            >
+              Cheapest
+            </span>
+          )}
+        </div>
+      )}
       {/* Vehicle / brand image — landscape 84×56 (1.5:1) instead of the
           old 64×64 square so a car's side-profile fits without the
           front/rear bumpers being cropped by `object-cover`. Bikes are

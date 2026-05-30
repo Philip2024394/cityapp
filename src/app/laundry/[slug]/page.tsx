@@ -23,6 +23,7 @@ import { Sparkles } from 'lucide-react'
 // Star + Award already imported above for the hero info-card.
 import type { LaundryProviderPublic } from '@/lib/laundry/types'
 import { countryByCode } from '@/lib/data/countries'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Synthetic services catalogue for laundry. The DB stores price columns
 // (price_wash_per_kg_idr / price_wash_dry_per_kg_idr /
@@ -954,6 +955,7 @@ export default function LaundryProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="laundry" />
     </Shell>
   )
 }

@@ -16,9 +16,11 @@
 // ============================================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
+import { AVAILABILITY_SLOTS } from '@/lib/pricing/hourlyHire'
 
 type Availability = 'online' | 'busy' | 'offline'
 
@@ -31,6 +33,12 @@ type CarDriverInfoRow = {
   city: string | null
   area: string | null
   availability: Availability | null
+  working_hours_start: string | null
+  working_hours_end: string | null
+  available_sunrise: boolean | null
+  available_daytime: boolean | null
+  available_evening: boolean | null
+  available_nightlife: boolean | null
 }
 
 type LoadState =
@@ -48,13 +56,21 @@ export default function CarDriverInfoPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) { setState({ kind: 'ready', row: dev.driver as unknown as CarDriverInfoRow }); return }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
     if (authErr || !user) { setState({ kind: 'unauth' }); return }
     const { data, error } = await supabase
       .from('drivers')
-      .select('user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability')
+      .select(
+        'user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability, ' +
+        'working_hours_start, working_hours_end, ' +
+        'available_sunrise, available_daytime, available_evening, available_nightlife',
+      )
       .eq('user_id', user.id)
       .maybeSingle()
     if (error) { setState({ kind: 'error', message: error.message }); return }
@@ -84,6 +100,8 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
   const [city,          setCity]         = useState(row.city ?? '')
   const [area,          setArea]         = useState(row.area ?? '')
   const [availability,  setAvailability] = useState<Availability>(row.availability ?? 'offline')
+  const [workStart,     setWorkStart]    = useState(row.working_hours_start ?? '')
+  const [workEnd,       setWorkEnd]      = useState(row.working_hours_end ?? '')
 
   // Track which fields are currently saving + transient flash state.
   const [savingField, setSavingField] = useState<string | null>(null)
@@ -158,6 +176,20 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
       // Revert UI if the write failed.
       setAvailability(row.availability ?? 'offline')
     }
+  }
+  function commitWorkStart() {
+    const next = workStart.trim() || null
+    if (next === (row.working_hours_start ?? null)) return
+    void save('working_hours_start', { working_hours_start: next }, 'Start time saved')
+  }
+  function commitWorkEnd() {
+    const next = workEnd.trim() || null
+    if (next === (row.working_hours_end ?? null)) return
+    void save('working_hours_end', { working_hours_end: next }, 'Finish time saved')
+  }
+  async function toggleSlot(column: 'available_sunrise' | 'available_daytime' | 'available_evening' | 'available_nightlife') {
+    const current = !!(row[column] ?? false)
+    await save(column, { [column]: !current }, !current ? 'Slot enabled' : 'Slot disabled')
   }
 
   return (
@@ -315,8 +347,66 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
         </div>
       </Card>
 
+      {/* Working hours & availability */}
+      <Card title="Working hours & availability" hint="When customers can book you." icon={<Clock size={18} />}>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Start work" saving={savingField === 'working_hours_start'}>
+            <input
+              type="time"
+              value={workStart}
+              onChange={(e) => setWorkStart(e.target.value)}
+              onBlur={commitWorkStart}
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Finish work" saving={savingField === 'working_hours_end'}>
+            <input
+              type="time"
+              value={workEnd}
+              onChange={(e) => setWorkEnd(e.target.value)}
+              onBlur={commitWorkEnd}
+              className={inputCls}
+            />
+          </Field>
+        </div>
+
+        <div className="pt-1">
+          <div className="text-[13px] font-bold text-black/85 mb-1.5">When are you available?</div>
+          <div className="flex flex-wrap gap-1.5">
+            {AVAILABILITY_SLOTS.map((slot) => {
+              const on = !!(row[slot.column] ?? false)
+              const sp = savingField === slot.column
+              return (
+                <button
+                  key={slot.id}
+                  type="button"
+                  onClick={() => void toggleSlot(slot.column)}
+                  disabled={savingField === slot.column}
+                  aria-pressed={on}
+                  className="text-[13px] font-extrabold px-3.5 py-2 rounded-full border transition min-h-[44px] active:scale-[0.98] disabled:opacity-70 inline-flex items-center gap-1.5"
+                  style={{
+                    background: on ? '#FACC15' : '#FFFFFF',
+                    color:      on ? '#0A0A0A' : 'rgba(10,10,10,0.80)',
+                    borderColor: on ? '#EAB308' : '#E4E4E7',
+                    boxShadow:  on ? '0 2px 8px rgba(250,204,21,0.30)' : 'none',
+                  }}
+                >
+                  {sp && <Loader2 size={12} className="animate-spin" />}
+                  <span aria-hidden>{slot.emoji}</span>
+                  <span>{slot.label}</span>
+                  <span className="font-bold text-black/55">· {slot.windowLabel}</span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-[13px] text-black/55 leading-snug mt-2">
+            Pick all that apply — customers filter for these on the directory.
+          </p>
+        </div>
+      </Card>
+
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">
-        Changes save automatically when you tap out of a field. Kita2u is a
+        Changes save automatically when you tap out of a field. CityRiders is a
         software directory — your profile reflects exactly what you publish.
       </p>
     </Shell>

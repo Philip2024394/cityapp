@@ -30,10 +30,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, Layers, DollarSign, Car, Check, Loader2, ChevronDown, ChevronUp, Package,
+  ArrowLeft, Layers, DollarSign, Car, Check, Loader2, Package, Clock, Lock, MapPin,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import { SERVICE_OFFERINGS, type ServiceOfferingId } from '@/lib/drivers/serviceOfferings'
 import {
   defaultsFor,
@@ -42,6 +43,10 @@ import {
   type ParcelRateTiers,
   type ParcelRateTierKey,
 } from '@/lib/parcel/defaults'
+import {
+  hourlyDefaultsForVehicle,
+  HOURLY_DEFAULTS_INNOVA,
+} from '@/lib/pricing/hourlyHire'
 
 // ----------------------------------------------------------------------------
 // Row shape — only the columns this page edits.
@@ -49,6 +54,8 @@ import {
 type ServicesRow = {
   user_id: string
   vehicle_type: string | null
+  vehicle_make: string | null
+  vehicle_model: string | null
   service_offerings: string[] | null
   price_per_km: number | null
   min_fee: number | null
@@ -63,6 +70,10 @@ type ServicesRow = {
   parcel_daily_capacity: number | null
   parcel_service_zone: string | null
   parcel_outer_zone_surcharge: number | null
+  hourly_enabled: boolean | null
+  hourly_3h_rate_idr: number | null
+  hourly_6h_rate_idr: number | null
+  hourly_8h_rate_idr: number | null
 }
 
 type LoadState =
@@ -96,6 +107,10 @@ export default function CarServicesPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) { setState({ kind: 'ready', row: dev.driver as unknown as ServicesRow }); return }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
@@ -103,10 +118,11 @@ export default function CarServicesPage() {
     const { data, error } = await supabase
       .from('drivers')
       .select(
-        'user_id, vehicle_type, service_offerings, ' +
+        'user_id, vehicle_type, vehicle_make, vehicle_model, service_offerings, ' +
         'price_per_km, min_fee, pitstop_fee, ' +
         'rental_type, rental_daily_rate_idr, rental_weekly_rate_idr, rental_monthly_rate_idr, rental_min_days, ' +
-        'parcel_b2b_enabled, parcel_rate_tiers, parcel_daily_capacity, parcel_service_zone, parcel_outer_zone_surcharge',
+        'parcel_b2b_enabled, parcel_rate_tiers, parcel_daily_capacity, parcel_service_zone, parcel_outer_zone_surcharge, ' +
+        'hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -191,7 +207,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
                 </span>
               </div>
               <p className="text-[12.5px] text-[#0A0A0A]/75 leading-snug">
-                Pick what trips you offer and set <strong>your</strong> rates. Kita2u displays them as-is.
+                Pick what trips you offer and set <strong>your</strong> rates. CityRiders displays them as-is.
               </p>
             </div>
           </div>
@@ -199,10 +215,156 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
 
         <OfferingsCard offerings={offerings} onSave={save} />
         <PricingCard row={row} onSave={save} />
+        <PitstopFeeCard row={row} onSave={save} />
         {rentalEnabled && <RentalCard row={row} onSave={save} />}
         <ParcelB2BCard row={row} onSave={save} />
+        <HourlyHireCard row={row} onSave={save} />
       </div>
     </Shell>
+  )
+}
+
+// ============================================================================
+// 5. Hourly hire packages — block-rate car+driver hire, petrol billed separately
+// ============================================================================
+function HourlyHireCard({
+  row, onSave,
+}: {
+  row:    ServicesRow
+  onSave: (patch: Record<string, unknown>) => Promise<boolean>
+}) {
+  const enabled = !!row.hourly_enabled
+  const [busyToggle, setBusyToggle] = useState(false)
+
+  const defaults = hourlyDefaultsForVehicle(row.vehicle_make, row.vehicle_model)
+  const tierLabel = defaults === HOURLY_DEFAULTS_INNOVA ? 'Innova tier' : 'Avanza tier'
+
+  const [r3h, setR3h] = useState<string>(formatIdr(row.hourly_3h_rate_idr))
+  const [r6h, setR6h] = useState<string>(formatIdr(row.hourly_6h_rate_idr))
+  const [r8h, setR8h] = useState<string>(formatIdr(row.hourly_8h_rate_idr))
+
+  useEffect(() => { setR3h(formatIdr(row.hourly_3h_rate_idr)) }, [row.hourly_3h_rate_idr])
+  useEffect(() => { setR6h(formatIdr(row.hourly_6h_rate_idr)) }, [row.hourly_6h_rate_idr])
+  useEffect(() => { setR8h(formatIdr(row.hourly_8h_rate_idr)) }, [row.hourly_8h_rate_idr])
+
+  async function toggleEnabled() {
+    if (busyToggle) return
+    setBusyToggle(true)
+    await onSave({ hourly_enabled: !enabled })
+    setBusyToggle(false)
+  }
+
+  async function commitRate(
+    field: 'hourly_3h_rate_idr' | 'hourly_6h_rate_idr' | 'hourly_8h_rate_idr',
+    raw: string,
+    current: number | null,
+  ) {
+    const next = parseIdr(raw)
+    if (next === current) return
+    await onSave({ [field]: next })
+  }
+
+  async function resetDefaults() {
+    setR3h(formatIdr(defaults.tier_3h))
+    setR6h(formatIdr(defaults.tier_6h))
+    setR8h(formatIdr(defaults.tier_8h))
+    await onSave({
+      hourly_3h_rate_idr: defaults.tier_3h,
+      hourly_6h_rate_idr: defaults.tier_6h,
+      hourly_8h_rate_idr: defaults.tier_8h,
+    })
+  }
+
+  return (
+    <Card
+      title="Hourly hire packages"
+      hint="Block-rate car + driver hire. Petrol billed separately at SPBU."
+      icon={<Clock size={18} />}
+    >
+      {/* Master toggle */}
+      <button
+        type="button"
+        onClick={toggleEnabled}
+        disabled={busyToggle}
+        aria-pressed={enabled}
+        className="w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.99] disabled:opacity-70 min-h-[44px]"
+        style={{
+          background:  enabled ? '#FACC15' : '#F9FAFB',
+          borderColor: enabled ? '#EAB308' : '#E4E4E7',
+          boxShadow:   enabled ? '0 2px 8px rgba(250,204,21,0.30)' : 'none',
+        }}
+      >
+        <span className="text-left">
+          <span className="block text-[13px] font-extrabold text-[#0A0A0A]">Offer hourly hire</span>
+          <span className="block text-[13px] font-bold text-black/60 mt-0.5">
+            {enabled ? '3h / 6h / 8h block rates shown on your profile.' : 'Hourly packages hidden from your profile.'}
+          </span>
+        </span>
+        <span
+          className="relative inline-flex items-center shrink-0 rounded-full transition"
+          style={{
+            width: 40, height: 22,
+            background: enabled ? '#0A0A0A' : '#D4D4D8',
+          }}
+        >
+          <span
+            className="absolute top-0.5 rounded-full bg-white shadow transition-all"
+            style={{
+              width: 18, height: 18,
+              left: enabled ? 20 : 2,
+            }}
+          />
+          {busyToggle && <Loader2 size={10} className="animate-spin absolute left-1/2 -translate-x-1/2 text-white/80" />}
+        </span>
+      </button>
+
+      {/* Body — dimmed when disabled */}
+      <div className={enabled ? '' : 'opacity-50 pointer-events-none'}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <IdrInput
+            label="3-hour block"
+            placeholder={formatIdr(defaults.tier_3h)}
+            value={r3h}
+            onChange={setR3h}
+            onBlur={() => commitRate('hourly_3h_rate_idr', r3h, row.hourly_3h_rate_idr)}
+          />
+          <IdrInput
+            label="6-hour block"
+            placeholder={formatIdr(defaults.tier_6h)}
+            value={r6h}
+            onChange={setR6h}
+            onBlur={() => commitRate('hourly_6h_rate_idr', r6h, row.hourly_6h_rate_idr)}
+          />
+          <IdrInput
+            label="8-hour block"
+            placeholder={formatIdr(defaults.tier_8h)}
+            value={r8h}
+            onChange={setR8h}
+            onBlur={() => commitRate('hourly_8h_rate_idr', r8h, row.hourly_8h_rate_idr)}
+          />
+        </div>
+
+        <div className="pt-1 flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={resetDefaults}
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[13px] font-extrabold uppercase tracking-wider bg-[#FACC15] hover:bg-[#EAB308] text-[#0A0A0A] border border-[#EAB308] transition min-h-[44px] active:scale-[0.98]"
+          >
+            Reset to suggested defaults
+          </button>
+          <span className="text-[13px] font-bold text-black/55">
+            Reset to {tierLabel}
+          </span>
+        </div>
+
+        <div className="mt-3 rounded-xl bg-gray-50 border border-gray-200 px-3 py-2.5 flex items-start gap-2">
+          <Lock size={14} className="shrink-0 mt-0.5 text-black/50" strokeWidth={2.5} />
+          <p className="text-[13px] text-black/65 leading-snug">
+            Petrol policy: customer pays separately at SPBU. We don&apos;t store fuel data.
+          </p>
+        </div>
+      </div>
+    </Card>
   )
 }
 
@@ -278,15 +440,12 @@ function PricingCard({
 }) {
   const [perKm,   setPerKm]   = useState<string>(formatIdr(row.price_per_km))
   const [minFee,  setMinFee]  = useState<string>(formatIdr(row.min_fee))
-  const [pitstop, setPitstop] = useState<string>(formatIdr(row.pitstop_fee))
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(!!row.pitstop_fee)
 
   // Keep local in sync if row changes (e.g. another tab saved).
   useEffect(() => { setPerKm(formatIdr(row.price_per_km)) },   [row.price_per_km])
   useEffect(() => { setMinFee(formatIdr(row.min_fee)) },        [row.min_fee])
-  useEffect(() => { setPitstop(formatIdr(row.pitstop_fee)) },   [row.pitstop_fee])
 
-  async function commit(field: 'price_per_km' | 'min_fee' | 'pitstop_fee', raw: string, current: number | null) {
+  async function commit(field: 'price_per_km' | 'min_fee', raw: string, current: number | null) {
     const next = parseIdr(raw)
     if (next === current) return
     await onSave({ [field]: next })
@@ -295,7 +454,7 @@ function PricingCard({
   return (
     <Card
       title="Per-km transport rates"
-      hint="YOUR published rates for point-to-point trips. Kita2u shows them as-is — we never compute fares."
+      hint="YOUR published rates for point-to-point trips. CityRiders shows them as-is — we never compute fares."
       icon={<DollarSign size={18} />}
     >
       <div className="grid grid-cols-2 gap-2">
@@ -314,28 +473,57 @@ function PricingCard({
           onBlur={() => commit('min_fee', minFee, row.min_fee)}
         />
       </div>
+    </Card>
+  )
+}
 
-      {/* Advanced pricing — pitstop fee tucked away */}
-      <button
-        type="button"
-        onClick={() => setShowAdvanced((v) => !v)}
-        className="inline-flex items-center gap-1 text-[12px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] uppercase tracking-wider min-h-[44px] -mb-1"
-      >
-        {showAdvanced ? <ChevronUp size={14} strokeWidth={2.5} /> : <ChevronDown size={14} strokeWidth={2.5} />}
-        Advanced pricing
-      </button>
-      {showAdvanced && (
-        <div className="grid grid-cols-1 gap-2">
-          <IdrInput
-            label="Pit-stop fee (optional)"
-            placeholder="5.000"
-            value={pitstop}
-            onChange={setPitstop}
-            onBlur={() => commit('pitstop_fee', pitstop, row.pitstop_fee)}
-            hint="Extra per stop when the customer asks for waiting time at a location."
-          />
-        </div>
-      )}
+// ============================================================================
+// 2b. Pitstop fee — one flat fee per booking, default 0 = free
+// ============================================================================
+function PitstopFeeCard({
+  row, onSave,
+}: {
+  row:    ServicesRow
+  onSave: (patch: Record<string, unknown>) => Promise<boolean>
+}) {
+  const initial = row.pitstop_fee ?? 0
+  const [pitstop, setPitstop] = useState<string>(initial > 0 ? formatIdr(initial) : '')
+
+  // Keep local in sync if the row changes (e.g. another tab saved).
+  useEffect(() => {
+    const v = row.pitstop_fee ?? 0
+    setPitstop(v > 0 ? formatIdr(v) : '')
+  }, [row.pitstop_fee])
+
+  async function commit() {
+    // Reject anything that isn't a non-negative integer; parseIdr already
+    // strips non-digits, so this guards against empty + invalid input.
+    const digits = pitstop.replace(/\D/g, '')
+    const next = digits ? Number(digits) : 0
+    if (!Number.isFinite(next) || next < 0) {
+      setPitstop((row.pitstop_fee ?? 0) > 0 ? formatIdr(row.pitstop_fee) : '')
+      return
+    }
+    if (next === (row.pitstop_fee ?? 0)) return
+    await onSave({ pitstop_fee: next })
+  }
+
+  return (
+    <Card
+      title="Pitstop fee"
+      hint="What you charge when the customer asks for a quick stop along the way (ATM, buy something, restroom). One single price covers any number of stops the customer adds. Default Rp 0 = free."
+      icon={<MapPin size={18} />}
+    >
+      <IdrInput
+        label="Pitstop fee per booking"
+        placeholder="0"
+        value={pitstop}
+        onChange={setPitstop}
+        onBlur={commit}
+      />
+      <p className="text-[11.5px] italic text-black/55 leading-snug">
+        Per booking, not per stop — even if the customer adds 5 stops, this fee applies once.
+      </p>
     </Card>
   )
 }

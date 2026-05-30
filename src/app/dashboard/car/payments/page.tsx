@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 
 // ----------------------------------------------------------------------------
 // Row shape — only the columns this page edits.
@@ -59,6 +60,10 @@ export default function CarPaymentsPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) { setState({ kind: 'ready', row: dev.driver as unknown as PaymentsRow }); return }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()

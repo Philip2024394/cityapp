@@ -26,8 +26,10 @@ import {
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import {
   SUBSCRIPTION_MONTHLY_IDR,
+  SUBSCRIPTION_YEARLY_IDR,
   MONTHLY_PRICE_LABEL,
   YEARLY_PRICE_LABEL,
   TRIAL_LABEL_EN,
@@ -38,10 +40,15 @@ import {
 // ----------------------------------------------------------------------------
 const ADMIN_WHATSAPP_E164 = '6285183600015' // streetlocallive admin line
 const ADMIN_WA_RENEW = `https://wa.me/${ADMIN_WHATSAPP_E164}?text=${encodeURIComponent(
-  'Halo admin, saya mau bayar/renew langganan dashboard Truck driver Kita2u (Rp 38.000/bulan).',
+  'Halo admin, saya mau bayar/renew langganan dashboard Truck driver CityRiders (Rp 38.000/bulan).',
 )}`
 // Swap this single constant when the merchant QRIS image is ready.
-const QRIS_IMAGE_URL = 'https://ik.imagekit.io/nepgaxllc/qris-placeholder.png'
+import {
+  SUBSCRIPTION_QRIS_IMAGE_URL,
+  SUBSCRIPTION_QRIS_ALT,
+  SUBSCRIPTION_QRIS_YEARLY_IMAGE_URL,
+  SUBSCRIPTION_QRIS_YEARLY_ALT,
+} from '@/lib/pricing/qris'
 
 // ----------------------------------------------------------------------------
 // Types
@@ -112,6 +119,20 @@ export default function TruckSubscriptionPage() {
   const [paidToast, setPaidToast] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    // Render with empty payment history (subscription_payments is admin-gated
+    // and not directly readable via the browser client on most envs).
+    const dev = await tryLoadDevDriver()
+    if (dev) {
+      setState({
+        kind: 'ready',
+        row: dev.driver as unknown as DriverRow,
+        payments: [],
+        screenshots: {},
+      })
+      return
+    }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
@@ -455,6 +476,10 @@ function QrisPaymentModal({
   const [uploading,    setUploading]    = useState(false)
   const [uploadError,  setUploadError]  = useState<string | null>(null)
 
+  // Billing period — monthly (Rp 38k / 30 days) or yearly (Rp 350k /
+  // 365 days, ~23% saving vs monthly × 12). Each period has its own QRIS.
+  const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly')
+
   // Reset state every time the modal reopens — stale errors / files
   // shouldn't bleed between attempts.
   useEffect(() => {
@@ -463,6 +488,7 @@ function QrisPaymentModal({
       setFilePreview(null)
       setUploading(false)
       setUploadError(null)
+      setPeriod('monthly')
     }
   }, [open])
 
@@ -505,6 +531,7 @@ function QrisPaymentModal({
       const fd = new FormData()
       fd.append('screenshot', file)
       fd.append('vehicleType', 'truck')
+      fd.append('billingPeriod', period)
       const r = await fetch('/api/dashboard/subscription-payment', {
         method: 'POST',
         body: fd,
@@ -549,28 +576,66 @@ function QrisPaymentModal({
             Pay subscription via QRIS
           </h2>
           <p className="text-[13px] text-black/65 mt-1 leading-snug">
-            Pay Rp {SUBSCRIPTION_MONTHLY_IDR.toLocaleString('id-ID')} to keep your truck listing live for 30 days.
+            Pick monthly or yearly · scan the matching QR · upload your receipt.
           </p>
 
-          {/* Amount pill */}
-          <div className="mt-4 rounded-xl bg-[#FACC15]/15 border border-[#FACC15] px-4 py-3 flex items-center justify-between">
-            <span className="text-[13px] font-bold text-[#0A0A0A]/80">Amount</span>
-            <span className="text-[15px] font-black text-[#0A0A0A]">
-              Rp {SUBSCRIPTION_MONTHLY_IDR.toLocaleString('id-ID')} <span className="font-bold text-[13px] text-[#0A0A0A]/70">/ 1 month</span>
-            </span>
+          {/* Billing-period toggle — Monthly / Yearly */}
+          <div className="mt-4 grid grid-cols-2 gap-2 p-1 rounded-2xl bg-[#F4F4F5] border border-[#E4E4E7]">
+            {(['monthly', 'yearly'] as const).map((p) => {
+              const active = period === p
+              const label  = p === 'monthly' ? 'Monthly' : 'Yearly'
+              const price  = p === 'monthly'
+                ? `Rp ${SUBSCRIPTION_MONTHLY_IDR.toLocaleString('id-ID')}`
+                : `Rp ${SUBSCRIPTION_YEARLY_IDR.toLocaleString('id-ID')}`
+              const subnote = p === 'monthly' ? '30 days' : '365 days · save ~23%'
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => !uploading && setPeriod(p)}
+                  disabled={uploading}
+                  aria-pressed={active}
+                  className="flex flex-col items-start justify-center px-3 py-2.5 rounded-xl text-left transition active:scale-[0.99] disabled:opacity-50"
+                  style={{
+                    background: active ? '#FACC15' : 'transparent',
+                    color:      '#0A0A0A',
+                    boxShadow:  active ? '0 4px 12px rgba(250,204,21,0.35)' : 'none',
+                    minHeight:  56,
+                  }}
+                >
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-70">{label}</span>
+                  <span className="text-[14px] font-black leading-tight mt-0.5">{price}</span>
+                  <span className="text-[10.5px] font-bold opacity-65 mt-0.5">{subnote}</span>
+                </button>
+              )
+            })}
           </div>
 
-          {/* QR display */}
+          {/* QR display — branded card with soft yellow border + drop shadow */}
           <div className="mt-4 flex justify-center">
-            <div className="bg-white rounded-xl p-2 border border-gray-200 shadow-sm">
+            <div
+              className="bg-white rounded-2xl p-3 border-2"
+              style={{
+                borderColor: '#FACC15',
+                boxShadow:   '0 8px 24px rgba(250,204,21,0.22)',
+              }}
+            >
+              <div className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-[#854D0E] text-center mb-2">
+                CityRiders QRIS · {period === 'monthly' ? 'Monthly' : 'Yearly'}
+              </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={QRIS_IMAGE_URL}
-                alt="Kita2u QRIS payment code"
-                width={200}
-                height={200}
-                className="w-[200px] h-[200px] object-contain block"
+                src={period === 'monthly' ? SUBSCRIPTION_QRIS_IMAGE_URL : SUBSCRIPTION_QRIS_YEARLY_IMAGE_URL}
+                alt={period === 'monthly' ? SUBSCRIPTION_QRIS_ALT : SUBSCRIPTION_QRIS_YEARLY_ALT}
+                width={220}
+                height={220}
+                className="w-[220px] h-[220px] object-contain block"
               />
+              <div className="text-[11px] font-bold text-[#0A0A0A]/55 text-center mt-2">
+                {period === 'monthly'
+                  ? `Rp ${SUBSCRIPTION_MONTHLY_IDR.toLocaleString('id-ID')} · 1 month`
+                  : `Rp ${SUBSCRIPTION_YEARLY_IDR.toLocaleString('id-ID')} · 1 year`}
+              </div>
             </div>
           </div>
 
@@ -581,7 +646,9 @@ function QrisPaymentModal({
               <span className="block text-black/55 text-[12px]">(BCA, Mandiri, GoPay, OVO, Dana, ShopeePay, etc.)</span>
             </Step>
             <Step n={2}>Scan QRIS di atas / Scan the QR above</Step>
-            <Step n={3}>Bayar <span className="font-black">Rp {SUBSCRIPTION_MONTHLY_IDR.toLocaleString('id-ID')}</span> / Pay the amount</Step>
+            <Step n={3}>
+              Bayar <span className="font-black">Rp {(period === 'monthly' ? SUBSCRIPTION_MONTHLY_IDR : SUBSCRIPTION_YEARLY_IDR).toLocaleString('id-ID')}</span> / Pay the amount
+            </Step>
             <Step n={4}>Screenshot bukti pembayaran / Screenshot the receipt</Step>
             <Step n={5}>Upload screenshot di bawah — listing aktif segera</Step>
           </ol>
@@ -646,7 +713,7 @@ function QrisPaymentModal({
           </button>
 
           <p className="mt-3 text-[12px] text-black/55 leading-snug">
-            Payment is between you and your bank/wallet. Kita2u is a software directory — we do not custody or process funds.
+            Payment is between you and your bank/wallet. CityRiders is a software directory — we do not custody or process funds.
           </p>
 
           <div className="mt-3 text-center">

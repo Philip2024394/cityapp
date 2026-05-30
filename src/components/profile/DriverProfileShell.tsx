@@ -5,10 +5,13 @@ import { useSearchParams } from 'next/navigation'
 import {
   MapPin, Star, Plus, X as XIcon, MessageCircle, Bike as BikeIcon,
   Car as CarIcon, Users as UsersIcon,
-  PlaneTakeoff, Building2, MapPinned,
-  ArrowUp, ArrowDown,
+  PlaneTakeoff, Building2, MapPinned, Bookmark,
+  ArrowUp, ArrowDown, ChevronLeft, CalendarDays,
   UserRound, Package as PackageIcon,
 } from 'lucide-react'
+import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
+import { useGeolocation } from '@/hooks/useGeolocation'
+import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { haversineKm } from '@/lib/geo/haversine'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
 import { idr } from '@/lib/format/idr'
@@ -16,7 +19,21 @@ import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl } from '@/data/carImages'
 import { SERVICE_OFFERINGS } from '@/lib/drivers/serviceOfferings'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
+import PlacesPicker from '@/components/places/PlacesPicker'
+import HourlyBookingPopup from '@/components/profile/HourlyBookingPopup'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 import { fireConnectIntent } from '@/lib/connectIntent'
+import {
+  hourlyDefaultsForVehicle,
+  formatIDR,
+  AVAILABILITY_SLOTS,
+  HOURLY_PETROL_POLICY_ID,
+  HOURLY_PETROL_POLICY_EN,
+  HOURLY_TIERS,
+  isHourlyTimeAvailable,
+  type HourlyTier,
+} from '@/lib/pricing/hourlyHire'
+import { parseRateTiers, PARCEL_TIER_DEFINITIONS, type ParcelVehicleKind } from '@/lib/parcel/defaults'
 
 // =============================================================================
 // DriverProfileShell — shared driver-profile renderer for /r/[slug] (bike)
@@ -111,6 +128,26 @@ export type DriverPublic = {
    *  (City Service, Daily Hire, Hourly Hire, Airport Pickup, etc.).
    *  Rendered as a row of yellow-tint badges under the bio. */
   service_offerings?:  string[]
+  /** Hourly hire opt-in (mig 0156). When true the public profile renders
+   *  the Hourly Booking tab + 3/6/8-hour block cards. Car mocks render
+   *  the tab unconditionally via fallback defaults — see hourlyHire.ts. */
+  hourly_enabled?:     boolean | null
+  hourly_3h_rate_idr?: number | null
+  hourly_6h_rate_idr?: number | null
+  hourly_8h_rate_idr?: number | null
+  /** Working hours window (HH:MM strings, mig 0156). Surfaced on the
+   *  "All" summary tab so customers see when the driver is reachable. */
+  working_hours_start?: string | null
+  working_hours_end?:   string | null
+  /** Per-slot availability flags (mig 0156). Surface as emoji chips on
+   *  the "All" tab when at least one is set. */
+  available_sunrise?:   boolean | null
+  available_daytime?:   boolean | null
+  available_evening?:   boolean | null
+  available_nightlife?: boolean | null
+  /** Parcel B2B rate tiers (mig 0149). When set, lets the "All" summary
+   *  tab show "from Rp X / parcel" using the cheapest tier. */
+  parcel_rate_tiers?:   unknown | null
 }
 
 export type DriverProfileShellProps = {
@@ -183,7 +220,7 @@ function buildShellWhatsAppLink(opts: {
   if (!wa) return ''
   const opener = opts.mode === 'parcel'
     ? `Halo ${opts.driver.business_name}, saya mau kirim paket via CityRiders.`
-    : `Halo ${opts.driver.business_name}, saya mau booking via Kita2u.`
+    : `Halo ${opts.driver.business_name}, saya mau booking via CityRiders.`
   const lines: string[] = [opener, '']
   if (opts.pickup.trim())  lines.push(`📍 Pickup: ${opts.pickup.trim()}`)
   if (opts.dropoff.trim()) lines.push(`🏁 Drop off: ${opts.dropoff.trim()}`)
@@ -222,18 +259,16 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
   // Extra typed stops. Customer can add any number — no cap per spec.
   const [stops, setStops]     = useState<string[]>([])
 
-  // URL-param hydration — Places round-trip flow. When the customer
-  // browses /places from this profile and taps "Take me here" on a
-  // place card, they return here with ?dName / ?dLat / ?dLng (the place
-  // they picked) and ?pName / ?pLat / ?pLng (their typed pickup, if any,
-  // round-tripped from before they left). We populate pickup + dropoff
-  // state from those params on mount so the booking widget shows the
-  // estimate and BOOK NOW activates immediately. Uses the SAME param-
-  // name convention as /cari (dName/dLat/dLng/pName/pLat/pLng) so the
-  // pattern is consistent across the directory. lat/lng are read but
-  // not stored in state — the typed-only booking widget only needs
-  // the human-readable name; coords would be used if/when we ship a
-  // map-based pickup picker on this shell.
+  // Inline Places picker — when true, the embedded PlacesPicker panel
+  // renders below the vehicle/services section. Tapping a place card
+  // hydrates the dropoff field directly and collapses the panel —
+  // no /places navigation, no round-trip URL params.
+  const [showPlacesPicker, setShowPlacesPicker] = useState(false)
+
+  // URL-param hydration — kept for the legacy round-trip flow (incoming
+  // links from /places/[slug]'s "Take me here →" CTA still land here
+  // with ?dName / ?dLat / ?dLng populated). New in-profile picks use
+  // the inline panel above and never touch the URL.
   useEffect(() => {
     if (!searchParams) return
     const dName = searchParams.get('dName')
@@ -245,23 +280,6 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Places pill href — routes to /places with a return_driver token so
-  // the place-tap on the next screen knows where to send the customer
-  // back. Prefix 'r:' for bikes, 'c:' for cars / trucks / minibuses /
-  // anything car-like; matches the AlternativeRow routing convention
-  // (car-like → /car, everything else → /r). Forward-propagates the
-  // customer's typed pickup (if any) so it survives the round-trip.
-  const placesHref = useMemo(() => {
-    const isCarLike = driver.vehicle_type === 'car'
-                   || driver.vehicle_type === 'truck'
-                   || driver.vehicle_type === 'minibus'
-                   || driver.vehicle_type === 'premium_car'
-    const prefix = isCarLike ? 'c' : 'r'
-    const sp = new URLSearchParams()
-    sp.set('return_driver', `${prefix}:${driver.slug}`)
-    if (pickup.trim()) sp.set('pName', pickup.trim())
-    return `/places?${sp.toString()}`
-  }, [driver.vehicle_type, driver.slug, pickup])
   // Hero route-preview state. `bookingSent` flips true the instant the
   // BOOK NOW CTA is tapped (before the WA deep-link opens), driving a 6s
   // CSS stroke-colour transition from black → brand yellow on the polyline.
@@ -371,6 +389,45 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     driver, pickup, dropoff, stops, estimate: estimateInputs, mode,
   }), [driver, pickup, dropoff, stops, estimateInputs, mode])
 
+  // ── Services Offered tab row ───────────────────────────────────────────
+  // Mocks (no real drivers row) don't carry the mig-0156 hourly columns,
+  // so the page loader passes `hourly_enabled === null` for them. Real
+  // drivers always have a boolean (column default `false`). For CAR
+  // mocks we still render the Hourly tab using hourlyDefaultsForVehicle
+  // (see HOURLY_DEFAULTS_AVANZA / HOURLY_DEFAULTS_INNOVA). Bike mocks
+  // are person/parcel only in the demo seed → Hourly tab stays off.
+  const isMockCar = driver.vehicle_type === 'car' && driver.hourly_enabled == null
+  const hourlyAvailable = !!driver.hourly_enabled || isMockCar
+  const hourlyDefaults  = useMemo(
+    () => hourlyDefaultsForVehicle(driver.vehicle_make, driver.vehicle_model),
+    [driver.vehicle_make, driver.vehicle_model],
+  )
+
+  type TabId = 'all' | 'passenger' | 'parcel' | 'hourly'
+  const tabs: { id: TabId; label: string; emoji?: string }[] = []
+  tabs.push({ id: 'all', label: 'All' })
+  if (offersRide)   tabs.push({ id: 'passenger', label: 'Passenger' })
+  if (offersParcel) tabs.push({ id: 'parcel',    label: 'Parcel B2B', emoji: '📋' })
+  if (hourlyAvailable) tabs.push({ id: 'hourly', label: 'Hourly Booking' })
+  const [activeTab, setActiveTab] = useState<TabId>('all')
+
+  // Cheapest parcel-tier price for the All-tab summary card. Only
+  // computed when the driver opted into parcel + we have a tiers row.
+  const cheapestParcel = useMemo(() => {
+    if (!offersParcel) return null
+    const vehicleKind: ParcelVehicleKind = driver.vehicle_type === 'bike' ? 'bike' : 'car'
+    const tiers = parseRateTiers(driver.parcel_rate_tiers ?? null, vehicleKind)
+    return Math.min(tiers.tier_1_5, tiers.tier_6_20, tiers.tier_21_50, tiers.tier_51_100)
+  }, [offersParcel, driver.parcel_rate_tiers, driver.vehicle_type])
+
+  // Switch the booking-widget mode automatically when the customer taps
+  // the Passenger or Parcel tabs so the WA template body matches.
+  useEffect(() => {
+    if (activeTab === 'passenger' && mode !== 'ride')   setMode('ride')
+    if (activeTab === 'parcel'    && mode !== 'parcel') setMode('parcel')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
   // Service-mode pills — keep the chip set tight by filtering to the
   // dictionary above; unknown values stored in `services` (from legacy
   // rows) are hidden rather than rendered raw.
@@ -383,6 +440,40 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
 
   return (
     <main className="relative min-h-[100dvh] bg-white" style={{ color: TEXT_INK }}>
+      {/* Right-edge yellow BACK tab — pinned to the viewport edge so
+          customers can drop back into the /cari driver list at any
+          point. Same shape as the beautician shell. */}
+      <a
+        href="/cari"
+        aria-label="Back to booking page"
+        className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
+        style={{
+          right:                  0,
+          top:                    '35%',
+          transform:              'translateY(-50%)',
+          width:                  34,
+          height:                 110,
+          background:             '#FACC15',
+          color:                  '#0A0A0A',
+          borderTopLeftRadius:    14,
+          borderBottomLeftRadius: 14,
+          boxShadow:              '-4px 4px 14px rgba(0,0,0,0.22)',
+        }}
+      >
+        <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+        <span
+          className="font-extrabold uppercase"
+          style={{
+            writingMode:    'vertical-rl',
+            transform:      'rotate(180deg)',
+            fontSize:       11,
+            letterSpacing:  '0.18em',
+          }}
+        >
+          Back
+        </span>
+      </a>
+
       {/* 1) HERO — fixed backdrop with a soft white top scrim. Same
           pattern the beautician shell uses: image fills a 16/9 hero
           slot, with a white-to-transparent gradient softening the
@@ -647,26 +738,26 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                   </div>
                 )}
               </div>
-              {/* Places pill — small yellow chip matched in size to the
-                  Reviews pill above (text-[11px] px-3 py-1.5) so the two
-                  read as a pair. Routes to /places with the return_driver
-                  token + the customer's typed pickup (if any). Tap on a
-                  place card on the next screen propagates those params,
-                  and tapping "Take me here" on the place profile comes
-                  back here with ?dName/dLat/dLng populated. */}
-              <Link
-                href={placesHref}
-                aria-label="Browse places to set as drop-off"
+              {/* Places pill — toggles the inline PlacesPicker panel
+                  below this section. Customer picks a place card → the
+                  dropoff field hydrates in-place and the panel collapses.
+                  No /places navigation, no round-trip URL params. */}
+              <button
+                type="button"
+                onClick={() => setShowPlacesPicker((v) => !v)}
+                aria-expanded={showPlacesPicker}
+                aria-controls="driver-places-picker"
+                aria-label={showPlacesPicker ? 'Close places picker' : 'Browse places to set as drop-off'}
                 className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold shadow-md active:scale-[0.97] transition"
                 style={{
-                  background: BRAND_YELLOW,
-                  color: TEXT_INK,
+                  background: showPlacesPicker ? TEXT_INK : BRAND_YELLOW,
+                  color: showPlacesPicker ? BRAND_YELLOW : TEXT_INK,
                   minHeight: 32,
                 }}
               >
                 <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                Places
-              </Link>
+                {showPlacesPicker ? 'Close' : 'Places'}
+              </button>
             </div>
             {driver.bio?.trim() && (
               <p
@@ -712,8 +803,78 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           </div>
         </section>
 
-        {/* 4) BOOKING CONTAINER — split on availability. */}
-        {availability === 'online' ? (
+        {/* 3.1) PLACES PICKER (inline) — when open, REPLACES the tabs +
+            booking container below. Customer is in destination-picking
+            mode; the booking widget reappears once they select a place
+            (which hydrates dropoff and smooth-scrolls to the widget). */}
+        {showPlacesPicker ? (
+          <div id="driver-places-picker">
+            <PlacesPicker
+              onClose={() => setShowPlacesPicker(false)}
+              onSelect={(place) => {
+                setDropoff(place.name)
+                setShowPlacesPicker(false)
+                if (typeof window !== 'undefined') {
+                  requestAnimationFrame(() => {
+                    const el = document.querySelector('[data-booking-widget]')
+                    if (el instanceof HTMLElement) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                  })
+                }
+              }}
+            />
+          </div>
+        ) : (
+        <>
+        {/* 3.5) SERVICES OFFERED — heading + tab row. Sits between the
+            vehicle/services block and the booking container so the
+            customer picks how they want to engage (All summary / Book a
+            ride / Send a parcel / Hourly hire) before the input fields
+            appear. Tabs surface only modes the driver opted into. */}
+        <section className="mt-4">
+          <div className="text-[13px] font-extrabold uppercase tracking-wider mb-2" style={{ color: TEXT_INK }}>
+            Services Offered
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((t) => {
+              const selected = activeTab === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveTab(t.id)}
+                  aria-pressed={selected}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-extrabold px-3 py-1.5 rounded-full transition active:scale-[0.97]"
+                  style={
+                    selected
+                      ? { background: BRAND_YELLOW, color: TEXT_INK }
+                      : { background: 'rgba(229, 231, 235, 0.95)', color: TEXT_INK }
+                  }
+                >
+                  {t.emoji ? <span aria-hidden>{t.emoji}</span> : null}
+                  <span>{t.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* 4) BOOKING CONTAINER — content swaps based on activeTab.
+            data-booking-widget anchors the smooth-scroll after the
+            inline PlacesPicker hydrates the dropoff field. */}
+        <div data-booking-widget>
+        {/* All tab now defaults to the booking container — same as the
+            Passenger tab but with the mode toggle visible when both ride
+            and parcel are offered. Falls through to the booking widget
+            below; no AllSummaryCard render here (kept in the file for
+            reuse but not invoked from this surface). */}
+        {activeTab === 'hourly' ? (
+          <HourlyTabContent
+            driver={driver}
+            hourlyDefaults={hourlyDefaults}
+          />
+        ) : availability === 'online' ? (
           <OnlineBookingWidget
             driver={driver}
             pickup={pickup} setPickup={setPickup}
@@ -723,8 +884,8 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             waLink={waLink}
             mode={mode}
             setMode={setMode}
-            offersRide={offersRide}
-            offersParcel={offersParcel}
+            offersRide={offersRide && activeTab !== 'parcel'}
+            offersParcel={offersParcel && activeTab !== 'passenger'}
             onBookingSent={() => setBookingSent(true)}
           />
         ) : (
@@ -737,10 +898,26 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             stops={stops} setStops={setStops}
           />
         )}
+
+        </div>
+
+        {/* Parcel B2B rate card — only on the Parcel tab. Shows the
+            5-tier card from the driver's parcel_rate_tiers row (or the
+            vehicle-default ladder for mocks). Sits BELOW the booking
+            widget so the customer first sees the booking input then the
+            rate ladder reference. */}
+        {activeTab === 'parcel' && offersParcel && (
+          <ParcelTierCard driver={driver} />
+        )}
+        </>
+        )}
         </>
         )}
       </div>
 
+      <PoweredByKita2u
+        defaultVertical={driver.vehicle_type === 'bike' ? 'bike-driver' : 'car-driver'}
+      />
     </main>
   )
 }
@@ -769,9 +946,16 @@ function OnlineBookingWidget({
 }) {
   const canBook = pickup.trim().length > 0 && dropoff.trim().length > 0 && waLink.length > 0
 
+  // Geolocation bias for the autosuggest dropdown — matches /cari's
+  // pattern. Suggestions rank closer to the customer first, and the
+  // country filter narrows results to the user's actual market.
+  const geo = useGeolocation(true)
+  const userCountry = useCountryFromCoords(geo.coords ?? null)
+  const countryCodes = useMemo(() => (userCountry ? [userCountry] : []), [userCountry])
+
   // Swap pickup ↔ dropoff strings. Mirrors /cari's swap behaviour but
-  // without coords (this widget is typed-only — see file header for the
-  // compliance reasoning).
+  // without coords (the widget owns labels only — see file header for
+  // the compliance reasoning).
   const handleSwap = () => {
     const prevPickup  = pickup
     const prevDropoff = dropoff
@@ -883,22 +1067,67 @@ function OnlineBookingWidget({
           />
         </div>
 
-        {/* Inputs column — stacked pickup + dropoff. Labels live above
-            each input (the BookingTextField pattern) so the connector
-            dots align to the input fields themselves, not the labels. */}
+        {/* Inputs column — pickup + dropoff with autosuggest dropdown.
+            Mirrors /cari's PlaceAutocomplete pattern (gray dropdown, red
+            pin, max 3 results). Pickup carries a Bookmark right-slot icon
+            ("saved address"); dropoff carries a yellow Star ("favorites"). */}
         <div className="flex-1 min-w-0 space-y-1.5">
-          <BookingTextField
-            label="Pickup"
-            value={pickup}
-            onChange={setPickup}
-            placeholder="Where do you want to be picked up?"
-          />
-          <BookingTextField
-            label="Drop off"
-            value={dropoff}
-            onChange={setDropoff}
-            placeholder="Where do you want to go?"
-          />
+          <div>
+            <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>
+              Pickup
+            </label>
+            <div className="relative">
+              <PlaceAutocomplete
+                value={pickup}
+                onChange={setPickup}
+                onSelect={(s) => setPickup(s.label)}
+                placeholder="Where do you want to be picked up?"
+                className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-[#0A0A0A] placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
+                near={geo.coords ?? null}
+                countryCodes={countryCodes}
+                ariaLabel="Pick up location"
+                clearOnFocus
+                dropdownDirection="down"
+                maxResults={3}
+                rightSlot={
+                  <span
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
+                    aria-hidden
+                  >
+                    <Bookmark className="w-[18px] h-[18px] text-[#FACC15]" strokeWidth={2.4} fill="#FACC15" />
+                  </span>
+                }
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1" style={{ color: TEXT_MUTED }}>
+              Drop off
+            </label>
+            <div className="relative">
+              <PlaceAutocomplete
+                value={dropoff}
+                onChange={setDropoff}
+                onSelect={(s) => setDropoff(s.label)}
+                placeholder="Where do you want to go?"
+                className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-[#0A0A0A] placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
+                near={geo.coords ?? null}
+                countryCodes={countryCodes}
+                ariaLabel="Drop off location"
+                clearOnFocus
+                dropdownDirection="down"
+                maxResults={3}
+                rightSlot={
+                  <span
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
+                    aria-hidden
+                  >
+                    <Star className="w-[18px] h-[18px] text-[#FACC15]" strokeWidth={2.4} fill="#FACC15" />
+                  </span>
+                }
+              />
+            </div>
+          </div>
         </div>
 
         {/* Swap-arrows column — single tappable button with stacked
@@ -942,14 +1171,14 @@ function OnlineBookingWidget({
             type="button"
             onClick={() => setStops(stops.filter((_, j) => j !== i))}
             aria-label={`Remove stop ${i + 1}`}
-            className="shrink-0 rounded-lg flex items-center justify-center"
+            className="shrink-0 rounded-lg flex items-center justify-center active:scale-95 transition"
             style={{
               minWidth: 44, minHeight: 44,
-              background: INPUT_BG, border: `1px solid ${BORDER}`,
-              color: TEXT_SECOND,
+              background: '#FEE2E2', border: '1px solid #FCA5A5',
+              color: '#B91C1C',
             }}
           >
-            <XIcon className="w-4 h-4" />
+            <XIcon className="w-4 h-4" strokeWidth={2.75} />
           </button>
         </div>
       ))}
@@ -1105,14 +1334,14 @@ function AlternativesWidget({
             type="button"
             onClick={() => setStops(stops.filter((_, j) => j !== i))}
             aria-label={`Remove stop ${i + 1}`}
-            className="shrink-0 rounded-lg flex items-center justify-center"
+            className="shrink-0 rounded-lg flex items-center justify-center active:scale-95 transition"
             style={{
               minWidth: 44, minHeight: 44,
-              background: INPUT_BG, border: `1px solid ${BORDER}`,
-              color: TEXT_SECOND,
+              background: '#FEE2E2', border: '1px solid #FCA5A5',
+              color: '#B91C1C',
             }}
           >
-            <XIcon className="w-4 h-4" />
+            <XIcon className="w-4 h-4" strokeWidth={2.75} />
           </button>
         </div>
       ))}
@@ -1189,6 +1418,250 @@ function HeroServiceIcon({
         {label}
       </span>
     </div>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// "All" tab — polished default summary card. Mode chips, availability
+// chips, working-hours, plus a yellow "Contact for additional services
+// or custom quote" CTA that opens WhatsApp with a generic line.
+// -----------------------------------------------------------------------------
+function AllSummaryCard({
+  driver, offersRide, offersParcel, hourlyAvailable, hourlyDefaults, cheapestParcel,
+}: {
+  driver:          DriverPublic
+  offersRide:      boolean
+  offersParcel:    boolean
+  hourlyAvailable: boolean
+  hourlyDefaults:  { tier_3h: number; tier_6h: number; tier_8h: number }
+  cheapestParcel:  number | null
+}) {
+  // Per-slot availability chips — render only when at least one slot
+  // is enabled. Driver decides; we never imply 24/7 service.
+  const slotChips = AVAILABILITY_SLOTS
+    .filter((s) => Boolean((driver as unknown as Record<string, boolean | null | undefined>)[s.column]))
+    .map((s) => ({ id: s.id, label: s.label, emoji: s.emoji }))
+
+  const wh = (driver.working_hours_start && driver.working_hours_end)
+    ? `${driver.working_hours_start} – ${driver.working_hours_end}`
+    : null
+
+  const hourly3h = driver.hourly_3h_rate_idr || hourlyDefaults.tier_3h
+
+  const waNumber = normaliseE164ForWaMe(driver.whatsapp_e164 ?? '')
+  const customCtaHref = waNumber
+    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(
+        `Halo ${driver.business_name}, saya ingin tanya tentang layanan tambahan / harga khusus. Terima kasih.`,
+      )}`
+    : null
+
+  return (
+    <section
+      className="mt-4 rounded-2xl p-3 space-y-3"
+      style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
+    >
+      <div>
+        <div className="text-[13px] font-extrabold uppercase tracking-wider" style={{ color: TEXT_INK }}>
+          Available {[offersRide, offersParcel, hourlyAvailable].filter(Boolean).length} way{[offersRide, offersParcel, hourlyAvailable].filter(Boolean).length === 1 ? '' : 's'}
+        </div>
+        <ul className="mt-2 space-y-1.5">
+          {offersRide && (
+            <li className="flex items-center justify-between gap-2 text-[13px]">
+              <span className="font-extrabold" style={{ color: TEXT_INK }}>🧍 Passenger</span>
+              <span style={{ color: TEXT_SECOND }}>
+                {driver.price_per_km != null && driver.price_per_km > 0
+                  ? <>from {idr(driver.price_per_km)}/km</>
+                  : <>rate on request</>}
+              </span>
+            </li>
+          )}
+          {offersParcel && (
+            <li className="flex items-center justify-between gap-2 text-[13px]">
+              <span className="font-extrabold" style={{ color: TEXT_INK }}>📋 Parcel B2B</span>
+              <span style={{ color: TEXT_SECOND }}>
+                {cheapestParcel != null
+                  ? <>from {idr(cheapestParcel)}/parcel</>
+                  : <>rate on request</>}
+              </span>
+            </li>
+          )}
+          {hourlyAvailable && (
+            <li className="flex items-center justify-between gap-2 text-[13px]">
+              <span className="font-extrabold" style={{ color: TEXT_INK }}>⏰ Hourly hire</span>
+              <span style={{ color: TEXT_SECOND }}>
+                from {formatIDR(hourly3h)}/3-hour block
+              </span>
+            </li>
+          )}
+        </ul>
+      </div>
+
+      {slotChips.length > 0 && (
+        <div className="text-[13px]" style={{ color: TEXT_SECOND }}>
+          <span className="font-extrabold" style={{ color: TEXT_INK }}>Available:</span>{' '}
+          {slotChips.map((c, i) => (
+            <span key={c.id}>
+              {i > 0 ? ' · ' : ''}
+              {c.emoji} {c.label}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {wh && (
+        <div className="text-[13px]" style={{ color: TEXT_SECOND }}>
+          <span className="font-extrabold" style={{ color: TEXT_INK }}>Working hours:</span> {wh}
+        </div>
+      )}
+
+      {customCtaHref && (
+        <a
+          href={customCtaHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl font-extrabold text-[14px] active:scale-[0.99] transition"
+          style={{
+            minHeight: 48,
+            background: BRAND_YELLOW,
+            color: TEXT_INK,
+            border: `1px solid ${BRAND_YELLOW}`,
+            boxShadow: '0 8px 18px rgba(250,204,21,0.35)',
+          }}
+        >
+          <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
+          Contact for additional services or custom quote
+        </a>
+      )}
+    </section>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// Hourly Booking tab — three stacked rate cards (3h / 6h / 8h). Each card
+// opens an inline date+time popup; when submitted the customer is
+// bounced to WhatsApp with the booking template body pre-filled. We
+// don't POST to a /book endpoint here — drivers don't have one yet and
+// the existing widget on this page also opens WhatsApp directly.
+// -----------------------------------------------------------------------------
+function HourlyTabContent({
+  driver, hourlyDefaults,
+}: {
+  driver:         DriverPublic
+  hourlyDefaults: { tier_3h: number; tier_6h: number; tier_8h: number }
+}) {
+  const [popupTier, setPopupTier] = useState<HourlyTier | null>(null)
+
+  const rates: Record<HourlyTier, number> = {
+    '3h': driver.hourly_3h_rate_idr || hourlyDefaults.tier_3h,
+    '6h': driver.hourly_6h_rate_idr || hourlyDefaults.tier_6h,
+    '8h': driver.hourly_8h_rate_idr || hourlyDefaults.tier_8h,
+  }
+  const labels: Record<HourlyTier, string> = {
+    '3h': '3-hour block',
+    '6h': '6-hour block',
+    '8h': '8-hour block',
+  }
+
+  return (
+    <>
+      <section
+        className="mt-4 rounded-2xl p-3 space-y-3"
+        style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          {(['3h', '6h', '8h'] as HourlyTier[]).map((tier) => (
+            <div
+              key={tier}
+              className="rounded-xl p-3 flex flex-col gap-2"
+              style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+            >
+              <div className="text-[12px] font-extrabold uppercase tracking-wider" style={{ color: '#854D0E' }}>
+                {labels[tier]}
+              </div>
+              <div className="text-[18px] font-black" style={{ color: TEXT_INK }}>
+                {formatIDR(rates[tier])}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPopupTier(tier)}
+                className="mt-auto w-full inline-flex items-center justify-center gap-1.5 rounded-lg font-extrabold text-[13px] active:scale-[0.98] transition"
+                style={{
+                  minHeight: 44,
+                  background: BRAND_YELLOW,
+                  color: TEXT_INK,
+                  border: `1px solid ${BRAND_YELLOW}`,
+                }}
+              >
+                <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Book this block
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-[12px] leading-snug" style={{ color: TEXT_MUTED }}>
+          {HOURLY_PETROL_POLICY_EN}
+        </p>
+      </section>
+
+      {popupTier && (
+        <HourlyBookingPopup
+          driver={driver}
+          tier={popupTier}
+          amount={rates[popupTier]}
+          label={labels[popupTier]}
+          onClose={() => setPopupTier(null)}
+        />
+      )}
+    </>
+  )
+}
+
+// HourlyBookingPopup lives at '@/components/profile/HourlyBookingPopup'.
+// Re-exported from the shared file so DriverProfileShell, TruckServicesTabs,
+// and any future profile surface render the same calendar booking flow.
+
+// -----------------------------------------------------------------------------
+// ParcelTierCard — read-only 5-tier ladder shown under the booking
+// widget on the Parcel B2B tab. Falls back to vehicle defaults when the
+// driver hasn't saved their own tiers yet.
+// -----------------------------------------------------------------------------
+function ParcelTierCard({ driver }: { driver: DriverPublic }) {
+  const vehicleKind: ParcelVehicleKind = driver.vehicle_type === 'bike' ? 'bike' : 'car'
+  const tiers = parseRateTiers(driver.parcel_rate_tiers ?? null, vehicleKind)
+  return (
+    <section
+      className="mt-3 rounded-2xl p-3"
+      style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
+    >
+      <div className="text-[13px] font-extrabold uppercase tracking-wider mb-2" style={{ color: TEXT_INK }}>
+        Per-parcel rates
+      </div>
+      <ul className="space-y-1.5">
+        {PARCEL_TIER_DEFINITIONS.map((def) => (
+          <li key={def.key} className="flex items-center justify-between gap-2 text-[13px]">
+            <span style={{ color: TEXT_SECOND }}>
+              <span className="font-extrabold" style={{ color: TEXT_INK }}>{def.label}</span>
+              {' · '}{def.range}
+            </span>
+            <span className="font-extrabold" style={{ color: TEXT_INK }}>
+              {idr(tiers[def.key])}
+            </span>
+          </li>
+        ))}
+        {tiers.tier_100_plus_negotiate && (
+          <li className="flex items-center justify-between gap-2 text-[13px]">
+            <span style={{ color: TEXT_SECOND }}>
+              <span className="font-extrabold" style={{ color: TEXT_INK }}>Bulk</span>
+              {' · '}100+ parcels/day
+            </span>
+            <span className="font-extrabold" style={{ color: TEXT_INK }}>
+              Negotiated on WhatsApp
+            </span>
+          </li>
+        )}
+      </ul>
+    </section>
   )
 }
 

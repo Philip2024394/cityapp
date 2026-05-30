@@ -120,6 +120,12 @@ export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
     subscriptionStatus: effectiveSubStatus(sub),
     rating: row.rating ?? undefined,
     trips: row.trips_count,
+    hourlyEnabled:     (row as DriverRow & { hourly_enabled?: boolean | null }).hourly_enabled ?? null,
+    hourly3hRateIdr:   (row as DriverRow & { hourly_3h_rate_idr?: number | null }).hourly_3h_rate_idr ?? null,
+    hourly6hRateIdr:   (row as DriverRow & { hourly_6h_rate_idr?: number | null }).hourly_6h_rate_idr ?? null,
+    hourly8hRateIdr:   (row as DriverRow & { hourly_8h_rate_idr?: number | null }).hourly_8h_rate_idr ?? null,
+    workingHoursStart: (row as DriverRow & { working_hours_start?: string | null }).working_hours_start ?? null,
+    workingHoursEnd:   (row as DriverRow & { working_hours_end?:   string | null }).working_hours_end   ?? null,
   } as Rider & { availability: AvailabilityState }
 }
 
@@ -162,13 +168,18 @@ export async function fetchActiveDriversBrowser(
     .order('last_active_at', { ascending: false, nullsFirst: false })
     .order('rating', { ascending: false, nullsFirst: false })
     .limit(50)
+  // ALWAYS attempt the mock fetch in parallel — even on drivers_public
+  // RLS errors, the public mock pool is the marketplace's fallback so
+  // /cari never renders an empty grid for unauthenticated visitors.
+  const mocks = await fetchMockDriversBrowser(vehicleType)
+
   if (error || !data) {
     if (error) console.warn('[drivers] fetchActiveDrivers failed:', error.message)
-    // MOCK_RIDERS is a hardcoded BIKE-only array — only return it as a
-    // last-resort dev fallback for the bike vertical. Other vehicle types
-    // fall through to mock_drivers table reads below (which DO have car /
-    // truck / minibus rows seeded via mig 0050+0095). Returning MOCK_RIDERS
-    // on a car toggle was causing /car/{slug} 404s.
+    // MOCK_RIDERS is a hardcoded BIKE-only array used as a last-resort
+    // dev fallback for the bike vertical when EVERYTHING fails (no
+    // mocks either). For car/truck/minibus, return whatever mocks
+    // loaded; if those are empty too the empty-state copy renders.
+    if (mocks.length > 0) return mocks
     return vehicleType === 'bike' ? MOCK_RIDERS : []
   }
   // Filter out past_due / canceled subs before returning — the
@@ -179,11 +190,10 @@ export async function fetchActiveDriversBrowser(
     .map((row) => driverRowToRider(row, pickSub(row)))
     .filter((r) => r.subscriptionStatus !== 'past_due' && r.subscriptionStatus !== 'canceled')
 
-  // Merge in mock drivers (seeded marketplace pool from migration 0050).
-  // One mock is hidden automatically each time a real driver is inserted
-  // (DB AFTER-INSERT trigger), so this query is naturally rate-limited.
-  // Reals always come first in the returned list.
-  const mocks = await fetchMockDriversBrowser(vehicleType)
+  // Reals first, then mocks (seeded marketplace pool from migration
+  // 0050). One mock is hidden automatically each time a real driver
+  // is inserted (DB AFTER-INSERT trigger), so the mock pool naturally
+  // shrinks as supply grows.
   return [...reals, ...mocks]
 }
 
@@ -239,6 +249,12 @@ type MockDriverRow = {
   created_at: string
 }
 
+type MockDriverRowWithGeo = MockDriverRow & {
+  lat?:         number | null
+  lng?:         number | null
+  trips_count?: number | null
+}
+
 function mockDriverRowToRider(row: MockDriverRow): Rider {
   // Make/model coalescing — see comment on MockDriverRow.vehicle_make.
   // Car mocks have vehicle_make set and bike_make null; bike mocks the
@@ -249,6 +265,12 @@ function mockDriverRowToRider(row: MockDriverRow): Rider {
   const make  = row.bike_make  || row.vehicle_make  || ''
   const model = row.bike_model || row.vehicle_model || ''
   const year  = row.bike_year  || row.vehicle_year  || 0
+  // mig 0155 added lat/lng/trips_count — read defensively so older
+  // mock rows without those columns still produce a usable Rider.
+  const geoRow = row as MockDriverRowWithGeo
+  const latVal   = typeof geoRow.lat === 'number' && Number.isFinite(geoRow.lat) ? geoRow.lat : 0
+  const lngVal   = typeof geoRow.lng === 'number' && Number.isFinite(geoRow.lng) ? geoRow.lng : 0
+  const tripsVal = typeof geoRow.trips_count === 'number' ? geoRow.trips_count : undefined
   return {
     id: row.id,
     slug: row.slug,
@@ -272,10 +294,11 @@ function mockDriverRowToRider(row: MockDriverRow): Rider {
     isOnline: row.availability === 'online',
     availability: row.availability,
     lastSeenAt: row.created_at,
-    lat: 0,
-    lng: 0,
+    lat: latVal,
+    lng: lngVal,
     subscriptionStatus: 'active',
     rating: row.rating ?? undefined,
+    trips: tripsVal,
     isMock: true,
   }
 }

@@ -154,6 +154,17 @@ export type Rider = {
    *  Chat button is disabled to prevent real bookings. Real drivers
    *  always sort before mocks. */
   isMock?: boolean
+  /** Hourly hire opt-in (3h/6h/8h block rate, petrol separate). When
+   *  true the driver appears in /cari's Hourly filter. */
+  hourlyEnabled?: boolean | null
+  /** Customer-paid hourly block rates in IDR — driver-published. */
+  hourly3hRateIdr?: number | null
+  hourly6hRateIdr?: number | null
+  hourly8hRateIdr?: number | null
+  /** Working window "HH:MM" 24h — drives the Hourly mismatch check on
+   *  the booking popup. NULL on either side = no constraint. */
+  workingHoursStart?: string | null
+  workingHoursEnd?:   string | null
 }
 
 export type QuoteEvent = {

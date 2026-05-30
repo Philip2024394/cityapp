@@ -4,6 +4,7 @@
 
 import { getCurrentUser } from '@/lib/supabase/server'
 import BookingAlertProvider from '@/components/dashboard/BookingAlertProvider'
+import CityRidersBrandStrip from '@/components/dashboard/CityRidersBrandStrip'
 
 export default async function RiderDashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default async function RiderDashboardLayout({
   const user = await getCurrentUser()
   return (
     <>
+      <CityRidersBrandStrip subtitle="Bike rider dashboard" />
       {children}
       {user?.id && <BookingAlertProvider driverId={user.id} />}
     </>

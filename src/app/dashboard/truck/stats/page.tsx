@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 
 type ViewRow = { viewed_at: string; source: string | null }
 type DriverMeta = {
@@ -47,6 +48,16 @@ export default function TruckStatsPage() {
 
   const reload = useCallback(async () => {
     setState({ kind: 'loading' })
+
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    // Render with empty view history (provider_profile_views is RLS-locked
+    // to admins for direct browser reads; the page already degrades to empty).
+    const dev = await tryLoadDevDriver()
+    if (dev) {
+      setState({ kind: 'ready', driver: dev.driver as unknown as DriverMeta, views: [] })
+      return
+    }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
 

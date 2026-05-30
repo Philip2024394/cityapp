@@ -28,6 +28,7 @@ import {
   type HandymanSpecialty,
 } from '@/lib/handyman/types'
 import { countryByCode } from '@/lib/data/countries'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Default theme accent — used when the tukang hasn't picked their own
 // theme_color (mig 0087). Tukang choose their accent from the dashboard
@@ -896,6 +897,7 @@ export default function HandymanProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="handyman" />
     </Shell>
   )
 }

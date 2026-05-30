@@ -29,6 +29,7 @@ import {
   type MassageType,
 } from '@/lib/massage/types'
 import { countryByCode } from '@/lib/data/countries'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Default theme accent — used when the therapist hasn't picked their
 // own theme_color (mig 0087). Therapists choose their accent from the
@@ -925,6 +926,7 @@ export default function MassageProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="massage" />
     </Shell>
   )
 }

@@ -147,5 +147,14 @@ function riderToDriverPublic(r: Rider, vehicleType: 'bike' | 'car'): DriverPubli
     // empty section hidden by the shell. When the Rider shape is upgraded
     // to surface drivers.service_offerings, swap [] for r.serviceOfferings.
     service_offerings: ((r as unknown as { serviceOfferings?: unknown }).serviceOfferings as string[] | undefined) ?? [],
+    // Hourly hire + working hours — threaded through from drivers (mig
+    // 0156). Bike drivers who opt into hourly hire on /dashboard/rider
+    // now surface the Hourly Booking tab on their public profile.
+    hourly_enabled:        r.hourlyEnabled ?? null,
+    hourly_3h_rate_idr:    r.hourly3hRateIdr ?? null,
+    hourly_6h_rate_idr:    r.hourly6hRateIdr ?? null,
+    hourly_8h_rate_idr:    r.hourly8hRateIdr ?? null,
+    working_hours_start:   r.workingHoursStart ?? null,
+    working_hours_end:     r.workingHoursEnd ?? null,
   }
 }

@@ -18,6 +18,7 @@ import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
 import { bannerSrc } from '@/lib/banners/transform'
 import { Sparkles } from 'lucide-react'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // /property/[slug] — mirrors /beautician/[slug] visually 1:1.
 // Data source swap only: `property_listings` instead of `beautician_providers`.
@@ -891,6 +892,7 @@ export default function PropertyProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="property" />
     </Shell>
   )
 }

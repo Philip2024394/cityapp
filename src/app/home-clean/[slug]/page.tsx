@@ -29,6 +29,7 @@ import {
   type HomeCleanServicePhoto,
 } from '@/lib/home-clean/types'
 import { countryByCode } from '@/lib/data/countries'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Default theme accent — cyan/cleanliness — used when the cleaner hasn't
 // picked their own theme_color (mig 0087). Cleaners choose their accent
@@ -903,6 +904,7 @@ export default function HomeCleanProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="home-clean" />
     </Shell>
   )
 }

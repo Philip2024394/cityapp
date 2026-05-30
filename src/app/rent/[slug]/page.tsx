@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getServerSupabase } from '@/lib/supabase/server'
 import RentProfileClient, { type BikeRentalPublic } from './RentProfileClient'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Public detail page for an approved bike rental listing. Server-rendered
 // for SEO — bike_rentals row is fetched here in the async server
@@ -48,5 +49,10 @@ export default async function RentalDetailPage(
   if (!data) notFound()
   const row = data as unknown as BikeRentalPublic
 
-  return <RentProfileClient row={row} />
+  return (
+    <>
+      <RentProfileClient row={row} />
+      <PoweredByKita2u defaultVertical="property" />
+    </>
+  )
 }

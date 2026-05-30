@@ -11,6 +11,8 @@ import WaIntentAnchor from '@/components/profile/WaIntentAnchor'
 import JsonLd from '@/components/seo/JsonLd'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
+import TruckServicesTabs from '@/components/profile/TruckServicesTabs'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // =============================================================================
 // /truck/[slug] — public per-driver profile page (Truck rental vertical)
@@ -77,6 +79,17 @@ type TruckDriver = {
   rental_weekly_rate_idr:  number | null
   rental_monthly_rate_idr: number | null
   rental_min_days:         number | null
+  /** Driver-selected trip-type tags (mig 0110). Used to surface the
+   *  Services Offered tab row — trucks expose All + Parcel B2B (if
+   *  cargo_parcel is included) + Hourly (when hourly_enabled). */
+  service_offerings:       string[]
+  /** Hourly hire opt-in + 3h/6h/8h rates + working window (mig 0156). */
+  hourly_enabled:          boolean | null
+  hourly_3h_rate_idr:      number | null
+  hourly_6h_rate_idr:      number | null
+  hourly_8h_rate_idr:      number | null
+  working_hours_start:     string | null
+  working_hours_end:       string | null
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -91,6 +104,7 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
   const admin = getAdminSupabase()
   if (!admin) return null
 
+  // 1. Real driver row (drivers table)
   const real = await admin
     .from('drivers')
     .select(`
@@ -101,6 +115,9 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
       rental_daily_rate_idr, rental_weekly_rate_idr,
       rental_monthly_rate_idr, rental_min_days,
+      service_offerings,
+      hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr,
+      working_hours_start, working_hours_end,
       status
     `)
     .eq('slug', slug)
@@ -108,33 +125,102 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
     .eq('status', 'active')
     .maybeSingle()
 
-  if (!real.data) return null
-  const r = real.data as Record<string, unknown>
+  if (real.data) {
+    const r = real.data as Record<string, unknown>
+    return {
+      id:                      String(r.user_id ?? slug),
+      slug,
+      business_name:           String(r.business_name ?? slug),
+      bio:                     (r.bio as string | null) ?? null,
+      whatsapp_e164:           (r.whatsapp_e164 as string | null) ?? null,
+      profile_image_url:       (r.brand_logo_url as string | null) ?? null,
+      cover_image_url:         (r.cover_image_url as string | null) ?? null,
+      city:                    (r.city as string | null) ?? null,
+      area:                    (r.area as string | null) ?? null,
+      rating:                  (r.rating as number | null) ?? null,
+      trips_count:             (r.trips_count as number | null) ?? null,
+      availability:            (r.availability as TruckDriver['availability']) ?? null,
+      service_zone_radius_km:  (r.service_zone_radius_km as number | null) ?? null,
+      vehicle_make:            (r.vehicle_make as string | null) ?? null,
+      vehicle_model:           (r.vehicle_model as string | null) ?? null,
+      vehicle_year:            (r.vehicle_year as number | null) ?? null,
+      vehicle_color:           (r.vehicle_color as string | null) ?? null,
+      vehicle_plate:           (r.vehicle_plate as string | null) ?? null,
+      vehicle_seats:           (r.vehicle_seats as number | null) ?? null,
+      vehicle_photos:          parseVehiclePhotos(r.vehicle_photos),
+      rental_daily_rate_idr:   (r.rental_daily_rate_idr as number | null) ?? null,
+      rental_weekly_rate_idr:  (r.rental_weekly_rate_idr as number | null) ?? null,
+      rental_monthly_rate_idr: (r.rental_monthly_rate_idr as number | null) ?? null,
+      rental_min_days:         (r.rental_min_days as number | null) ?? null,
+      service_offerings:       Array.isArray(r.service_offerings)
+        ? (r.service_offerings as unknown[]).filter((x): x is string => typeof x === 'string')
+        : [],
+      hourly_enabled:          (r.hourly_enabled as boolean | null) ?? null,
+      hourly_3h_rate_idr:      (r.hourly_3h_rate_idr as number | null) ?? null,
+      hourly_6h_rate_idr:      (r.hourly_6h_rate_idr as number | null) ?? null,
+      hourly_8h_rate_idr:      (r.hourly_8h_rate_idr as number | null) ?? null,
+      working_hours_start:     (r.working_hours_start as string | null) ?? null,
+      working_hours_end:       (r.working_hours_end as string | null) ?? null,
+    }
+  }
+
+  // 2. Mock fallback — only when no real row + mock not hidden. Demo
+  //    truck mocks (e.g. `l300-pickup-pindahan-yogya`) live in
+  //    mock_drivers; the customer-facing /cityriders/parcel surface
+  //    surfaces them, so the profile URL must render too.
+  const mock = await admin
+    .from('mock_drivers')
+    .select(`
+      id, slug, business_name, bio, whatsapp_e164, profile_image_url,
+      cover_image_url, city, area, rating, availability,
+      vehicle_type, vehicle_make, vehicle_model, vehicle_year,
+      vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
+      rental_daily_rate_idr, rental_weekly_rate_idr,
+      rental_monthly_rate_idr, rental_min_days,
+      service_offerings
+    `)
+    .eq('slug', slug)
+    .eq('vehicle_type', 'truck')
+    .is('mock_hidden_at', null)
+    .maybeSingle()
+
+  if (!mock.data) return null
+  const m = mock.data as Record<string, unknown>
   return {
-    id:                      String(r.user_id ?? slug),
+    id:                      String(m.id ?? slug),
     slug,
-    business_name:           String(r.business_name ?? slug),
-    bio:                     (r.bio as string | null) ?? null,
-    whatsapp_e164:           (r.whatsapp_e164 as string | null) ?? null,
-    profile_image_url:       (r.brand_logo_url as string | null) ?? null,
-    cover_image_url:         (r.cover_image_url as string | null) ?? null,
-    city:                    (r.city as string | null) ?? null,
-    area:                    (r.area as string | null) ?? null,
-    rating:                  (r.rating as number | null) ?? null,
-    trips_count:             (r.trips_count as number | null) ?? null,
-    availability:            (r.availability as TruckDriver['availability']) ?? null,
-    service_zone_radius_km:  (r.service_zone_radius_km as number | null) ?? null,
-    vehicle_make:            (r.vehicle_make as string | null) ?? null,
-    vehicle_model:           (r.vehicle_model as string | null) ?? null,
-    vehicle_year:            (r.vehicle_year as number | null) ?? null,
-    vehicle_color:           (r.vehicle_color as string | null) ?? null,
-    vehicle_plate:           (r.vehicle_plate as string | null) ?? null,
-    vehicle_seats:           (r.vehicle_seats as number | null) ?? null,
-    vehicle_photos:          parseVehiclePhotos(r.vehicle_photos),
-    rental_daily_rate_idr:   (r.rental_daily_rate_idr as number | null) ?? null,
-    rental_weekly_rate_idr:  (r.rental_weekly_rate_idr as number | null) ?? null,
-    rental_monthly_rate_idr: (r.rental_monthly_rate_idr as number | null) ?? null,
-    rental_min_days:         (r.rental_min_days as number | null) ?? null,
+    business_name:           String(m.business_name ?? slug),
+    bio:                     (m.bio as string | null) ?? null,
+    whatsapp_e164:           (m.whatsapp_e164 as string | null) ?? null,
+    profile_image_url:       (m.profile_image_url as string | null) ?? null,
+    cover_image_url:         (m.cover_image_url as string | null) ?? null,
+    city:                    (m.city as string | null) ?? null,
+    area:                    (m.area as string | null) ?? null,
+    rating:                  (m.rating as number | null) ?? null,
+    trips_count:             null,
+    availability:            (m.availability as TruckDriver['availability']) ?? null,
+    service_zone_radius_km:  null,
+    vehicle_make:            (m.vehicle_make as string | null) ?? null,
+    vehicle_model:           (m.vehicle_model as string | null) ?? null,
+    vehicle_year:            (m.vehicle_year as number | null) ?? null,
+    vehicle_color:           (m.vehicle_color as string | null) ?? null,
+    vehicle_plate:           (m.vehicle_plate as string | null) ?? null,
+    vehicle_seats:           (m.vehicle_seats as number | null) ?? null,
+    vehicle_photos:          parseVehiclePhotos(m.vehicle_photos),
+    rental_daily_rate_idr:   (m.rental_daily_rate_idr as number | null) ?? null,
+    rental_weekly_rate_idr:  (m.rental_weekly_rate_idr as number | null) ?? null,
+    rental_monthly_rate_idr: (m.rental_monthly_rate_idr as number | null) ?? null,
+    rental_min_days:         (m.rental_min_days as number | null) ?? null,
+    service_offerings:       Array.isArray(m.service_offerings)
+      ? (m.service_offerings as unknown[]).filter((x): x is string => typeof x === 'string')
+      : [],
+    // Mocks don't have mig-0156 columns — null falls through to defaults.
+    hourly_enabled:          null,
+    hourly_3h_rate_idr:      null,
+    hourly_6h_rate_idr:      null,
+    hourly_8h_rate_idr:      null,
+    working_hours_start:     null,
+    working_hours_end:       null,
   }
 }
 
@@ -257,6 +343,41 @@ export default async function TruckDriverProfilePage({
           pings /api/profile-view on mount so the driver's stats page picks
           up this visit. Server-rendered page can't use the hook directly. */}
       <ProfileViewBeacon providerType="driver" providerId={d.id} />
+
+      {/* Right-edge yellow BACK tab — matches the beautician / car /
+          bike profile shells. Drops back to the parcel hub where
+          truck cards live. */}
+      <a
+        href="/cityriders/parcel"
+        aria-label="Back to parcel hub"
+        className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
+        style={{
+          right:                  0,
+          top:                    '35%',
+          transform:              'translateY(-50%)',
+          width:                  34,
+          height:                 110,
+          background:             '#FACC15',
+          color:                  '#0A0A0A',
+          borderTopLeftRadius:    14,
+          borderBottomLeftRadius: 14,
+          boxShadow:              '-4px 4px 14px rgba(0,0,0,0.22)',
+        }}
+      >
+        <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+        <span
+          className="font-extrabold uppercase"
+          style={{
+            writingMode:    'vertical-rl',
+            transform:      'rotate(180deg)',
+            fontSize:       11,
+            letterSpacing:  '0.18em',
+          }}
+        >
+          Back
+        </span>
+      </a>
+
       <main className="relative min-h-[100dvh] bg-white text-[#0A0A0A]">
         {/* -------- Brand header — navy bar with the wordmark logo -------- */}
         <header
@@ -408,6 +529,32 @@ export default async function TruckDriverProfilePage({
               </p>
             </section>
           )}
+
+          {/* -------- Services Offered — tab row (truck profile). Trucks
+                      have no Hourly tab (daily-rate model). Passenger tab
+                      surfaces only when the driver opted into a
+                      passenger-style trip type; Parcel B2B when
+                      cargo_parcel is in service_offerings. ----------- */}
+          <section className="mt-4">
+            <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black mb-2">
+              Services Offered
+            </h2>
+            <TruckServicesTabs
+              driverId={d.id}
+              driverBusinessName={d.business_name}
+              driverWhatsappE164={d.whatsapp_e164}
+              vehicleMake={d.vehicle_make}
+              vehicleModel={d.vehicle_model}
+              hasPassenger={false}
+              hasParcel={d.service_offerings.includes('cargo_parcel')}
+              hourlyEnabled={d.hourly_enabled}
+              hourly3hRateIdr={d.hourly_3h_rate_idr}
+              hourly6hRateIdr={d.hourly_6h_rate_idr}
+              hourly8hRateIdr={d.hourly_8h_rate_idr}
+              workingHoursStart={d.working_hours_start}
+              workingHoursEnd={d.working_hours_end}
+            />
+          </section>
 
           {/* -------- Vehicle details card -------- */}
           <section className="mt-4">
@@ -572,6 +719,7 @@ export default async function TruckDriverProfilePage({
             </div>
           </div>
         )}
+        <PoweredByKita2u defaultVertical="truck-driver" />
       </main>
     </>
   )

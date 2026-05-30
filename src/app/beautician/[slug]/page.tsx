@@ -34,6 +34,7 @@ import { useVendorCart } from '@/components/cart/useVendorCart'
 import VendorCartButton from '@/components/cart/VendorCartButton'
 import VendorCartSheet from '@/components/cart/VendorCartSheet'
 import { bannerSrc } from '@/lib/banners/transform'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Default theme accent — used when the beautician hasn't picked their
 // own theme_color (mig 0078). Beauticians choose their accent from the
@@ -1068,6 +1069,7 @@ export default function BeauticianProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="beautician" />
     </Shell>
   )
 }

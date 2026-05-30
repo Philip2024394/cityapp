@@ -64,6 +64,21 @@ type CarDriver = {
   current_lat:         number | null
   current_lng:         number | null
   cover_image_url:     string | null
+  // ── Hourly hire opt-in + per-tier rates (mig 0156). Null on mock rows
+  //    which fall back to hourlyDefaultsForVehicle() in the shell. ──
+  hourly_enabled:      boolean | null
+  hourly_3h_rate_idr:  number | null
+  hourly_6h_rate_idr:  number | null
+  hourly_8h_rate_idr:  number | null
+  working_hours_start: string | null
+  working_hours_end:   string | null
+  available_sunrise:   boolean | null
+  available_daytime:   boolean | null
+  available_evening:   boolean | null
+  available_nightlife: boolean | null
+  // ── Parcel B2B 5-tier rate ladder (mig 0149). Falls back to vehicle
+  //    defaults in the shell when null. ──
+  parcel_rate_tiers:   unknown | null
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -94,6 +109,10 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
       services, service_offerings, current_lat, current_lng, cover_image_url,
+      hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr,
+      working_hours_start, working_hours_end,
+      available_sunrise, available_daytime, available_evening, available_nightlife,
+      parcel_rate_tiers,
       status
     `)
     .eq('slug', slug)
@@ -132,6 +151,17 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       current_lat:            (r.current_lat as number | null) ?? null,
       current_lng:            (r.current_lng as number | null) ?? null,
       cover_image_url:        (r.cover_image_url as string | null) ?? null,
+      hourly_enabled:         (r.hourly_enabled as boolean | null) ?? null,
+      hourly_3h_rate_idr:     (r.hourly_3h_rate_idr as number | null) ?? null,
+      hourly_6h_rate_idr:     (r.hourly_6h_rate_idr as number | null) ?? null,
+      hourly_8h_rate_idr:     (r.hourly_8h_rate_idr as number | null) ?? null,
+      working_hours_start:    (r.working_hours_start as string | null) ?? null,
+      working_hours_end:      (r.working_hours_end as string | null) ?? null,
+      available_sunrise:      (r.available_sunrise as boolean | null) ?? null,
+      available_daytime:      (r.available_daytime as boolean | null) ?? null,
+      available_evening:      (r.available_evening as boolean | null) ?? null,
+      available_nightlife:    (r.available_nightlife as boolean | null) ?? null,
+      parcel_rate_tiers:      r.parcel_rate_tiers ?? null,
     }
   }
 
@@ -184,6 +214,21 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       current_lat:            null,
       current_lng:            null,
       cover_image_url:        (r.cover_image_url as string | null) ?? null,
+      // Mock rows don't carry the mig-0156 hourly columns; the shell
+      // detects this via vehicle_type==='car' + null hourly_enabled and
+      // falls back to hourlyDefaultsForVehicle() so the demo car mocks
+      // always render the Hourly tab.
+      hourly_enabled:         null,
+      hourly_3h_rate_idr:     null,
+      hourly_6h_rate_idr:     null,
+      hourly_8h_rate_idr:     null,
+      working_hours_start:    null,
+      working_hours_end:      null,
+      available_sunrise:      null,
+      available_daytime:      null,
+      available_evening:      null,
+      available_nightlife:    null,
+      parcel_rate_tiers:      null,
     }
   }
 
@@ -244,6 +289,19 @@ async function loadAlternativeCarDrivers(excludeSlug: string): Promise<CarDriver
     current_lat:            (r.current_lat as number | null) ?? null,
     current_lng:            (r.current_lng as number | null) ?? null,
     cover_image_url:        null,  // drivers_public view doesn't expose cover_image_url yet (deferred)
+    // Hourly + availability + parcel columns aren't on drivers_public yet;
+    // alternative cards don't render the full Services tab UI so null is fine.
+    hourly_enabled:         null,
+    hourly_3h_rate_idr:     null,
+    hourly_6h_rate_idr:     null,
+    hourly_8h_rate_idr:     null,
+    working_hours_start:    null,
+    working_hours_end:      null,
+    available_sunrise:      null,
+    available_daytime:      null,
+    available_evening:      null,
+    available_nightlife:    null,
+    parcel_rate_tiers:      null,
   }))
 }
 
@@ -278,6 +336,17 @@ function carDriverToDriverPublic(d: CarDriver): DriverPublic {
     services:       d.services,
     service_offerings: d.service_offerings ?? [],
     cover_image_url: d.cover_image_url,
+    hourly_enabled:      d.hourly_enabled,
+    hourly_3h_rate_idr:  d.hourly_3h_rate_idr,
+    hourly_6h_rate_idr:  d.hourly_6h_rate_idr,
+    hourly_8h_rate_idr:  d.hourly_8h_rate_idr,
+    working_hours_start: d.working_hours_start,
+    working_hours_end:   d.working_hours_end,
+    available_sunrise:   d.available_sunrise,
+    available_daytime:   d.available_daytime,
+    available_evening:   d.available_evening,
+    available_nightlife: d.available_nightlife,
+    parcel_rate_tiers:   d.parcel_rate_tiers,
   }
 }
 

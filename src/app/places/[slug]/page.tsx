@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import JsonLd from '@/components/seo/JsonLd'
 import PlaceProfileShell from '@/components/profile/PlaceProfileShell'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { CATEGORIES } from '@/lib/places/categories'
 import type { PlaceCategory } from '@/lib/places/types'
@@ -185,6 +186,7 @@ export default async function PlaceDetailPage(
         contactEnabled={place.contact_enabled !== false}
         freeDelivery={place.free_delivery === true}
       />
+      <PoweredByKita2u defaultVertical="places" />
     </>
   )
 }

@@ -26,6 +26,7 @@ import {
   type TourServiceId,
 } from '@/data/tourServices'
 import { countryByCode } from '@/lib/data/countries'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Default theme accent — emerald (outdoor / nature tone). Tour guides
 // pick their accent from the dashboard color palette via mig 0087;
@@ -862,6 +863,7 @@ export default function TourGuideProfilePage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="tour-guide" />
     </Shell>
   )
 }

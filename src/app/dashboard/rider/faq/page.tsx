@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { HelpCircle, Check, Plus, X, ChevronUp, ChevronDown, Loader2, ArrowLeft } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import AppNav from '@/components/layout/AppNav'
 
 // /dashboard/rider/faq — FAQ editor for bike riders (ojek). Mirrors the
@@ -40,6 +41,23 @@ export default function RiderFaqPage() {
   const saveTimer       = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const load = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) {
+      userIdRef.current = dev.userId
+      setLoading(true)
+      try {
+        const row = dev.driver as unknown as DriverFaqRow
+        const list = Array.isArray(row.faq_items) ? row.faq_items! : []
+        const flag = !!row.faq_enabled
+        setItems(list)
+        setEnabled(flag)
+        lastSavedSig.current = JSON.stringify(list)
+        initialLoadDone.current = true
+      } finally { setLoading(false) }
+      return
+    }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setLoading(false); return }
     const { data: { user } } = await supabase.auth.getUser()

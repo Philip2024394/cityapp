@@ -56,13 +56,22 @@ export async function middleware(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // DEV BYPASS — on localhost only, a `cr-dev-uid` cookie set by
+  // /api/dev/impersonate acts as a synthetic session. Pages honor this
+  // cookie via /api/dev/driver; the middleware must therefore treat it
+  // as "signed in" to avoid an immediate redirect to /login.
+  const host = req.headers.get('host') || ''
+  const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1')
+  const devUid = isLocalhost ? req.cookies.get('cr-dev-uid')?.value : null
+  const effectivelySignedIn = !!user || !!devUid
+
   // Redirect logged-in users away from auth pages
-  if (user && isAuthPage(url.pathname)) {
+  if (effectivelySignedIn && isAuthPage(url.pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
   // Block logged-out users from protected routes
-  if (!user && isProtected(url.pathname)) {
+  if (!effectivelySignedIn && isProtected(url.pathname)) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('next', url.pathname + url.search)
     return NextResponse.redirect(loginUrl)

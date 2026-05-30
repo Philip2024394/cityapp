@@ -31,7 +31,7 @@ import RentalSection, { type RentalSavePayload } from '@/components/dashboard/Re
 const SUBSCRIPTION_IDR     = 38_000
 const ADMIN_WHATSAPP_E164  = '6285183600015' // streetlocallive admin line
 const ADMIN_WA_RENEW = `https://wa.me/${ADMIN_WHATSAPP_E164}?text=${encodeURIComponent(
-  'Halo admin, saya mau bayar/renew langganan dashboard Minibus driver Kita2u (Rp 38.000/bulan).',
+  'Halo admin, saya mau bayar/renew langganan dashboard Minibus driver CityRiders (Rp 38.000/bulan).',
 )}`
 // Founder will swap this to the real merchant QRIS image when ready. Swap
 // this single constant — no other code changes needed.
@@ -274,7 +274,7 @@ function Dashboard({ row, onReload }: { row: MinibusDriverRow; onReload: () => v
         <header className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
           <h1 className="text-[20px] font-black mb-1 truncate">{row.business_name || 'Minibus driver'}</h1>
           <div className="text-[13px] text-black/60">
-            Minibus driver dashboard · Kita2u is software — you set every price below.
+            Minibus driver dashboard · CityRiders is software — you set every price below.
           </div>
         </header>
 
@@ -445,7 +445,7 @@ function AvailabilitySection({ row, onSaved }: { row: MinibusDriverRow; onSaved:
   return (
     <SectionCard title="Availability">
       <p className="text-[13px] text-black/70">
-        You control when you appear as online. Kita2u does not match or appoint orders.
+        You control when you appear as online. CityRiders does not match or appoint orders.
       </p>
       <div className="grid grid-cols-3 gap-2">
         {(['online', 'busy', 'offline'] as const).map((a) => {
@@ -665,7 +665,7 @@ function PricingSection({ row, onSaved }: { row: MinibusDriverRow; onSaved: () =
   return (
     <SectionCard title="Your published rates">
       <p className="text-[13px] text-black/70 leading-snug">
-        These are <strong>YOUR</strong> published rates. Kita2u surfaces them as-is —
+        These are <strong>YOUR</strong> published rates. CityRiders surfaces them as-is —
         we do not set or modify driver prices.
       </p>
       <p className="text-[13px] text-black/70 leading-snug">
@@ -757,7 +757,7 @@ function PaymentMethodsSection({ row, onSaved }: { row: MinibusDriverRow; onSave
   return (
     <SectionCard title="Payment methods">
       <p className="text-[13px] text-black/70">
-        Tell customers how you accept payment. Kita2u never handles funds — payments
+        Tell customers how you accept payment. CityRiders never handles funds — payments
         go directly between you and the customer.
       </p>
       <form onSubmit={onSubmit} className="space-y-3">
@@ -1021,7 +1021,7 @@ function QrisPaymentModal({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={QRIS_IMAGE_URL}
-                alt="Kita2u QRIS payment code"
+                alt="CityRiders QRIS payment code"
                 width={200}
                 height={200}
                 className="w-[200px] h-[200px] object-contain block"
@@ -1101,7 +1101,7 @@ function QrisPaymentModal({
           </button>
 
           <p className="mt-3 text-[12px] text-black/55 leading-snug">
-            Payment is between you and your bank/wallet. Kita2u is a software directory — we do not custody or process funds.
+            Payment is between you and your bank/wallet. CityRiders is a software directory — we do not custody or process funds.
           </p>
 
           <div className="mt-3 text-center">

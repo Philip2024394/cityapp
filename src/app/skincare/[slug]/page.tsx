@@ -33,6 +33,7 @@ import { useVendorCart } from '@/components/cart/useVendorCart'
 import VendorCartButton from '@/components/cart/VendorCartButton'
 import VendorCartSheet from '@/components/cart/VendorCartSheet'
 import { bannerSrc } from '@/lib/banners/transform'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Default theme accent — used when the skincare provider hasn't picked
 // their own theme_color (mig 0078). Providers choose their accent from the
@@ -1046,6 +1047,7 @@ export default function SkincareProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="skincare" />
     </Shell>
   )
 }

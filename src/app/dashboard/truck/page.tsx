@@ -93,6 +93,26 @@ export default function TruckDriverDashboardHomePage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — see /dashboard/rider/page.tsx for the full pattern.
+    if (typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      try {
+        const r = await fetch('/api/dev/driver', { cache: 'no-store' })
+        if (r.ok) {
+          const j = await r.json() as { driver: TruckDriverOverview | null }
+          if (j.driver) {
+            const row = j.driver
+            if (row.vehicle_type && row.vehicle_type !== 'truck') {
+              setState({ kind: 'wrong_type', type: row.vehicle_type })
+              return
+            }
+            setState({ kind: 'ready', row })
+            return
+          }
+        }
+      } catch { /* fall through to normal auth */ }
+    }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
@@ -386,9 +406,9 @@ function SixCard({ href, icon, title }: { href: string; icon: React.ReactNode; t
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{
-          background: '#FFFBEA',
-          color: '#EAB308',
-          border: '1px solid rgba(250,204,21,0.45)',
+          background: '#FACC15',
+          color: '#0A0A0A',
+          boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
         }}
       >
         {icon}
@@ -420,9 +440,9 @@ function ActionCard({
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center"
           style={{
-            background: highlight ? '#FACC15' : '#FFFBEA',
-            color:      highlight ? '#0A0A0A' : '#EAB308',
-            border:     highlight ? 'none' : '1px solid rgba(250,204,21,0.45)',
+            background: '#FACC15',
+            color: '#0A0A0A',
+            boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
           }}
         >
           {icon}

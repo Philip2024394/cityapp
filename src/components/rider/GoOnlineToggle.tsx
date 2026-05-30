@@ -360,7 +360,7 @@ function BackgroundLocationDisclosure({
                 Lokasi kamu saat online
               </h2>
               <p className="text-[14px] text-gray-600 leading-snug mt-1">
-                Kita2u butuh izin lokasi sekali saja untuk bisa kerja.
+                CityRiders butuh izin lokasi sekali saja untuk bisa kerja.
               </p>
             </div>
             <button

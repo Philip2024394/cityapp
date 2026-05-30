@@ -33,6 +33,7 @@ import type { BeauticianServicePhoto } from '@/lib/beautician/types'
 import { useVendorCart } from '@/components/cart/useVendorCart'
 import VendorCartButton from '@/components/cart/VendorCartButton'
 import VendorCartSheet from '@/components/cart/VendorCartSheet'
+import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
 // Default theme accent — used when the facial provider hasn't picked their
 // own theme_color (mig 0078). Providers choose their accent from the
@@ -1075,6 +1076,7 @@ export default function FacialProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <PoweredByKita2u defaultVertical="facial" />
     </Shell>
   )
 }

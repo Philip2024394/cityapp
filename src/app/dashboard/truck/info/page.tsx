@@ -21,6 +21,7 @@ import Link from 'next/link'
 import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 
 type Availability = 'online' | 'busy' | 'offline'
 
@@ -50,6 +51,10 @@ export default function TruckDriverInfoPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) { setState({ kind: 'ready', row: dev.driver as unknown as TruckDriverInfoRow }); return }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
@@ -317,7 +322,7 @@ function InfoEditor({ row, onReload }: { row: TruckDriverInfoRow; onReload: () =
       </Card>
 
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">
-        Changes save automatically when you tap out of a field. Kita2u is a
+        Changes save automatically when you tap out of a field. CityRiders is a
         software directory — your profile reflects exactly what you publish.
       </p>
     </Shell>

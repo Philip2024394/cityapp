@@ -30,7 +30,7 @@
 import Link from 'next/link'
 import {
   ArrowRight, MessageCircle, Search, Smartphone, Wallet,
-  ShieldCheck, Sparkles, UserRound, Package, Briefcase, Bike, Car,
+  ShieldCheck, Sparkles, Bike, Car,
 } from 'lucide-react'
 
 // Customer hero — young Indonesian man between a yellow car and a
@@ -41,6 +41,17 @@ const HERO_URL =
 
 const BRAND_LOGO_URL =
   'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
+
+// CTA icon art — bespoke transparent PNGs that replace the Lucide
+// UserRound / Package icons in the Book a ride + Book a parcel buttons.
+// Render as plain <img> (no next/image) — matches the existing pattern
+// used by BRAND_LOGO_URL / HERO_URL on this page.
+const RIDE_CTA_ART_URL =
+  'https://ik.imagekit.io/nepgaxllc/asdasasasdd-removebg-preview.png?updatedAt=1780110194990'
+const PARCEL_CTA_ART_URL =
+  'https://ik.imagekit.io/nepgaxllc/asdasasasddasdasddasd-removebg-preview.png'
+const B2B_CTA_ART_URL =
+  'https://ik.imagekit.io/nepgaxllc/asdasasasddasdasddasdasdasd-removebg-preview.png'
 
 // Customer support WhatsApp line — same as driver-side for now.
 const WA_HELP = '6281234567890'
@@ -159,45 +170,52 @@ export default function CityRidersHomePage() {
                   </span>
                 </p>
 
-                {/* Mode CTAs — Ride, Parcel, or Bulk for business. The
-                    first decision a customer makes; the vehicle (Car /
-                    Bike) toggle then lives on /cari one screen later for
-                    the single-ride flows. Bulk routes straight to the
-                    parcel hub where UMKM / Shopee sellers browse drivers
-                    by vehicle with the suggested tier card on screen. */}
+                {/* Mode CTAs — Ride, Parcel, Parcel Business. Book a ride
+                    is leftmost; every button uses a horizontal layout with
+                    the label on the left and the art flush against the
+                    right edge of the button. */}
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   <Link
                     href="/cari?mode=ride&service=car"
-                    className="inline-flex flex-col items-center justify-center gap-0.5 px-2 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[12px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
-                    style={{ minHeight: 56 }}
+                    className="inline-flex items-center justify-between gap-1 pl-3 pr-0 py-2 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[12px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition overflow-hidden"
+                    style={{ minHeight: 80 }}
                   >
-                    <span className="inline-flex items-center gap-1.5">
-                      <UserRound className="w-4 h-4" strokeWidth={3} />
-                      Book a ride
-                    </span>
-                    <span className="text-[10px] font-bold opacity-80">Pesan ride</span>
+                    <span className="leading-tight">Book Ride</span>
+                    <img
+                      src={RIDE_CTA_ART_URL}
+                      alt=""
+                      aria-hidden
+                      className="h-14 w-auto object-contain shrink-0"
+                      loading="eager"
+                    />
                   </Link>
                   <Link
                     href="/cari?mode=parcel&service=person"
-                    className="inline-flex flex-col items-center justify-center gap-0.5 px-2 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[12px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
-                    style={{ minHeight: 56 }}
+                    className="inline-flex items-center justify-between gap-1 pl-3 pr-0 py-2 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[12px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition overflow-hidden"
+                    style={{ minHeight: 80 }}
                   >
-                    <span className="inline-flex items-center gap-1.5">
-                      <Package className="w-4 h-4" strokeWidth={3} />
-                      Book a parcel
-                    </span>
-                    <span className="text-[10px] font-bold opacity-80">Kirim paket</span>
+                    <span className="leading-tight">Book Parcel</span>
+                    <img
+                      src={PARCEL_CTA_ART_URL}
+                      alt=""
+                      aria-hidden
+                      className="h-14 w-auto object-contain shrink-0"
+                      loading="eager"
+                    />
                   </Link>
                   <Link
                     href="/cityriders/parcel"
-                    className="inline-flex flex-col items-center justify-center gap-0.5 px-2 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[12px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
-                    style={{ minHeight: 56 }}
+                    className="inline-flex items-center justify-between gap-1 pl-3 pr-0 py-2 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[12px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition overflow-hidden"
+                    style={{ minHeight: 80 }}
                   >
-                    <span className="inline-flex items-center gap-1.5">
-                      <Briefcase className="w-4 h-4" strokeWidth={3} />
-                      Bulk for business
-                    </span>
-                    <span className="text-[10px] font-bold opacity-80">Kirim banyak</span>
+                    <span className="leading-tight">Parcel Business</span>
+                    <img
+                      src={B2B_CTA_ART_URL}
+                      alt=""
+                      aria-hidden
+                      className="h-14 w-auto object-contain shrink-0"
+                      loading="eager"
+                    />
                   </Link>
                 </div>
 

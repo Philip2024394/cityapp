@@ -20,6 +20,7 @@ import Link from 'next/link'
 import { ArrowLeft, Loader2, Bike, Image as ImageIcon, X, Plus, CheckCircle2, Package } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import type { BikeType } from '@/types/database'
 
 const MAX_PHOTOS = 6
@@ -54,6 +55,10 @@ export default function RiderVehicleDetailsPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) { setState({ kind: 'ready', row: dev.driver as unknown as BikeVehicleRow }); return }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()

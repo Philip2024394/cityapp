@@ -28,10 +28,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, Layers, DollarSign, Truck, Check, Loader2, ChevronDown, ChevronUp, Package,
+  ArrowLeft, Layers, DollarSign, Truck, Check, Loader2, Package, MapPin,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import { SERVICE_OFFERINGS, type ServiceOfferingId } from '@/lib/drivers/serviceOfferings'
 import {
   defaultsFor,
@@ -94,6 +95,10 @@ export default function TruckServicesPage() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   const reload = useCallback(async () => {
+    // DEV BYPASS — localhost impersonation via cr-dev-uid cookie.
+    const dev = await tryLoadDevDriver()
+    if (dev) { setState({ kind: 'ready', row: dev.driver as unknown as ServicesRow }); return }
+
     const supabase = getBrowserSupabase()
     if (!supabase) { setState({ kind: 'no_supabase' }); return }
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
@@ -191,7 +196,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
                 </span>
               </div>
               <p className="text-[12.5px] text-[#0A0A0A]/75 leading-snug">
-                Pick what truck jobs you accept and set <strong>your</strong> rates. Kita2u displays them as-is.
+                Pick what truck jobs you accept and set <strong>your</strong> rates. CityRiders displays them as-is.
               </p>
             </div>
           </div>
@@ -201,6 +206,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
         {/* Truck headline — rental rates always shown */}
         <RentalCard row={row} onSave={save} />
         <PricingCard row={row} onSave={save} />
+        <PitstopFeeCard row={row} onSave={save} />
         <ParcelB2BCard row={row} onSave={save} />
       </div>
     </Shell>
@@ -399,15 +405,12 @@ function PricingCard({
 }) {
   const [perKm,   setPerKm]   = useState<string>(formatIdr(row.price_per_km))
   const [minFee,  setMinFee]  = useState<string>(formatIdr(row.min_fee))
-  const [pitstop, setPitstop] = useState<string>(formatIdr(row.pitstop_fee))
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(!!row.pitstop_fee)
 
   // Keep local in sync if row changes (e.g. another tab saved).
   useEffect(() => { setPerKm(formatIdr(row.price_per_km)) },   [row.price_per_km])
   useEffect(() => { setMinFee(formatIdr(row.min_fee)) },        [row.min_fee])
-  useEffect(() => { setPitstop(formatIdr(row.pitstop_fee)) },   [row.pitstop_fee])
 
-  async function commit(field: 'price_per_km' | 'min_fee' | 'pitstop_fee', raw: string, current: number | null) {
+  async function commit(field: 'price_per_km' | 'min_fee', raw: string, current: number | null) {
     const next = parseIdr(raw)
     if (next === current) return
     await onSave({ [field]: next })
@@ -435,28 +438,57 @@ function PricingCard({
           onBlur={() => commit('min_fee', minFee, row.min_fee)}
         />
       </div>
+    </Card>
+  )
+}
 
-      {/* Advanced pricing — pitstop fee tucked away */}
-      <button
-        type="button"
-        onClick={() => setShowAdvanced((v) => !v)}
-        className="inline-flex items-center gap-1 text-[12px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] uppercase tracking-wider min-h-[44px] -mb-1"
-      >
-        {showAdvanced ? <ChevronUp size={14} strokeWidth={2.5} /> : <ChevronDown size={14} strokeWidth={2.5} />}
-        Advanced pricing
-      </button>
-      {showAdvanced && (
-        <div className="grid grid-cols-1 gap-2">
-          <IdrInput
-            label="Pit-stop fee (optional)"
-            placeholder="10.000"
-            value={pitstop}
-            onChange={setPitstop}
-            onBlur={() => commit('pitstop_fee', pitstop, row.pitstop_fee)}
-            hint="Extra per stop when the customer asks for waiting time at a location."
-          />
-        </div>
-      )}
+// ============================================================================
+// 3b. Pitstop fee — one flat fee per booking, default 0 = free
+// ============================================================================
+function PitstopFeeCard({
+  row, onSave,
+}: {
+  row:    ServicesRow
+  onSave: (patch: Record<string, unknown>) => Promise<boolean>
+}) {
+  const initial = row.pitstop_fee ?? 0
+  const [pitstop, setPitstop] = useState<string>(initial > 0 ? formatIdr(initial) : '')
+
+  // Keep local in sync if the row changes (e.g. another tab saved).
+  useEffect(() => {
+    const v = row.pitstop_fee ?? 0
+    setPitstop(v > 0 ? formatIdr(v) : '')
+  }, [row.pitstop_fee])
+
+  async function commit() {
+    // Reject anything that isn't a non-negative integer; parseIdr already
+    // strips non-digits, so this guards against empty + invalid input.
+    const digits = pitstop.replace(/\D/g, '')
+    const next = digits ? Number(digits) : 0
+    if (!Number.isFinite(next) || next < 0) {
+      setPitstop((row.pitstop_fee ?? 0) > 0 ? formatIdr(row.pitstop_fee) : '')
+      return
+    }
+    if (next === (row.pitstop_fee ?? 0)) return
+    await onSave({ pitstop_fee: next })
+  }
+
+  return (
+    <Card
+      title="Pitstop fee"
+      hint="What you charge when the customer asks for a quick stop along the way (ATM, buy something, restroom). One single price covers any number of stops the customer adds. Default Rp 0 = free."
+      icon={<MapPin size={18} />}
+    >
+      <IdrInput
+        label="Pitstop fee per booking"
+        placeholder="0"
+        value={pitstop}
+        onChange={setPitstop}
+        onBlur={commit}
+      />
+      <p className="text-[11.5px] italic text-black/55 leading-snug">
+        Per booking, not per stop — even if the customer adds 5 stops, this fee applies once.
+      </p>
     </Card>
   )
 }
