@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import DriverProfileShell, { type DriverPublic } from '@/components/profile/DriverProfileShell'
+import type { TourPackage } from '@/lib/tours/types'
+import { MOCK_LANGUAGES, mockToursForSlug } from '@/lib/tours/templates'
 
 // =============================================================================
 // /car/[slug] — public per-driver profile page (car vertical)
@@ -79,6 +81,8 @@ type CarDriver = {
   // ── Parcel B2B 5-tier rate ladder (mig 0149). Falls back to vehicle
   //    defaults in the shell when null. ──
   parcel_rate_tiers:   unknown | null
+  /** ISO 639-1 language codes (mig 0157). */
+  languages:           string[]
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -112,7 +116,7 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr,
       working_hours_start, working_hours_end,
       available_sunrise, available_daytime, available_evening, available_nightlife,
-      parcel_rate_tiers,
+      parcel_rate_tiers, languages,
       status
     `)
     .eq('slug', slug)
@@ -162,6 +166,9 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       available_evening:      (r.available_evening as boolean | null) ?? null,
       available_nightlife:    (r.available_nightlife as boolean | null) ?? null,
       parcel_rate_tiers:      r.parcel_rate_tiers ?? null,
+      languages:              Array.isArray(r.languages)
+        ? (r.languages as unknown[]).filter((x): x is string => typeof x === 'string')
+        : ['id'],
     }
   }
 
@@ -229,6 +236,7 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       available_evening:      null,
       available_nightlife:    null,
       parcel_rate_tiers:      null,
+      languages:              MOCK_LANGUAGES[slug] ?? ['id'],
     }
   }
 
@@ -302,13 +310,53 @@ async function loadAlternativeCarDrivers(excludeSlug: string): Promise<CarDriver
     available_evening:      null,
     available_nightlife:    null,
     parcel_rate_tiers:      null,
+    languages:              [],
+  }))
+}
+
+// -----------------------------------------------------------------------------
+// Tours loader — published tours for a single driver. Empty for mocks
+// (no rows in driver_tour_packages keyed off a mock UUID).
+// -----------------------------------------------------------------------------
+async function loadPublishedTours(driverId: string): Promise<TourPackage[]> {
+  const admin = getAdminSupabase()
+  if (!admin) return []
+  const { data, error } = await admin
+    .from('driver_tour_packages')
+    .select('*')
+    .eq('driver_id', driverId)
+    .eq('published', true)
+    .order('created_at', { ascending: true })
+  if (error || !data) return []
+  return (data as Record<string, unknown>[]).map((r) => ({
+    id:             String(r.id ?? ''),
+    driver_id:      String(r.driver_id ?? driverId),
+    template_id:    (r.template_id as string | null) ?? null,
+    title:          String(r.title ?? ''),
+    description:    (r.description as string | null) ?? null,
+    duration_hours: Number(r.duration_hours ?? 0),
+    max_pax:        (r.max_pax as number | null) ?? null,
+    price_idr:      Number(r.price_idr ?? 0),
+    includes:       Array.isArray(r.includes)
+      ? (r.includes as unknown[]).filter((x): x is string => typeof x === 'string')
+      : [],
+    excludes:       Array.isArray(r.excludes)
+      ? (r.excludes as unknown[]).filter((x): x is string => typeof x === 'string')
+      : [],
+    place_slugs:    Array.isArray(r.place_slugs)
+      ? (r.place_slugs as unknown[]).filter((x): x is string => typeof x === 'string')
+      : [],
+    photo_url:      (r.photo_url as string | null) ?? null,
+    published:      Boolean(r.published ?? false),
+    created_at:     String(r.created_at ?? ''),
+    updated_at:     String(r.updated_at ?? ''),
   }))
 }
 
 // -----------------------------------------------------------------------------
 // Adapter — server CarDriver → DriverPublic (the shell shape).
 // -----------------------------------------------------------------------------
-function carDriverToDriverPublic(d: CarDriver): DriverPublic {
+function carDriverToDriverPublic(d: CarDriver, tours: TourPackage[] = []): DriverPublic {
   return {
     id:             d.id,
     slug:           d.slug,
@@ -347,6 +395,8 @@ function carDriverToDriverPublic(d: CarDriver): DriverPublic {
     available_evening:   d.available_evening,
     available_nightlife: d.available_nightlife,
     parcel_rate_tiers:   d.parcel_rate_tiers,
+    languages:           d.languages,
+    tours,
   }
 }
 
@@ -411,6 +461,12 @@ export default async function CarDriverProfilePage({
   // round-trip when the booking widget will render anyway.
   const isOffline = d.availability === 'busy' || d.availability === 'offline'
   const alternatives = isOffline ? await loadAlternativeCarDrivers(d.slug) : []
+  // Tours — real drivers query driver_tour_packages; mocks render
+  // synthetic tours from MOCK_TOUR_ASSIGNMENTS so the demo profiles
+  // visibly carry the Tours tab on the public surface.
+  const tours = d.source === 'real'
+    ? await loadPublishedTours(d.id)
+    : mockToursForSlug(d.slug)
 
   // Schema.org LocalBusiness — keeps the per-driver page eligible for
   // Knowledge Graph / Maps surfacing. priceRange is the generic 'Rp'
@@ -447,8 +503,8 @@ export default async function CarDriverProfilePage({
     <>
       <JsonLd data={jsonLd} />
       <DriverProfileShell
-        driver={carDriverToDriverPublic(d)}
-        alternatives={alternatives.map(carDriverToDriverPublic)}
+        driver={carDriverToDriverPublic(d, tours)}
+        alternatives={alternatives.map((alt) => carDriverToDriverPublic(alt))}
       />
     </>
   )

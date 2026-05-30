@@ -16,11 +16,12 @@
 // ============================================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock } from 'lucide-react'
+import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock, Languages as LanguagesIcon } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import { AVAILABILITY_SLOTS } from '@/lib/pricing/hourlyHire'
+import { LANGUAGES } from '@/lib/languages'
 
 type Availability = 'online' | 'busy' | 'offline'
 
@@ -39,6 +40,7 @@ type CarDriverInfoRow = {
   available_daytime: boolean | null
   available_evening: boolean | null
   available_nightlife: boolean | null
+  languages: string[] | null
 }
 
 type LoadState =
@@ -69,7 +71,7 @@ export default function CarDriverInfoPage() {
       .select(
         'user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability, ' +
         'working_hours_start, working_hours_end, ' +
-        'available_sunrise, available_daytime, available_evening, available_nightlife',
+        'available_sunrise, available_daytime, available_evening, available_nightlife, languages',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -102,6 +104,13 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
   const [availability,  setAvailability] = useState<Availability>(row.availability ?? 'offline')
   const [workStart,     setWorkStart]    = useState(row.working_hours_start ?? '')
   const [workEnd,       setWorkEnd]      = useState(row.working_hours_end ?? '')
+  // Indonesian is the always-on default — defensive merge so a stale row
+  // missing 'id' still renders correctly. Stored as a sorted-stable array
+  // so successive saves don't fight over chip ordering.
+  const [languages,     setLanguages]    = useState<string[]>(() => {
+    const init = Array.isArray(row.languages) ? row.languages : []
+    return init.includes('id') ? init : ['id', ...init]
+  })
 
   // Track which fields are currently saving + transient flash state.
   const [savingField, setSavingField] = useState<string | null>(null)
@@ -190,6 +199,15 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
   async function toggleSlot(column: 'available_sunrise' | 'available_daytime' | 'available_evening' | 'available_nightlife') {
     const current = !!(row[column] ?? false)
     await save(column, { [column]: !current }, !current ? 'Slot enabled' : 'Slot disabled')
+  }
+  async function toggleLanguage(id: string) {
+    if (id === 'id') return  // Indonesian is locked-on
+    const has = languages.includes(id)
+    const next = has ? languages.filter((l) => l !== id) : [...languages, id]
+    if (!next.includes('id')) next.unshift('id')
+    setLanguages(next)
+    const ok = await save('languages', { languages: next }, has ? 'Language removed' : 'Language added')
+    if (!ok) setLanguages(languages)
   }
 
   return (
@@ -403,6 +421,41 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
             Pick all that apply — customers filter for these on the directory.
           </p>
         </div>
+      </Card>
+
+      {/* Languages — tourist-market signal. Indonesian is locked-on. */}
+      <Card title="Languages you speak" hint="Tourists pick drivers who speak their language. Add every language you can hold a basic conversation in." icon={<LanguagesIcon size={18} />}>
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {LANGUAGES.map((l) => {
+            const active = languages.includes(l.id)
+            const locked = l.id === 'id'
+            const saving = savingField === 'languages'
+            return (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => void toggleLanguage(l.id)}
+                disabled={saving || locked}
+                aria-pressed={active}
+                aria-label={locked ? `${l.label} — always selected (every Indonesian driver speaks Bahasa)` : `${active ? 'Remove' : 'Add'} ${l.label}`}
+                className={`rounded-2xl border px-2 py-2 flex flex-col items-center justify-center gap-0.5 min-h-[64px] transition active:scale-[0.98] ${locked ? 'cursor-default opacity-100' : ''}`}
+                style={{
+                  background: active ? '#FACC15' : '#FFFFFF',
+                  borderColor: active ? '#FACC15' : '#E4E4E7',
+                  color: active ? '#0A0A0A' : 'rgba(10,10,10,0.80)',
+                  boxShadow: active ? '0 2px 8px rgba(250,204,21,0.30)' : 'none',
+                }}
+              >
+                <span aria-hidden className="text-[20px] leading-none">{l.flag}</span>
+                <span className="text-[13px] font-extrabold leading-tight">{l.label}</span>
+                <span className="text-[10px] opacity-70 leading-tight">{l.native}</span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-[13px] text-black/55 leading-snug mt-2">
+          Tip → drivers speaking 3+ languages land more tourist bookings.
+        </p>
       </Card>
 
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">

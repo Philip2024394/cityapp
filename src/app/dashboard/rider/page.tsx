@@ -24,7 +24,7 @@ import {
   Loader2, Bike, User, Pencil, Layers, CreditCard, Wallet, Flame,
   Sparkles, HelpCircle, FileText, ShieldCheck, ArrowRight,
   CheckCircle2, AlertTriangle, Clock, MessageCircle, ExternalLink,
-  BarChart3, Share2,
+  BarChart3, Share2, Map as MapIcon,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -267,6 +267,7 @@ function DashboardHome({ row, onReload }: { row: RiderOverview; onReload: () => 
       <section className="mb-4">
         <SectionLabel>More tools</SectionLabel>
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ActionCard compact href="/dashboard/rider/tours"        icon={<MapIcon    className="w-5 h-5" strokeWidth={2.5} />} title="Tour packages" />
           <ActionCard compact href="/dashboard/rider/edit"         icon={<Pencil     className="w-5 h-5" strokeWidth={2.5} />} title="Page design" />
           <ActionCard compact href="/dashboard/rider/payments"     icon={<CreditCard className="w-5 h-5" strokeWidth={2.5} />} title="Payments" />
           <ActionCard compact href="/dashboard/rider/subscription" icon={<Wallet     className="w-5 h-5" strokeWidth={2.5} />} title="Subscription" />

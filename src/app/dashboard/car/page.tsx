@@ -24,7 +24,7 @@ import {
   Loader2, Car, User, Pencil, Layers, CreditCard, Wallet, Flame,
   Sparkles, HelpCircle, FileText, ShieldCheck, ArrowRight,
   CheckCircle2, AlertTriangle, Clock, MessageCircle, ExternalLink,
-  BarChart3, Share2,
+  BarChart3, Share2, Map as MapIcon,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -267,6 +267,7 @@ function DashboardHome({ row, onReload }: { row: CarDriverOverview; onReload: ()
       <section className="mb-4">
         <SectionLabel>More tools</SectionLabel>
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ActionCard compact href="/dashboard/car/tours"        icon={<MapIcon    className="w-5 h-5" strokeWidth={2.5} />} title="Tour packages" />
           <ActionCard compact href="/dashboard/car/edit"         icon={<Pencil     className="w-5 h-5" strokeWidth={2.5} />} title="Page design" />
           <ActionCard compact href="/dashboard/car/payments"     icon={<CreditCard className="w-5 h-5" strokeWidth={2.5} />} title="Payments" />
           <ActionCard compact href="/dashboard/car/subscription" icon={<Wallet     className="w-5 h-5" strokeWidth={2.5} />} title="Subscription" />

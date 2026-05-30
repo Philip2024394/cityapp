@@ -165,6 +165,9 @@ export type Rider = {
    *  the booking popup. NULL on either side = no constraint. */
   workingHoursStart?: string | null
   workingHoursEnd?:   string | null
+  /** ISO 639-1 language codes (mig 0157). Indonesian-only is the default
+   *  for legacy mocks; surfaced as a flag row on the public profile. */
+  languages?: string[] | null
 }
 
 export type QuoteEvent = {

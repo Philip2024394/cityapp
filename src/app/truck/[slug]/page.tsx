@@ -5,6 +5,7 @@ import {
   ChevronLeft, MapPin, MessageCircle, Star, Truck as TruckIcon,
   Calendar, Users, Palette, Hash, Info, CalendarDays,
 } from 'lucide-react'
+import { languagesByIds } from '@/lib/languages'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import ProfileGallery from '@/components/profile/ProfileGallery'
 import WaIntentAnchor from '@/components/profile/WaIntentAnchor'
@@ -90,6 +91,8 @@ type TruckDriver = {
   hourly_8h_rate_idr:      number | null
   working_hours_start:     string | null
   working_hours_end:       string | null
+  /** ISO 639-1 language codes (mig 0157). */
+  languages:               string[]
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -117,7 +120,7 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
       rental_monthly_rate_idr, rental_min_days,
       service_offerings,
       hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr,
-      working_hours_start, working_hours_end,
+      working_hours_start, working_hours_end, languages,
       status
     `)
     .eq('slug', slug)
@@ -161,6 +164,9 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
       hourly_8h_rate_idr:      (r.hourly_8h_rate_idr as number | null) ?? null,
       working_hours_start:     (r.working_hours_start as string | null) ?? null,
       working_hours_end:       (r.working_hours_end as string | null) ?? null,
+      languages:               Array.isArray(r.languages)
+        ? (r.languages as unknown[]).filter((x): x is string => typeof x === 'string')
+        : ['id'],
     }
   }
 
@@ -221,6 +227,7 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
     hourly_8h_rate_idr:      null,
     working_hours_start:     null,
     working_hours_end:       null,
+    languages:               ['id'],
   }
 }
 
@@ -515,6 +522,27 @@ export default async function TruckDriverProfilePage({
                   </span>
                 )}
               </div>
+              {/* Languages flag-row — only renders when the driver speaks
+                  something beyond the default Indonesian. */}
+              {(() => {
+                const beyond = (d.languages ?? []).filter((l) => l !== 'id')
+                if (beyond.length === 0) return null
+                const defs = languagesByIds(['id', ...beyond]).slice(0, 3)
+                if (defs.length === 0) return null
+                return (
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    {defs.map((l, i) => (
+                      <span key={l.id} className="inline-flex items-center gap-1 leading-none">
+                        {i > 0 && <span className="text-[10px] text-gray-400">·</span>}
+                        <span aria-hidden style={{ fontSize: 18 }}>{l.flag}</span>
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-600">
+                          {l.id}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           </section>
 

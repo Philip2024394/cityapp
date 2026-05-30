@@ -6,7 +6,7 @@ import {
   MapPin, Star, Plus, X as XIcon, MessageCircle, Bike as BikeIcon,
   Car as CarIcon, Users as UsersIcon,
   PlaneTakeoff, Building2, MapPinned, Bookmark,
-  ArrowUp, ArrowDown, ChevronLeft, CalendarDays,
+  ArrowUp, ArrowDown, ChevronLeft, CalendarDays, Clock,
   UserRound, Package as PackageIcon,
 } from 'lucide-react'
 import PlaceAutocomplete from '@/components/inputs/PlaceAutocomplete'
@@ -34,6 +34,8 @@ import {
   type HourlyTier,
 } from '@/lib/pricing/hourlyHire'
 import { parseRateTiers, PARCEL_TIER_DEFINITIONS, type ParcelVehicleKind } from '@/lib/parcel/defaults'
+import { languagesByIds } from '@/lib/languages'
+import type { TourPackage } from '@/lib/tours/types'
 
 // =============================================================================
 // DriverProfileShell — shared driver-profile renderer for /r/[slug] (bike)
@@ -148,6 +150,13 @@ export type DriverPublic = {
   /** Parcel B2B rate tiers (mig 0149). When set, lets the "All" summary
    *  tab show "from Rp X / parcel" using the cheapest tier. */
   parcel_rate_tiers?:   unknown | null
+  /** Spoken languages (mig 0157, ISO 639-1 codes). Indonesian is the
+   *  always-on default; the flag row only renders when the driver speaks
+   *  something beyond Indonesian. */
+  languages?:           string[] | null
+  /** Published tour packages (mig 0157). Surfaces a Tours tab on the
+   *  profile when at least one row has published=true. */
+  tours?:               TourPackage[]
 }
 
 export type DriverProfileShellProps = {
@@ -403,12 +412,22 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     [driver.vehicle_make, driver.vehicle_model],
   )
 
-  type TabId = 'all' | 'passenger' | 'parcel' | 'hourly'
+  // Published tours — surface a Tours tab when the driver has at least
+  // one published row. Drafts (published=false) live only on the
+  // dashboard and never reach the public profile.
+  const publishedTours = useMemo(
+    () => (driver.tours ?? []).filter((t) => t.published),
+    [driver.tours],
+  )
+  const toursAvailable = publishedTours.length > 0
+
+  type TabId = 'all' | 'passenger' | 'parcel' | 'hourly' | 'tours'
   const tabs: { id: TabId; label: string; emoji?: string }[] = []
   tabs.push({ id: 'all', label: 'All' })
   if (offersRide)   tabs.push({ id: 'passenger', label: 'Passenger' })
   if (offersParcel) tabs.push({ id: 'parcel',    label: 'Parcel B2B', emoji: '📋' })
   if (hourlyAvailable) tabs.push({ id: 'hourly', label: 'Hourly Booking' })
+  if (toursAvailable)  tabs.push({ id: 'tours',  label: 'Tours' })
   const [activeTab, setActiveTab] = useState<TabId>('all')
 
   // Cheapest parcel-tier price for the All-tab summary card. Only
@@ -654,6 +673,11 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 )}
               </div>
             )}
+            {/* Languages flag-row — only renders when the driver speaks
+                something beyond the default Indonesian. Surfaces up to 3
+                flags so tourists can scan eligibility in a glance. */}
+            <LanguageFlagsRow languages={driver.languages ?? null} />
+
             {/* Service-mode pills — only shown when the driver has
                 opted into at least one mode that maps to our dictionary.
                 Brand-safe yellow tints per CONSTRAINTS in the spec. */}
@@ -869,7 +893,9 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             and parcel are offered. Falls through to the booking widget
             below; no AllSummaryCard render here (kept in the file for
             reuse but not invoked from this surface). */}
-        {activeTab === 'hourly' ? (
+        {activeTab === 'tours' ? (
+          <ToursTabContent driver={driver} tours={publishedTours} />
+        ) : activeTab === 'hourly' ? (
           <HourlyTabContent
             driver={driver}
             hourlyDefaults={hourlyDefaults}
@@ -1390,6 +1416,37 @@ function AlternativesWidget({
 // Booking text input. Plain typed field — no autosuggest, no geocoding
 // (phase-1 scope). 44px tap target.
 // -----------------------------------------------------------------------------
+// Small flag-and-code row under the rating — surfaces up to 3 languages
+// the driver speaks beyond Indonesian. Hidden entirely when the driver
+// is Indonesian-only (every Indonesian driver speaks Bahasa already, so
+// the default-only state carries no extra signal for tourists).
+function LanguageFlagsRow({ languages }: { languages: string[] | null }) {
+  if (!languages || languages.length === 0) return null
+  const beyondIndonesian = languages.filter((l) => l !== 'id')
+  if (beyondIndonesian.length === 0) return null
+  // First three only — viewport stays clean on a 360px phone frame.
+  // We keep 'id' in front so the row reads as "Bahasa + extras".
+  const ordered = ['id', ...beyondIndonesian]
+  const defs = languagesByIds(ordered).slice(0, 3)
+  if (defs.length === 0) return null
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+      {defs.map((l, i) => (
+        <span key={l.id} className="inline-flex items-center gap-1 leading-none">
+          {i > 0 && <span className="text-[10px]" style={{ color: TEXT_MUTED }}>·</span>}
+          <span aria-hidden style={{ fontSize: 18 }}>{l.flag}</span>
+          <span
+            className="text-[11px] font-extrabold uppercase tracking-wider"
+            style={{ color: TEXT_SECOND }}
+          >
+            {l.id}
+          </span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // Hero overlay service icon — circular white chip with a dark lucide
 // icon inside + a small label underneath. Mirrors the beautician hero's
 // HeroIcon component (Home/Hotel/Villa/Spa row).
@@ -1537,6 +1594,124 @@ function AllSummaryCard({
 }
 
 // -----------------------------------------------------------------------------
+// Tours tab — vertical stack of published tour packages. Each card opens
+// the shared HourlyBookingPopup (in tour mode — no tier, just label +
+// amount). Reuses the same date/time → WhatsApp handoff pattern as the
+// hourly tab to keep the booking UX consistent across blocks vs tours.
+// -----------------------------------------------------------------------------
+function ToursTabContent({
+  driver, tours,
+}: {
+  driver: DriverPublic
+  tours:  TourPackage[]
+}) {
+  const [popupTour, setPopupTour] = useState<TourPackage | null>(null)
+
+  return (
+    <>
+      <section
+        className="mt-4 rounded-2xl p-3 space-y-3"
+        style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
+      >
+        {tours.map((t) => (
+          <article
+            key={t.id}
+            className="rounded-2xl overflow-hidden"
+            style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+          >
+            {t.photo_url && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={t.photo_url}
+                alt=""
+                className="w-full object-cover"
+                style={{ aspectRatio: '16 / 9' }}
+              />
+            )}
+            <div className="p-3 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[16px] font-black leading-tight" style={{ color: TEXT_INK }}>
+                    {t.title}
+                  </h3>
+                  <div className="text-[12px] mt-0.5" style={{ color: TEXT_SECOND }}>
+                    {formatDurationHours(t.duration_hours)}
+                    {t.max_pax != null && t.max_pax > 0 && <> · up to {t.max_pax} pax</>}
+                  </div>
+                </div>
+                <div className="text-[18px] font-black shrink-0 leading-none" style={{ color: TEXT_INK }}>
+                  {idr(t.price_idr)}
+                </div>
+              </div>
+
+              {t.description && (
+                <p
+                  className="text-[13px] leading-snug"
+                  style={{
+                    color: TEXT_SECOND,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {t.description}
+                </p>
+              )}
+
+              {/* Fee policy — short, clear, and consistent across all
+                  tour packages. Replaces the previous include/exclude
+                  chip badges so the card reads as a single price story. */}
+              <div
+                className="rounded-lg px-2.5 py-2 text-[12px] leading-snug"
+                style={{ background: '#FEF3C7', border: '1px solid #FDE68A', color: '#854D0E' }}
+              >
+                <span className="font-extrabold">Fuel + driver included.</span>{' '}
+                Entrance tickets, parking, toll roads, bridge fees, meals and any
+                personal expenses are the passenger&apos;s responsibility.
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPopupTour(t)}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg font-extrabold text-[13px] active:scale-[0.98] transition"
+                style={{
+                  minHeight: 44,
+                  background: BRAND_YELLOW,
+                  color: TEXT_INK,
+                  border: `1px solid ${BRAND_YELLOW}`,
+                  boxShadow: '0 4px 12px rgba(250,204,21,0.30)',
+                }}
+              >
+                <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Book this tour
+              </button>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      {popupTour && (
+        <HourlyBookingPopup
+          driver={driver}
+          amount={popupTour.price_idr}
+          label={popupTour.title}
+          onClose={() => setPopupTour(null)}
+        />
+      )}
+    </>
+  )
+}
+
+function formatDurationHours(hours: number): string {
+  // "1.5 hours", "12 hours" — trim trailing .0 so integer durations
+  // don't render as "12.0 hours".
+  const rounded = Math.round(hours * 10) / 10
+  const str = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+  return `${str} ${rounded === 1 ? 'hour' : 'hours'}`
+}
+
+// -----------------------------------------------------------------------------
 // Hourly Booking tab — three stacked rate cards (3h / 6h / 8h). Each card
 // opens an inline date+time popup; when submitted the customer is
 // bounced to WhatsApp with the booking template body pre-filled. We
@@ -1562,12 +1737,52 @@ function HourlyTabContent({
     '8h': '8-hour block',
   }
 
+  // Service-window badge — derived from the driver's declared working
+  // hours. Bucketed to 24h / 16h / 8h so the customer sees the broad
+  // availability story without needing to mental-math start/end times.
+  const serviceWindow = useMemo(() => {
+    const s = driver.working_hours_start
+    const e = driver.working_hours_end
+    if (!s || !e) return null
+    const sm = /^([01][0-9]|2[0-3]):([0-5][0-9])$/.exec(s)
+    const em = /^([01][0-9]|2[0-3]):([0-5][0-9])$/.exec(e)
+    if (!sm || !em) return null
+    let diff = (parseInt(em[1]!, 10) * 60 + parseInt(em[2]!, 10))
+             - (parseInt(sm[1]!, 10) * 60 + parseInt(sm[2]!, 10))
+    if (diff <= 0) diff += 24 * 60
+    const hours = diff / 60
+    if (hours >= 20) return '24-hour service'
+    if (hours >= 12) return '16-hour service'
+    return '8-hour service'
+  }, [driver.working_hours_start, driver.working_hours_end])
+
   return (
     <>
       <section
         className="mt-4 rounded-2xl p-3 space-y-3"
         style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
       >
+        {/* Header row — "Hourly hire" title left, service-window badge
+            right. Badge hides when the driver hasn't set working hours. */}
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-[13px] font-extrabold uppercase tracking-wider" style={{ color: TEXT_INK }}>
+            Hourly hire
+          </h3>
+          {serviceWindow && (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-extrabold rounded-full px-2.5 py-1"
+              style={{
+                background: TEXT_INK,
+                color: BRAND_YELLOW,
+                boxShadow: '0 2px 8px rgba(10,10,10,0.18)',
+              }}
+            >
+              <Clock className="w-3 h-3" strokeWidth={2.75} />
+              {serviceWindow}
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
           {(['3h', '6h', '8h'] as HourlyTier[]).map((tier) => (
             <div
@@ -1599,9 +1814,19 @@ function HourlyTabContent({
           ))}
         </div>
 
-        <p className="text-[12px] leading-snug" style={{ color: TEXT_MUTED }}>
-          {HOURLY_PETROL_POLICY_EN}
-        </p>
+        {/* Fee policy — hourly hire is fuel-NOT-included (driver pumps
+            petrol; customer reimburses at the pump). Mirrors the tour-card
+            fee notice in style + amber colors, just with a different
+            payload. */}
+        <div
+          className="rounded-lg px-2.5 py-2 text-[12px] leading-snug"
+          style={{ background: '#FEF3C7', border: '1px solid #FDE68A', color: '#854D0E' }}
+        >
+          <span className="font-extrabold">Fuel not included.</span>{' '}
+          Customer pays for petrol at the pump. Entrance tickets, parking,
+          toll roads, bridge fees, meals and any personal expenses are also the
+          passenger&apos;s responsibility.
+        </div>
       </section>
 
       {popupTier && (

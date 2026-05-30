@@ -16,6 +16,7 @@ import { MOCK_RIDERS } from '@/data/mockRiders'
 import type { DriverRow, AvailabilityState, SubscriptionStatus } from '@/types/database'
 import type { Rider, ServiceType } from '@/types/rider'
 import { isLocationFresh } from '@/lib/drivers/presence'
+import { MOCK_LANGUAGES } from '@/lib/tours/templates'
 
 // Minimal subscription shape used to derive what customers see on the
 // public driver pages. Trial / period dates are factored in here so a
@@ -126,6 +127,7 @@ export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
     hourly8hRateIdr:   (row as DriverRow & { hourly_8h_rate_idr?: number | null }).hourly_8h_rate_idr ?? null,
     workingHoursStart: (row as DriverRow & { working_hours_start?: string | null }).working_hours_start ?? null,
     workingHoursEnd:   (row as DriverRow & { working_hours_end?:   string | null }).working_hours_end   ?? null,
+    languages:         (row as DriverRow & { languages?: string[] | null }).languages ?? null,
   } as Rider & { availability: AvailabilityState }
 }
 
@@ -300,6 +302,7 @@ function mockDriverRowToRider(row: MockDriverRow): Rider {
     rating: row.rating ?? undefined,
     trips: tripsVal,
     isMock: true,
+    languages: MOCK_LANGUAGES[row.slug] ?? ['id'],
   }
 }
 

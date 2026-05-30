@@ -3,8 +3,11 @@ import { use, useEffect, useMemo, useState } from 'react'
 import { notFound } from 'next/navigation'
 import DriverProfileShell, { type DriverPublic } from '@/components/profile/DriverProfileShell'
 import { fetchDriverBySlugBrowser, fetchActiveDriversBrowser } from '@/lib/drivers/queries'
+import { getBrowserSupabase } from '@/lib/supabase/client'
 import { logNav } from '@/lib/perf/navTiming'
 import type { Rider } from '@/types/rider'
+import type { TourPackage } from '@/lib/tours/types'
+import { mockToursForSlug } from '@/lib/tours/templates'
 
 // =============================================================================
 // /r/[slug] — bike driver profile page
@@ -82,6 +85,34 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
     return () => { cancelled = true }
   }, [needAlternatives, slug])
 
+  // Published tours — real drivers query driver_tour_packages; mocks
+  // render synthetic tours from MOCK_TOUR_ASSIGNMENTS so the demo bike
+  // profiles visibly carry the Tours tab.
+  const [tours, setTours] = useState<TourPackage[]>([])
+  useEffect(() => {
+    if (!rider) return
+    if (rider.isMock) {
+      setTours(mockToursForSlug(rider.slug) as unknown as TourPackage[])
+      return
+    }
+    const isUuid = /^[0-9a-f-]{36}$/i.test(rider.id)
+    if (!isUuid) { setTours([]); return }
+    const supabase = getBrowserSupabase()
+    if (!supabase) return
+    let cancelled = false
+    supabase
+      .from('driver_tour_packages')
+      .select('*')
+      .eq('driver_id', rider.id)
+      .eq('published', true)
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return
+        setTours(data as unknown as TourPackage[])
+      })
+    return () => { cancelled = true }
+  }, [rider])
+
   // Slug validation + 404 — same gate the old page used. Wait until the
   // initial fetch resolved so a slow Supabase response doesn't 404
   // prematurely.
@@ -90,7 +121,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 
   return (
     <DriverProfileShell
-      driver={riderToDriverPublic(rider, 'bike')}
+      driver={riderToDriverPublic(rider, 'bike', tours)}
       alternatives={alternatives.map((d) => riderToDriverPublic(d, 'bike'))}
     />
   )
@@ -102,7 +133,7 @@ export default function RiderProfilePage({ params }: { params: Promise<{ slug: s
 // `vehicle_*` columns; this mapper normalises into the shared contract
 // the shell consumes regardless of vertical.
 // -----------------------------------------------------------------------------
-function riderToDriverPublic(r: Rider, vehicleType: 'bike' | 'car'): DriverPublic {
+function riderToDriverPublic(r: Rider, vehicleType: 'bike' | 'car', tours: TourPackage[] = []): DriverPublic {
   // Availability — legacy mocks only carry isOnline. Promote that to
   // the three-state string the shell expects.
   const availability: 'online' | 'busy' | 'offline' =
@@ -156,5 +187,7 @@ function riderToDriverPublic(r: Rider, vehicleType: 'bike' | 'car'): DriverPubli
     hourly_8h_rate_idr:    r.hourly8hRateIdr ?? null,
     working_hours_start:   r.workingHoursStart ?? null,
     working_hours_end:     r.workingHoursEnd ?? null,
+    languages:             r.languages ?? null,
+    tours,
   }
 }

@@ -35,12 +35,15 @@ export default function HourlyBookingPopup({
   driver, tier, amount, label, onClose,
 }: {
   driver:  HourlyBookingDriver
-  tier:    HourlyTier
+  /** Optional — when omitted (tour use-case) the working-hours window
+   *  check is skipped because tour packages declare their own duration
+   *  inside the popup body. Set for hourly hire (3h/6h/8h block). */
+  tier?:   HourlyTier
   amount:  number
   label:   string
   onClose: () => void
 }) {
-  const tierHours = HOURLY_TIERS.find((t) => t.id === tier)?.hours ?? 3
+  const tierHours = tier ? (HOURLY_TIERS.find((t) => t.id === tier)?.hours ?? 3) : 0
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [err,  setErr]  = useState<string | null>(null)
@@ -52,6 +55,10 @@ export default function HourlyBookingPopup({
   }, [])
 
   const fitsWindow = useMemo(() => {
+    // Tour bookings (no tier) skip the working-hours fit check — tours
+    // run on their own published duration and the customer agrees the
+    // start time directly with the driver on WhatsApp.
+    if (!tier) return true
     if (!time) return true
     return isHourlyTimeAvailable({
       workingHoursStart: driver.working_hours_start ?? null,
@@ -59,7 +66,7 @@ export default function HourlyBookingPopup({
       startTime:         time,
       tierHours,
     })
-  }, [driver.working_hours_start, driver.working_hours_end, time, tierHours])
+  }, [driver.working_hours_start, driver.working_hours_end, time, tierHours, tier])
 
   function submitWhatsApp() {
     setErr(null)
@@ -68,10 +75,13 @@ export default function HourlyBookingPopup({
     const waDigits = (driver.whatsapp_e164 ?? '').replace(/\D+/g, '')
     if (!waDigits) { setErr('Driver WhatsApp not available.'); return }
 
+    const intro = tier
+      ? `Saya ingin booking hourly hire dengan paket ${label} (${formatIDR(amount)}).`
+      : `Saya ingin booking tour ${label} (${formatIDR(amount)}).`
     const body = [
       `Halo ${driver.business_name},`,
       '',
-      `Saya ingin booking hourly hire dengan paket ${label} (${formatIDR(amount)}).`,
+      intro,
       `Tanggal: ${date}`,
       `Mulai jam: ${time}`,
       '',
@@ -95,7 +105,7 @@ export default function HourlyBookingPopup({
     const service = driver.vehicle_type === 'bike' ? 'bike' : 'car'
     const sp = new URLSearchParams()
     sp.set('service', service)
-    sp.set('hourlyTier', tier)
+    if (tier) sp.set('hourlyTier', tier)
     sp.set('hourlyDate', date)
     sp.set('hourlyTime', time)
     window.location.assign(`/cari?${sp.toString()}`)
@@ -138,7 +148,7 @@ export default function HourlyBookingPopup({
         <div className="px-5 pt-6 pb-6 space-y-3.5">
           <div className="border-b border-gray-100 pb-3 pr-24">
             <div className="text-[10.5px] font-extrabold uppercase tracking-[0.15em]" style={{ color: '#854D0E' }}>
-              Hourly hire
+              {tier ? 'Hourly hire' : 'Tour package'}
             </div>
             <h2 className="text-[18px] font-black text-black leading-tight mt-0.5">
               {label} · {formatIDR(amount)}

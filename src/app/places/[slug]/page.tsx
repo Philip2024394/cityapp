@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Car as CarIcon, Bike as BikeIcon, Star } from 'lucide-react'
 import JsonLd from '@/components/seo/JsonLd'
 import PlaceProfileShell from '@/components/profile/PlaceProfileShell'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
@@ -81,6 +83,55 @@ async function loadOffers(placeId: string): Promise<OfferRow[]> {
   return (data ?? []) as unknown as OfferRow[]
 }
 
+// Tours-visit-here row — driver_tour_packages JOIN drivers projection
+// used by the "Drivers offering tours that visit here" panel below the
+// place profile. Capped at 8 rows; section is hidden when empty so we
+// don't pollute the page with an empty state.
+type TourVisitRow = {
+  id:             string
+  title:          string
+  duration_hours: number
+  price_idr:      number
+  driver: {
+    slug:           string
+    business_name:  string | null
+    vehicle_type:   string | null
+    rating:         number | null
+    brand_logo_url: string | null
+  } | null
+}
+
+async function loadToursVisitingPlace(slug: string): Promise<TourVisitRow[]> {
+  const supabase = await getServerSupabase()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('driver_tour_packages')
+    .select('id, title, duration_hours, price_idr, place_slugs, published, drivers(slug, business_name, vehicle_type, rating, brand_logo_url)')
+    .contains('place_slugs', [slug])
+    .eq('published', true)
+    .limit(8)
+  if (error || !data) return []
+  return (data as unknown as Array<{
+    id: string
+    title: string
+    duration_hours: number
+    price_idr: number
+    drivers: TourVisitRow['driver'] | TourVisitRow['driver'][] | null
+  }>).map((r) => ({
+    id:             r.id,
+    title:          r.title,
+    duration_hours: r.duration_hours,
+    price_idr:      r.price_idr,
+    driver:         Array.isArray(r.drivers) ? (r.drivers[0] ?? null) : (r.drivers ?? null),
+  })).filter((r) => r.driver != null)
+}
+
+function formatDurationLabel(h: number): string {
+  const r = Math.round(h * 10) / 10
+  const s = Number.isInteger(r) ? String(r) : r.toFixed(1)
+  return `${s}h`
+}
+
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
@@ -121,6 +172,7 @@ export default async function PlaceDetailPage(
   if (!place) notFound()
 
   const offers = await loadOffers(place.id)
+  const visitingTours = await loadToursVisitingPlace(place.slug)
 
   const categoryMeta  = CATEGORIES[place.category]
   const categoryLabel = categoryMeta?.label ?? place.category
@@ -186,6 +238,73 @@ export default async function PlaceDetailPage(
         contactEnabled={place.contact_enabled !== false}
         freeDelivery={place.free_delivery === true}
       />
+
+      {/* Drivers offering tours that visit here — only renders when at
+          least one published tour matches. Empty state intentionally
+          hidden so the page doesn't pollute with placeholder copy. */}
+      {visitingTours.length > 0 && (
+        <section className="max-w-2xl mx-auto px-4 sm:px-5 pb-6">
+          <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-[#0A0A0A] mb-2">
+            Drivers offering tours that visit here
+          </h2>
+          <ul className="space-y-2">
+            {visitingTours.map((t) => {
+              const isBike = t.driver?.vehicle_type === 'bike'
+              const href = isBike ? `/r/${t.driver?.slug}` : `/car/${t.driver?.slug}`
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={href}
+                    prefetch
+                    className="block rounded-2xl bg-white border border-[#E4E4E7] p-3 active:scale-[0.99] transition"
+                    style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center"
+                        style={{ background: '#FFFBEA', color: '#EAB308', border: '1px solid rgba(250,204,21,0.45)' }}
+                        aria-hidden
+                      >
+                        {isBike
+                          ? <BikeIcon className="w-5 h-5" strokeWidth={2.25} />
+                          : <CarIcon className="w-5 h-5" strokeWidth={2.25} />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-[14px] font-black text-[#0A0A0A] leading-tight truncate">
+                          {t.title}
+                        </h3>
+                        <p className="text-[12px] text-black/55 mt-0.5 truncate">
+                          {t.driver?.business_name ?? 'Driver'}
+                          {t.driver?.rating != null && t.driver.rating > 0 && (
+                            <span className="inline-flex items-center gap-0.5 ml-1.5">
+                              <Star
+                                className="w-3 h-3 inline-block align-middle"
+                                strokeWidth={0}
+                                fill="#FACC15"
+                                style={{ color: '#FACC15' }}
+                              />
+                              <span className="font-extrabold text-[#0A0A0A]">{t.driver.rating.toFixed(1)}</span>
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="text-[14px] font-black text-[#0A0A0A] leading-none">
+                          Rp {t.price_idr.toLocaleString('id-ID')}
+                        </div>
+                        <div className="text-[11px] font-extrabold text-black/55 mt-0.5">
+                          {formatDurationLabel(t.duration_hours)}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+
       <PoweredByKita2u defaultVertical="places" />
     </>
   )
