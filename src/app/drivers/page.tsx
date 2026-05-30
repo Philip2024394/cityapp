@@ -126,19 +126,7 @@ export default function DriversLandingPage() {
                   CityRiders
                 </span>
               </Link>
-              <Link
-                href="/drivers/car"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold transition"
-                style={{
-                  background: 'rgba(255,255,255,0.92)',
-                  backdropFilter: 'blur(6px)',
-                  WebkitBackdropFilter: 'blur(6px)',
-                  color: '#0A0A0A',
-                  border: '1px solid rgba(0,0,0,0.10)',
-                }}
-              >
-                Car version →
-              </Link>
+              <VehicleSwitcher active="bike" />
             </header>
 
             {/* Flexible spacer — eats whatever vertical space remains
@@ -395,6 +383,52 @@ export default function DriversLandingPage() {
 }
 
 // ─── Small presentational helpers ───────────────────────────────────
+
+// 3-way Bike/Car/Truck mini selector. Active chip renders as plain
+// text (no link); inactive chips are pill links. Matches the existing
+// cross-nav pill style: white-blur background, rounded-full, 11px
+// font, charcoal text. Duplicated in /drivers/car and /drivers/truck —
+// same pattern these pages already use for Step/Differentiator/Bullet.
+function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'truck' }) {
+  const items: { key: 'bike' | 'car' | 'truck'; label: string; href: string }[] = [
+    { key: 'bike', label: 'Bike', href: '/drivers' },
+    { key: 'car', label: 'Car', href: '/drivers/car' },
+    { key: 'truck', label: 'Truck', href: '/drivers/truck' },
+  ]
+  return (
+    <div
+      className="inline-flex items-center gap-1 px-1 py-1 rounded-full"
+      style={{
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        border: '1px solid rgba(0,0,0,0.10)',
+      }}
+    >
+      {items.map((it) =>
+        it.key === active ? (
+          <span
+            key={it.key}
+            className="px-2 py-0.5 rounded-full text-[11px] font-extrabold"
+            style={{ color: '#0A0A0A', background: '#FACC15' }}
+            aria-current="page"
+          >
+            {it.label}
+          </span>
+        ) : (
+          <Link
+            key={it.key}
+            href={it.href}
+            className="px-2 py-0.5 rounded-full text-[11px] font-extrabold transition active:scale-[0.97]"
+            style={{ color: '#0A0A0A' }}
+          >
+            {it.label}
+          </Link>
+        ),
+      )}
+    </div>
+  )
+}
 
 function Step({
   n, icon, title, children,

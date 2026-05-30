@@ -12,7 +12,7 @@ import {
   Compass, Map, KeyRound, Palette, Shirt, Wrench, Brush, Pencil, Layers,
   Globe2, ExternalLink, Calendar,
   CreditCard, HelpCircle, FileText, ShieldCheck,
-  Car,
+  Car, Truck, BarChart3,
 } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -175,9 +175,10 @@ const CAR_DRIVER_NAV_SECTIONS: ReadonlyArray<NavSection> = [
   {
     header: 'Growth',
     items: [
-      { href: '/dashboard/car/stats',  label: 'Stats',       icon: Flame },
-      { href: '/dashboard/car/qr',     label: 'Profile QR',  icon: QrCode },
-      { href: '/dashboard/car/social', label: 'Social posts', icon: Sparkles },
+      { href: '/dashboard/car/stats',    label: 'Stats',             icon: BarChart3 },
+      { href: '/dashboard/car/hotspots', label: 'City busy areas',   icon: Flame },
+      { href: '/dashboard/car/qr',       label: 'Profile QR',        icon: QrCode },
+      { href: '/dashboard/car/social',   label: 'Social posts',      icon: Sparkles },
     ],
   },
   {
@@ -193,6 +194,55 @@ const CAR_DRIVER_NAV_SECTIONS: ReadonlyArray<NavSection> = [
     items: [
       { href: '/car',          label: 'Marketplace',     icon: Store },
       { href: '/drivers/car',  label: 'Drivers landing', icon: ExternalLink },
+    ],
+  },
+]
+
+// Truck driver dashboard — sibling of CAR_DRIVER_NAV_SECTIONS, scoped to
+// truck drivers (vehicle_type='truck'). Same yellow brand + same drawer
+// structure as car-driver; differs only in label wording ("Truck
+// details" instead of "Vehicle details") and the route targets
+// (/dashboard/truck/...).
+const TRUCK_DRIVER_NAV_SECTIONS: ReadonlyArray<NavSection> = [
+  {
+    header: 'My profile',
+    items: [
+      { href: '/dashboard/truck',         label: 'Driver dashboard', icon: UserCog },
+      { href: '/dashboard/truck/info',    label: 'Profile info',     icon: User },
+      { href: '/dashboard/truck/edit',    label: 'Page design',      icon: Pencil },
+      { href: '/dashboard/truck/vehicle', label: 'Truck details',    icon: Truck },
+    ],
+  },
+  {
+    header: 'Services & pricing',
+    items: [
+      { href: '/dashboard/truck/services',     label: 'Services & rates', icon: Layers },
+      { href: '/dashboard/truck/payments',     label: 'Payment methods',  icon: CreditCard },
+      { href: '/dashboard/truck/subscription', label: 'Subscription',     icon: Wallet },
+    ],
+  },
+  {
+    header: 'Growth',
+    items: [
+      { href: '/dashboard/truck/stats',    label: 'Stats',             icon: BarChart3 },
+      { href: '/dashboard/truck/hotspots', label: 'City busy areas',   icon: Flame },
+      { href: '/dashboard/truck/qr',       label: 'Profile QR',        icon: QrCode },
+      { href: '/dashboard/truck/social',   label: 'Social posts',      icon: Sparkles },
+    ],
+  },
+  {
+    header: 'Trust & legal',
+    items: [
+      { href: '/dashboard/truck/faq',     label: 'FAQ',                 icon: HelpCircle },
+      { href: '/dashboard/truck/terms',   label: 'Terms & conditions',  icon: FileText },
+      { href: '/dashboard/truck/privacy', label: 'Privacy policy',      icon: ShieldCheck },
+    ],
+  },
+  {
+    header: 'More',
+    items: [
+      { href: '/truck',           label: 'Marketplace',     icon: Store },
+      { href: '/drivers/truck',   label: 'Drivers landing', icon: ExternalLink },
     ],
   },
 ]
@@ -222,9 +272,10 @@ const RIDER_NAV_SECTIONS: ReadonlyArray<NavSection> = [
   {
     header: 'Growth',
     items: [
-      { href: '/dashboard/rider/stats',  label: 'Stats',        icon: Flame },
-      { href: '/dashboard/rider/qr',     label: 'Profile QR',   icon: QrCode },
-      { href: '/dashboard/rider/social', label: 'Social posts', icon: Sparkles },
+      { href: '/dashboard/rider/stats',    label: 'Stats',           icon: BarChart3 },
+      { href: '/dashboard/rider/hotspots', label: 'City busy areas', icon: Flame },
+      { href: '/dashboard/rider/qr',       label: 'Profile QR',      icon: QrCode },
+      { href: '/dashboard/rider/social',   label: 'Social posts',    icon: Sparkles },
     ],
   },
   {
@@ -320,7 +371,7 @@ const SKINCARE_NAV_SECTIONS: ReadonlyArray<NavSection> = [
   },
 ]
 
-type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals' | 'facial' | 'skincare' | 'car-driver' | 'rider'
+type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals' | 'facial' | 'skincare' | 'car-driver' | 'truck-driver' | 'rider'
 const VARIANT_TITLE: Record<Variant, string> = {
   driver:        'Driver menu',
   partner:       'Partner menu',
@@ -334,6 +385,7 @@ const VARIANT_TITLE: Record<Variant, string> = {
   facial:        'Facial menu',
   skincare:      'Skincare menu',
   'car-driver':  'Car driver menu',
+  'truck-driver': 'Truck driver menu',
   rider:         'Rider menu',
 }
 const VARIANT_LABEL: Record<Variant, string> = {
@@ -349,6 +401,7 @@ const VARIANT_LABEL: Record<Variant, string> = {
   facial:        'Facial navigation',
   skincare:      'Skincare navigation',
   'car-driver':  'Car driver navigation',
+  'truck-driver': 'Truck driver navigation',
   rider:         'Rider navigation',
 }
 
@@ -377,6 +430,7 @@ const VARIANT_BRAND: Record<Variant, {
   facial:        { from: '#F472B6', to: '#DB2777', shadow: '236,72,153',  ink: '#FFFFFF', onPillText: '#F472B6' },
   skincare:      { from: '#F472B6', to: '#DB2777', shadow: '236,72,153',  ink: '#FFFFFF', onPillText: '#F472B6' },
   'car-driver':  { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
+  'truck-driver':{ from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
   rider:         { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
 }
 
@@ -407,6 +461,7 @@ export default function AppDrawer({
     variant === 'facial'       ? FACIAL_NAV_SECTIONS :
     variant === 'skincare'     ? SKINCARE_NAV_SECTIONS :
     variant === 'car-driver'   ? CAR_DRIVER_NAV_SECTIONS :
+    variant === 'truck-driver' ? TRUCK_DRIVER_NAV_SECTIONS :
     variant === 'rider'        ? RIDER_NAV_SECTIONS :
                                  [{ items: DRIVER_NAV_ITEMS }]
 
@@ -640,6 +695,7 @@ export function AppDrawerTrigger({
     variant === 'facial'     ? 'Open facial menu' :
     variant === 'skincare'   ? 'Open skincare menu' :
     variant === 'car-driver' ? 'Open car driver menu' :
+    variant === 'truck-driver' ? 'Open truck driver menu' :
     variant === 'rider'      ? 'Open rider menu' :
     'Open driver menu'
   return (

@@ -13,12 +13,14 @@
 // transaction shape from per-parcel).
 //
 // Rationale for the per-parcel tiers (Yogyakarta market, May 2026):
-//   • 1–5/day  → Rp 9k  — matches Gojek/Grab; driver wins on 0% commission
-//   • 6–20/day → Rp 7k  — clustered route, ~12% under Gojek
-//   • 21–50    → Rp 5.5k — driver dedicates ~5h, ~31% under Gojek
-//   • 51–100   → Rp 4.5k — full-day driver commit, undercuts Shopee Xpress
+//   • 1–5/day  → Rp 9k  — casual ad-hoc rate
+//   • 6–20/day → Rp 7k  — clustered route, small-business discount
+//   • 21–50    → Rp 5.5k — driver dedicates ~5h, mid-volume discount
+//   • 51–100   → Rp 4.5k — full-day driver commit, bulk discount
 //   • 100+     → Negotiated direct on WhatsApp
-// Driver hourly target Rp 30k–55k (= Rp 5–10 M/month) at clustered speed.
+// Customer-paid prices are 1:1 with what the driver receives — platform
+// takes 0% commission (subscription model on the driver side instead).
+// Driver hourly target Rp 30k–55k (= Rp 5–10M/month) at clustered speed.
 // ============================================================================
 
 export type ParcelRateTierKey =

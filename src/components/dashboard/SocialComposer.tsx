@@ -1,9 +1,8 @@
 'use client'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, Sparkles, Download, MessageCircle, Copy, Check,
-  AlertCircle, Loader2, Share2, Instagram,
+  ArrowLeft, Sparkles, Check, AlertCircle, Loader2, Share2,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import {
@@ -11,17 +10,24 @@ import {
   SOCIAL_BANNER_CATEGORY_LABELS,
   type SocialBanner, type SocialBannerCategoryId,
 } from '@/lib/social/banners'
+import SharePreviewModal, { type SharePromo } from '@/components/dashboard/SharePreviewModal'
 
 // =============================================================================
 // SocialComposer — shared by /dashboard/car/social and /dashboard/rider/social.
 //
-// Driver picks a pre-composed CityRiders banner → downloads it or shares
-// it to WhatsApp / Instagram / Facebook → each commit hits POST
-// /api/dashboard/social to decrement their 20/month quota.
+// Driver picks a pre-composed CityRiders banner → opens the SAME
+// SharePreviewModal that the beautician promo flow uses. Pixel-parity
+// with /dashboard/beautician/promos was a founder directive (2026-05-30):
+// drivers see exactly the same share UI beauticians do, just with the
+// CityRiders yellow accent (#FACC15) instead of pink.
 //
-// No canvas overlay engine in Phase A — banners ship with branding
-// already baked in. When we want per-driver overlay (profile pic + city
-// stitched onto a blank template), we'll add a second composer variant.
+// Quota: each share counts toward the driver's 20/month cap. Because the
+// SharePreviewModal's buttons are simple anchor tags (wa.me, fb sharer,
+// download, copy) that bypass any onClick of ours when the user taps
+// them on mobile, we wrap the whole modal in a `<div onClickCapture>` so
+// every tap on a share-target button decrements the quota exactly once
+// per banner-open. This keeps the share UI unmodified while still
+// honouring the cap.
 // =============================================================================
 
 type Quota = {
@@ -31,16 +37,30 @@ type Quota = {
   remaining: number
 }
 
+type Driver = {
+  business_name:  string
+  slug:           string
+  brand_logo_url: string | null
+  city:           string | null
+}
+
+type SocialApiResponse = Quota & { driver?: Driver | null }
+
 export default function SocialComposer({ backHref, vertical }: {
   backHref:  string
   vertical: 'car' | 'rider'
 }) {
-  const [quota, setQuota]   = useState<Quota | null>(null)
+  const [quota, setQuota]     = useState<Quota | null>(null)
+  const [driver, setDriver]   = useState<Driver | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]   = useState<string | null>(null)
-  const [selected, setSelected] = useState<SocialBanner | null>(null)
-  const [busy, setBusy]     = useState(false)
-  const [toast, setToast]   = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+  const [error, setError]     = useState<string | null>(null)
+  const [shareBanner, setShareBanner] = useState<SocialBanner | null>(null)
+  const [toast, setToast]     = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+
+  // Prevents double-counting a single banner open. Each time we open the
+  // modal we reset to false; the first share-target click inside the
+  // modal flips it to true and decrements the quota.
+  const sharedOnceRef = useRef(false)
 
   const grouped = useMemo(() => {
     const out: Record<SocialBannerCategoryId, SocialBanner[]> = {
@@ -50,14 +70,14 @@ export default function SocialComposer({ backHref, vertical }: {
     return out
   }, [])
 
-  // Quota fetch on mount
   const loadQuota = useCallback(async () => {
     try {
       const r = await fetch('/api/dashboard/social', { cache: 'no-store' })
       if (r.status === 401) { setError('not_signed_in'); return }
       if (!r.ok) { setError('fetch_failed'); return }
-      const j = await r.json() as Quota
-      setQuota(j)
+      const j = await r.json() as SocialApiResponse
+      setQuota({ month: j.month, used: j.used, cap: j.cap, remaining: j.remaining })
+      setDriver(j.driver ?? null)
     } catch { setError('fetch_failed') }
     finally { setLoading(false) }
   }, [])
@@ -65,11 +85,12 @@ export default function SocialComposer({ backHref, vertical }: {
 
   function showToast(kind: 'ok' | 'err', msg: string) {
     setToast({ kind, msg })
-    setTimeout(() => setToast(null), 2400)
+    setTimeout(() => setToast(null), 1600)
   }
 
-  // Increment quota — fire-and-forget. On 429 we surface the message.
-  async function trackShare(banner: SocialBanner, platform: string): Promise<boolean> {
+  // Increment quota — fire-and-forget. On 429 we surface the message
+  // and close the modal so the driver sees the quota strip update.
+  const trackShare = useCallback(async (banner: SocialBanner, platform: string): Promise<boolean> => {
     try {
       const r = await fetch('/api/dashboard/social', {
         method:  'POST',
@@ -79,7 +100,7 @@ export default function SocialComposer({ backHref, vertical }: {
       if (r.status === 429) {
         showToast('err', 'Kuota bulan ini habis (20/20)')
         const j = await r.json().catch(() => null)
-        if (j) setQuota(j)
+        if (j) setQuota({ month: j.month, used: j.used, cap: j.cap, remaining: j.remaining })
         return false
       }
       if (!r.ok) {
@@ -88,78 +109,41 @@ export default function SocialComposer({ backHref, vertical }: {
       }
       const j = await r.json() as Quota
       setQuota(j)
+      showToast('ok', 'Share dicatat')
       return true
     } catch {
       showToast('err', 'Network error.')
       return false
     }
-  }
+  }, [])
 
-  // Download — fetch the image as blob, offer as PNG download. Counts
-  // toward quota as a share (the user explicitly committed to use it).
-  async function handleDownload(banner: SocialBanner) {
-    if (busy) return
-    setBusy(true)
-    try {
-      const ok = await trackShare(banner, 'download')
-      if (!ok) return
-      const res = await fetch(banner.url)
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `cityriders-${banner.id}.png`
-      a.click()
-      URL.revokeObjectURL(url)
-      showToast('ok', 'Tersimpan ke galeri')
-    } finally { setBusy(false) }
-  }
+  // Capture-phase click handler on the modal wrapper. The SharePreviewModal
+  // ships with anchor + button share targets that fire navigation
+  // immediately; we intercept the first one per modal open so it counts
+  // toward the quota without blocking the share itself.
+  const onShareCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!shareBanner || sharedOnceRef.current) return
+    const target = e.target as HTMLElement
+    const btn = target.closest<HTMLElement>('[data-share-target], a, button')
+    if (!btn) return
 
-  async function handleShareWhatsApp(banner: SocialBanner) {
-    if (busy) return
-    setBusy(true)
-    try {
-      const ok = await trackShare(banner, 'whatsapp')
-      if (!ok) return
-      // wa.me doesn't accept image uploads — caption + URL only. The
-      // banner image must be sent separately from the gallery.
-      const text = `${banner.caption_id}\n${banner.url}`
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
-      showToast('ok', 'WhatsApp dibuka')
-    } finally { setBusy(false) }
-  }
+    // Skip the close button + collapsible preview toggle. The
+    // SharePreviewModal uses `aria-label="Close"`/`"Close share preview"`
+    // on its close affordances and `aria-expanded` on the preview
+    // disclosure. Anything else inside the share-buttons block counts.
+    const ariaLabel    = btn.getAttribute('aria-label') ?? ''
+    const ariaExpanded = btn.getAttribute('aria-expanded')
+    if (/close/i.test(ariaLabel)) return
+    if (ariaExpanded !== null) return
+    // Skip the platform-picker inside the mockup preview area.
+    if (btn.closest('[role="listbox"]')) return
+    if (btn.getAttribute('role') === 'option') return
 
-  async function handleCopyCaption(banner: SocialBanner) {
-    if (busy) return
-    setBusy(true)
-    try {
-      const ok = await trackShare(banner, 'copy_caption')
-      if (!ok) return
-      await navigator.clipboard.writeText(`${banner.caption_id}\n${banner.url}`)
-      showToast('ok', 'Caption disalin')
-    } catch { showToast('err', 'Tidak bisa menyalin') }
-    finally { setBusy(false) }
-  }
-
-  async function handleNativeShare(banner: SocialBanner) {
-    if (busy) return
-    setBusy(true)
-    try {
-      const ok = await trackShare(banner, 'native')
-      if (!ok) return
-      if (typeof navigator !== 'undefined' && 'share' in navigator) {
-        await navigator.share({
-          title: 'CityRiders',
-          text:  banner.caption_id,
-          url:   banner.url,
-        })
-        showToast('ok', 'Dibagikan')
-      } else {
-        showToast('err', 'Browser tidak mendukung Share')
-      }
-    } catch { /* user cancelled — silent */ }
-    finally { setBusy(false) }
-  }
+    // Best-effort platform tag for analytics (lowercased button text).
+    const platform = (btn.textContent ?? 'unknown').trim().toLowerCase().slice(0, 24)
+    sharedOnceRef.current = true
+    void trackShare(shareBanner, platform || 'unknown')
+  }, [shareBanner, trackShare])
 
   if (loading) {
     return (
@@ -176,7 +160,7 @@ export default function SocialComposer({ backHref, vertical }: {
       <Shell>
         <BackLink backHref={backHref} />
         <EmptyCard title="Sign in required" body="Sign in to access the social composer.">
-          <Link href="/signup" className="mt-4 inline-block px-5 py-3 rounded-2xl bg-[#FACC15] text-black text-[13px] font-extrabold" style={{ minHeight: 44 }}>
+          <Link href="/signup" className="mt-4 inline-block px-5 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[13px] font-extrabold" style={{ minHeight: 44 }}>
             Sign in
           </Link>
         </EmptyCard>
@@ -197,11 +181,29 @@ export default function SocialComposer({ backHref, vertical }: {
   const cap       = quota?.cap       ?? SOCIAL_QUOTA_MONTHLY
   const exhausted = remaining <= 0
 
+  // Project a SocialBanner into the SharePromo shape the beautician
+  // promo modal consumes. This is the bridge that makes the two flows
+  // pixel-identical: the modal doesn't know banners exist, it just sees
+  // a promo with photo + headline + captions.
+  const sharePromo: SharePromo | null = shareBanner ? {
+    slug:                 shareBanner.id,
+    headline:             shareBanner.label,
+    photo_url:            shareBanner.url,
+    ai_caption:           shareBanner.caption_id,
+    ai_caption_short:     shareBanner.caption_en,
+    hashtags_by_platform: null,
+  } : null
+
+  const providerName   = driver?.business_name?.trim() || 'CityRiders Driver'
+  const providerHandle = driver?.slug?.trim() || 'cityriders'
+  const profileImage   = driver?.brand_logo_url ?? null
+  const city           = driver?.city ?? null
+
   return (
     <Shell>
       <BackLink backHref={backHref} />
 
-      {/* Hero strip — quota bar */}
+      {/* Hero strip — quota bar. Kept the yellow gradient, it works. */}
       <section
         className="rounded-3xl p-5 sm:p-6 mb-4"
         style={{
@@ -230,7 +232,6 @@ export default function SocialComposer({ backHref, vertical }: {
           </div>
         </div>
 
-        {/* Used bar */}
         <div className="mt-4">
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(10,10,10,0.18)' }}>
             <div
@@ -246,12 +247,12 @@ export default function SocialComposer({ backHref, vertical }: {
         </div>
       </section>
 
-      {/* Toast */}
+      {/* Toast — keep current pattern (top-center floating pill, 1.6s) */}
       {toast && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-[12.5px] font-extrabold shadow-lg"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-2 rounded-full text-[12.5px] font-extrabold shadow-lg"
           style={{
             background: toast.kind === 'ok' ? '#0A0A0A' : '#7F1D1D',
             color:      '#FFFFFF',
@@ -285,14 +286,11 @@ export default function SocialComposer({ backHref, vertical }: {
                 <BannerCard
                   key={b.id}
                   banner={b}
-                  active={selected?.id === b.id}
                   exhausted={exhausted}
-                  busy={busy}
-                  onSelect={() => setSelected(b)}
-                  onDownload={() => handleDownload(b)}
-                  onWhatsApp={() => handleShareWhatsApp(b)}
-                  onCopy={() => handleCopyCaption(b)}
-                  onNativeShare={() => handleNativeShare(b)}
+                  onShare={() => {
+                    sharedOnceRef.current = false
+                    setShareBanner(b)
+                  }}
                 />
               ))}
             </div>
@@ -310,6 +308,20 @@ export default function SocialComposer({ backHref, vertical }: {
           <li>Kuota reset otomatis pada tanggal 1 setiap bulan.</li>
         </ul>
       </section>
+
+      {sharePromo && (
+        <div onClickCapture={onShareCapture}>
+          <SharePreviewModal
+            promo={sharePromo}
+            providerName={providerName}
+            providerHandle={providerHandle}
+            profileImageUrl={profileImage}
+            city={city}
+            themeColor="#FACC15"
+            onClose={() => setShareBanner(null)}
+          />
+        </div>
+      )}
     </Shell>
   )
 }
@@ -317,30 +329,26 @@ export default function SocialComposer({ backHref, vertical }: {
 // ─── Sub-components ──────────────────────────────────────────────────
 
 function BannerCard({
-  banner, active, exhausted, busy, onSelect,
-  onDownload, onWhatsApp, onCopy, onNativeShare,
+  banner, exhausted, onShare,
 }: {
-  banner:        SocialBanner
-  active:        boolean
-  exhausted:     boolean
-  busy:          boolean
-  onSelect:      () => void
-  onDownload:    () => void
-  onWhatsApp:    () => void
-  onCopy:        () => void
-  onNativeShare: () => void
+  banner:    SocialBanner
+  exhausted: boolean
+  onShare:   () => void
 }) {
+  const intentChip = banner.intent === 'customer'
+    ? { bg: '#DCFCE7', fg: '#166534', label: 'Untuk pelanggan' }
+    : banner.intent === 'driver_recruit'
+    ? { bg: '#FEF3C7', fg: '#854D0E', label: 'Rekrut driver' }
+    : { bg: '#E0E7FF', fg: '#3730A3', label: 'Komunitas' }
+
   return (
-    <div
-      className="rounded-2xl bg-white border border-black/10 overflow-hidden hover:border-[#FACC15] transition"
-      style={active ? { borderColor: '#FACC15', boxShadow: '0 8px 24px rgba(250,204,21,0.22)' } : undefined}
-    >
-      {/* Banner image */}
+    <article className="rounded-3xl bg-white border border-black/10 overflow-hidden shadow-sm hover:shadow-md transition">
       <button
         type="button"
-        onClick={onSelect}
+        onClick={onShare}
+        aria-label={`Bagikan ${banner.label}`}
         className="block w-full text-left"
-        style={{ aspectRatio: '16 / 9', background: '#0A0A0A' }}
+        style={{ aspectRatio: '16 / 9', background: '#F4F4F5' }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -351,97 +359,40 @@ function BannerCard({
         />
       </button>
 
-      {/* Meta strip */}
-      <div className="p-3 sm:p-4">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="min-w-0">
-            <h3 className="text-[13px] font-black text-[#0A0A0A] leading-tight truncate">{banner.label}</h3>
-            <span
-              className="inline-block mt-0.5 text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded"
-              style={{
-                background: banner.intent === 'customer'        ? '#DCFCE7'
-                           : banner.intent === 'driver_recruit' ? '#FEF3C7'
-                           :                                      '#E0E7FF',
-                color:      banner.intent === 'customer'        ? '#166534'
-                           : banner.intent === 'driver_recruit' ? '#854D0E'
-                           :                                      '#3730A3',
-              }}
-            >
-              {banner.intent === 'customer'        ? 'Untuk pelanggan'
-              : banner.intent === 'driver_recruit' ? 'Rekrut driver'
-              :                                      'Komunitas'}
-            </span>
-          </div>
+      <div className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3 className="text-[15px] sm:text-[16px] font-black text-[#0A0A0A] leading-tight min-w-0">
+            {banner.label}
+          </h3>
+          <span
+            className="shrink-0 text-[10px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full"
+            style={{ background: intentChip.bg, color: intentChip.fg }}
+          >
+            {intentChip.label}
+          </span>
         </div>
 
-        <p className="text-[12px] text-black/65 leading-snug">{banner.caption_id}</p>
+        <p className="text-[13px] text-black/65 leading-snug line-clamp-2">
+          {banner.caption_id}
+        </p>
 
-        {/* Action row */}
-        <div className="mt-3 grid grid-cols-4 gap-1.5">
-          <ActionBtn
-            label="Download"
-            icon={<Download className="w-3.5 h-3.5" strokeWidth={2.5} />}
-            onClick={onDownload}
-            disabled={busy || exhausted}
-            primary
-          />
-          <ActionBtn
-            label="WhatsApp"
-            icon={<MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />}
-            onClick={onWhatsApp}
-            disabled={busy || exhausted}
-          />
-          <ActionBtn
-            label="Share"
-            icon={<Share2 className="w-3.5 h-3.5" strokeWidth={2.5} />}
-            onClick={onNativeShare}
-            disabled={busy || exhausted}
-          />
-          <ActionBtn
-            label="Copy"
-            icon={<Copy className="w-3.5 h-3.5" strokeWidth={2.5} />}
-            onClick={onCopy}
-            disabled={busy || exhausted}
-          />
-        </div>
-
-        {/* Native instagram hint — IG can't accept URL shares; user must
-            download + manually upload. We surface this so the driver
-            isn't confused why there's no 1-tap IG button. */}
-        <div className="mt-2 flex items-start gap-1.5 text-[10.5px] text-black/45 leading-snug">
-          <Instagram className="w-3 h-3 mt-0.5 shrink-0" strokeWidth={2.5} />
-          <span>Untuk Instagram / TikTok — tap Download, lalu posting dari galeri.</span>
-        </div>
+        <button
+          type="button"
+          onClick={onShare}
+          disabled={exhausted}
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-[13.5px] font-extrabold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: exhausted ? '#F4F4F5' : '#FACC15',
+            color:      '#0A0A0A',
+            boxShadow:  exhausted ? 'none' : '0 6px 18px -4px rgba(250,204,21,0.55)',
+            minHeight:  48,
+          }}
+        >
+          <Share2 className="w-4 h-4" strokeWidth={2.5} />
+          {exhausted ? 'Kuota habis' : 'Bagikan ke media sosial'}
+        </button>
       </div>
-    </div>
-  )
-}
-
-function ActionBtn({
-  label, icon, onClick, disabled, primary,
-}: {
-  label:    string
-  icon:     React.ReactNode
-  onClick:  () => void
-  disabled: boolean
-  primary?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg text-[10.5px] font-extrabold uppercase tracking-wider transition active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
-      style={{
-        background: primary ? '#FACC15' : '#FFFBEA',
-        color:      '#0A0A0A',
-        border:     primary ? 'none' : '1px solid rgba(250,204,21,0.45)',
-        minHeight:  44,
-      }}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
+    </article>
   )
 }
 

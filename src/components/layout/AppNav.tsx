@@ -22,11 +22,14 @@ const HANDYMAN_ROUTE_PREFIXES   = ['/dashboard/handyman',   '/handyman']
 const HOME_CLEAN_ROUTE_PREFIXES = ['/dashboard/home-clean', '/home-clean']
 const FACIAL_ROUTE_PREFIXES     = ['/dashboard/facial',     '/facial']
 const SKINCARE_ROUTE_PREFIXES   = ['/dashboard/skincare',   '/skincare']
-// Driver dashboards — multi-page car/bus/truck dashboards land on the
+// Driver dashboards — multi-page car/bus dashboards land on the
 // dedicated car-driver drawer variant. /car, /bus, /truck public pages
 // (slug profiles) keep their existing customer-facing chrome and are
-// excluded.
-const CAR_DRIVER_ROUTE_PREFIXES = ['/dashboard/car', '/dashboard/bus', '/dashboard/truck']
+// excluded. Truck dashboard runs its own variant (TRUCK_DRIVER_ROUTE_PREFIXES)
+// so the drawer can swap "Vehicle details" → "Truck details" and target
+// /dashboard/truck/* routes specifically.
+const CAR_DRIVER_ROUTE_PREFIXES = ['/dashboard/car', '/dashboard/bus']
+const TRUCK_DRIVER_ROUTE_PREFIXES = ['/dashboard/truck']
 // Bike-rider dashboard — sibling structure to car-driver but scoped to
 // bike vehicle_type rows. Same drawer chrome (yellow brand), separate
 // nav sections.
@@ -73,6 +76,10 @@ function isCarDriverRoute(pathname: string | null): boolean {
   if (!pathname) return false
   return CAR_DRIVER_ROUTE_PREFIXES.some((p) => matches(pathname, p))
 }
+function isTruckDriverRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  return TRUCK_DRIVER_ROUTE_PREFIXES.some((p) => matches(pathname, p))
+}
 function isRiderRoute(pathname: string | null): boolean {
   if (!pathname) return false
   return RIDER_ROUTE_PREFIXES.some((p) => matches(pathname, p))
@@ -103,11 +110,12 @@ function isDriverRoute(pathname: string | null): boolean {
   if (isFacialRoute(pathname))     return false
   if (isSkincareRoute(pathname))   return false
   if (isCarDriverRoute(pathname))  return false
+  if (isTruckDriverRoute(pathname)) return false
   if (isRiderRoute(pathname))      return false
   return DRIVER_ROUTE_PREFIXES.some((p) => matches(pathname, p))
 }
 
-type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals' | 'facial' | 'skincare' | 'car-driver' | 'rider'
+type Variant = 'driver' | 'partner' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tour-guide' | 'rentals' | 'facial' | 'skincare' | 'car-driver' | 'truck-driver' | 'rider'
 
 export default function AppNav() {
   const path = usePathname()
@@ -123,9 +131,10 @@ export default function AppNav() {
   const facialRoute     = isFacialRoute(path)
   const skincareRoute   = isSkincareRoute(path)
   const carDriverRoute  = isCarDriverRoute(path)
+  const truckDriverRoute = isTruckDriverRoute(path)
   const riderRoute      = isRiderRoute(path)
   const driverRoute     = isDriverRoute(path)
-  const showDrawer = partnerRoute || massageRoute || beauticianRoute || laundryRoute || handymanRoute || homeCleanRoute || tourGuideRoute || rentalRoute || facialRoute || skincareRoute || carDriverRoute || riderRoute || driverRoute
+  const showDrawer = partnerRoute || massageRoute || beauticianRoute || laundryRoute || handymanRoute || homeCleanRoute || tourGuideRoute || rentalRoute || facialRoute || skincareRoute || carDriverRoute || truckDriverRoute || riderRoute || driverRoute
   const variant: Variant =
     partnerRoute    ? 'partner' :
     massageRoute    ? 'massage' :
@@ -138,6 +147,7 @@ export default function AppNav() {
     facialRoute     ? 'facial' :
     skincareRoute   ? 'skincare' :
     carDriverRoute  ? 'car-driver' :
+    truckDriverRoute ? 'truck-driver' :
     riderRoute      ? 'rider' :
     'driver'
 
@@ -159,10 +169,11 @@ export default function AppNav() {
     else if (facialRoute)      document.body.dataset.surface = 'facial'
     else if (skincareRoute)    document.body.dataset.surface = 'skincare'
     else if (carDriverRoute)   document.body.dataset.surface = 'car-driver'
+    else if (truckDriverRoute) document.body.dataset.surface = 'truck-driver'
     else if (riderRoute)       document.body.dataset.surface = 'rider'
     else delete document.body.dataset.surface
     return () => { delete document.body.dataset.surface }
-  }, [driverRoute, partnerRoute, massageRoute, beauticianRoute, laundryRoute, handymanRoute, homeCleanRoute, tourGuideRoute, rentalRoute, facialRoute, skincareRoute, carDriverRoute, riderRoute])
+  }, [driverRoute, partnerRoute, massageRoute, beauticianRoute, laundryRoute, handymanRoute, homeCleanRoute, tourGuideRoute, rentalRoute, facialRoute, skincareRoute, carDriverRoute, truckDriverRoute, riderRoute])
 
   return (
     <>

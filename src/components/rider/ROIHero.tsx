@@ -8,20 +8,20 @@ type Props = {
   subscriptionMonthly: number   // typically Rp 38,000
 }
 
-// Indonesian motorcycle ride-hail commission benchmark.
+// Indonesian motorcycle ride-hail commission benchmark (industry max).
 //
-// Pre-June 2026: Gojek/Grab took ~20% of gross fare (driver kept 80%).
-// From June 2026: Perpres No. 27/2026 (signed 1 May 2026) is reported
-// to cap platform commission at 8% MAXIMUM, guaranteeing drivers ≥92%.
-// IndoCity still takes 0% commission (subscription model) — so the
-// honest pitch is "save the 8% Gojek now takes", not 20%.
+// Pre-June 2026: commission-based platforms generally took ~20% of
+// gross fare (driver kept 80%). From June 2026: Perpres No. 27/2026
+// (signed 1 May 2026) is reported to cap platform commission at 8%
+// MAXIMUM, guaranteeing drivers ≥92%. CityRiders takes 0% commission
+// (subscription model) — the honest pitch is "save the 8% other
+// platforms now take", not the legacy 20%.
 //
 // VERIFY BEFORE LAUNCH (audit 2026-05): confirm Perpres 27/2026 actually
 // exists and the 8% figure is published. Citing an unverified regulation
 // in a public comparative-savings claim exposes us under UU 8/1999 art 9
 // (deceptive advertising). If the regulation isn't published / hasn't
-// landed, fall back to a sourced industry-research range (Gojek/Grab
-// actual take-rate from a public report).
+// landed, fall back to a sourced industry-research range.
 const COMPETITOR_COMMISSION_RATE = 0.08
 const COMPETITOR_COMMISSION_BASIS = 'Perpres 27/2026 — komisi maksimal 8% per pesanan, berlaku Juni 2026'
 
@@ -31,17 +31,17 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
   const target = 5            // 5× is the goal we steer riders toward
   const progressPct = Math.min(100, Math.round((roi / target) * 100))
 
-  // "vs Gojek" savings — gross fare × competitor commission rate − our
-  // flat subscription. This is the shareable headline that drivers
-  // screenshot into WhatsApp groups.
+  // Commission-platform savings — gross fare × competitor commission rate
+  // − our flat subscription. Shareable headline drivers screenshot into
+  // WhatsApp groups.
   const competitorCommission = Math.round(monthlyLeadsValue * COMPETITOR_COMMISSION_RATE)
   const netSavedVsCompetitor = Math.max(0, competitorCommission - subscriptionMonthly)
 
   function onShareSavings() {
     if (typeof window === 'undefined') return
-    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan Kita2u — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali (Gojek/Grab masih potong 8% per Perpres 27/2026).
+    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan CityRiders — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali.
 
-Cek di indocity.streetlocal.live`
+Cek di cityriders.id`
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
@@ -116,13 +116,13 @@ Cek di indocity.streetlocal.live`
             }}
           >
             <div className="text-[12px] uppercase tracking-wider font-extrabold" style={{ color: '#22C55E' }}>
-              vs Gojek / Grab
+              vs commission platforms
             </div>
             <div className="text-[15px] font-extrabold mt-1 leading-snug text-[#0A0A0A]">
-              You saved <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
+              You kept <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
             </div>
             <div className="text-[12px] text-gray-600 mt-1">
-              They&apos;d have taken {idr(competitorCommission)} (8% of {idr(monthlyLeadsValue)} — {COMPETITOR_COMMISSION_BASIS}). Kita2u takes Rp 0.
+              An 8%-commission platform would have taken {idr(competitorCommission)} from {idr(monthlyLeadsValue)} in gross fares ({COMPETITOR_COMMISSION_BASIS}). CityRiders takes Rp 0.
             </div>
             <button
               onClick={onShareSavings}

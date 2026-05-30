@@ -289,26 +289,25 @@ export default async function CityRidersParcelHubPage() {
           </Link>
         </header>
 
-        {/* ─── Hero text — what this page actually is, on white. No
-             yellow strip, no rate-card, just enough to orient an
-             arriving UMKM seller or one-off city-delivery customer. */}
+        {/* ─── Hero text — what this page actually is, on white. */}
         <section className="px-5 pt-4 pb-5 bg-white">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
             Bulk parcel &middot; city delivery
           </div>
           <h1 className="text-[22px] sm:text-[26px] font-black leading-[1.1] tracking-tight text-[#0A0A0A]">
-            Find a driver for your parcels.
+            Lowest customer-paid rates in Yogyakarta.
           </h1>
           <p className="mt-2 text-[13px] font-bold text-[#0A0A0A]/75 leading-snug">
-            For online sellers shipping daily, or one-off intra-city drops.
+            Direct driver pricing &middot; no commission &middot; no platform fees added.
           </p>
           <p className="mt-1 text-[12.5px] font-bold text-[#0A0A0A]/55 leading-snug">
-            Untuk UMKM, toko online (Shopee / Tokopedia / TikTok), atau kirim
-            paket sekali dalam kota.
+            Untuk UMKM, toko online, atau kirim paket sekali dalam kota.
+            Harga driver langsung — tidak ada komisi platform.
           </p>
           <p className="mt-3 text-[12px] text-[#71717A] leading-relaxed">
             Pick a vehicle &middot; see the lowest rate &middot; tap the driver
-            and arrange the contract on WhatsApp. <strong className="text-[#0A0A0A]">100% of what you pay goes to the driver.</strong>
+            and arrange the contract on WhatsApp.{' '}
+            <strong className="text-[#0A0A0A]">Every rupiah you pay goes to the driver.</strong>
           </p>
         </section>
 

@@ -22,8 +22,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Loader2, Car, User, Pencil, Layers, CreditCard, Wallet, Flame,
-  QrCode, Sparkles, HelpCircle, FileText, ShieldCheck, ArrowRight,
+  Sparkles, HelpCircle, FileText, ShieldCheck, ArrowRight,
   CheckCircle2, AlertTriangle, Clock, MessageCircle, ExternalLink,
+  BarChart3,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -236,40 +237,10 @@ function DashboardHome({ row, onReload }: { row: CarDriverOverview; onReload: ()
         />
       </section>
 
-      {/* Quick action grid — each tile routes to a focused subpage */}
-      <section className="mb-4">
-        <SectionLabel>Manage your profile</SectionLabel>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-          <ActionCard href="/dashboard/car/info"     icon={<User      className="w-5 h-5" strokeWidth={2.5} />} title="Profile info"      hint="Name, bio, area" />
-          <ActionCard href="/dashboard/car/edit"     icon={<Pencil    className="w-5 h-5" strokeWidth={2.5} />} title="Page design"       hint="Banner, hero" />
-          <ActionCard href="/dashboard/car/vehicle"  icon={<Car       className="w-5 h-5" strokeWidth={2.5} />} title="Vehicle details"   hint={vehicleLabel === 'Vehicle not set' ? 'Set up' : 'Photos, specs'} />
-          <ActionCard href="/dashboard/car/services" icon={<Layers    className="w-5 h-5" strokeWidth={2.5} />} title="Services & rates"  hint="Per-km, airport, rental" />
-          <ActionCard href="/dashboard/car/payments" icon={<CreditCard className="w-5 h-5" strokeWidth={2.5} />} title="Payment methods"   hint="Cash, QR, transfer" />
-          <ActionCard href="/dashboard/car/subscription" icon={<Wallet className="w-5 h-5" strokeWidth={2.5} />} title="Subscription"      hint={sub.kind === 'active' ? `${sub.daysLeft}d left` : sub.kind === 'expired' ? 'Past due' : 'Pay to activate'} />
-        </div>
-      </section>
-
-      <section className="mb-4">
-        <SectionLabel>Grow your bookings</SectionLabel>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-          <ActionCard href="/dashboard/car/stats"  icon={<Flame    className="w-5 h-5" strokeWidth={2.5} />} title="Stats"        hint="Views, clicks" />
-          <ActionCard href="/dashboard/car/qr"     icon={<QrCode   className="w-5 h-5" strokeWidth={2.5} />} title="Profile QR"   hint="Print, share" />
-          <ActionCard href="/dashboard/car/social" icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />} title="Social posts" hint="20/month, free" highlight />
-        </div>
-      </section>
-
-      <section className="mb-4">
-        <SectionLabel>Trust &amp; legal</SectionLabel>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <ActionCard compact href="/dashboard/car/faq"     icon={<HelpCircle  className="w-5 h-5" strokeWidth={2.5} />} title="FAQ" />
-          <ActionCard compact href="/dashboard/car/terms"   icon={<FileText    className="w-5 h-5" strokeWidth={2.5} />} title="Terms" />
-          <ActionCard compact href="/dashboard/car/privacy" icon={<ShieldCheck className="w-5 h-5" strokeWidth={2.5} />} title="Privacy" />
-        </div>
-      </section>
-
-      {/* Public profile link */}
+      {/* Public profile link — surfaced near the top so drivers preview
+          what customers see at a glance. */}
       {profileHref && (
-        <section className="mb-6">
+        <section className="mb-4">
           <Link
             href={profileHref}
             className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white border-2 border-dashed border-[#FACC15] hover:bg-[#FFFBEA] transition active:scale-[0.99]"
@@ -284,16 +255,39 @@ function DashboardHome({ row, onReload }: { row: CarDriverOverview; onReload: ()
         </section>
       )}
 
-      {/* Legacy fallback — temporary until Phase 1B finishes moving
-          existing sections into the subpages. Deletion tracked at the
-          top of /dashboard/car/legacy/page.tsx. */}
+      {/* The Six Pages — the founder-prioritised core surfaces. Compact
+          tiles, 2-col on mobile / 3-col on sm+, each ~60-80px tall, with
+          a yellow-accent icon chip + charcoal title. */}
       <section className="mb-4">
-        <Link
-          href="/dashboard/car/legacy"
-          className="block text-center text-[11px] font-bold text-black/45 underline-offset-2 hover:underline"
-        >
-          Old dashboard view (temporary)
-        </Link>
+        <SectionLabel>Your six pages</SectionLabel>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+          <SixCard href="/dashboard/car/info"     icon={<User      className="w-4 h-4" strokeWidth={2.5} />} title="Profile" />
+          <SixCard href="/dashboard/car/vehicle"  icon={<Car       className="w-4 h-4" strokeWidth={2.5} />} title="Vehicle details" />
+          <SixCard href="/dashboard/car/services" icon={<Layers    className="w-4 h-4" strokeWidth={2.5} />} title="Services & rates" />
+          <SixCard href="/dashboard/car/social"   icon={<Sparkles  className="w-4 h-4" strokeWidth={2.5} />} title="Social posts" />
+          <SixCard href="/dashboard/car/stats"    icon={<BarChart3 className="w-4 h-4" strokeWidth={2.5} />} title="Stats" />
+          <SixCard href="/dashboard/car/hotspots" icon={<Flame     className="w-4 h-4" strokeWidth={2.5} />} title="City busy areas" />
+        </div>
+      </section>
+
+      {/* Secondary surfaces — design, payments, subscription. Still useful
+          but not on the founder's six-page priority list. */}
+      <section className="mb-4">
+        <SectionLabel>More tools</SectionLabel>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ActionCard compact href="/dashboard/car/edit"         icon={<Pencil     className="w-5 h-5" strokeWidth={2.5} />} title="Page design" />
+          <ActionCard compact href="/dashboard/car/payments"     icon={<CreditCard className="w-5 h-5" strokeWidth={2.5} />} title="Payments" />
+          <ActionCard compact href="/dashboard/car/subscription" icon={<Wallet     className="w-5 h-5" strokeWidth={2.5} />} title="Subscription" />
+        </div>
+      </section>
+
+      <section className="mb-6">
+        <SectionLabel>Trust &amp; legal</SectionLabel>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ActionCard compact href="/dashboard/car/faq"     icon={<HelpCircle  className="w-5 h-5" strokeWidth={2.5} />} title="FAQ" />
+          <ActionCard compact href="/dashboard/car/terms"   icon={<FileText    className="w-5 h-5" strokeWidth={2.5} />} title="Terms" />
+          <ActionCard compact href="/dashboard/car/privacy" icon={<ShieldCheck className="w-5 h-5" strokeWidth={2.5} />} title="Privacy" />
+        </div>
       </section>
     </Shell>
   )
@@ -382,6 +376,33 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <div className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-black/55 mb-2 px-1">
       {children}
     </div>
+  )
+}
+
+// Compact 60-80px tile for the "Your six pages" grid. Single row layout
+// (icon + title) — no hint text, no arrow — so the six fit cleanly in a
+// 2×3 grid above the fold on mobile.
+function SixCard({ href, icon, title }: { href: string; icon: React.ReactNode; title: string }) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-2xl bg-white border border-[#E4E4E7] p-3 flex items-center gap-2.5 hover:border-[#FACC15] hover:shadow-[0_8px_24px_rgba(250,204,21,0.18)] active:scale-[0.99] transition"
+      style={{ minHeight: 64 }}
+    >
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        style={{
+          background: '#FFFBEA',
+          color: '#EAB308',
+          border: '1px solid rgba(250,204,21,0.45)',
+        }}
+      >
+        {icon}
+      </div>
+      <div className="text-[13px] font-black text-[#0A0A0A] leading-tight min-w-0 flex-1">
+        {title}
+      </div>
+    </Link>
   )
 }
 

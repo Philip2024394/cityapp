@@ -35,6 +35,15 @@ type QuotaState = {
   remaining: number
 }
 
+// Driver basics needed by the SharePreviewModal — kept under a separate
+// shape so the existing quota consumers stay backward-compatible.
+type DriverBasics = {
+  business_name:     string
+  slug:              string
+  brand_logo_url:    string | null
+  city:              string | null
+}
+
 async function readQuota(userId: string): Promise<QuotaState> {
   const admin = getAdminSupabase()
   if (!admin) return { month: currentMonth(), used: 0, cap: SOCIAL_QUOTA_MONTHLY, remaining: SOCIAL_QUOTA_MONTHLY }
@@ -49,11 +58,45 @@ async function readQuota(userId: string): Promise<QuotaState> {
   return { month, used, cap: SOCIAL_QUOTA_MONTHLY, remaining: Math.max(0, SOCIAL_QUOTA_MONTHLY - used) }
 }
 
+// Best-effort lookup; if the row is missing we return safe defaults so
+// the share modal can still render (it falls back to slug/empty city).
+async function readDriverBasics(userId: string): Promise<DriverBasics> {
+  const admin = getAdminSupabase()
+  const fallback: DriverBasics = {
+    business_name:  'CityRiders Driver',
+    slug:           '',
+    brand_logo_url: null,
+    city:           null,
+  }
+  if (!admin) return fallback
+  const { data } = await admin
+    .from('drivers')
+    .select('business_name, slug, brand_logo_url, city')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!data) return fallback
+  return {
+    business_name:  (data.business_name as string | null) ?? fallback.business_name,
+    slug:           (data.slug as string | null) ?? '',
+    brand_logo_url: (data.brand_logo_url as string | null) ?? null,
+    city:           (data.city as string | null) ?? null,
+  }
+}
+
 export async function GET() {
   const supabase = await getServerSupabase()
   const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } }
   if (!user) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
-  return NextResponse.json(await readQuota(user.id))
+  // The GET response keeps the original QuotaState fields at the top
+  // level (callers like the composer already destructure month/used/cap/
+  // remaining) and adds a `driver` block alongside. This preserves
+  // backward compatibility with any older client still reading just the
+  // quota numbers.
+  const [quota, driver] = await Promise.all([
+    readQuota(user.id),
+    readDriverBasics(user.id),
+  ])
+  return NextResponse.json({ ...quota, driver })
 }
 
 export async function POST(req: Request) {

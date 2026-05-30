@@ -1,9 +1,9 @@
-// /drivers/car — Car driver recruitment landing page.
+// /drivers/truck — Truck driver recruitment landing page.
 //
-// Mirror of /drivers (the motorbike landing) but tuned for car drivers:
-// copy emphasises higher-ticket use cases like airport transfers, daily
-// rentals (sewa harian), and family / group transport — different
-// economics from the per-km ojek model.
+// Mirror of /drivers/car but tuned for truck drivers: copy emphasises
+// daily-rate jobs (pindahan, distribusi), multi-day rentals, and large
+// B2B parcel contracts for Shopee sellers / UMKM — very different
+// economics from per-km ojek or hourly car work.
 
 import Link from 'next/link'
 import {
@@ -13,11 +13,11 @@ import {
   Wallet,
   ShieldCheck,
   Sparkles,
-  Plane,
-  Users,
-  Calendar,
-  UserRound,
+  Truck,
   Package,
+  Calendar,
+  Building2,
+  Boxes,
 } from 'lucide-react'
 import FounderCohortCounter from '@/components/pricing/FounderCohortCounter'
 import EarningModeCard from '@/components/recruitment/EarningModeCard'
@@ -28,22 +28,22 @@ import {
 } from '@/lib/pricing/constants'
 
 const HERO_URL =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_53_26%20PM.png'
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2030,%202026,%2005_42_12%20AM.png'
 
 const BRAND_LOGO_URL =
   'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
 
 // Public WhatsApp number for driver-side support. Shared with the
-// motorbike landing; replace with the real ops line when provisioned.
+// motorbike + car landings; replace with the real ops line when provisioned.
 const WA_HELP = '6281234567890'
 
 export const metadata = {
-  title: 'Drive your car with CityRiders — Airport, rental, tours',
+  title: 'Drive your truck with CityRiders — Pindahan, distribusi, bulk parcel',
   description:
-    'Join CityRiders as a car driver. You set the rates. Customers pay you directly via WhatsApp. Built for airport transfers, daily rentals, and tours.',
+    'Join CityRiders as a truck driver. You set the daily rate. Customers pay you directly via WhatsApp. Built for pindahan, distribusi, and bulk parcel delivery.',
 }
 
-export default function CarDriversLandingPage() {
+export default function TruckDriversLandingPage() {
   return (
     <main
       className="relative min-h-[100dvh] text-[#0A0A0A]"
@@ -53,11 +53,11 @@ export default function CarDriversLandingPage() {
       }}
     >
       {/* Mobile-only design — centred on desktop as a phone-frame
-          preview. Same lock as /drivers. */}
+          preview. Same lock as /drivers and /drivers/car. */}
       <div className="mx-auto bg-white lg:my-6 lg:max-w-[480px] lg:rounded-[32px] lg:shadow-[0_24px_80px_rgba(10,10,10,0.18)] lg:overflow-hidden">
       {/* ─── Hero ────────────────────────────────────────────────────── */}
       <section className="relative">
-        {/* HERO — flex-column layout matching /drivers. Header pinned
+        {/* HERO — flex-column layout matching /drivers/car. Header pinned
             top, headline + CTAs pinned bottom, flexible spacer absorbs
             the middle so nothing overflows 100dvh. */}
         <div
@@ -67,7 +67,7 @@ export default function CarDriversLandingPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={HERO_URL}
-            alt="CityRiders car driver next to a yellow sedan at sunset in Bali"
+            alt="CityRiders truck driver at sunset in Yogyakarta"
             className="absolute inset-0 w-full h-full object-cover object-center"
             loading="eager"
           />
@@ -96,16 +96,17 @@ export default function CarDriversLandingPage() {
 
           {/* Foreground flex column */}
           <div className="absolute inset-0 z-10 flex flex-col">
-            {/* Header — logo + brand left, "← Bike version" link right.
-                Top padding combines pt-safe (iOS notch / Dynamic Island
-                clearance) with an extra 32px so the brand name is never
-                visually pinched against the notch or the status bar. */}
+            {/* Header — logo + brand left, 3-way Bike/Car/Truck mini
+                selector right. Top padding combines pt-safe (iOS notch
+                / Dynamic Island clearance) with an extra 32px so the
+                brand name is never visually pinched against the notch
+                or the status bar. */}
             <header
               className="shrink-0 flex items-center justify-between gap-2 px-3 pb-2"
               style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 32px)' }}
             >
               <Link
-                href="/drivers/car"
+                href="/drivers/truck"
                 className="inline-flex items-center gap-2 active:scale-[0.97] transition"
                 aria-label="CityRiders home"
               >
@@ -123,7 +124,7 @@ export default function CarDriversLandingPage() {
                   CityRiders
                 </span>
               </Link>
-              <VehicleSwitcher active="car" />
+              <VehicleSwitcher active="truck" />
             </header>
 
             <div className="flex-1 min-h-0" aria-hidden />
@@ -137,26 +138,26 @@ export default function CarDriversLandingPage() {
               style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)' }}
             >
               <h1 className="text-[26px] xs:text-[28px] sm:text-[32px] font-black leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)]">
-                Your car.<br />
-                <span style={{ color: '#FACC15' }}>Your rates.</span>
+                Your truck.<br />
+                <span style={{ color: '#FACC15' }}>Your daily rate.</span>
               </h1>
               <p className="mt-2.5 text-[13px] text-white/85 leading-relaxed">
-                Airport transfers, daily rentals, tours — you choose.
+                Pindahan, distribusi, bulk parcel — you choose.
                 Customers pay you directly. No platform cut.
               </p>
 
               <div className="mt-4 flex flex-col gap-2">
                 <Link
-                  href="/signup?role=driver&vehicle=car"
+                  href="/signup?role=driver&vehicle=truck"
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
                   style={{ minHeight: 48 }}
                 >
-                  List your car
+                  List your truck
                   <ArrowRight className="w-4 h-4" strokeWidth={3} />
                 </Link>
                 <a
                   href={`https://wa.me/${WA_HELP}?text=${encodeURIComponent(
-                    "Hi, I'm interested in listing my car on CityRiders. Can I get more info?",
+                    "Hi, I'm interested in listing my truck on CityRiders. Can I get more info?",
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -186,7 +187,7 @@ export default function CarDriversLandingPage() {
             What you can offer
           </div>
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Four ways to earn from one car.
+            Four ways to earn from one truck.
           </h2>
           <p className="mt-3 text-[14px] text-black/65 max-w-xl mx-auto">
             You decide. Show one service or all of them on your public
@@ -196,24 +197,24 @@ export default function CarDriversLandingPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <UseCase
-            icon={<Plane className="w-5 h-5" strokeWidth={2.5} />}
-            title="Airport transfers"
-            body="YIA, Adisutjipto, DPS — fixed fare, customers reserve via WhatsApp, you confirm the pickup time."
+            icon={<Truck className="w-5 h-5" strokeWidth={2.5} />}
+            title="Pindahan rumah / kantor"
+            body="Household + office moves. Day rate + crew. Customers reserve via WhatsApp, you confirm date and load size."
+          />
+          <UseCase
+            icon={<Building2 className="w-5 h-5" strokeWidth={2.5} />}
+            title="Distribusi & supply runs"
+            body="Hardware stores, building supply, market restocks. Set per-trip or daily rate. Regulars become weekly contracts."
+          />
+          <UseCase
+            icon={<Boxes className="w-5 h-5" strokeWidth={2.5} />}
+            title="Bulk parcel for sellers"
+            body="Shopee, Tokopedia, UMKM warehouses. Pickup + drop large daily volumes. Often a fixed monthly contract."
           />
           <UseCase
             icon={<Calendar className="w-5 h-5" strokeWidth={2.5} />}
-            title="Daily rental (self-drive or with driver)"
-            body="Rent by the day, weekend, or week. You set the deposit and terms."
-          />
-          <UseCase
-            icon={<Users className="w-5 h-5" strokeWidth={2.5} />}
-            title="Family / group tours"
-            body="Yogyakarta, Bali, or cross-city tours. Day rate + fuel. You drive and guide."
-          />
-          <UseCase
-            icon={<Smartphone className="w-5 h-5" strokeWidth={2.5} />}
-            title="Per-trip transport"
-            body="Regular intra-city trips. You set the per-km rate and minimum fee."
+            title="Multi-day rental"
+            body="Rent by the day, weekend, or project. You set the deposit, fuel terms, and driver availability."
           />
         </div>
       </section>
@@ -232,16 +233,17 @@ export default function CarDriversLandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <Step n={1} icon={<Smartphone className="w-5 h-5" strokeWidth={2.5} />} title="Sign up &amp; verify">
-              Upload ID, vehicle registration, car photos. Verified within
-              24 hours. Profile goes live in one business day.
+              Upload ID, vehicle registration (STNK), truck photos, load
+              capacity. Verified within 24 hours. Profile goes live in one
+              business day.
             </Step>
             <Step n={2} icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />} title="Customers find you">
-              Your profile appears in car search. They see your rates, car
-              type, services — and tap WhatsApp to book.
+              Your profile appears in truck search. They see your daily
+              rate, truck size, services — and tap WhatsApp to book.
             </Step>
             <Step n={3} icon={<Wallet className="w-5 h-5" strokeWidth={2.5} />} title="Agree &amp; drive">
-              Rate, time, location — all in chat. They pay cash or your own
-              QRIS. You keep 100%, no platform cut.
+              Rate, schedule, load — all in chat. They pay cash, transfer,
+              or your own QRIS. You keep 100%, no platform cut.
             </Step>
           </div>
         </div>
@@ -251,33 +253,66 @@ export default function CarDriversLandingPage() {
       <section className="px-5 py-12">
         <div className="text-center mb-10">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-            Why CityRiders
+            Why drivers love this
           </div>
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Your rates. Your customers. Your earnings.
+            Daily rates. Big jobs. Regular contracts.
           </h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Differentiator
             icon={<Wallet className="w-5 h-5" strokeWidth={2.5} />}
-            title="0% commission per trip"
-            body={`Just ${MONTHLY_PRICE_LABEL}/month flat. Daily rental at Rp 500,000? You keep all of it.`}
+            title="0% commission per job"
+            body={`Just ${MONTHLY_PRICE_LABEL}/month flat. Pindahan job at Rp 800,000? You keep all of it.`}
           />
           <Differentiator
-            icon={<MessageCircle className="w-5 h-5" strokeWidth={2.5} />}
-            title="Direct relationship"
-            body="Customers WhatsApp you for repeat bookings. Build regulars, not one-shot orders."
+            icon={<Calendar className="w-5 h-5" strokeWidth={2.5} />}
+            title="Daily + multi-day rates"
+            body="Built for bigger jobs. Quote per day, per project, or per weekly contract — not per kilometre."
           />
           <Differentiator
             icon={<ShieldCheck className="w-5 h-5" strokeWidth={2.5} />}
-            title="Pick your services"
-            body="Airport only? Daily rentals only? Tours only? All of them? Your public profile shows what you offer."
+            title="Big jobs, real margins"
+            body="Pindahan, distribusi, building supply, bulk parcel for Shopee sellers. Higher ticket than per-km transport."
           />
           <Differentiator
             icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />}
             title="Personal page"
-            body="A cityriders.id/car/you page you can share to regulars, partner hotels, or Instagram."
+            body="A cityriders.id/truck/you page you can share to repeat clients, supply contracts, or distributor groups."
+          />
+        </div>
+      </section>
+
+      {/* ─── Typical day ────────────────────────────────────────────── */}
+      <section className="px-5 py-12 bg-white">
+        <div className="text-center mb-8">
+          <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
+            Typical day
+          </div>
+          <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
+            One booking can pay for the week.
+          </h2>
+          <p className="mt-2 text-[13px] sm:text-[14px] text-black/70 max-w-md mx-auto">
+            Truck work is fewer jobs, bigger margins — not the per-km grind.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-md sm:max-w-2xl mx-auto">
+          <MetricCard
+            label="Daily rate range"
+            value="Rp 400–800k"
+            sub="Per-day quote. Driver-set, no surge cap."
+          />
+          <MetricCard
+            label="Pindahan job"
+            value="Rp 600k+"
+            sub="One household move. Day rate + crew."
+          />
+          <MetricCard
+            label="Weekly contract"
+            value="Rp 2–4M"
+            sub="Bulk parcel for one UMKM seller."
           />
         </div>
       </section>
@@ -289,25 +324,25 @@ export default function CarDriversLandingPage() {
             Two ways to earn
           </div>
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Passengers and parcels — one car.
+            Moving jobs and bulk parcel — one truck.
           </h2>
           <p className="mt-2 text-[13px] sm:text-[14px] text-black/70 max-w-md mx-auto">
-            Penumpang dan paket — satu mobil, dua sumber penghasilan.
+            Pindahan dan paket besar — satu truk, dua sumber penghasilan.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md sm:max-w-2xl mx-auto">
           <EarningModeCard
-            icon={<UserRound className="w-5 h-5" strokeWidth={2.5} />}
-            title="Passenger trips"
-            subtitle="Antar penumpang"
-            body="Airport runs, family rides, hotel transfers, daily rental. Set your per-km rate and minimum fee."
+            icon={<Truck className="w-5 h-5" strokeWidth={2.5} />}
+            title="Pindahan & distribusi"
+            subtitle="Moving + distribution"
+            body="Household moves, hardware deliveries, market supply runs. Day rate + crew. Customers book by date, not by kilometre."
           />
           <EarningModeCard
             icon={<Package className="w-5 h-5" strokeWidth={2.5} />}
-            title="Cargo & parcel"
-            subtitle="Kirim barang"
-            body="Larger items, multiple boxes, inter-city couriers. Cars carry what bikes can't — often a premium rate."
+            title="Bulk parcel B2B"
+            subtitle="Kontrak paket UMKM"
+            body="Shopee sellers, Tokopedia warehouses, large daily volumes. Often weekly or monthly contracts — stable repeat income."
           />
         </div>
 
@@ -338,17 +373,17 @@ export default function CarDriversLandingPage() {
           </div>
 
           <ul className="mt-6 space-y-2.5 text-[13px] sm:text-[14px] text-black/80">
-            <Bullet>Your personal public page (cityriders.id/car/you)</Bullet>
-            <Bullet>Offer airport transfers, daily rentals, or tours</Bullet>
-            <Bullet>Listed in Yogyakarta, Bali, Jogja car search</Bullet>
-            <Bullet>0% commission per trip — forever</Bullet>
+            <Bullet>Your personal public page (cityriders.id/truck/you)</Bullet>
+            <Bullet>Offer pindahan, distribusi, or bulk parcel contracts</Bullet>
+            <Bullet>Listed in Yogyakarta, Bali, Jogja truck search</Bullet>
+            <Bullet>0% commission per job — forever</Bullet>
             <Bullet>WhatsApp direct — customers chat you</Bullet>
-            <Bullet>Set fixed rates or per-km rates yourself</Bullet>
+            <Bullet>Set daily rates, project rates, or contracts yourself</Bullet>
           </ul>
 
           <div className="mt-7 flex flex-col sm:flex-row gap-3">
             <Link
-              href="/signup?role=driver&vehicle=car"
+              href="/signup?role=driver&vehicle=truck"
               className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.45)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
@@ -366,7 +401,7 @@ export default function CarDriversLandingPage() {
       <section className="bg-[#0A0A0A] text-white">
         <div className="px-5 py-12 text-center">
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Ready to make your car earn?
+            Ready to make your truck earn?
           </h2>
           <p className="mt-3 text-[14px] sm:text-[16px] text-white/70 max-w-xl mx-auto">
             Join the first 1,000 founder drivers and lock in
@@ -375,7 +410,7 @@ export default function CarDriversLandingPage() {
           </p>
           <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
             <Link
-              href="/signup?role=driver&vehicle=car"
+              href="/signup?role=driver&vehicle=truck"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
@@ -384,7 +419,7 @@ export default function CarDriversLandingPage() {
             </Link>
             <a
               href={`https://wa.me/${WA_HELP}?text=${encodeURIComponent(
-                "Hi, I'm interested in listing my car on CityRiders. Can I get more info?",
+                "Hi, I'm interested in listing my truck on CityRiders. Can I get more info?",
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -412,9 +447,8 @@ export default function CarDriversLandingPage() {
 
 // 3-way Bike/Car/Truck mini selector. Active chip renders as plain
 // text (no link); inactive chips are pill links. Matches the existing
-// cross-nav pill style: white-blur background, rounded-full, 11px
-// font, charcoal text. Duplicated in /drivers and /drivers/truck —
-// same pattern these pages already use for Step/Differentiator/Bullet.
+// cross-nav pill style used on /drivers and /drivers/car: white-blur
+// background, rounded-full, 11px font, charcoal text.
 function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'truck' }) {
   const items: { key: 'bike' | 'car' | 'truck'; label: string; href: string }[] = [
     { key: 'bike', label: 'Bike', href: '/drivers' },
@@ -527,6 +561,26 @@ function Differentiator({
   )
 }
 
+function MetricCard({
+  label, value, sub,
+}: {
+  label: string
+  value: string
+  sub: string
+}) {
+  return (
+    <div className="rounded-2xl bg-white border border-black/10 p-5 text-center hover:border-[#FACC15] hover:shadow-[0_8px_24px_rgba(250,204,21,0.18)] transition">
+      <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-1.5">
+        {label}
+      </div>
+      <div className="text-[20px] sm:text-[22px] font-black leading-tight text-[#0A0A0A]">
+        {value}
+      </div>
+      <div className="mt-1.5 text-[12px] text-black/60 leading-relaxed">{sub}</div>
+    </div>
+  )
+}
+
 function Bullet({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2.5">
@@ -541,3 +595,4 @@ function Bullet({ children }: { children: React.ReactNode }) {
     </li>
   )
 }
+
