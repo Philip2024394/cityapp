@@ -104,3 +104,39 @@ without per-route refactors.
 Re-run `supabase gen types typescript` after every migration that adds,
 renames, or drops a column. Add it to the migration PR template so the
 typed file moves in lockstep with the SQL.
+
+## Phase 1 outcome (2026-05-30)
+
+Migration `0159_schema_reconcile_pass1.sql` landed three additive fixes:
+
+- `drivers.bike_photo_url text` — restored (read by `/r/[slug]` bike loader)
+- `tour_guide_listings.paid_until date` — restored (read by `/admin/providers`)
+- `public.drivers_public` view — recreated to expose `bike_photo_url` (mirrors
+  the 0096 pattern: drop+recreate, payment instruments still omitted)
+
+Types regenerated via `supabase gen types typescript` after apply
+(6,794 → 6,803 lines).
+
+Probe (typed `<Database>` on `admin.ts` only):
+
+- Before reconciliation: **78 errors**
+- After 0159 + regen:    **63 errors** (-15)
+
+Still above the <30 ship threshold → typed clients remain **deferred**.
+Remaining errors by category (admin.ts probe):
+
+| Category                                                    | Count |
+|-------------------------------------------------------------|------:|
+| `TS2345` RejectExcessProperties on `Record<string,unknown>` |    42 |
+| `TS2769` dynamic `from(someVar)` — Tables['T'] union narrow |    10 |
+| `TS2339` cascaded from TS2769 SelectQueryError              |     6 |
+| `TS2352` cast through SelectQueryError                      |     2 |
+| `TS2322` `Json` assignability                               |     3 |
+
+No further column drift remains — every TS2339 in the post-0159 list is a
+downstream consequence of a dynamic-table-name TS2769, not a real missing
+column. **Phase 2 is now purely a code refactor**: typed `AdminUpdate<'T'>`
+helpers + narrowed table-name unions for the 8 dynamic `from()` callsites
+(`api/checkout`, `api/connect-intent`, `api/orders/[id]`, `api/reviews`,
+`api/webhooks/midtrans`, `api/kita/handle-check`, `dashboard/page.tsx`,
+`lib/admin/health.ts`).

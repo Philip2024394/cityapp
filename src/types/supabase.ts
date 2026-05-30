@@ -1666,6 +1666,7 @@ export type Database = {
           bike_color: string | null
           bike_make: string | null
           bike_model: string | null
+          bike_photo_url: string | null
           bike_plate: string | null
           bike_type: string | null
           bike_year: number | null
@@ -1770,6 +1771,7 @@ export type Database = {
           bike_color?: string | null
           bike_make?: string | null
           bike_model?: string | null
+          bike_photo_url?: string | null
           bike_plate?: string | null
           bike_type?: string | null
           bike_year?: number | null
@@ -1874,6 +1876,7 @@ export type Database = {
           bike_color?: string | null
           bike_make?: string | null
           bike_model?: string | null
+          bike_photo_url?: string | null
           bike_plate?: string | null
           bike_type?: string | null
           bike_year?: number | null
@@ -5122,6 +5125,7 @@ export type Database = {
           notes: string | null
           operating_hours: Json | null
           owner_user_id: string
+          paid_until: string | null
           promo_text: string | null
           rating: number | null
           rejection_note: string | null
@@ -5177,6 +5181,7 @@ export type Database = {
           notes?: string | null
           operating_hours?: Json | null
           owner_user_id: string
+          paid_until?: string | null
           promo_text?: string | null
           rating?: number | null
           rejection_note?: string | null
@@ -5232,6 +5237,7 @@ export type Database = {
           notes?: string | null
           operating_hours?: Json | null
           owner_user_id?: string
+          paid_until?: string | null
           promo_text?: string | null
           rating?: number | null
           rejection_note?: string | null
@@ -5493,6 +5499,7 @@ export type Database = {
           bike_color: string | null
           bike_make: string | null
           bike_model: string | null
+          bike_photo_url: string | null
           bike_plate: string | null
           bike_type: string | null
           bike_year: number | null
@@ -5562,6 +5569,7 @@ export type Database = {
           bike_color?: string | null
           bike_make?: string | null
           bike_model?: string | null
+          bike_photo_url?: string | null
           bike_plate?: string | null
           bike_type?: string | null
           bike_year?: number | null
@@ -5631,6 +5639,7 @@ export type Database = {
           bike_color?: string | null
           bike_make?: string | null
           bike_model?: string | null
+          bike_photo_url?: string | null
           bike_plate?: string | null
           bike_type?: string | null
           bike_year?: number | null
