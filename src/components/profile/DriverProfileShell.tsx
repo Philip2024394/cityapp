@@ -14,6 +14,7 @@ import { useGeolocation } from '@/hooks/useGeolocation'
 import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { haversineKm } from '@/lib/geo/haversine'
 import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
+import { buildBookingWaLink } from '@/lib/whatsapp/buildBookingMessage'
 import { idr } from '@/lib/format/idr'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl } from '@/data/carImages'
@@ -209,11 +210,11 @@ const ROUTE_TEMPLATES: string[] = [
 ]
 
 // -----------------------------------------------------------------------------
-// Compose the WhatsApp deep-link body. Caller passes the driver they're
-// contacting + the trip inputs; this returns either a wa.me URL ready
-// to open or '' when the phone number is unusable. Kept here (not in
-// lib/whatsapp/buildLink.ts) because the message shape is specific to
-// the new shell — multi-stop, typed-only addresses, no geocoded coords.
+// Compose the WhatsApp deep-link body. Thin adapter around the canonical
+// buildBookingWaLink in @/lib/whatsapp/buildBookingMessage — re-shapes the
+// shell's flat label state + multi-stop list + optional estimate breakdown
+// into the unified options object. Returns '' when the driver's phone is
+// unusable so the caller can disable the CTA.
 // -----------------------------------------------------------------------------
 function buildShellWhatsAppLink(opts: {
   driver:    DriverPublic
@@ -225,31 +226,17 @@ function buildShellWhatsAppLink(opts: {
   mode?:     'ride' | 'parcel'
   estimate?: { minFee: number; pricePerKm: number; pitstopFee: number; numStops: number } | null
 }): string {
-  const wa = normaliseE164ForWaMe(opts.driver.whatsapp_e164 ?? '')
-  if (!wa) return ''
-  const opener = opts.mode === 'parcel'
-    ? `Halo ${opts.driver.business_name}, saya mau kirim paket via CityRiders.`
-    : `Halo ${opts.driver.business_name}, saya mau booking via CityRiders.`
-  const lines: string[] = [opener, '']
-  if (opts.pickup.trim())  lines.push(`📍 Pickup: ${opts.pickup.trim()}`)
-  if (opts.dropoff.trim()) lines.push(`🏁 Drop off: ${opts.dropoff.trim()}`)
-  const extras = opts.stops.map((s) => s.trim()).filter(Boolean)
-  if (extras.length > 0) {
-    lines.push('')
-    extras.forEach((s, i) => lines.push(`🛑 Stop ${i + 1}: ${s}`))
-  }
-  if (opts.estimate) {
-    lines.push(
-      '',
-      `Estimate (driver's own rate):`,
-      `From ${idr(opts.estimate.minFee)} · ${idr(opts.estimate.pricePerKm)}/km`,
-    )
-    if (opts.estimate.numStops > 0 && opts.estimate.pitstopFee > 0) {
-      lines.push(`Pit-stop fee: ${idr(opts.estimate.pitstopFee)} × ${opts.estimate.numStops} stop${opts.estimate.numStops === 1 ? '' : 's'}`)
-    }
-  }
-  lines.push('', 'Apakah tersedia?')
-  return `https://wa.me/${wa}?text=${encodeURIComponent(lines.join('\n'))}`
+  return buildBookingWaLink({
+    driver: {
+      business_name: opts.driver.business_name,
+      whatsapp_e164: opts.driver.whatsapp_e164,
+    },
+    mode: opts.mode ?? 'ride',
+    pickup:   { label: opts.pickup,  coord: null },
+    dropoff:  { label: opts.dropoff, coord: null },
+    stops:    opts.stops,
+    estimate: opts.estimate ?? null,
+  })
 }
 
 // -----------------------------------------------------------------------------

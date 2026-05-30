@@ -1,7 +1,9 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "indocity",
-	"main": ".open-next/worker.js",
+	// Custom entrypoint wraps `.open-next/worker.js` and adds a `scheduled`
+	// handler for Cloudflare Cron Triggers (see worker-entry.mjs).
+	"main": "worker-entry.mjs",
 	"compatibility_date": "2026-04-01",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 	"assets": {
@@ -18,6 +20,26 @@
 		{ "pattern": "cityriders.id",     "custom_domain": true },
 		{ "pattern": "www.cityriders.id", "custom_domain": true }
 	],
+	// Cron Triggers — schedules ported from vercel.json. The scheduled
+	// handler in worker-entry.mjs dispatches each cron expression to its
+	// matching Next.js API route via the WORKER_SELF_REFERENCE binding.
+	//
+	// Required Worker secrets (set with `wrangler secret put <NAME>`):
+	//   - CRON_SECRET — validated by each cron route's `?secret=` gate.
+	//                   If missing, scheduled invocations silently no-op
+	//                   (see worker-entry.mjs).
+	"triggers": {
+		"crons": [
+			"0 1 * * 1",   // payouts/aggregate (weekly Mon)
+			"0 18 * * *",  // subscriptions/expire (daily)
+			"0 19 * * *",  // retention/sweep (daily)
+			"0 20 * * *",  // b2b/recompute-scores (daily)
+			"0 21 * * *",  // payment-intents/expire (daily)
+			"0 1 * * *",   // reminders/payments (daily 08:00 WIB)
+			"0 2 * * *",   // pdp/overdue (daily)
+			"0 3 * * 1"    // cron/partner-suspend (weekly Mon)
+		]
+	},
 	"observability": {
 		"enabled": true
 	}

@@ -245,73 +245,155 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
 
 // -----------------------------------------------------------------------------
 // Alternatives loader — populated only when the page driver is NOT online.
-// Queries the public `drivers_public` view via the admin client for active
-// car drivers excluding the current slug, capped at 5 rows. Sort is done
+// UNIONs real car drivers from `drivers_public` with visible car mocks from
+// `mock_drivers`, excluding the current slug, capped at 10 rows total.
+// Without the mock union, customers landing on an offline mock driver's
+// profile would see "no alternatives" even though the demo pool has other
+// online mock cars (HIGH-severity booking-accuracy bug). Sort is done
 // inside the shell once we have both anchors.
 // -----------------------------------------------------------------------------
 async function loadAlternativeCarDrivers(excludeSlug: string): Promise<CarDriver[]> {
   const admin = getAdminSupabase()
   if (!admin) return []
-  const { data, error } = await admin
-    .from('drivers_public')
-    .select(`
-      user_id, slug, business_name, bio, whatsapp_e164, brand_logo_url,
-      city, area, rating, trips_count, availability,
-      min_fee, price_per_km, pitstop_fee, service_zone_radius_km,
-      vehicle_type, vehicle_make, vehicle_model, vehicle_year,
-      vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
-      services, current_lat, current_lng
-    `)
-    .eq('vehicle_type', 'car')
-    .eq('availability', 'online')
-    .neq('slug', excludeSlug)
-    .order('last_active_at', { ascending: false, nullsFirst: false })
-    .limit(5)
-  if (error || !data) return []
-  return (data as Record<string, unknown>[]).map((r) => ({
-    source:                 'real',
-    id:                     String(r.user_id ?? r.slug),
-    slug:                   String(r.slug ?? ''),
-    business_name:          String(r.business_name ?? ''),
-    bio:                    (r.bio as string | null) ?? null,
-    whatsapp_e164:          (r.whatsapp_e164 as string | null) ?? null,
-    profile_image_url:      (r.brand_logo_url as string | null) ?? null,
-    city:                   (r.city as string | null) ?? null,
-    area:                   (r.area as string | null) ?? null,
-    rating:                 (r.rating as number | null) ?? null,
-    trips_count:            (r.trips_count as number | null) ?? null,
-    availability:           (r.availability as CarDriver['availability']) ?? null,
-    min_fee:                (r.min_fee as number | null) ?? null,
-    price_per_km:           (r.price_per_km as number | null) ?? null,
-    pitstop_fee:            (r.pitstop_fee as number | null) ?? null,
-    service_zone_radius_km: (r.service_zone_radius_km as number | null) ?? null,
-    vehicle_make:           (r.vehicle_make as string | null) ?? null,
-    vehicle_model:          (r.vehicle_model as string | null) ?? null,
-    vehicle_year:           (r.vehicle_year as number | null) ?? null,
-    vehicle_color:          (r.vehicle_color as string | null) ?? null,
-    vehicle_plate:          (r.vehicle_plate as string | null) ?? null,
-    vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
-    vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
-    services:               parseServices(r.services),
-    service_offerings:      [],  // drivers_public view doesn't expose service_offerings yet (deferred — same pattern as cover_image_url)
-    current_lat:            (r.current_lat as number | null) ?? null,
-    current_lng:            (r.current_lng as number | null) ?? null,
-    cover_image_url:        null,  // drivers_public view doesn't expose cover_image_url yet (deferred)
-    // Hourly + availability + parcel columns aren't on drivers_public yet;
-    // alternative cards don't render the full Services tab UI so null is fine.
-    hourly_enabled:         null,
-    hourly_3h_rate_idr:     null,
-    hourly_6h_rate_idr:     null,
-    hourly_8h_rate_idr:     null,
-    working_hours_start:    null,
-    working_hours_end:      null,
-    available_sunrise:      null,
-    available_daytime:      null,
-    available_evening:      null,
-    available_nightlife:    null,
-    parcel_rate_tiers:      null,
-    languages:              [],
-  }))
+  const [realRes, mockRes] = await Promise.all([
+    admin
+      .from('drivers_public')
+      .select(`
+        user_id, slug, business_name, bio, whatsapp_e164, brand_logo_url,
+        city, area, rating, trips_count, availability,
+        min_fee, price_per_km, pitstop_fee, service_zone_radius_km,
+        vehicle_type, vehicle_make, vehicle_model, vehicle_year,
+        vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
+        services, current_lat, current_lng
+      `)
+      .eq('vehicle_type', 'car')
+      .eq('availability', 'online')
+      .neq('slug', excludeSlug)
+      .order('last_active_at', { ascending: false, nullsFirst: false })
+      .limit(10),
+    admin
+      .from('mock_drivers')
+      .select(`
+        id, slug, business_name, bio, whatsapp_e164, profile_image_url,
+        city, area, rating, availability,
+        min_fee, price_per_km,
+        vehicle_type, vehicle_make, vehicle_model, vehicle_year,
+        vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
+        services, service_offerings, cover_image_url
+      `)
+      .eq('vehicle_type', 'car')
+      .eq('availability', 'online')
+      .is('mock_hidden_at', null)
+      .neq('slug', excludeSlug)
+      .limit(10),
+  ])
+
+  const reals: CarDriver[] = (realRes.data ?? []).map((row) => {
+    const r = row as Record<string, unknown>
+    return {
+      source:                 'real',
+      id:                     String(r.user_id ?? r.slug),
+      slug:                   String(r.slug ?? ''),
+      business_name:          String(r.business_name ?? ''),
+      bio:                    (r.bio as string | null) ?? null,
+      whatsapp_e164:          (r.whatsapp_e164 as string | null) ?? null,
+      profile_image_url:      (r.brand_logo_url as string | null) ?? null,
+      city:                   (r.city as string | null) ?? null,
+      area:                   (r.area as string | null) ?? null,
+      rating:                 (r.rating as number | null) ?? null,
+      trips_count:            (r.trips_count as number | null) ?? null,
+      availability:           (r.availability as CarDriver['availability']) ?? null,
+      min_fee:                (r.min_fee as number | null) ?? null,
+      price_per_km:           (r.price_per_km as number | null) ?? null,
+      pitstop_fee:            (r.pitstop_fee as number | null) ?? null,
+      service_zone_radius_km: (r.service_zone_radius_km as number | null) ?? null,
+      vehicle_make:           (r.vehicle_make as string | null) ?? null,
+      vehicle_model:          (r.vehicle_model as string | null) ?? null,
+      vehicle_year:           (r.vehicle_year as number | null) ?? null,
+      vehicle_color:          (r.vehicle_color as string | null) ?? null,
+      vehicle_plate:          (r.vehicle_plate as string | null) ?? null,
+      vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
+      vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
+      services:               parseServices(r.services),
+      service_offerings:      [],  // drivers_public view doesn't expose service_offerings yet (deferred — same pattern as cover_image_url)
+      current_lat:            (r.current_lat as number | null) ?? null,
+      current_lng:            (r.current_lng as number | null) ?? null,
+      cover_image_url:        null,  // drivers_public view doesn't expose cover_image_url yet (deferred)
+      // Hourly + availability + parcel columns aren't on drivers_public yet;
+      // alternative cards don't render the full Services tab UI so null is fine.
+      hourly_enabled:         null,
+      hourly_3h_rate_idr:     null,
+      hourly_6h_rate_idr:     null,
+      hourly_8h_rate_idr:     null,
+      working_hours_start:    null,
+      working_hours_end:      null,
+      available_sunrise:      null,
+      available_daytime:      null,
+      available_evening:      null,
+      available_nightlife:    null,
+      parcel_rate_tiers:      null,
+      languages:              [],
+    }
+  })
+
+  // Mock rows reuse the same per-page driver mock-mapper shape (see
+  // loadCarDriver mock branch above) so the shell renders them identically.
+  const mocks: CarDriver[] = (mockRes.data ?? []).map((row) => {
+    const r = row as Record<string, unknown>
+    return {
+      source:                 'mock',
+      id:                     String(r.id ?? r.slug),
+      slug:                   String(r.slug ?? ''),
+      business_name:          String(r.business_name ?? ''),
+      bio:                    (r.bio as string | null) ?? null,
+      whatsapp_e164:          (r.whatsapp_e164 as string | null) ?? null,
+      profile_image_url:      (r.profile_image_url as string | null) ?? null,
+      city:                   (r.city as string | null) ?? null,
+      area:                   (r.area as string | null) ?? null,
+      rating:                 (r.rating as number | null) ?? null,
+      trips_count:            null,
+      availability:           (r.availability as CarDriver['availability']) ?? null,
+      min_fee:                (r.min_fee as number | null) ?? null,
+      price_per_km:           (r.price_per_km as number | null) ?? null,
+      pitstop_fee:            null,
+      service_zone_radius_km: null,
+      vehicle_make:           (r.vehicle_make as string | null) ?? null,
+      vehicle_model:          (r.vehicle_model as string | null) ?? null,
+      vehicle_year:           (r.vehicle_year as number | null) ?? null,
+      vehicle_color:          (r.vehicle_color as string | null) ?? null,
+      vehicle_plate:          (r.vehicle_plate as string | null) ?? null,
+      vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
+      vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
+      services:               parseServices(r.services),
+      service_offerings:      parseServices(r.service_offerings),
+      current_lat:            null,
+      current_lng:            null,
+      cover_image_url:        (r.cover_image_url as string | null) ?? null,
+      hourly_enabled:         null,
+      hourly_3h_rate_idr:     null,
+      hourly_6h_rate_idr:     null,
+      hourly_8h_rate_idr:     null,
+      working_hours_start:    null,
+      working_hours_end:      null,
+      available_sunrise:      null,
+      available_daytime:      null,
+      available_evening:      null,
+      available_nightlife:    null,
+      parcel_rate_tiers:      null,
+      languages:              MOCK_LANGUAGES[String(r.slug ?? '')] ?? ['id'],
+    }
+  })
+
+  // Dedupe by slug — defence in depth in case a slug ever collides
+  // between the real and mock pools — reals win.
+  const seen = new Set<string>()
+  const merged: CarDriver[] = []
+  for (const d of [...reals, ...mocks]) {
+    if (!d.slug || seen.has(d.slug)) continue
+    seen.add(d.slug)
+    merged.push(d)
+  }
+  return merged
 }
 
 // -----------------------------------------------------------------------------

@@ -25,7 +25,7 @@ import { haversineKm } from '@/lib/geo/haversine'
 import { logNav } from '@/lib/perf/navTiming'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { isHourlyTimeAvailable, HOURLY_TIERS } from '@/lib/pricing/hourlyHire'
-import { normaliseE164ForWaMe } from '@/lib/whatsapp/buildLink'
+import { buildBookingWaLink } from '@/lib/whatsapp/buildBookingMessage'
 import { fireConnectIntent } from '@/lib/connectIntent'
 import type { Rider, ServiceType } from '@/types/rider'
 import { getBikeImageUrl } from '@/data/bikeImages'
@@ -459,20 +459,25 @@ function PlanTripPageInner() {
   // dispatches). Returns '' when the driver's number is unusable —
   // caller falls back to disabling the CTA.
   function buildSelectedWhatsAppLink(d: Rider): string {
-    const wa = normaliseE164ForWaMe(d.whatsappE164 ?? '')
-    if (!wa) return ''
-    const opener = mode === 'parcel'
-      ? `Halo ${d.name}, saya mau kirim paket via CityRiders.`
-      : `Halo ${d.name}, saya mau pesan ride via CityRiders.`
-    const lines: string[] = [opener, '']
-    if (pickupLabel.trim())  lines.push(`📍 Pickup: ${pickupLabel.trim()}`)
-    if (dropoffLabel.trim()) lines.push(`🏁 Drop off: ${dropoffLabel.trim()}`)
-    if (pitstopOpen && pitstopNote.trim()) lines.push(`🛑 Stop: ${pitstopNote.trim()}`)
-    if (tripKm != null && Number.isFinite(tripKm)) {
-      lines.push('', `📏 Jarak: ±${tripKm.toFixed(1)} km`)
-    }
-    lines.push('', 'Apakah tersedia?')
-    return `https://wa.me/${wa}?text=${encodeURIComponent(lines.join('\n'))}`
+    return buildBookingWaLink({
+      driver: {
+        business_name: d.name,
+        whatsapp_e164: d.whatsappE164 ?? null,
+      },
+      mode,
+      pickup: {
+        label: pickupLabel,
+        coord: pickup ? { lat: pickup.lat, lng: pickup.lng } : null,
+      },
+      dropoff: {
+        label: dropoffLabel,
+        coord: dropoff ? { lat: dropoff.lat, lng: dropoff.lng } : null,
+      },
+      pitstop: pitstopOpen && pitstopNote.trim()
+        ? { note: pitstopNote }
+        : null,
+      tripKm,
+    })
   }
 
   // Legacy "View drivers" navigation is kept available for deep-link

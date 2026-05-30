@@ -34,6 +34,10 @@ type Props = {
    *  viewport. Pass 'down' when the input sits NEAR THE TOP of the
    *  page (e.g. the new pickup card above the map on /cari). */
   dropdownDirection?: 'up' | 'down'
+  /** Fires when the user edits the input text AFTER picking a suggestion,
+   *  signaling the coord no longer matches. Parent should drop stored coords
+   *  to prevent shipping a Maps pin with the wrong label in the WhatsApp body. */
+  onSelectionCleared?: () => void
 }
 
 // Free-text input with debounced Nominatim place-search suggestions.
@@ -43,11 +47,18 @@ type Props = {
 export default function PlaceAutocomplete({
   value, onChange, onSelect, placeholder, className, leftSlot, rightSlot, near, countryCodes, ariaLabel, maxResults, clearOnFocus,
   dropdownDirection = 'up',
+  onSelectionCleared,
 }: Props) {
   const [focused, setFocused] = useState(false)
   const { suggestions: rawSuggestions, loading } = usePlaceSearch(value, { near, countryCodes })
   const suggestions = maxResults ? rawSuggestions.slice(0, maxResults) : rawSuggestions
   const wrapRef = useRef<HTMLDivElement>(null)
+  // Last label the user explicitly PICKED from the autosuggest dropdown.
+  // We compare incoming onChange values against it so any post-pick edit
+  // (or focus-wipe) drops the parent's stored coord — otherwise the
+  // WhatsApp body would ship a Maps pin pointing at the original suggestion
+  // while the typed label has drifted to a different street.
+  const lastSelectedLabel = useRef<string | null>(null)
 
   // Close the dropdown when clicking outside the wrapper. Pointerdown
   // (not click) so the dropdown closes BEFORE other handlers run.
@@ -70,14 +81,29 @@ export default function PlaceAutocomplete({
           className={className}
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value
+            if (lastSelectedLabel.current !== null && next !== lastSelectedLabel.current) {
+              lastSelectedLabel.current = null
+              onSelectionCleared?.()
+            }
+            onChange(next)
+          }}
           onFocus={(e) => {
             setFocused(true)
             if (clearOnFocus) {
               // Wipe the value so the placeholder reappears and the caret
               // blinks in an empty field — the user types their address
               // from scratch. Modern maps-app pattern (Google/Uber/Grab).
-              if (e.currentTarget.value) onChange('')
+              if (e.currentTarget.value) {
+                // Focus-wipe ALSO invalidates any previously-picked coord —
+                // the label about to be typed is unrelated to the old pin.
+                if (lastSelectedLabel.current !== null) {
+                  lastSelectedLabel.current = null
+                  onSelectionCleared?.()
+                }
+                onChange('')
+              }
             } else if (e.currentTarget.value) {
               // Highlight any existing value so the next keystroke replaces
               // it — saves the user a manual clear when editing a pickup
@@ -115,6 +141,7 @@ export default function PlaceAutocomplete({
               type="button"
               onPointerDown={(e) => e.preventDefault()}  // keep input focused so onSelect can run before blur
               onClick={() => {
+                lastSelectedLabel.current = s.label
                 onSelect(s)
                 setFocused(false)
               }}
