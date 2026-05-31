@@ -29,7 +29,7 @@ export default function BusinessCardPage() {
   const profileUrl = ME
     ? (typeof window !== 'undefined'
         ? `${window.location.origin}/r/${ME.slug}`
-        : `https://indocity.id/r/${ME.slug}`)
+        : `https://citydrivers.id/r/${ME.slug}`)
     : ''
 
   function onPrint() {

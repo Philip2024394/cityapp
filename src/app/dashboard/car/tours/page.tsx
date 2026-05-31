@@ -13,7 +13,7 @@
 // template_id, suggested_price as price_idr). Delete is hard-delete
 // scoped to the current user_id.
 //
-// COMPLIANCE: IndoCity stays a software directory under PM 12/2019. We
+// COMPLIANCE: CityDrivers stays a software directory under PM 12/2019. We
 // never set the final price — templates carry suggested prices (~10-20%
 // below market floor) but the driver overrides freely. WhatsApp handoff
 // is the contract; we just present the listing.
@@ -391,14 +391,17 @@ function TourCard({
   return (
     <section className="rounded-3xl bg-white border border-black/10 p-5 shadow-sm space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value.slice(0, 120))}
-          onBlur={commitTitle}
-          maxLength={120}
-          className="flex-1 text-[15px] font-black text-[#0A0A0A] leading-tight bg-transparent border-b border-transparent focus:border-[#FACC15] focus:outline-none px-0 py-1"
-        />
+        <div className="flex-1 min-w-0">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value.slice(0, 60))}
+            onBlur={commitTitle}
+            maxLength={60}
+            className="w-full text-[15px] font-black text-[#0A0A0A] leading-tight bg-transparent border-b border-transparent focus:border-[#FACC15] focus:outline-none px-0 py-1"
+          />
+          <div className="text-[10px] text-black/40 mt-0.5">{title.length}/60</div>
+        </div>
         {/* Publish toggle */}
         <button
           type="button"
@@ -418,15 +421,15 @@ function TourCard({
         </button>
       </div>
 
-      <Field label="Description" saving={busyField === 'description'}>
+      <Field label={`Description (${description.length}/280)`} saving={busyField === 'description'}>
         <textarea
           value={description}
-          onChange={(e) => setDescription(e.target.value.slice(0, 800))}
+          onChange={(e) => setDescription(e.target.value.slice(0, 280))}
           onBlur={commitDescription}
-          maxLength={800}
+          maxLength={280}
           rows={4}
           className={inputCls + ' resize-y leading-relaxed'}
-          placeholder="What the customer can expect from this tour."
+          placeholder="Leave blank to use the curated place description, or write your own (max 280 chars)."
         />
       </Field>
 

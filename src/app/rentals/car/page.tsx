@@ -9,7 +9,7 @@ import type { RentalType } from '@/components/marketplace/RentalDriverCard'
 // ============================================================================
 // /rentals/car — Car-rental marketplace
 // ----------------------------------------------------------------------------
-// IndoCity rental hub for cars. Drivers list their vehicle for self-drive
+// CityDrivers rental hub for cars. Drivers list their vehicle for self-drive
 // (lepas kunci) OR with-driver (by-day chauffeur) hire. Distinct from /car
 // (the per-km live-ride marketplace) — different mental model, different
 // pricing surface.
@@ -23,7 +23,7 @@ import type { RentalType } from '@/components/marketplace/RentalDriverCard'
 //
 // Compliance copy:
 //   • "From Rp X/day" / "Self-published by driver"
-//   • Footer: "All rates self-published by drivers. IndoCity is a software
+//   • Footer: "All rates self-published by drivers. CityDrivers is a software
 //     directory — we never set or modify prices."
 // No fare computation, no order matching, no "total cost" language.
 // ============================================================================
@@ -302,14 +302,14 @@ export default async function RentalsCarMarketplacePage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   // Matches the white shell used by /car, /tour, /handyman after the
-  // app-wide white redesign. IndoCity wordmark links home; no AppNav by
+  // app-wide white redesign. CityDrivers wordmark links home; no AppNav by
   // design — the rental marketplaces present as a standalone surface.
   return (
     <main className="relative min-h-[100dvh] bg-white text-black">
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
             alt="Kita2u"
             className="h-8 sm:h-10 w-auto"
           />

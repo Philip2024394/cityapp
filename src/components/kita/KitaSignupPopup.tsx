@@ -75,7 +75,7 @@ const MACROS = [
 type MacroId = typeof MACROS[number]['id']
 
 // Reserved list — must stay in sync with the server route. Includes all
-// IndoCity vertical routes + auth/dashboard surfaces so a creator can't
+// CityDrivers vertical routes + auth/dashboard surfaces so a creator can't
 // claim a handle that would shadow a system URL.
 const RESERVED = new Set([
   'admin', 'support', 'api', 'dashboard', 'signup', 'login', 'cari',

@@ -241,8 +241,9 @@ const TRUCK_DRIVER_NAV_SECTIONS: ReadonlyArray<NavSection> = [
   {
     header: 'More',
     items: [
-      { href: '/truck',           label: 'Marketplace',     icon: Store },
-      { href: '/drivers/truck',   label: 'Drivers landing', icon: ExternalLink },
+      // /truck has no directory page; trucks are surfaced in the parcel hub.
+      { href: '/cityriders/parcel', label: 'Marketplace',     icon: Store },
+      { href: '/drivers/truck',     label: 'Drivers landing', icon: ExternalLink },
     ],
   },
 ]
@@ -407,7 +408,7 @@ const VARIANT_LABEL: Record<Variant, string> = {
 
 // Per-variant brand tinting for the nav-item pills. Keep verticals whose
 // public profile defaults to yellow (driver/partner/handyman/tour-guide/
-// rentals) on the master IndoCity yellow so they stay consistent with
+// rentals) on the master CityDrivers yellow so they stay consistent with
 // their public pages. Verticals with non-yellow public defaults
 // (beautician=pink, massage=sky, laundry=blue, home-clean=cyan) get
 // tinted so the drawer feels coherent with the dashboard they live in.

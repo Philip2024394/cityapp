@@ -102,7 +102,7 @@ export type PlaceProfileShellProps = {
   /**
    * Owner-controlled flag (places.free_delivery). When true, the cart
    * sheet shows a green "Free delivery by venue" pill in place of the
-   * bike-rider estimate row. IndoCity never books or pays for delivery
+   * bike-rider estimate row. CityDrivers never books or pays for delivery
    * — this is purely a hint to the customer that the venue arranges it.
    */
   freeDelivery?: boolean
@@ -283,7 +283,7 @@ export default function PlaceProfileShell({
   // card so customers instantly see the entry price (drinks-from / menu-
   // from / ticket-from / product-from per category). null = no priced
   // offers → pill is hidden. Lower-bound only — the venue self-publishes
-  // each offer's individual price, IndoCity never computes a total.
+  // each offer's individual price, CityDrivers never computes a total.
   const minOfferPriceIdr: number | null = (() => {
     const prices = offers
       .map(o => o.price_idr)
@@ -312,7 +312,7 @@ export default function PlaceProfileShell({
     price_idr:   o.price_idr,
   }))
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
   const profileUrl = `${siteOrigin}/places/${place.slug}`
 
   // "Take me there" — pre-fills /cari with this place as destination.

@@ -11,7 +11,7 @@
 // segmented control + toggle, explicit add/remove for the photo list.
 // Each commit patches the drivers row scoped to user_id.
 //
-// COMPLIANCE: IndoCity is a software directory under PM 12/2019. Photos and
+// COMPLIANCE: CityDrivers is a software directory under PM 12/2019. Photos and
 // bike data are self-published — we display them as the rider provides
 // them. No verification, no order-matching.
 // ============================================================================

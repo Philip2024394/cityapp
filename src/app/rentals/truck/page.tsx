@@ -6,7 +6,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // ============================================================================
 // /rentals/truck — Truck rental marketplace (Phase 1)
 // ----------------------------------------------------------------------------
-// IndoCity is an Indonesian SOFTWARE DIRECTORY (PM 12/2019), NOT a transport
+// CityDrivers is an Indonesian SOFTWARE DIRECTORY (PM 12/2019), NOT a transport
 // or rental operator. Drivers self-publish daily rates; customers WhatsApp
 // them directly to agree the rental terms.
 //
@@ -26,7 +26,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // Compliance copy guard-rails:
 //   • "Published by driver" not "our price"
 //   • "From Rp X/day" not "rental price" / "total cost"
-//   • Footer disclaimer reminds users IndoCity surfaces — never sets — rates
+//   • Footer disclaimer reminds users CityDrivers surfaces — never sets — rates
 // ============================================================================
 
 export const metadata = {
@@ -432,7 +432,7 @@ export default async function TruckRentalsPage({
           </div>
         )}
 
-        {/* Compliance footer — surfaces the IndoCity directory model so
+        {/* Compliance footer — surfaces the CityDrivers directory model so
             users understand the platform doesn't compute, set, or appoint
             rental rates. Matches the safe-harbour copy used on /car. */}
         <p className="mt-8 text-center text-[11px] uppercase tracking-wider text-black/45">
@@ -477,7 +477,7 @@ function FilterChip({
 
 function Shell({ children }: { children: React.ReactNode }) {
   // White-background marketplace shell — matches /car, /tour, /handyman,
-  // /laundry, and the rest of the app-wide white redesign. IndoCity
+  // /laundry, and the rest of the app-wide white redesign. CityDrivers
   // wordmark links home; no AppNav by design (these vertical marketplaces
   // present as a standalone surface, not part of the authenticated
   // dashboard chrome).
@@ -486,7 +486,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
             alt="Kita2u"
             className="h-8 sm:h-10 w-auto"
           />

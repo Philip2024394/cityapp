@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 // ============================================================================
-// IndoCity — auth middleware
+// CityDrivers — auth middleware
 // ============================================================================
 // Protects rider/admin/onboarding routes. Public surfaces (landing, /cari,
 // /cari/rider, /r/[slug]) stay open so customers can browse without an account.
@@ -16,6 +16,49 @@ const PROTECTED_PREFIXES = ['/dashboard', '/admin', '/onboarding', '/profile']
 // Auth pages — redirect logged-in users away
 const AUTH_PAGES = ['/login', '/signup', '/forgot']
 
+// citydrivers.id host scope. Requests to the citydrivers.id apex or www get
+// the cityriders main app + drivers + ride/truck/car/bus marketing only.
+// All other public surfaces (beautician, laundry, handyman, etc — the
+// kita2u.com selling-apps catalog) are rewritten to the cityriders hub on
+// this host so the domains stay editorially separate.
+// 2026-05-31 — citydrivers.id is the canonical brand domain. citydrivers.id
+// stays attached to the Worker purely to 301-redirect old QR codes / shared
+// links to the canonical host. The driver-directory host-scope logic only
+// fires for citydrivers.id (the redirect happens before the scope gate so
+// citydrivers.id never reaches it).
+const RETIRED_HOSTS = new Set(['cityriders.id', 'www.cityriders.id'])
+const CANONICAL_HOST = 'citydrivers.id'
+const CITYRIDERS_HOSTS = new Set([
+  'citydrivers.id',
+  'www.citydrivers.id',
+])
+const CITYRIDERS_PAGE_PREFIXES = [
+  '/cityriders',
+  '/cari',
+  '/drivers',
+  '/car',
+  '/truck',
+  '/bus',
+  '/jeep',
+  '/ride',
+  '/dashboard/rider',
+  '/dashboard/car',
+  '/dashboard/truck',
+  '/dashboard/bus',
+  '/dashboard/jeep',
+  '/dashboard/partner',
+  '/signup/car',
+  '/signup/truck',
+  '/signup/bus',
+  '/signup/jeep',
+  '/partners',
+  '/p',
+  '/login',
+  '/forgot',
+  '/privacy',
+  '/terms',
+]
+
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
@@ -24,8 +67,44 @@ function isAuthPage(pathname: string): boolean {
   return AUTH_PAGES.includes(pathname)
 }
 
+function isCityridersPath(pathname: string): boolean {
+  if (pathname === '/') return false
+  return CITYRIDERS_PAGE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl
+  const reqHost = (req.headers.get('host') || '').toLowerCase().split(':')[0]
+
+  // Retired-domain redirect: any request to citydrivers.id (apex or www) is
+  // 301-redirected to the equivalent path on citydrivers.id. Preserves any
+  // shared link, printed QR, or indexed page during the rename transition.
+  if (RETIRED_HOSTS.has(reqHost)) {
+    const dest = url.clone()
+    dest.protocol = 'https:'
+    dest.host = CANONICAL_HOST
+    dest.port = ''
+    return NextResponse.redirect(dest, 301)
+  }
+
+  // Host-scope gate: on citydrivers.id, only the cityriders-app surfaces are
+  // exposed. Apex `/` lands on the /cityriders hub; anything outside the
+  // allow-list is rewritten to /cityriders so users never see beautician /
+  // laundry / handyman / etc. content on this domain.
+  if (CITYRIDERS_HOSTS.has(reqHost)) {
+    if (url.pathname === '/') {
+      const dest = url.clone()
+      dest.pathname = '/cityriders'
+      return NextResponse.rewrite(dest)
+    }
+    if (!isCityridersPath(url.pathname)) {
+      const dest = url.clone()
+      dest.pathname = '/cityriders'
+      dest.search = ''
+      return NextResponse.rewrite(dest)
+    }
+  }
+
   const res = NextResponse.next()
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

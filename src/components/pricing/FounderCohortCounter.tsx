@@ -13,7 +13,7 @@ import {
 // back to a neutral "Founder pricing — Rp 38.000/month for life" line
 // when the count is unavailable (so the page never reads broken).
 //
-// Use on: driver landing (/drivers), driver signup pages, the CityRiders
+// Use on: driver landing (/drivers), driver signup pages, the CityDrivers
 // homepage above-the-fold, and any "join now" surface where urgency
 // matters.
 

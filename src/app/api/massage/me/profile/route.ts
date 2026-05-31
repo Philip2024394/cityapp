@@ -4,6 +4,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 import { validateUniversalProfile } from '@/lib/validation/universalProfile'
 import type { TableUpdate } from '@/lib/supabase/typed-helpers'
+import type { Json } from '@/types/supabase'
 
 // POST /api/massage/me/profile
 // Owner-only update of editable profile fields. NEVER touches status,
@@ -240,7 +241,7 @@ export async function POST(req: Request) {
         }
         cleaned.effect = ht.effect
       }
-      update.hero_text = Object.keys(cleaned).length ? cleaned : null
+      update.hero_text = (Object.keys(cleaned).length ? cleaned : null) as Json
     }
   }
 
@@ -357,7 +358,7 @@ export async function POST(req: Request) {
       }
       if (entries.length > 0) cleaned[k] = entries
     }
-    update.service_photos = cleaned
+    update.service_photos = cleaned as Json
   }
 
   if (Object.keys(update).length === 0) {

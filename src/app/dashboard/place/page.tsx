@@ -2,8 +2,8 @@
 // ============================================================================
 // /dashboard/place — Place owner dashboard
 // ----------------------------------------------------------------------------
-// IndoCity is a SOFTWARE DIRECTORY. Places (restaurants, cafés, attractions,
-// hotels, etc.) self-publish their own listing details. IndoCity NEVER
+// CityDrivers is a SOFTWARE DIRECTORY. Places (restaurants, cafés, attractions,
+// hotels, etc.) self-publish their own listing details. CityDrivers NEVER
 // custodies funds, sets prices, or processes payments — we only host the
 // listing card and the QRIS proof-of-payment for the 38,000 IDR/month
 // subscription that keeps the listing live on /places.
@@ -1372,7 +1372,7 @@ function ContactToggleSection({ row, onSaved }: { row: PlaceRow; onSaved: () => 
 // ----------------------------------------------------------------------------
 // When ON the customer's cart sheet shows a green "Free delivery by venue"
 // pill in place of the bike-rider estimate row. The venue arranges and
-// pays for the delivery themselves — IndoCity never books or pays for it.
+// pays for the delivery themselves — CityDrivers never books or pays for it.
 // Mirrors the ContactToggleSection optimistic-update / revert-on-error
 // pattern so the switch always reflects the current DB state.
 // ============================================================================
@@ -1642,9 +1642,9 @@ function HoursSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void }) 
 // + 30 days, so the listing flips active OPTIMISTICALLY. Admin verifies
 // (or reverts) later via /admin/subscriptions.
 //
-// COMPLIANCE: IndoCity never custodies funds. The QR shown is the
+// COMPLIANCE: CityDrivers never custodies funds. The QR shown is the
 // founder's merchant QRIS — payment is between the owner's bank and the
-// founder's bank, not through IndoCity rails.
+// founder's bank, not through CityDrivers rails.
 // ============================================================================
 function QrisPaymentModal({
   open,

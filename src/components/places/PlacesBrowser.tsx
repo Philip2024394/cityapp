@@ -31,7 +31,7 @@ import type { Place, PlaceCategory } from '@/lib/places/types'
 //      middle, ★ rating top-right, ChevronRight)
 //   5. Compliance footer copy
 //
-// Compliance posture: IndoCity is a software directory (PM 12/2019). Cards
+// Compliance posture: CityDrivers is a software directory (PM 12/2019). Cards
 // label venues as "self-listed". No fake "verified" badges; rating shown
 // only when the row carries one from Supabase / the platform-deterministic
 // placeholder generator.

@@ -9,9 +9,7 @@ import type { DriverPublic } from '../DriverProfileShell'
 
 const TEXT_INK    = '#0A0A0A'
 const TEXT_MUTED  = '#71717A'
-const TEXT_SECOND = '#52525B'
 const BORDER      = '#E4E4E7'
-const INPUT_BG    = '#F4F4F5'
 
 // Shown when the page driver is BUSY or OFFLINE. Surfaces 3–5 online
 // drivers with the SAME vehicle_type, sorted nearest-first when the
@@ -58,16 +56,33 @@ export default function AlternativesWidget({
       className="mt-4 rounded-2xl p-3 space-y-3"
       style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
     >
-      <div
-        className="rounded-xl p-2.5"
-        style={{
-          background: availability === 'busy' ? '#FEF3C7' : '#F3F4F6',
-          border: `1px solid ${availability === 'busy' ? '#FDE68A' : BORDER}`,
-        }}
-      >
-        <p className="text-[13px] font-extrabold leading-snug" style={{ color: TEXT_INK }}>
-          {driver.business_name} is {availability} now — try these instead
-        </p>
+      {/* Header row — section title left, small yellow Add-stop pill right.
+          Matches the OnlineBookingWidget header so the busy/offline branch
+          carries the same control surface as the online branch. */}
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[13px] font-extrabold uppercase tracking-wider" style={{ color: TEXT_INK }}>
+          Try these instead
+        </h2>
+        <button
+          type="button"
+          onClick={() => setStops([...stops, ''])}
+          aria-label="Add stop"
+          className="inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full font-extrabold text-[12px] active:scale-95 transition"
+          style={{
+            background: '#FACC15',
+            color: TEXT_INK,
+            boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
+            minHeight: 32,
+          }}
+        >
+          <span
+            className="w-4 h-4 rounded-full inline-flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.10)' }}
+          >
+            <Plus className="w-3 h-3" strokeWidth={3} />
+          </span>
+          <span>Add stop</span>
+        </button>
       </div>
 
       {/* Same input set as the online widget — customer can still type
@@ -103,18 +118,6 @@ export default function AlternativesWidget({
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() => setStops([...stops, ''])}
-        className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold uppercase tracking-wider"
-        style={{
-          minHeight: 44,
-          background: INPUT_BG, border: `1px dashed ${BORDER}`, color: TEXT_SECOND,
-        }}
-      >
-        <Plus className="w-4 h-4" strokeWidth={2.5} />
-        Add stop
-      </button>
 
       {ranked.length > 0 ? (
         <ul className="space-y-2 pt-1">

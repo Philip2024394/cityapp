@@ -2,14 +2,14 @@
 import { useRef } from 'react'
 
 // Printable QR card for hotel/villa partners. The QR encodes
-// https://indocity.id/p/[slug] — guests scan, app opens, attribution
+// https://citydrivers.id/p/[slug] — guests scan, app opens, attribution
 // stored for 24h, partner earns 8% on any booking that follows.
 
 export default function PartnerQRCard({
   partnerName,
   partnerSlug,
   city,
-  baseUrl = 'https://indocity.id',
+  baseUrl = 'https://citydrivers.id',
 }: {
   partnerName: string
   partnerSlug: string
@@ -36,7 +36,7 @@ export default function PartnerQRCard({
       const dataUrl = canvas.toDataURL('image/png')
       const a = document.createElement('a')
       a.href = dataUrl
-      a.download = `indocity-${partnerSlug}.png`
+      a.download = `citydrivers-${partnerSlug}.png`
       a.click()
     } catch {
       // Fallback: just open the QR SVG in a new tab so they can save it.

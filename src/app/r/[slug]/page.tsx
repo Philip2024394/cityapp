@@ -10,7 +10,7 @@ import { MOCK_RIDERS } from '@/data/mockRiders'
 // =============================================================================
 // /r/[slug] — public per-driver profile page (bike vertical)
 // =============================================================================
-// CityRiders / IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. This page
+// CityDrivers / CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019. This page
 // surfaces a single bike driver who self-publishes their own min_fee +
 // price_per_km. Customer's destination from /cari driver-result cards —
 // renders the shared DriverProfileShell which embeds the booking widget
@@ -34,7 +34,7 @@ import { MOCK_RIDERS } from '@/data/mockRiders'
 
 export const revalidate = 300
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 
 // -----------------------------------------------------------------------------
 // Server-side BikeDriver shape — normalised across the three sources
@@ -519,7 +519,7 @@ export async function generateMetadata({
   const d = await loadBikeDriver(slug).catch(() => null)
   if (!d) return { title: 'Driver not found', robots: { index: false, follow: false } }
   const where = d.area || d.city || 'Indonesia'
-  const title = `${d.business_name} — Bike rider in ${where} · CityRiders`
+  const title = `${d.business_name} — Bike rider in ${where} · CityDrivers`
   const description = ((d.bio?.trim() || `${d.business_name} — ${vehicleHeadline(d)} rider in ${where}. Book directly via WhatsApp.`)).slice(0, 160)
   const canonical = `${SITE_URL}/r/${d.slug}`
   // Image preference: cover_image_url → first bike photo → profile photo

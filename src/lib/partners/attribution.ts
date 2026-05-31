@@ -1,19 +1,20 @@
 // ============================================================================
 // Partner attribution capture (client-side localStorage)
 // ----------------------------------------------------------------------------
-// Hotels / villas distribute a QR code that opens indocity.id/p/[slug].
+// Hotels / villas distribute a QR code that opens citydrivers.id/p/[slug].
 // On that page we stash { slug, anonId, capturedAt } in localStorage for
-// 24 hours. When the guest taps Contact on a driver profile, /api/contact/ping
+// 30 days. When the guest taps Contact on a driver profile, /api/contact/ping
 // reads this attribution and writes a partner_bookings row crediting the
 // partner with the 8% commission owed by the driver.
 //
-// 24-hour window matches typical hotel check-in/check-out cadence — guests
-// usually book transport within a day of arrival. Longer windows incentivise
-// drivers to game attribution by scanning their own QR for unrelated rides.
+// 30-day window (founder decision 2026-05-31) captures repeat trips during
+// a typical multi-day Bali / Yogya tourist stay and hotel-arranged regulars
+// who book several times. Fraud surface is kept in check by rate limits at
+// the driver-confirmed booking endpoint, not by shrinking the window.
 // ============================================================================
 
 const STORAGE_KEY = 'cityrider:partner_attribution'
-const TTL_MS = 24 * 60 * 60 * 1000  // 24 hours
+const TTL_MS = 30 * 24 * 60 * 60 * 1000  // 30 days
 
 type Stored = { slug: string; anonId: string; capturedAt: number }
 

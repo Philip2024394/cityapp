@@ -11,7 +11,7 @@ import type { Place, PlaceCategory, CityZone } from '@/lib/places/types'
 // Server-renders the data, then hands off to <PlacesBrowser>, a small client
 // island that owns search + chip-filter + GPS-sort state.
 //
-// Compliance posture: IndoCity is a software directory (PM 12/2019). The
+// Compliance posture: CityDrivers is a software directory (PM 12/2019). The
 // list labels venues as "self-listed". No fake "verified" / "official
 // partner" badges — only data the row actually carries is surfaced.
 //
@@ -20,11 +20,11 @@ import type { Place, PlaceCategory, CityZone } from '@/lib/places/types'
 // ============================================================================
 
 export const metadata = {
-  title: 'Places · IndoCity',
+  title: 'Places · CityDrivers',
   description:
     'Browse self-listed tourism venues — temples, beaches, landmarks, ' +
-    'hotels, malls — near you in Indonesia. IndoCity is a software directory.',
-  alternates: { canonical: 'https://indocity.id/places' },
+    'hotels, malls — near you in Indonesia. CityDrivers is a software directory.',
+  alternates: { canonical: 'https://citydrivers.id/places' },
 }
 
 // Force fresh data on every request so newly-approved places land without a
@@ -190,7 +190,7 @@ export default async function PlacesPage({
         color: '#0A0A0A',
       }}
     >
-      {/* HEADER — IndoCity wordmark on the left (Ind + pin + City), nothing
+      {/* HEADER — CityDrivers wordmark on the left (Ind + pin + City), nothing
           on the right. Mirrors the /cari header pattern but on a white
           surface so the wordmark sits in brand-navy + brand-yellow rather
           than white. */}
@@ -199,7 +199,7 @@ export default async function PlacesPage({
           <Link
             href="/"
             className="inline-flex items-center hover:opacity-85 transition"
-            aria-label="IndoCity home"
+            aria-label="CityDrivers home"
           >
             <span
               className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"

@@ -1,6 +1,6 @@
 'use client'
 // ============================================================================
-// /dashboard/rider/subscription — CityRiders Rp 38.000/month subscription
+// /dashboard/rider/subscription — CityDrivers Rp 38.000/month subscription
 // ----------------------------------------------------------------------------
 // Mirrors /dashboard/car/subscription with copy adjusted for bike riders.
 // Riders self-serve via QRIS in their banking app, then upload the
@@ -8,7 +8,7 @@
 // records the proof + bumps drivers.paid_until = max(today, paid_until)
 // + 30 days. Admin verifies (or rejects) later at /admin/subscriptions.
 //
-// COMPLIANCE: IndoCity is a software directory under PM 12/2019. We do
+// COMPLIANCE: CityDrivers is a software directory under PM 12/2019. We do
 // not custody funds — the QRIS payment is between the rider's bank
 // and the founder's merchant account.
 // ============================================================================
@@ -35,7 +35,7 @@ import {
 // ----------------------------------------------------------------------------
 const ADMIN_WHATSAPP_E164 = '6285183600015' // streetlocallive admin line
 const ADMIN_WA_RENEW = `https://wa.me/${ADMIN_WHATSAPP_E164}?text=${encodeURIComponent(
-  'Halo admin, saya mau bayar/renew langganan dashboard Rider CityRiders (Rp 38.000/bulan).',
+  'Halo admin, saya mau bayar/renew langganan dashboard Rider CityDrivers (Rp 38.000/bulan).',
 )}`
 // Swap this single constant when the merchant QRIS image is ready.
 import {
@@ -456,7 +456,7 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
 // Rider scans the QR in their bank/wallet app, pays externally, then
 // uploads a screenshot. /api/dashboard/subscription-payment records the
 // proof + bumps drivers.paid_until = max(paid_until, today) + 30 days.
-// COMPLIANCE: IndoCity never custodies funds — payment is between the
+// COMPLIANCE: CityDrivers never custodies funds — payment is between the
 // rider's bank/wallet and the founder's merchant QRIS.
 // ============================================================================
 function QrisPaymentModal({
@@ -615,7 +615,7 @@ function QrisPaymentModal({
               }}
             >
               <div className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-[#854D0E] text-center mb-2">
-                CityRiders QRIS · {period === 'monthly' ? 'Monthly' : 'Yearly'}
+                CityDrivers QRIS · {period === 'monthly' ? 'Monthly' : 'Yearly'}
               </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -707,7 +707,7 @@ function QrisPaymentModal({
           </button>
 
           <p className="mt-3 text-[12px] text-black/55 leading-snug">
-            Payment is between you and your bank/wallet. CityRiders is a software directory — we do not custody or process funds.
+            Payment is between you and your bank/wallet. CityDrivers is a software directory — we do not custody or process funds.
           </p>
 
           <div className="mt-3 text-center">

@@ -10,7 +10,7 @@
 import { getCurrentUser } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import BookingAlertProvider from '@/components/dashboard/BookingAlertProvider'
-import CityRidersBrandStrip from '@/components/dashboard/CityRidersBrandStrip'
+import CityDriversBrandStrip from '@/components/dashboard/CityDriversBrandStrip'
 
 export default async function RiderDashboardLayout({
   children,
@@ -34,7 +34,7 @@ export default async function RiderDashboardLayout({
     gate.booking_alerts_enabled !== false
   return (
     <>
-      <CityRidersBrandStrip subtitle="Bike rider dashboard" />
+      <CityDriversBrandStrip subtitle="Bike rider dashboard" />
       {children}
       {shouldMount && <BookingAlertProvider driverId={user!.id} />}
     </>

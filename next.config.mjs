@@ -54,7 +54,7 @@ const FRAME_ANCESTORS = [
 // in a comment so it can be removed for good when that lib is replaced.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com",
+  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",

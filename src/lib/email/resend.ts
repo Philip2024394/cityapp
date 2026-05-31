@@ -8,7 +8,7 @@
 //
 // Env:
 //   RESEND_API_KEY   — required for real sends; missing = console fallback
-//   RESEND_FROM      — default sender, e.g. "IndoCity <reminders@streetlocal.live>"
+//   RESEND_FROM      — default sender, e.g. "CityDrivers <reminders@streetlocal.live>"
 //   RESEND_REPLY_TO  — default reply-to inbox (defaults to streetlocallive@gmail.com)
 //
 // Note: Resend cannot send FROM a @gmail.com address (DKIM/SPF must align

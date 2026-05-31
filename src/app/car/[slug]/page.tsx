@@ -9,7 +9,7 @@ import { MOCK_LANGUAGES, mockToursForSlug } from '@/lib/tours/templates'
 // =============================================================================
 // /car/[slug] — public per-driver profile page (car vertical)
 // =============================================================================
-// IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. This page surfaces a
+// CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019. This page surfaces a
 // single car driver who self-publishes their own min_fee + price_per_km.
 // Customer's destination from /cari driver-result cards — renders the
 // shared DriverProfileShell which embeds the booking widget (typed pickup
@@ -25,7 +25,7 @@ import { MOCK_LANGUAGES, mockToursForSlug } from '@/lib/tours/templates'
 
 export const revalidate = 300
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 
 // -----------------------------------------------------------------------------
 // Loader — checks `drivers` first (real) then falls back to `mock_drivers`.
@@ -553,7 +553,7 @@ export default async function CarDriverProfilePage({
   // Schema.org LocalBusiness — keeps the per-driver page eligible for
   // Knowledge Graph / Maps surfacing. priceRange is the generic 'Rp'
   // marker; we intentionally don't expose min_fee here because the
-  // schema interpretation of price would suggest IndoCity is selling
+  // schema interpretation of price would suggest CityDrivers is selling
   // a service at that price — which violates PM 12/2019 positioning.
   const jsonLd: Record<string, unknown> = {
     '@context':   'https://schema.org',

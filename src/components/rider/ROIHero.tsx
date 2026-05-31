@@ -13,7 +13,7 @@ type Props = {
 // Pre-June 2026: commission-based platforms generally took ~20% of
 // gross fare (driver kept 80%). From June 2026: Perpres No. 27/2026
 // (signed 1 May 2026) is reported to cap platform commission at 8%
-// MAXIMUM, guaranteeing drivers ≥92%. CityRiders takes 0% commission
+// MAXIMUM, guaranteeing drivers ≥92%. CityDrivers takes 0% commission
 // (subscription model) — the honest pitch is "save the 8% other
 // platforms now take", not the legacy 20%.
 //
@@ -39,9 +39,9 @@ export default function ROIHero({ monthlyQuotes, monthlyLeadsValue, subscription
 
   function onShareSavings() {
     if (typeof window === 'undefined') return
-    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan CityRiders — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali.
+    const text = `Bulan ini saya hemat ${idr(netSavedVsCompetitor)} dengan CityDrivers — driver motor independen, langganan tetap Rp ${(subscriptionMonthly/1000).toFixed(0)}rb/bulan, tanpa potongan komisi sama sekali.
 
-Cek di cityriders.id`
+Cek di citydrivers.id`
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
@@ -122,7 +122,7 @@ Cek di cityriders.id`
               You kept <span style={{ color: '#22C55E' }}>{idr(netSavedVsCompetitor)}</span> in commission this month.
             </div>
             <div className="text-[12px] text-gray-600 mt-1">
-              An 8%-commission platform would have taken {idr(competitorCommission)} from {idr(monthlyLeadsValue)} in gross fares ({COMPETITOR_COMMISSION_BASIS}). CityRiders takes Rp 0.
+              An 8%-commission platform would have taken {idr(competitorCommission)} from {idr(monthlyLeadsValue)} in gross fares ({COMPETITOR_COMMISSION_BASIS}). CityDrivers takes Rp 0.
             </div>
             <button
               onClick={onShareSavings}

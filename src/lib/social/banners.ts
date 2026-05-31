@@ -1,9 +1,9 @@
 // ============================================================================
-// CityRiders social share banner library
+// CityDrivers social share banner library
 // ----------------------------------------------------------------------------
 // Pre-composed marketing banners drivers + affiliates can share to their
 // own WhatsApp / Instagram / Facebook / TikTok. Banners carry the
-// CityRiders brand mark + URL on them already; the driver/affiliate is
+// CityDrivers brand mark + URL on them already; the driver/affiliate is
 // not personally identified in the image. This intentionally keeps the
 // composer dead simple (pick + share, no canvas overlay) while still
 // giving the sharer credit via the URL parameter on the landing page.
@@ -49,8 +49,8 @@ export const SOCIAL_BANNERS: ReadonlyArray<SocialBanner> = [
     aspect:     '16:9',
     intent:     'customer',
     label:      'Komunitas Motor, Untuk Indonesia',
-    caption_id: 'Pesan motor untuk antar paket, jemput penumpang, dan order makanan langsung via WhatsApp — tanpa aplikasi. www.cityriders.id',
-    caption_en: 'Book a motorbike for parcel delivery, passenger pickup, or food orders — direct via WhatsApp, no app needed. www.cityriders.id',
+    caption_id: 'Pesan motor untuk antar paket, jemput penumpang, dan order makanan langsung via WhatsApp — tanpa aplikasi. www.citydrivers.id',
+    caption_en: 'Book a motorbike for parcel delivery, passenger pickup, or food orders — direct via WhatsApp, no app needed. www.citydrivers.id',
   },
   {
     id:         'cr-recruit-gabung-driver-1',
@@ -59,8 +59,8 @@ export const SOCIAL_BANNERS: ReadonlyArray<SocialBanner> = [
     aspect:     '16:9',
     intent:     'driver_recruit',
     label:      'Gabung Jadi Driver City Rider',
-    caption_id: 'Gabung jadi driver City Rider! Penghasilan maksimal tanpa komisi, tentukan harga sendiri, bebas waktu. www.cityriders.id',
-    caption_en: 'Drive with City Rider! Keep 100% of earnings, set your own prices, work on your schedule. www.cityriders.id',
+    caption_id: 'Gabung jadi driver City Rider! Penghasilan maksimal tanpa komisi, tentukan harga sendiri, bebas waktu. www.citydrivers.id',
+    caption_en: 'Drive with City Rider! Keep 100% of earnings, set your own prices, work on your schedule. www.citydrivers.id',
   },
   {
     id:         'cr-community-motor-lokal-1',
@@ -69,8 +69,8 @@ export const SOCIAL_BANNERS: ReadonlyArray<SocialBanner> = [
     aspect:     '16:9',
     intent:     'community',
     label:      'Motor, Lokal, Kebanggaan Nasional',
-    caption_id: 'Dukung pengendara motor Indonesia. Tanpa komisi, komunitas solid. www.cityriders.id',
-    caption_en: 'Support Indonesian motorbike riders. No platform commission, strong community. www.cityriders.id',
+    caption_id: 'Dukung pengendara motor Indonesia. Tanpa komisi, komunitas solid. www.citydrivers.id',
+    caption_en: 'Support Indonesian motorbike riders. No platform commission, strong community. www.citydrivers.id',
   },
 ]
 

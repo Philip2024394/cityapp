@@ -6,6 +6,7 @@ import {
   readCachedLocation,
   writeCachedLocation,
 } from '@/components/onboarding/LocationPermissionPrompt'
+import { requestLocationViaGate } from '@/components/onboarding/LocationGateProvider'
 
 export type GeoPoint = { lat: number; lng: number; accuracyM: number }
 
@@ -13,7 +14,7 @@ export type GeoPoint = { lat: number; lng: number; accuracyM: number }
 // Throttling for watchPosition lives separately (used by rider GO ONLINE).
 //
 // May 2026 enhancement (landing warm-up modal):
-//   On mount the hook checks localStorage (`indocity:location:v1`) for cached
+//   On mount the hook checks localStorage (`citydrivers:location:v1`) for cached
 //   coords written by the location warm-up modal on /. If a fresh entry
 //   exists (< 30 days old), we hydrate immediately with status='granted' and
 //   skip the browser-native API. Returning customers therefore never see a
@@ -36,39 +37,26 @@ export function useGeolocation(autoRequest = true) {
   // instead of relying on a useEffect to catch the state update. Solves
   // the stale-closure bug where `if (geo.coords)` after `request()`
   // sees the old value because the setState hasn't flushed yet.
-  function request(): Promise<GeoPoint | null> {
-    return new Promise((resolve) => {
-      if (typeof window === 'undefined' || !navigator.geolocation) {
-        setError('Geolocation not supported')
-        setStatus('denied')
-        resolve(null)
-        return
-      }
-      setStatus('requesting')
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const point: GeoPoint = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracyM: pos.coords.accuracy,
-          }
-          setCoords(point)
-          setStatus('granted')
-          setError(null)
-          // Mirror the fresh fix into the shared cache so every other
-          // surface — and future visits within the 30-day TTL — pick it
-          // up without re-prompting the OS dialog.
-          writeCachedLocation(point.lat, point.lng)
-          resolve(point)
-        },
-        err => {
-          setError(err.message)
-          setStatus('denied')
-          resolve(null)
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
-      )
-    })
+  async function request(): Promise<GeoPoint | null> {
+    if (typeof window === 'undefined') {
+      setStatus('denied')
+      return null
+    }
+    setStatus('requesting')
+    // Route through the global LocationGate so the user sees our branded
+    // pre-prompt (white + yellow CityDrivers / Kita2u modal) before the
+    // browser-native permission dialog ever fires. Cache hit or denial
+    // both come back through the same promise.
+    const point = await requestLocationViaGate()
+    if (point) {
+      setCoords(point)
+      setStatus('granted')
+      setError(null)
+      return point
+    }
+    setStatus('denied')
+    setError('Location request was not completed')
+    return null
   }
 
   useEffect(() => {

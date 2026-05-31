@@ -229,7 +229,7 @@ export default function SignupPage() {
     step === 'phone' ? (role === 'driver' ? 'Set up your account' : 'Tell us about you') :
                        'Verify your phone'
   const heroSub =
-    step === 'role' ? 'Pick what you want to do on IndoCity.' :
+    step === 'role' ? 'Pick what you want to do on CityDrivers.' :
     step === 'phone' ? 'We will send a 6-digit code to verify your number.' :
                        `We sent a 6-digit code to +${phone}`
 

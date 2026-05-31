@@ -9,7 +9,7 @@ import { SPECIALTY_SHORT, type HandymanSpecialty } from './types'
 // specialties — every category header with banners is shown — so each
 // banner only needs to live under its single best fit.
 //
-// Theme default is yellow (#FACC15) — the IndoCity brand. Other
+// Theme default is yellow (#FACC15) — the CityDrivers brand. Other
 // themes can be added later if handymen want per-provider accents.
 export const HANDYMAN_BANNER_LIBRARY: BannerLibrary = {
   '#FACC15': {

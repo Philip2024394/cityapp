@@ -364,7 +364,7 @@ export const MOCK_RIDERS: Rider[] = [
     businessContractEnabled: true,
     businessMaxParcelsPerDay: 30,
     businessServices: ['documents', 'batched'],
-    businessNotes: 'Baru di CityRiders — hubungi untuk diskusi rate fleksibel.',
+    businessNotes: 'Baru di CityDrivers — hubungi untuk diskusi rate fleksibel.',
     businessEnabledAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     b2bScore: 52,
     b2bTier: 'standard',

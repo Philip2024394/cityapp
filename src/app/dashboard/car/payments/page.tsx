@@ -10,10 +10,10 @@
 //   - mobile-first, 13px text floor, 44px tap targets, max-w-2xl container
 //
 // ⚠ COMPLIANCE — IMPORTANT:
-//   This page is NOT about CityRiders collecting fares (regulated under
+//   This page is NOT about CityDrivers collecting fares (regulated under
 //   Permenhub 118/2018; we are a software directory under PM 12/2019).
 //   The toggles here describe WHICH METHODS THE DRIVER ACCEPTS DIRECTLY
-//   FROM THE CUSTOMER. CityRiders never touches the money. There is no
+//   FROM THE CUSTOMER. CityDrivers never touches the money. There is no
 //   Stripe / Midtrans wiring on this surface — none is ever added.
 //
 // Edited fields (drivers row):
@@ -156,7 +156,7 @@ function PaymentsEditor({ row, onReload }: { row: PaymentsRow; onReload: () => v
                 </span>
               </div>
               <p className="text-[12.5px] text-[#0A0A0A]/75 leading-snug">
-                These are the methods <strong>you</strong> accept directly from customers. CityRiders never touches your money.
+                These are the methods <strong>you</strong> accept directly from customers. CityDrivers never touches your money.
               </p>
             </div>
           </div>
@@ -166,7 +166,7 @@ function PaymentsEditor({ row, onReload }: { row: PaymentsRow; onReload: () => v
         <div className="rounded-2xl border border-[#FACC15]/50 bg-[#FFFBEA] p-3 mb-4 flex items-start gap-2.5">
           <ShieldCheck size={18} className="text-[#EAB308] shrink-0 mt-0.5" strokeWidth={2.5} />
           <p className="text-[12.5px] text-[#854D0E] leading-snug">
-            Money flows directly between you and your customer. CityRiders is a software directory
+            Money flows directly between you and your customer. CityDrivers is a software directory
             (Permenhub 118/2018) — we never custody funds and never charge ride fees on your behalf.
           </p>
         </div>

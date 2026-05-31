@@ -4,7 +4,7 @@ import { Bike, Car, Bus, Truck } from 'lucide-react'
 // /rentals — category picker for the by-day vehicle hire product line.
 // Distinct mental model from /cari (per-km, urgent ride-hailing): here
 // drivers self-publish daily rates and buyers contact via WhatsApp.
-// IndoCity is a software directory only — we never set or modify prices.
+// CityDrivers is a software directory only — we never set or modify prices.
 
 export const metadata = {
   title: 'Rentals · Kita2u',
@@ -58,7 +58,7 @@ export default function RentalsHubPage() {
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-5xl mx-auto">
         <Link href="/" aria-label="Home" className="inline-block">
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
             alt="Kita2u"
             className="h-8 sm:h-10 w-auto"
           />

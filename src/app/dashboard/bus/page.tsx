@@ -6,15 +6,14 @@
 // bus-flavoured config. This page previously held a 1,150-line monolith
 // (sectioned forms + an inline QRIS modal). The deep editing now lives in
 // /dashboard/bus/info, /dashboard/bus/vehicle, /dashboard/bus/services,
-// /dashboard/bus/payments, etc. Subscription payment routes to the shared
-// /dashboard/car/subscription flow (which handles bus too).
+// /dashboard/bus/payments, /dashboard/bus/subscription, etc.
 //
 // Bus namespace: the DB enum value is 'minibus' (not 'bus'). The bus public
 // profile lives at /bus/<slug>. KPI strip surfaces per-km rate + min fee
 // because minibus customers care about charter pricing alongside seat count.
 //
 // Regulatory posture: software directory under PM 12/2019. Drivers publish
-// their own rates; CityRiders never sets prices or appoints orders.
+// their own rates; CityDrivers never sets prices or appoints orders.
 // ============================================================================
 
 import { Car } from 'lucide-react'
@@ -30,7 +29,7 @@ const CONFIG: DashboardVerticalConfig = {
   profilePathPrefix:  '/bus',
   navLabels:          { vehicleDetails: 'Bus details' },
   subscriptionWhatsAppLine:
-    'Halo admin, saya mau bayar/renew langganan dashboard Minibus driver CityRiders (Rp 38.000/bulan).',
+    'Halo admin, saya mau bayar/renew langganan dashboard Minibus driver CityDrivers (Rp 38.000/bulan).',
   // DB enum is 'minibus' for the bus vertical.
   allowedVehicleTypes: ['minibus'],
   wrongTypeMessage:   (t) => `This dashboard is for minibus drivers. Your profile is ${t}.`,

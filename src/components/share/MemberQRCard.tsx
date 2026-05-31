@@ -18,7 +18,7 @@ import { Download, Printer, Share2, Loader2 } from 'lucide-react'
 // pure visual so the same DOM is what `window.print()` captures.
 
 export type MemberQRCardProps = {
-  /** Full URL the QR encodes — e.g. https://indocity.id/beautician/jane-doe */
+  /** Full URL the QR encodes — e.g. https://citydrivers.id/beautician/jane-doe */
   profileUrl: string
   /** Vendor display name shown in big text */
   displayName: string
@@ -28,7 +28,7 @@ export type MemberQRCardProps = {
   subtitle?: string | null
   /** Square avatar / cover (140x140 recommended). Falls back to initials. */
   photoUrl?: string | null
-  /** Vertical label shown in the dark header strip — e.g. "IndoCity · Beautician" */
+  /** Vertical label shown in the dark header strip — e.g. "CityDrivers · Beautician" */
   verticalLabel: string
   /** WhatsApp number in any format — digits-only or +E.164. Optional. */
   whatsappE164?: string | null
@@ -238,7 +238,7 @@ export function MemberQRActions({
 }: {
   profileUrl: string
   displayName: string
-  /** Browser share-sheet title — falls back to displayName + IndoCity */
+  /** Browser share-sheet title — falls back to displayName + CityDrivers */
   shareTitle?: string
   /** Body for the share sheet / WhatsApp prefill */
   shareText?: string
@@ -260,7 +260,7 @@ export function MemberQRActions({
       })
       const a = document.createElement('a')
       a.href = png
-      a.download = `${slugify(displayName)}-indocity-qr.png`
+      a.download = `${slugify(displayName)}-citydrivers-qr.png`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -324,5 +324,5 @@ export function MemberQRActions({
 }
 
 function slugify(s: string): string {
-  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'indocity'
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'citydrivers'
 }

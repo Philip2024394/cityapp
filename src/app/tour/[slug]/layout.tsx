@@ -6,7 +6,7 @@ import JsonLd from '@/components/seo/JsonLd'
 // Server-side SEO + lapsed-subscription redirect for /tour/[slug].
 // Mirrors the canonical pattern from /massage/[slug] etc.
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 
 type Row = {
   id: string

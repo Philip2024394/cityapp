@@ -9,7 +9,7 @@ import { X, Copy, Check, MessageCircle, Facebook, QrCode, Download } from 'lucid
 //   • QR code               — opens a sub-dialog with a downloadable PNG
 //
 // `url` is the public profile URL the visitor / provider wants to share.
-// `prefillText` is the leading text (e.g. "Lihat profil ini di IndoCity:").
+// `prefillText` is the leading text (e.g. "Lihat profil ini di CityDrivers:").
 
 export default function SocialShareSheet({
   open, onClose, url, prefillText, providerName,
@@ -72,7 +72,7 @@ export default function SocialShareSheet({
             <div className="text-[11px] text-black/60 font-mono break-all">{url}</div>
             <a
               href={qrSrc}
-              download={`indocity-${providerName.toLowerCase().replace(/\s+/g, '-')}-qr.png`}
+              download={`citydrivers-${providerName.toLowerCase().replace(/\s+/g, '-')}-qr.png`}
               className="inline-flex items-center justify-center gap-2 w-full rounded-full bg-black text-white px-4 py-3 text-[13px] font-extrabold uppercase tracking-wider"
             >
               <Download className="w-4 h-4" strokeWidth={2.5} />

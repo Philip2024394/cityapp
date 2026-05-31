@@ -221,7 +221,7 @@ export default function PropertyProviderPage() {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
   }
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
   const profileUrl = `${siteOrigin}/property/${p.slug}`
   const displayTitle = p.business_name?.trim() || p.display_name
 
@@ -886,7 +886,7 @@ export default function PropertyProviderPage() {
               `Saya tertarik dengan property ini.`,
               `Saya ingin viewing pada ${date} jam ${time}.`,
               notes.trim() ? `Catatan: ${notes.trim()}` : '',
-              `\n— Sent via indocity.id`,
+              `\n— Sent via citydrivers.id`,
             ].filter(Boolean).join('\n'),
           }}
           onClose={() => setContactOpen(false)}

@@ -1,6 +1,6 @@
 import ProviderUpgradePage from '@/components/upgrade/ProviderUpgradePage'
 
-export const metadata = { title: 'Upgrade · Home Clean · IndoCity' }
+export const metadata = { title: 'Upgrade · Home Clean · CityDrivers' }
 
 export default function Page() {
   return (

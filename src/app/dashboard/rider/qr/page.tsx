@@ -3,7 +3,7 @@
 // /dashboard/rider/qr — Printable profile QR for bike riders
 // ----------------------------------------------------------------------------
 // Pure client-side: pulls the rider row from public.drivers, mints a
-// 360×360 canvas QR for the public profile URL (cityriders.id/r/<slug>),
+// 360×360 canvas QR for the public profile URL (citydrivers.id/r/<slug>),
 // and offers a 1080×1080 PNG export with a yellow header bar for printing
 // on business cards, helmet stickers, hotel concierge desks, etc.
 //
@@ -24,7 +24,7 @@ import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 
-const SITE_HOST = 'cityriders.id'
+const SITE_HOST = 'citydrivers.id'
 const BRAND_YELLOW = '#FACC15'
 const BRAND_YELLOW_DEEP = '#EAB308'
 const INK = '#0A0A0A'
@@ -133,7 +133,7 @@ export default function RiderQrPage() {
   }
 
   // Build the 1080×1080 print PNG off-screen.
-  // Yellow header band, big QR centred, footer = cityriders.id.
+  // Yellow header band, big QR centred, footer = citydrivers.id.
   async function downloadPng() {
     if (!driver || !publicUrl) return
     const SIZE     = 1080

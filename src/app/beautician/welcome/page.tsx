@@ -24,7 +24,7 @@ import {
 // incomplete item below is a tile linking back to the relevant dashboard
 // section so the beautician can fill it in.
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 const DEFAULT_HERO =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 

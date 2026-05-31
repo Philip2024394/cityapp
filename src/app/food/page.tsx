@@ -13,17 +13,17 @@ import type { Place, PlaceCategory, CityZone } from '@/lib/places/types'
 // /places/[slug] so the detail surface stays unified across both browse
 // views.
 //
-// Compliance posture: IndoCity is a software directory (PM 12/2019). The
+// Compliance posture: CityDrivers is a software directory (PM 12/2019). The
 // list labels venues as "self-listed". No fake "verified" / "official
 // partner" badges — only data the row actually carries is surfaced.
 // ============================================================================
 
 export const metadata = {
-  title: 'Food · IndoCity',
+  title: 'Food · CityDrivers',
   description:
     'Browse self-listed eateries — restaurants, cafés, bars, clubs — ' +
-    'near you in Indonesia. IndoCity is a software directory.',
-  alternates: { canonical: 'https://indocity.id/food' },
+    'near you in Indonesia. CityDrivers is a software directory.',
+  alternates: { canonical: 'https://citydrivers.id/food' },
 }
 
 // Force fresh data on every request so newly-approved places land without a
@@ -168,14 +168,14 @@ export default async function FoodPage({
         color: '#0A0A0A',
       }}
     >
-      {/* HEADER — IndoCity wordmark on the left (Ind + pin + City), nothing
+      {/* HEADER — CityDrivers wordmark on the left (Ind + pin + City), nothing
           on the right. Mirrors the /places header pattern verbatim. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
             className="inline-flex items-center hover:opacity-85 transition"
-            aria-label="IndoCity home"
+            aria-label="CityDrivers home"
           >
             <span
               className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"

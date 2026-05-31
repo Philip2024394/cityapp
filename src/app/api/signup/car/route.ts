@@ -20,7 +20,7 @@ import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 //     subscription via /dashboard/car before their listing goes live in
 //     the public /car marketplace.
 //
-// IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. The driver publishes
+// CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019. The driver publishes
 // their OWN price_per_km, min_fee, pitstop_fee — this route persists those
 // numbers as-is. We never compute, modify, or appoint fares.
 // ============================================================================

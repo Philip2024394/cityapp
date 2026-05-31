@@ -90,7 +90,7 @@ export default function ContactBookingPopup({
     `Hi ${providerName}, I'd like to book ${s.trim() || 'a service'} `,
     `on ${d} at ${t}.`,
     n.trim() ? `\nNotes: ${n.trim()}` : '',
-    `\n\n— Sent via indocity.id`,
+    `\n\n— Sent via citydrivers.id`,
   ].join('')
 
   async function submit() {

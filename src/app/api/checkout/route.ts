@@ -40,7 +40,7 @@ export const runtime = 'nodejs'  // needs `crypto` (keyVault) + Node fetch
 //
 // ⚠ NEVER ADD ride/transport TYPES HERE. ⚠
 // 'driver', 'car_driver', 'bike_rider', 'rental_driver', 'truck',
-// 'bus' — all explicitly excluded. CityRiders is positioned as a
+// 'bus' — all explicitly excluded. CityDrivers is positioned as a
 // directory + driver SaaS (Permenhub 118/2018 light lane), not a
 // transport aplikator. The platform must never collect ride fares.
 // See the policy comment at the top of `src/app/cari/page.tsx`.

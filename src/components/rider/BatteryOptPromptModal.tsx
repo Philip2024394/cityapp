@@ -4,7 +4,7 @@ import { BatteryCharging, X as XIcon } from 'lucide-react'
 
 // ============================================================================
 // BatteryOptPromptModal — one-shot Bahasa explainer asking the driver to
-// whitelist IndoCity from Android's battery optimization. Fired by
+// whitelist CityDrivers from Android's battery optimization. Fired by
 // GoOnlineToggle after the first successful "Go Online" handshake.
 //
 // Visual style mirrors BackgroundLocationDisclosure in GoOnlineToggle.tsx
@@ -44,7 +44,7 @@ export default function BatteryOptPromptModal({ onAccept, onDismiss }: Props) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Izin baterai CityRiders"
+        aria-label="Izin baterai CityDrivers"
         className="fixed left-0 right-0 bottom-0 z-[90] pb-safe animate-[fadeUp_0.22s_ease-out]"
       >
         <div
@@ -85,7 +85,7 @@ export default function BatteryOptPromptModal({ onAccept, onDismiss }: Props) {
 
           <div className="px-5 pb-4 space-y-3 text-[14px] text-ink/90 leading-relaxed">
             <p>
-              Untuk tetap <strong>Online</strong> saat layar mati, CityRiders
+              Untuk tetap <strong>Online</strong> saat layar mati, CityDrivers
               perlu izin baterai. Tanpa izin ini, sistem hemat baterai HP
               kamu akan menutup aplikasi setelah ~30 menit — dan kamu
               berhenti muncul di peta customer tanpa sadar.

@@ -14,7 +14,7 @@
 // the shared <RentalSection /> component). Each commit patches the drivers
 // row scoped to user_id.
 //
-// COMPLIANCE: IndoCity is a software directory under PM 12/2019. Photos,
+// COMPLIANCE: CityDrivers is a software directory under PM 12/2019. Photos,
 // vehicle data, and rental rates are self-published — we display them as
 // the driver provides them. No verification, no order-matching.
 //

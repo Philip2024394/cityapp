@@ -2,7 +2,7 @@
 //
 // Single-purpose marketing surface for driver acquisition. Customer
 // booking lives at /cari; this page is for someone considering joining
-// CityRiders as a driver. Routes to /signup?role=driver from every CTA.
+// CityDrivers as a driver. Routes to /signup?role=driver from every CTA.
 //
 // Mobile-first portrait hero (the founder-supplied illustration is
 // taller than wide — vertical phones get a full-height impact shot,
@@ -22,14 +22,14 @@ const HERO_URL =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_30_50%20PM.png'
 
 const BRAND_LOGO_URL =
-  'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
+  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
 
 // Public WhatsApp number for driver-side support — sourced from env via getSupportWhatsApp().
 
-const PAGE_TITLE = 'Drive with CityRiders — Your earnings, your rules'
+const PAGE_TITLE = 'Drive with CityDrivers — Your earnings, your rules'
 const PAGE_DESCRIPTION =
-  'Join CityRiders as a motorbike driver. Customers pay you directly via WhatsApp. No per-trip commission, no algorithm cutting your fare.'
-const PAGE_URL = 'https://indocity.id/drivers'
+  'Join CityDrivers as a motorbike driver. Customers pay you directly via WhatsApp. No per-trip commission, no algorithm cutting your fare.'
+const PAGE_URL = 'https://citydrivers.id/drivers'
 
 export const metadata = {
   title:       PAGE_TITLE,
@@ -81,7 +81,7 @@ export default function DriversLandingPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={HERO_URL}
-            alt="CityRiders driver on a yellow scooter at sunset in Bali"
+            alt="CityDrivers driver on a yellow scooter at sunset in Bali"
             className="absolute inset-0 w-full h-full object-cover object-center"
             loading="eager"
           />
@@ -91,7 +91,7 @@ export default function DriversLandingPage() {
               fully covers the iPhone notch area + the brand row. */}
           <div
             aria-hidden
-            className="absolute inset-x-0 top-0"
+            className="absolute inset-x-0 top-0 pointer-events-none"
             style={{
               height: 160,
               background:
@@ -103,7 +103,7 @@ export default function DriversLandingPage() {
               and CTA stack. Sits behind the bottom content area. */}
           <div
             aria-hidden
-            className="absolute inset-x-0 bottom-0"
+            className="absolute inset-x-0 bottom-0 pointer-events-none"
             style={{
               height: '55%',
               background:
@@ -124,22 +124,21 @@ export default function DriversLandingPage() {
               style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 32px)' }}
             >
               <Link
-                href="/drivers"
+                href="/cityriders"
                 className="inline-flex items-center gap-2 active:scale-[0.97] transition"
-                aria-label="CityRiders home"
+                aria-label="CityDrivers home"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={BRAND_LOGO_URL}
                   alt=""
-                  className="w-9 h-9 rounded-xl"
-                  style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.18)' }}
+                  className="h-11 w-auto rounded-xl object-contain"
                 />
                 <span
                   className="font-black text-[18px] tracking-tight leading-none"
                   style={{ color: '#0A0A0A' }}
                 >
-                  CityRiders
+                  CityDrivers
                 </span>
               </Link>
               <VehicleSwitcher active="bike" />
@@ -179,7 +178,7 @@ export default function DriversLandingPage() {
                 </Link>
                 <a
                   href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                    "Hi, I'm interested in joining CityRiders as a driver. Can I get more info?",
+                    "Hi, I'm interested in joining CityDrivers as a driver. Can I get more info?",
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -235,12 +234,12 @@ export default function DriversLandingPage() {
         </div>
       </section>
 
-      {/* ─── Why CityRiders ─────────────────────────────────────────── */}
+      {/* ─── Why CityDrivers ─────────────────────────────────────────── */}
       <section className="bg-[#FFFBEA] border-y border-[#FACC15]/30">
         <div className="px-5 py-12">
           <div className="text-center mb-10">
             <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-              Why CityRiders
+              Why CityDrivers
             </div>
             <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
               Fair rules. Clear costs. You stay in control.
@@ -328,7 +327,7 @@ export default function DriversLandingPage() {
           </div>
 
           <ul className="mt-6 space-y-2.5 text-[13px] sm:text-[14px] text-black/80">
-            <Bullet>Your personal public page (cityriders.id/r/you)</Bullet>
+            <Bullet>Your personal public page (citydrivers.id/r/you)</Bullet>
             <Bullet>Listed in Yogyakarta, Bali, Jogja customer search</Bullet>
             <Bullet>0% commission per trip — forever</Bullet>
             <Bullet>WhatsApp direct — customers chat you</Bullet>
@@ -374,7 +373,7 @@ export default function DriversLandingPage() {
             </Link>
             <a
               href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                "Hi, I'm interested in joining CityRiders as a driver. Can I get more info?",
+                "Hi, I'm interested in joining CityDrivers as a driver. Can I get more info?",
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -387,7 +386,7 @@ export default function DriversLandingPage() {
           </div>
 
           <div className="mt-10 pt-6 border-t border-white/10 text-[12px] text-white/45">
-            CityRiders is a directory and profile management tool — not a
+            CityDrivers is a directory and profile management tool — not a
             ride-hailing app. Drivers and customers transact directly,
             off-platform.
           </div>
@@ -405,11 +404,13 @@ export default function DriversLandingPage() {
 // cross-nav pill style: white-blur background, rounded-full, 11px
 // font, charcoal text. Duplicated in /drivers/car and /drivers/truck —
 // same pattern these pages already use for Step/Differentiator/Bullet.
-function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'truck' }) {
-  const items: { key: 'bike' | 'car' | 'truck'; label: string; href: string }[] = [
-    { key: 'bike', label: 'Bike', href: '/drivers' },
-    { key: 'car', label: 'Car', href: '/drivers/car' },
+function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'bus' | 'truck' | 'jeep' }) {
+  const items: { key: 'bike' | 'car' | 'bus' | 'truck' | 'jeep'; label: string; href: string }[] = [
+    { key: 'bike',  label: 'Bike',  href: '/drivers' },
+    { key: 'car',   label: 'Car',   href: '/drivers/car' },
+    { key: 'bus',   label: 'Bus',   href: '/drivers/bus' },
     { key: 'truck', label: 'Truck', href: '/drivers/truck' },
+    { key: 'jeep',  label: 'Jeep',  href: '/drivers/jeep' },
   ]
   return (
     <div

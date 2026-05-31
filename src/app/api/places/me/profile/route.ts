@@ -3,6 +3,7 @@ import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl } from '@/lib/validation/images'
 import type { TableUpdate } from '@/lib/supabase/typed-helpers'
+import type { Json } from '@/types/supabase'
 
 // POST /api/places/me/profile — partial update of the signed-in user's
 // place row. Mirrors /api/beautician/me/profile, but writes into the
@@ -313,7 +314,7 @@ export async function POST(req: Request) {
       }
       if (entries.length > 0) cleaned[k] = entries
     }
-    update.service_photos = cleaned
+    update.service_photos = cleaned as Json
   }
 
   if (body.hero_text !== undefined) {
@@ -363,7 +364,7 @@ export async function POST(req: Request) {
         }
         cleaned.effect = ht.effect
       }
-      update.hero_text = Object.keys(cleaned).length ? cleaned : null
+      update.hero_text = (Object.keys(cleaned).length ? cleaned : null) as Json
     }
   }
 

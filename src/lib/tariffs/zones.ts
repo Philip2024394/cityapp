@@ -347,7 +347,7 @@ export const SERVICE_REGULATION: Record<ServiceType, {
   car: {
     // Car passenger fares ARE government-regulated (taxi konvensional
     // floor under PM 108/2017 + GoCar/GrabCar floor under KP 667/2022
-    // angkutan-sewa-khusus). Driver sets above the floor; IndoCity is a
+    // angkutan-sewa-khusus). Driver sets above the floor; CityDrivers is a
     // software directory and does not compute fares.
     regulated: true,
     basis: 'Diatur KP 667/2022 (taksi online) + PM 108/2017 (taksi konvensional)',
@@ -355,15 +355,27 @@ export const SERVICE_REGULATION: Record<ServiceType, {
   bus: {
     // Bus / minibus group transport for tourism + charter (Hiace, Avanza,
     // Innova) — falls under angkutan sewa-pariwisata (PM 117/2018 + local
-    // dishub registration). Drivers self-publish charter rates; IndoCity
+    // dishub registration). Drivers self-publish charter rates; CityDrivers
     // surfaces them as a directory only.
+    regulated: true,
+    basis: 'Diatur PM 117/2018 (angkutan pariwisata) + registrasi Dishub setempat',
+  },
+  truck: {
+    // Pindahan / distribusi / bulk parcel via truck. Self-published
+    // charter rates; CityDrivers surfaces them as a directory only.
+    regulated: false,
+    basis: 'Tidak diatur tarif pemerintah — sopir menetapkan tarif angkutan barang',
+  },
+  jeep: {
+    // Jeep adventure / tour charter — Bromo, Merapi, Ijen sunrise,
+    // off-road. Falls under angkutan sewa-pariwisata posture.
     regulated: true,
     basis: 'Diatur PM 117/2018 (angkutan pariwisata) + registrasi Dishub setempat',
   },
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Suggested PARCEL + FOOD rates per zone (IndoCity platform defaults)
+// Suggested PARCEL + FOOD rates per zone (CityDrivers platform defaults)
 // ─────────────────────────────────────────────────────────────────────
 //
 // Parcel + food have NO statutory floor in Indonesia (Permenkominfo
@@ -384,7 +396,7 @@ export const SERVICE_REGULATION: Record<ServiceType, {
 //   GoFood Zona I customer ~Rp 2,000/km + Rp 8-10k min
 //   GrabFood ~Rp 2,500/km after 4km + Rp 10,400 min
 //   ShopeeFood flat ~Rp 10k/order
-// IndoCity drivers KEEP 100% (vs incumbents' 92% post-Perpres 27/2026,
+// CityDrivers drivers KEEP 100% (vs incumbents' 92% post-Perpres 27/2026,
 // or 80% pre-June 2026). Customer pays roughly the same; driver earns more.
 
 export const SUGGESTED_PARCEL_RATES: Record<Zone, {

@@ -7,7 +7,7 @@
 // borders, yellow #FACC15 accents, charcoal #0A0A0A text).
 //
 // Layout:
-//   [brand header strip]              ← sticky top, IndoCity wordmark left
+//   [brand header strip]              ← sticky top, CityDrivers wordmark left
 //   ─────────────────────────────────
 //          [main content card]        ← centred, max-w-md, soft shadow
 //   ─────────────────────────────────
@@ -53,7 +53,7 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
 }
 
 // ----------------------------------------------------------------------------
-// Brand header — IndoCity wordmark on the left ("Ind" + yellow pin SVG +
+// Brand header — CityDrivers wordmark on the left ("Ind" + yellow pin SVG +
 // "City"). Inline SVG copied from /places/page.tsx so the mark matches
 // across the app pixel-for-pixel. Right side intentionally empty: auth
 // pages keep the focus on the form, no nav distractions.
@@ -73,7 +73,7 @@ function AuthHeader() {
         <Link
           href="/"
           className="inline-flex items-center hover:opacity-85 transition"
-          aria-label="IndoCity home"
+          aria-label="CityDrivers home"
         >
           <span
             className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
@@ -120,7 +120,7 @@ function AuthFooter() {
     >
       <div className="max-w-3xl mx-auto px-4 py-5 text-center space-y-1.5">
         <p className="text-[13px] text-[#71717A] leading-snug">
-          Indonesia&apos;s local business directory · cityriders.id
+          Indonesia&apos;s local business directory · citydrivers.id
         </p>
         <p className="text-[13px] leading-snug">
           <Link href="/terms" className="font-bold text-[#0A0A0A] hover:underline">Terms</Link>
@@ -135,7 +135,7 @@ function AuthFooter() {
           </a>
         </p>
         <p className="text-[13px] text-[#71717A] leading-snug">
-          © 2026 IndoCity · PM 12/2019 software directory
+          © 2026 CityDrivers · PM 12/2019 software directory
         </p>
       </div>
     </footer>

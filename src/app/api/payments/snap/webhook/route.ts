@@ -3,6 +3,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import { midtransStatusToInternal, verifyNotificationSignature } from '@/lib/midtrans/snap'
 import { fireAlertServer } from '@/lib/ops/alert'
 import type { TableUpdate } from '@/lib/supabase/typed-helpers'
+import type { Json } from '@/types/supabase'
 
 // ============================================================================
 // POST /api/payments/snap/webhook
@@ -13,7 +14,7 @@ import type { TableUpdate } from '@/lib/supabase/typed-helpers'
 //
 // IMPORTANT: configure this URL in Midtrans Dashboard → Settings →
 // Configuration → Payment Notification URL:
-//   https://indocity.id/api/payments/snap/webhook
+//   https://citydrivers.id/api/payments/snap/webhook
 //
 // Signature scheme (sha512):
 //   sha512(order_id + status_code + gross_amount + server_key)
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
 
   const update: TableUpdate<'payment_intents'> = {
     status: next,
-    raw_notification: body as Record<string, unknown>,
+    raw_notification: body as Json,
   }
   if (body.transaction_id) update.provider_txn_id = body.transaction_id
   if (next === 'paid')     update.paid_at = new Date().toISOString()

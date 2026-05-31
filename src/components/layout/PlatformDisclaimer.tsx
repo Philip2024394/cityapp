@@ -8,7 +8,7 @@ type Props = {
   variant?: 'links' | 'compact' | 'full'
 }
 
-// Footer disclaimer affirming IndoCity's position as a SOFTWARE
+// Footer disclaimer affirming CityDrivers's position as a SOFTWARE
 // LISTING PLATFORM for independent riders — NOT a transportation
 // service provider. Used on every customer-facing page to anchor the
 // SaaS positioning and reduce risk of being classified as APJT

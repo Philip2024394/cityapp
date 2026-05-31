@@ -15,9 +15,9 @@ import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 // =============================================================================
 // RentalProfileShell — shared renderer for /rentals/car/[slug] + /rentals/truck/[slug]
 // =============================================================================
-// IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. These per-listing rental
+// CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019. These per-listing rental
 // profile pages surface a single driver who self-publishes a daily / weekly /
-// monthly rate plus a rental_type (self-drive, with-driver, or both). IndoCity
+// monthly rate plus a rental_type (self-drive, with-driver, or both). CityDrivers
 // never sets, computes, appoints, or matches prices. The customer taps
 // "Contact via WhatsApp" → wa.me handoff; the driver and customer agree
 // the final rental terms directly in chat.
@@ -33,11 +33,11 @@ import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 // discriminator + copy strings.
 // =============================================================================
 
-const SITE_URL    = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL    = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 const BRAND_YELLOW = '#FACC15'
 const BRAND_NAVY   = '#0F172A'
 const WORDMARK_URL =
-  'https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png'
+  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
 
 // -----------------------------------------------------------------------------
 // Types
@@ -245,7 +245,7 @@ export async function buildRentalMetadata(
   if (!d) return { title: 'Listing not found', robots: { index: false, follow: false } }
   const vehicle = vehicleHeadline(d, config.vehicleFallback)
   const where   = [d.area, d.city].filter(Boolean).join(', ') || 'Indonesia'
-  const title       = `${d.business_name} · ${config.seoTitleSegment} · IndoCity`
+  const title       = `${d.business_name} · ${config.seoTitleSegment} · CityDrivers`
   const description = (d.bio?.trim())
     || `${d.business_name} — ${config.seoTitleSegment.toLowerCase()} ${vehicle} di ${where}. ` +
        `Daily, weekly, monthly rates · self-drive or with driver. Contact via WhatsApp.`
@@ -292,7 +292,7 @@ export async function renderRentalProfile(
   // Schema.org LocalBusiness — keeps the per-listing page eligible for
   // Knowledge Graph / Maps surfacing. priceRange is the generic 'Rp'
   // marker; we intentionally don't expose the daily rate here because
-  // the schema interpretation of price would suggest IndoCity is selling
+  // the schema interpretation of price would suggest CityDrivers is selling
   // a service at that price — which violates PM 12/2019 positioning.
   const jsonLd: Record<string, unknown> = {
     '@context':   'https://schema.org',
@@ -353,7 +353,7 @@ export async function renderRentalProfile(
           </Link>
           <img
             src={WORDMARK_URL}
-            alt="IndoCity"
+            alt="CityDrivers"
             className="h-7 w-auto"
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.35))' }}
           />
@@ -600,7 +600,7 @@ export async function renderRentalProfile(
             </div>
             <p className="text-[12px] text-gray-500 leading-snug mt-2 px-1">
               Self-published rates · agree rental terms directly with driver.
-              IndoCity is a software directory — we never set, calculate, or
+              CityDrivers is a software directory — we never set, calculate, or
               modify prices.
             </p>
           </section>

@@ -76,7 +76,7 @@ export default function BookingAlertsToggle() {
         const r = await ensureNativePushRegistered()
         if (!r.ok) {
           if (r.reason === 'permission_denied') {
-            setError('Izin notifikasi ditolak — aktifkan di Settings → Apps → CityRiders → Notifications, lalu coba lagi')
+            setError('Izin notifikasi ditolak — aktifkan di Settings → Apps → CityDrivers → Notifications, lalu coba lagi')
           } else {
             setError('Tidak bisa daftarkan device — coba lagi')
           }
@@ -188,7 +188,7 @@ export default function BookingAlertsToggle() {
         >
           <Smartphone className="w-4 h-4 shrink-0" style={{ color: '#2563EB' }} />
           <div className="flex-1 min-w-0 leading-relaxed">
-            Loud alerts require the CityRiders Android app. Install from Google Play for the 10-second booking sound.
+            Loud alerts require the CityDrivers Android app. Install from Google Play for the 10-second booking sound.
           </div>
         </div>
       )}
@@ -278,7 +278,7 @@ function PushNotificationRationale({
 
           <div className="px-5 pb-4 space-y-3 text-[14px] text-[#0A0A0A] leading-relaxed">
             <p>
-              CityRiders butuh izin notifikasi sekali saja supaya HP-mu bisa
+              CityDrivers butuh izin notifikasi sekali saja supaya HP-mu bisa
               <strong> bunyi keras 10 detik</strong> setiap kali customer tap
               tombol Contact — walaupun HP-mu lagi terkunci.
             </p>

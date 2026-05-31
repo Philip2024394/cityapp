@@ -7,7 +7,7 @@ import JsonLd from '@/components/seo/JsonLd'
 // Nested layout — the parent /rent/layout.tsx still injects
 // AppImageBackground.
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 
 type Row = {
   id: string

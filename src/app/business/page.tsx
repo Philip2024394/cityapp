@@ -21,7 +21,7 @@ import type { Rider } from '@/types/rider'
 //   - Drivers self-listed (opted in via dashboard toggle)
 //   - Business contacts driver directly on WhatsApp
 //   - No contract storage, no payment routing, no commission
-//   - IndoCity is a directory + facilitator
+//   - CityDrivers is a directory + facilitator
 //
 // Honest density at launch — if only 3 drivers in Yogya are opted in,
 // the page says "3 drivers available". Don't fake the supply.
@@ -220,7 +220,7 @@ export default function BusinessDirectoryPage() {
 
           {/* Honest legal footer */}
           <p className="text-[12px] text-dim leading-relaxed pt-2">
-            IndoCity is a directory. Drivers are independent operators — terms,
+            CityDrivers is a directory. Drivers are independent operators — terms,
             pricing, and reliability are negotiated directly between you and the
             driver on WhatsApp. We don&apos;t store contracts, broker payments, or
             take commission.{' '}
@@ -244,7 +244,7 @@ export default function BusinessDirectoryPage() {
 function BusinessDriverCard({ driver }: { driver: Rider }) {
   const isTopTier = TIER_ENFORCEMENT_ACTIVE && driver.b2bTier === 'top'
   const waText = encodeURIComponent(
-    `Halo ${driver.name}! Saya tertarik diskusi kontrak rutin lewat IndoCity — bisa diskusi rate untuk pengiriman harian saya?`,
+    `Halo ${driver.name}! Saya tertarik diskusi kontrak rutin lewat CityDrivers — bisa diskusi rate untuk pengiriman harian saya?`,
   )
   const waLink = driver.whatsappE164
     ? `https://wa.me/${driver.whatsappE164.replace(/[^\d]/g, '')}?text=${waText}`

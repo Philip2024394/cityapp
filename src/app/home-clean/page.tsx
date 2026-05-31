@@ -11,7 +11,7 @@ import type { HomeCleanProviderPublic } from '@/lib/home-clean/types'
 // White wordmark header → centered rounded card → title + List pill, search
 // input, scrollable chip filter row, landscape row cards.
 //
-// Compliance posture: IndoCity is a software directory (PM 12/2019). Owner-
+// Compliance posture: CityDrivers is a software directory (PM 12/2019). Owner-
 // published rates & hours. Customers book direct via WhatsApp.
 // ============================================================================
 
@@ -449,10 +449,10 @@ function Shell({ children }: { children: React.ReactNode }) {
     >
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" aria-label="IndoCity home" className="inline-block hover:opacity-85 transition">
+          <Link href="/" aria-label="CityDrivers home" className="inline-block hover:opacity-85 transition">
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-              alt="IndoCity"
+              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
+              alt="CityDrivers"
               className="h-8 sm:h-10 w-auto"
             />
           </Link>

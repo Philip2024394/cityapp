@@ -52,7 +52,7 @@ function resolveCardPhoto(r: BikeRental): string | null {
 //   └─────────────────────────────────────────────────────────┘
 //
 // Same yellow-card / dark-content visual system as the places cards so
-// the rental surface feels native to the IndoCity ecosystem.
+// the rental surface feels native to the CityDrivers ecosystem.
 
 const RENTAL_BG_IMAGE =
   'https://ik.imagekit.io/nepgaxllc/Untitledasdasdadsasd.png?updatedAt=1779599833442'
@@ -108,7 +108,7 @@ export default function RentalCard({ rental: r }: { rental: BikeRental }) {
   return (
     <article className="relative w-full overflow-hidden rounded-2xl">
       {/* Full-bleed brand art background — same visual as the places cards
-          so rentals feel native to the IndoCity system. */}
+          so rentals feel native to the CityDrivers system. */}
       <img
         src={RENTAL_BG_IMAGE}
         alt=""

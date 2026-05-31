@@ -11,7 +11,7 @@ import { splitPolylineAtFraction, type LngLat } from '@/lib/geo/polyline'
 // Map-pin SVG generator used for pickup + dropoff markers. Single
 // hand-rolled SVG so the outer teardrop fills with `fill` while the
 // inner circle uses `dotFill` — mirrors the wordmark "Ind📍 City"
-// treatment in the header (black-and-white pin in the IndoCity wordmark,
+// treatment in the header (black-and-white pin in the CityDrivers wordmark,
 // same shape here as black-pickup / yellow-dropoff trip markers).
 function pinSvg({
   fill,
@@ -499,7 +499,7 @@ export default function RiderMap({
     })
   }, [riders, markerStyle])
 
-  // Render pickup marker — BLACK map-pin (matching the IndoCity wordmark
+  // Render pickup marker — BLACK map-pin (matching the CityDrivers wordmark
   // "Ind📍 City" pin treatment; the pin head sits at the trip origin).
   // White centre dot so the pin reads as a marker, not a solid blob.
   useEffect(() => {

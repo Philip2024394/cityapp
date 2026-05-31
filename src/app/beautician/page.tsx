@@ -19,7 +19,7 @@ import {
 // search input, scrollable chip filter row, landscape row cards (~22%
 // taller than /places — beautician content is richer).
 //
-// Compliance posture: IndoCity is a software directory (PM 12/2019). Cards
+// Compliance posture: CityDrivers is a software directory (PM 12/2019). Cards
 // label providers as "self-listed". Owner-published hours / pricing.
 // ============================================================================
 
@@ -460,7 +460,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" aria-label="Kita2u home" className="inline-block hover:opacity-85 transition">
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
+              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
               alt="Kita2u"
               className="h-8 sm:h-10 w-auto"
             />

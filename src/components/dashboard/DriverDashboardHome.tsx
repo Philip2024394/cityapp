@@ -48,7 +48,7 @@ const ADMIN_WHATSAPP_E164 = '6285183600015'
 
 // ─── Types ────────────────────────────────────────────────────────────
 
-export type DashboardVertical = 'rider' | 'car' | 'truck' | 'bus'
+export type DashboardVertical = 'rider' | 'car' | 'truck' | 'bus' | 'jeep'
 
 /**
  * Minimal row shape the shared shell reads. Includes BOTH the bike and the
@@ -124,7 +124,7 @@ export type DashboardVerticalConfig = {
    * comparison. Bike riders see vs other bikes, car drivers vs cars, etc.
    * Bus passes 'minibus' (the actual DB enum value).
    */
-  marketPositionVehicleType: 'bike' | 'car' | 'truck' | 'minibus'
+  marketPositionVehicleType: 'bike' | 'car' | 'truck' | 'minibus' | 'jeep'
   /** Path to the services subpage (link in the no-rate market position card). */
   servicesHref:       string
   /**
@@ -326,7 +326,7 @@ function DashboardHome({
           >
             <div className="min-w-0">
               <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#EAB308]">Your public page</div>
-              <div className="text-[14px] font-black text-black truncate mt-0.5">cityriders.id{profileHref}</div>
+              <div className="text-[14px] font-black text-black truncate mt-0.5">citydrivers.id{profileHref}</div>
               <div className="text-[12px] text-black/60 mt-0.5">Preview what customers see.</div>
             </div>
             <ExternalLink className="w-5 h-5 shrink-0 text-[#0A0A0A]" strokeWidth={2.5} />
@@ -402,7 +402,7 @@ function IdentityRow({
           href={profileHref}
           className="inline-flex items-center gap-1 text-[11px] text-black/55 mt-0.5 hover:text-[#0A0A0A] transition"
         >
-          cityriders.id{profileHref}
+          citydrivers.id{profileHref}
           <span className="text-[#EAB308] font-extrabold">· View →</span>
         </Link>
       )}
@@ -490,7 +490,7 @@ function MarketPositionCard({
 }: {
   pricePerKm:  number | null
   city:        string | null
-  vehicleType: 'bike' | 'car' | 'truck' | 'minibus'
+  vehicleType: 'bike' | 'car' | 'truck' | 'minibus' | 'jeep'
   servicesHref: string
 }) {
   const [avg, setAvg] = useState<number | null>(null)

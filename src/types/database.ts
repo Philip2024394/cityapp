@@ -1,5 +1,5 @@
 // ============================================================================
-// IndoCity — Supabase database types
+// CityDrivers — Supabase database types
 // ============================================================================
 // Hand-maintained to match supabase/migrations/0001_initial.sql.
 // When the schema changes, run `supabase gen types typescript --local` to

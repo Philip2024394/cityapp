@@ -3,10 +3,11 @@
 //   'person' / 'parcel' / 'food' → vehicle_type = 'bike'
 //   'car'                         → vehicle_type = 'car'
 //   'bus'                         → vehicle_type = 'minibus'
-// As we add Truck / Premium Car the matching service entries will be
-// added here so the /cari tab selector stays the single source of
-// truth for what the customer is browsing.
-export type ServiceType = 'person' | 'parcel' | 'food' | 'car' | 'bus'
+//   'truck'                       → vehicle_type = 'truck'
+//   'jeep'                        → vehicle_type = 'jeep'
+// The /cari vehicle picker is the single source of truth for what the
+// customer is browsing.
+export type ServiceType = 'person' | 'parcel' | 'food' | 'car' | 'bus' | 'truck' | 'jeep'
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {
   person: 'Bike Ride',
@@ -14,6 +15,8 @@ export const SERVICE_LABELS: Record<ServiceType, string> = {
   food:   'Bike Food',
   car:    'Car Ride',
   bus:    'Bus / Minibus',
+  truck:  'Truck',
+  jeep:   'Jeep / Adventure',
 }
 
 export const SERVICE_SHORT: Record<ServiceType, string> = {
@@ -22,6 +25,8 @@ export const SERVICE_SHORT: Record<ServiceType, string> = {
   food:   'Food',
   car:    'Car',
   bus:    'Bus',
+  truck:  'Truck',
+  jeep:   'Jeep',
 }
 
 export const SERVICE_ICONS: Record<ServiceType, string> = {
@@ -30,6 +35,8 @@ export const SERVICE_ICONS: Record<ServiceType, string> = {
   food:   '🍔',
   car:    '🚗',
   bus:    '🚐',
+  truck:  '🚚',
+  jeep:   '🚙',
 }
 
 export const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
@@ -38,6 +45,8 @@ export const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
   food:   'Food delivery from restaurants / warungs, COD groceries',
   car:    'Airport runs, family rides, rain rides, longer trips',
   bus:    'Group transport — Hiace, Avanza, Innova for tours + airports',
+  truck:  'Pindahan, distribusi, bulk parcel — pickup / engkel / box',
+  jeep:   'Bromo / Merapi / Ijen sunrise tours, off-road, volcano charters',
 }
 
 export type Bike = {

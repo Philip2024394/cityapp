@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-// Bottom banner that prompts the visitor to add IndoCity to their
+// Bottom banner that prompts the visitor to add CityDrivers to their
 // home screen. Once installed, the app opens in standalone mode (no
 // browser URL bar, no footer chrome) — full-screen on every device.
 //
@@ -43,6 +43,23 @@ function isDismissed(): boolean {
   } catch { return false }
 }
 
+// Host-aware brand. citydrivers.id sees CityDrivers branding + logo; every
+// other host (citydrivers.id, localhost) sees the legacy Kita2u branding +
+// /icons fallback.
+const CITYDRIVERS_LOGO_URL =
+  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
+
+function detectBrand(): { name: string; iconUrl: string } {
+  if (typeof window === 'undefined') {
+    return { name: 'CityDrivers', iconUrl: CITYDRIVERS_LOGO_URL }
+  }
+  const h = window.location.host.toLowerCase().split(':')[0]
+  if (h === 'citydrivers.id' || h === 'www.citydrivers.id') {
+    return { name: 'CityDrivers', iconUrl: CITYDRIVERS_LOGO_URL }
+  }
+  return { name: 'Kita2u', iconUrl: '/icons/icon-192.png' }
+}
+
 function setDismissed() {
   try {
     const until = Date.now() + DISMISS_DAYS * 24 * 60 * 60 * 1000
@@ -54,8 +71,10 @@ export default function InstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [show, setShow] = useState(false)
   const [ios, setIos] = useState(false)
+  const [brand, setBrand] = useState({ name: 'CityDrivers', iconUrl: CITYDRIVERS_LOGO_URL })
 
   useEffect(() => {
+    setBrand(detectBrand())
     if (isStandalone()) return
     if (isDismissed()) return
 
@@ -107,7 +126,7 @@ export default function InstallPrompt() {
   return (
     <div
       role="dialog"
-      aria-label="Add Kita2u to your home screen"
+      aria-label={`Add ${brand.name} to your home screen`}
       className="fixed inset-x-0 z-50 pb-safe"
       style={{ bottom: 0 }}
     >
@@ -122,14 +141,14 @@ export default function InstallPrompt() {
             aria-hidden
           >
             <img
-              src="/icons/icon-192.png"
+              src={brand.iconUrl}
               alt=""
-              className="w-9 h-9 rounded-md"
+              className="h-9 w-auto object-contain rounded-md"
             />
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[14px] font-black text-black leading-tight">
-              Install Kita2u
+              Install {brand.name}
             </div>
             <p className="text-[12px] text-black/65 leading-snug mt-1">
               {ios

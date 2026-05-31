@@ -22,7 +22,7 @@
 // All currency inputs render IDR with thousand-separator dots and parse
 // back to plain integers before saving.
 //
-// COMPLIANCE: IndoCity is a software directory under PM 12/2019. The driver
+// COMPLIANCE: CityDrivers is a software directory under PM 12/2019. The driver
 // self-publishes every price here. We never compute fares, never appoint
 // orders, never custody funds. Copy frames pricing as "YOUR published rates".
 // ============================================================================
@@ -207,7 +207,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
                 </span>
               </div>
               <p className="text-[12.5px] text-[#0A0A0A]/75 leading-snug">
-                Pick what trips you offer and set <strong>your</strong> rates. CityRiders displays them as-is.
+                Pick what trips you offer and set <strong>your</strong> rates. CityDrivers displays them as-is.
               </p>
             </div>
           </div>
@@ -454,7 +454,7 @@ function PricingCard({
   return (
     <Card
       title="Per-km transport rates"
-      hint="YOUR published rates for point-to-point trips. CityRiders shows them as-is — we never compute fares."
+      hint="YOUR published rates for point-to-point trips. CityDrivers shows them as-is — we never compute fares."
       icon={<DollarSign size={18} />}
     >
       <div className="grid grid-cols-2 gap-2">
@@ -774,7 +774,7 @@ function ParcelB2BCard({
 
       {!enabled && (
         <p className="text-[12px] text-black/60 leading-snug">
-          When enabled, customers find you at <strong>cityriders.id/parcel</strong> under car drivers.
+          When enabled, customers find you at <strong>citydrivers.id/parcel</strong> under car drivers.
         </p>
       )}
 

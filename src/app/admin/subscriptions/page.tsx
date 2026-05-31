@@ -14,7 +14,7 @@ import SubscriptionReviewActions from './SubscriptionReviewActions'
 //   • Reject  → status='rejected', revert paid_until to the LATEST prior
 //               approved payment's period_end (or NULL if none).
 //
-// Compliance: IndoCity never custodies funds. Driver paid externally; we
+// Compliance: CityDrivers never custodies funds. Driver paid externally; we
 // only record the proof of payment and grant access window. "Verified" /
 // "Rejected" terminology is fine — admin is verifying the screenshot.
 // ============================================================================

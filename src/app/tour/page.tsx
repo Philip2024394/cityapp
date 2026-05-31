@@ -517,7 +517,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Link href="/" aria-label="Kita2u home" className="inline-block hover:opacity-85 transition">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
+              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
               alt="Kita2u"
               className="h-8 sm:h-10 w-auto"
             />

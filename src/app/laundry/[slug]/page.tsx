@@ -153,7 +153,7 @@ export default function LaundryProviderPage() {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
   }
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
   const profileUrl = `${siteOrigin}/laundry/${p.slug}`
 
   // Synthetic services_offered derived from priced columns. A column
@@ -165,7 +165,7 @@ export default function LaundryProviderPage() {
 
   // WhatsApp prefill text for the under-carousel contact button.
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
+    `Halo ${p.display_name}, saya menemukan profil Anda di CityDrivers.`,
     `Saya tertarik untuk pesan laundry.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
@@ -764,7 +764,7 @@ export default function LaundryProviderPage() {
 
               {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di IndoCity: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di CityDrivers: ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -849,7 +849,7 @@ export default function LaundryProviderPage() {
           vertical "BACK" text below. Diverts back to /laundry. */}
       <Link
         href="/laundry"
-        aria-label="Back to IndoCity laundry"
+        aria-label="Back to CityDrivers laundry"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
@@ -949,7 +949,7 @@ export default function LaundryProviderPage() {
               `Tanggal: ${date}, jam ${time}.`,
               partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
               notes.trim() ? `Catatan: ${notes.trim()}` : '',
-              `\n— Dikirim via indocity.id`,
+              `\n— Dikirim via citydrivers.id`,
             ].filter(Boolean).join('\n'),
           }}
           onClose={() => setContactOpen(false)}

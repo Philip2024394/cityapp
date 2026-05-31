@@ -12,7 +12,7 @@ import { logNav } from '@/lib/perf/navTiming'
 // ----------------------------------------------------------------------------
 // Founder direction: the landing should NOT dump all 10 service tiles + the
 // three browse CTAs onto a first-time visitor. Instead:
-//   1. /  shows the IndoCity wordmark, the existing hero copy + tagline,
+//   1. /  shows the CityDrivers wordmark, the existing hero copy + tagline,
 //      and ONE big "Enter App" CTA + a small footer row (language + sign in).
 //   2. Tapping "Enter App" opens a location-permission warm-up modal that
 //      explains WHY we want GPS before the browser-native prompt fires.

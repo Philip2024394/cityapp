@@ -18,7 +18,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 //      verifies later; on reject, admin will revert paid_until via the
 //      /admin/subscriptions tool.
 //
-// COMPLIANCE: IndoCity does not process or custody funds. The driver
+// COMPLIANCE: CityDrivers does not process or custody funds. The driver
 // pays externally via QRIS in their banking app; we simply record the
 // proof of payment + extend their listing window.
 // ============================================================================

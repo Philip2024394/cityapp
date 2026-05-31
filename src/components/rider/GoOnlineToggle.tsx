@@ -271,7 +271,7 @@ export default function GoOnlineToggle({ defaultOnline = false, onChange }: Prop
                 </div>
                 <p className="text-[14px] text-gray-600 leading-relaxed mt-1">
                   Customer tidak bisa lihat posisimu sampai izin lokasi diaktifkan.
-                  Buka pengaturan browser/HP → izinkan lokasi untuk indocity.id.
+                  Buka pengaturan browser/HP → izinkan lokasi untuk citydrivers.id.
                 </p>
                 <a
                   href="https://support.google.com/chrome/answer/142065"
@@ -360,7 +360,7 @@ function BackgroundLocationDisclosure({
                 Lokasi kamu saat online
               </h2>
               <p className="text-[14px] text-gray-600 leading-snug mt-1">
-                CityRiders butuh izin lokasi sekali saja untuk bisa kerja.
+                CityDrivers butuh izin lokasi sekali saja untuk bisa kerja.
               </p>
             </div>
             <button

@@ -1,6 +1,6 @@
 'use client'
 // ============================================================================
-// PWAInstallCard — yellow "Install CityRiders to your home screen" card
+// PWAInstallCard — yellow "Install CityDrivers to your home screen" card
 // shown on /dashboard/car and /dashboard/rider home pages.
 // ----------------------------------------------------------------------------
 // • Hides itself if running in standalone mode (already installed).
@@ -114,7 +114,7 @@ export default function PWAInstallCard() {
           <Smartphone className="w-5 h-5" strokeWidth={2.5} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[14px] font-black leading-tight">Install CityRiders</h3>
+          <h3 className="text-[14px] font-black leading-tight">Install CityDrivers</h3>
           <p className="text-[12px] font-bold opacity-80 leading-snug mt-0.5">
             Put it on your home screen so booking alerts can ring + vibrate even when
             this tab is closed.

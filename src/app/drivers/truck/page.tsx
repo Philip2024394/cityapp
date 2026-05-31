@@ -31,14 +31,14 @@ const HERO_URL =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2030,%202026,%2005_42_12%20AM.png'
 
 const BRAND_LOGO_URL =
-  'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
+  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
 
 // Public WhatsApp number for driver-side support — sourced from env via getSupportWhatsApp().
 
-const PAGE_TITLE = 'Drive your truck with CityRiders — Pindahan, distribusi, bulk parcel'
+const PAGE_TITLE = 'Drive your truck with CityDrivers — Pindahan, distribusi, bulk parcel'
 const PAGE_DESCRIPTION =
-  'Join CityRiders as a truck driver. You set the daily rate. Customers pay you directly via WhatsApp. Built for pindahan, distribusi, and bulk parcel delivery.'
-const PAGE_URL = 'https://indocity.id/drivers/truck'
+  'Join CityDrivers as a truck driver. You set the daily rate. Customers pay you directly via WhatsApp. Built for pindahan, distribusi, and bulk parcel delivery.'
+const PAGE_URL = 'https://citydrivers.id/drivers/truck'
 
 export const metadata = {
   title:       PAGE_TITLE,
@@ -83,7 +83,7 @@ export default function TruckDriversLandingPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={HERO_URL}
-            alt="CityRiders truck driver at sunset in Yogyakarta"
+            alt="CityDrivers truck driver at sunset in Yogyakarta"
             className="absolute inset-0 w-full h-full object-cover object-center"
             loading="eager"
           />
@@ -93,7 +93,7 @@ export default function TruckDriversLandingPage() {
               area + the brand row below. */}
           <div
             aria-hidden
-            className="absolute inset-x-0 top-0"
+            className="absolute inset-x-0 top-0 pointer-events-none"
             style={{
               height: 160,
               background:
@@ -102,7 +102,7 @@ export default function TruckDriversLandingPage() {
           />
           <div
             aria-hidden
-            className="absolute inset-x-0 bottom-0"
+            className="absolute inset-x-0 bottom-0 pointer-events-none"
             style={{
               height: '55%',
               background:
@@ -122,22 +122,21 @@ export default function TruckDriversLandingPage() {
               style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 32px)' }}
             >
               <Link
-                href="/drivers/truck"
+                href="/cityriders"
                 className="inline-flex items-center gap-2 active:scale-[0.97] transition"
-                aria-label="CityRiders home"
+                aria-label="CityDrivers home"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={BRAND_LOGO_URL}
                   alt=""
-                  className="w-9 h-9 rounded-xl"
-                  style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.18)' }}
+                  className="h-11 w-auto rounded-xl object-contain"
                 />
                 <span
                   className="font-black text-[18px] tracking-tight leading-none"
                   style={{ color: '#0A0A0A' }}
                 >
-                  CityRiders
+                  CityDrivers
                 </span>
               </Link>
               <VehicleSwitcher active="truck" />
@@ -164,7 +163,7 @@ export default function TruckDriversLandingPage() {
 
               <div className="mt-4 flex flex-col gap-2">
                 <Link
-                  href="/signup?role=driver&vehicle=truck"
+                  href="/signup/truck"
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
                   style={{ minHeight: 48 }}
                 >
@@ -173,7 +172,7 @@ export default function TruckDriversLandingPage() {
                 </Link>
                 <a
                   href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                    "Hi, I'm interested in listing my truck on CityRiders. Can I get more info?",
+                    "Hi, I'm interested in listing my truck on CityDrivers. Can I get more info?",
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -265,7 +264,7 @@ export default function TruckDriversLandingPage() {
         </div>
       </section>
 
-      {/* ─── Why CityRiders ─────────────────────────────────────────── */}
+      {/* ─── Why CityDrivers ─────────────────────────────────────────── */}
       <section className="px-5 py-12">
         <div className="text-center mb-10">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
@@ -295,7 +294,7 @@ export default function TruckDriversLandingPage() {
           <Differentiator
             icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />}
             title="Personal page"
-            body="A cityriders.id/truck/you page you can share to repeat clients, supply contracts, or distributor groups."
+            body="A citydrivers.id/truck/you page you can share to repeat clients, supply contracts, or distributor groups."
           />
         </div>
       </section>
@@ -389,7 +388,7 @@ export default function TruckDriversLandingPage() {
           </div>
 
           <ul className="mt-6 space-y-2.5 text-[13px] sm:text-[14px] text-black/80">
-            <Bullet>Your personal public page (cityriders.id/truck/you)</Bullet>
+            <Bullet>Your personal public page (citydrivers.id/truck/you)</Bullet>
             <Bullet>Offer pindahan, distribusi, or bulk parcel contracts</Bullet>
             <Bullet>Listed in Yogyakarta, Bali, Jogja truck search</Bullet>
             <Bullet>0% commission per job — forever</Bullet>
@@ -399,7 +398,7 @@ export default function TruckDriversLandingPage() {
 
           <div className="mt-7 flex flex-col sm:flex-row gap-3">
             <Link
-              href="/signup?role=driver&vehicle=truck"
+              href="/signup/truck"
               className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.45)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
@@ -426,7 +425,7 @@ export default function TruckDriversLandingPage() {
           </p>
           <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
             <Link
-              href="/signup?role=driver&vehicle=truck"
+              href="/signup/truck"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
@@ -435,7 +434,7 @@ export default function TruckDriversLandingPage() {
             </Link>
             <a
               href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                "Hi, I'm interested in listing my truck on CityRiders. Can I get more info?",
+                "Hi, I'm interested in listing my truck on CityDrivers. Can I get more info?",
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -448,7 +447,7 @@ export default function TruckDriversLandingPage() {
           </div>
 
           <div className="mt-10 pt-6 border-t border-white/10 text-[12px] text-white/45">
-            CityRiders is a directory and profile management tool — not a
+            CityDrivers is a directory and profile management tool — not a
             ride-hailing app. Drivers and customers transact directly,
             off-platform.
           </div>
@@ -465,11 +464,13 @@ export default function TruckDriversLandingPage() {
 // text (no link); inactive chips are pill links. Matches the existing
 // cross-nav pill style used on /drivers and /drivers/car: white-blur
 // background, rounded-full, 11px font, charcoal text.
-function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'truck' }) {
-  const items: { key: 'bike' | 'car' | 'truck'; label: string; href: string }[] = [
-    { key: 'bike', label: 'Bike', href: '/drivers' },
-    { key: 'car', label: 'Car', href: '/drivers/car' },
+function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'bus' | 'truck' | 'jeep' }) {
+  const items: { key: 'bike' | 'car' | 'bus' | 'truck' | 'jeep'; label: string; href: string }[] = [
+    { key: 'bike',  label: 'Bike',  href: '/drivers' },
+    { key: 'car',   label: 'Car',   href: '/drivers/car' },
+    { key: 'bus',   label: 'Bus',   href: '/drivers/bus' },
     { key: 'truck', label: 'Truck', href: '/drivers/truck' },
+    { key: 'jeep',  label: 'Jeep',  href: '/drivers/jeep' },
   ]
   return (
     <div

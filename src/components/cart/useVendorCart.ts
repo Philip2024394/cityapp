@@ -23,7 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // as PlaceProfileShell), but the API exposes `clear()` for that purpose.
 // =============================================================================
 
-const STORAGE_PREFIX = 'indocity:cart:vendor:'
+const STORAGE_PREFIX = 'citydrivers:cart:vendor:'
 
 export type VendorCartOffer = {
   offer_id:  string

@@ -23,7 +23,7 @@ import type { PlaceCategory } from '@/lib/places/types'
 
 export const revalidate = 300
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 
 type Row = {
   id:              string
@@ -143,7 +143,7 @@ export async function generateMetadata(
   const categoryLabel = CATEGORIES[place.category]?.label ?? place.category
   const title       = `${place.name} · ${place.city}`
   const description = place.description?.slice(0, 160)
-    || `${place.name} di ${place.city} — ${categoryLabel}. Pesan rider untuk berangkat lewat IndoCity.`
+    || `${place.name} di ${place.city} — ${categoryLabel}. Pesan rider untuk berangkat lewat CityDrivers.`
   return {
     title,
     description,

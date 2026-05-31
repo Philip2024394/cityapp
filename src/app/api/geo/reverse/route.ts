@@ -17,7 +17,7 @@ import { NextResponse } from 'next/server'
 // ============================================================================
 
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/reverse'
-const USER_AGENT = 'IndoCity/1.0 (indocity.streetlocal.live)'
+const USER_AGENT = 'CityDrivers/1.0 (citydrivers.streetlocal.live)'
 
 type CachedEntry = { ts: number; payload: ReverseResponse }
 const CACHE = new Map<string, CachedEntry>()

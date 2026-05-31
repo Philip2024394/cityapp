@@ -16,7 +16,7 @@ import type { CheckoutOrderContext } from './types'
 export type CreateStripeSessionInput = {
   vendorSecret:    string
   order:           CheckoutOrderContext
-  returnOriginUrl: string  // e.g. https://indocity.id — used to build success/cancel URLs
+  returnOriginUrl: string  // e.g. https://citydrivers.id — used to build success/cancel URLs
 }
 
 export type CreateStripeSessionResult = {

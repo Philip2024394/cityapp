@@ -5,7 +5,7 @@ import { MessageCircle, Share2 } from 'lucide-react'
 // Two actions: primary WhatsApp (green, takes 70%) + secondary Share (yellow).
 // `whatsappE164` should be digits-only or E.164 with +.
 // `prefillText` is the pre-filled message body (e.g. "Hi, found you on
-// IndoCity, can I book…?"). Pass empty string for plain wa.me link.
+// CityDrivers, can I book…?"). Pass empty string for plain wa.me link.
 // `onShare` opens the share sheet (handled by the parent — usually opens
 // a <SocialShareSheet> modal).
 

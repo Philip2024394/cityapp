@@ -1,7 +1,7 @@
 // =============================================================================
 // /cityriders/parcel — Parcel-delivery hub (UMKM + Shopee seller front door)
 // =============================================================================
-// IndoCity is an Indonesian SOFTWARE DIRECTORY (PM 12/2019, Permenhub
+// CityDrivers is an Indonesian SOFTWARE DIRECTORY (PM 12/2019, Permenhub
 // 118/2018). This page surfaces bike / car / truck drivers who have opted
 // into B2B parcel contracts. Drivers self-publish all rates; the platform
 // takes 0% commission. Customer + driver agree the contract on WhatsApp;
@@ -32,12 +32,12 @@ import ParcelHubBrowser, {
 // Brand assets — same logo + palette as the /cityriders parent so the two
 // pages read as one product surface.
 const BRAND_LOGO_URL =
-  'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
+  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
 
 const PAGE_TITLE = 'Parcel delivery Yogyakarta — Direct WhatsApp to driver'
 const PAGE_DESCRIPTION =
   'Bike, car, and truck drivers for bulk parcel delivery in Yogyakarta. From Rp 4,500/parcel. No platform commission.'
-const PAGE_URL = 'https://indocity.id/cityriders/parcel'
+const PAGE_URL = 'https://citydrivers.id/cityriders/parcel'
 
 export const metadata = {
   title:       PAGE_TITLE,
@@ -89,7 +89,7 @@ type MockTruckRow = MockBikeCarRow & {
   rental_min_days:       number | null
 }
 
-export default async function CityRidersParcelHubPage() {
+export default async function CityDriversParcelHubPage() {
   const admin = getAdminSupabase()
 
   const DRIVER_COLS =
@@ -281,17 +281,16 @@ export default async function CityRidersParcelHubPage() {
           <Link
             href="/cityriders"
             className="inline-flex items-center gap-2 active:scale-[0.97] transition"
-            aria-label="CityRiders home"
+            aria-label="CityDrivers home"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={BRAND_LOGO_URL}
               alt=""
-              className="w-9 h-9 rounded-xl"
-              style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.18)' }}
+              className="h-11 w-auto rounded-xl object-contain"
             />
             <span className="font-black text-[18px] tracking-tight leading-none text-[#0A0A0A]">
-              CityRiders
+              CityDrivers
             </span>
           </Link>
           <Link
@@ -369,7 +368,7 @@ export default async function CityRidersParcelHubPage() {
         {/* ─── Disclaimer footer ──────────────────────────────────── */}
         <section className="px-5 py-6 bg-white">
           <p className="text-[11px] text-black/50 leading-relaxed text-center">
-            CityRiders is a software directory under PM 12/2019. Drivers
+            CityDrivers is a software directory under PM 12/2019. Drivers
             self-publish rates. The platform takes 0% commission.
           </p>
         </section>

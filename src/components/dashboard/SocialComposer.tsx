@@ -15,11 +15,11 @@ import SharePreviewModal, { type SharePromo } from '@/components/dashboard/Share
 // =============================================================================
 // SocialComposer — shared by /dashboard/car/social and /dashboard/rider/social.
 //
-// Driver picks a pre-composed CityRiders banner → opens the SAME
+// Driver picks a pre-composed CityDrivers banner → opens the SAME
 // SharePreviewModal that the beautician promo flow uses. Pixel-parity
 // with /dashboard/beautician/promos was a founder directive (2026-05-30):
 // drivers see exactly the same share UI beauticians do, just with the
-// CityRiders yellow accent (#FACC15) instead of pink.
+// CityDrivers yellow accent (#FACC15) instead of pink.
 //
 // Quota: each share counts toward the driver's 20/month cap. Because the
 // SharePreviewModal's buttons are simple anchor tags (wa.me, fb sharer,
@@ -48,7 +48,7 @@ type SocialApiResponse = Quota & { driver?: Driver | null }
 
 export default function SocialComposer({ backHref, vertical }: {
   backHref:  string
-  vertical: 'car' | 'rider'
+  vertical: 'car' | 'bus' | 'jeep' | 'rider'
 }) {
   const [quota, setQuota]     = useState<Quota | null>(null)
   const [driver, setDriver]   = useState<Driver | null>(null)
@@ -194,7 +194,7 @@ export default function SocialComposer({ backHref, vertical }: {
     hashtags_by_platform: null,
   } : null
 
-  const providerName   = driver?.business_name?.trim() || 'CityRiders Driver'
+  const providerName   = driver?.business_name?.trim() || 'CityDrivers Driver'
   const providerHandle = driver?.slug?.trim() || 'cityriders'
   const profileImage   = driver?.brand_logo_url ?? null
   const city           = driver?.city ?? null

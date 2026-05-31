@@ -36,10 +36,37 @@ export const BIKE_BANNERS: ReadonlyArray<DriverBanner> = [
   },
 ]
 
+// Truck-specific banners — moving / hauling / utility-rental vibes.
+// Founder-supplied 2026-05-31.
+export const TRUCK_BANNERS: ReadonlyArray<DriverBanner> = [
+  { id: 'truck-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2004_39_58%20PM.png', label: 'Banner 1' },
+]
+
+// Jeep-specific banners — off-road / volcano / sunrise tour vibes.
+// Founder-supplied 2026-05-31.
+export const JEEP_BANNERS: ReadonlyArray<DriverBanner> = [
+  { id: 'jeep-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_44_53%20AM.png', label: 'Banner 1' },
+  { id: 'jeep-02', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_45_41%20AM.png', label: 'Banner 2' },
+  { id: 'jeep-03', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_47_17%20AM.png', label: 'Banner 3' },
+  { id: 'jeep-04', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_49_12%20AM.png', label: 'Banner 4' },
+  { id: 'jeep-05', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_50_01%20AM.png', label: 'Banner 5' },
+  { id: 'jeep-06', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_52_32%20AM.png', label: 'Banner 6' },
+  { id: 'jeep-07', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_55_24%20AM.png', label: 'Banner 7' },
+  { id: 'jeep-08', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_58_34%20AM.png', label: 'Banner 8' },
+  { id: 'jeep-09', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_59_52%20AM.png', label: 'Banner 9' },
+  { id: 'jeep-10', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2012_02_06%20PM.png', label: 'Banner 10' },
+  { id: 'jeep-11', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2012_04_17%20PM.png', label: 'Banner 11' },
+  { id: 'jeep-12', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2012_05_47%20PM.png', label: 'Banner 12' },
+  { id: 'jeep-13', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2012_07_19%20PM.png', label: 'Banner 13' },
+  { id: 'jeep-14', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2012_08_55%20PM.png', label: 'Banner 14' },
+]
+
 // Resolve the vehicle-type default banner URL. Matches the constants
 // hard-coded inside DriverProfileShell so the dashboard preview lines up
 // with what the public profile actually renders when no banner is set.
 export function getDefaultBanner(vehicleType: string | null): string {
   if (vehicleType === 'bike') return BIKE_BANNERS[0]!.url
+  if (vehicleType === 'jeep') return JEEP_BANNERS[0]!.url
+  if (vehicleType === 'truck') return TRUCK_BANNERS[0]!.url
   return CAR_BANNERS[0]!.url
 }

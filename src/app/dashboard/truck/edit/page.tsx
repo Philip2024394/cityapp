@@ -22,10 +22,7 @@ import {
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
-// TODO: swap CAR_BANNERS for TRUCK_BANNERS once a truck-specific banner
-// library is added to src/lib/drivers/banners.ts. CAR_BANNERS is used now
-// as the curated fallback set so the picker still functions end-to-end.
-import { CAR_BANNERS as TRUCK_BANNERS, getDefaultBanner } from '@/lib/drivers/banners'
+import { TRUCK_BANNERS, getDefaultBanner } from '@/lib/drivers/banners'
 
 // ----------------------------------------------------------------------------
 // Types

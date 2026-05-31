@@ -4,6 +4,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isAllowedImageUrl, isValidKtpRef } from '@/lib/validation/images'
 import { validateUniversalProfile } from '@/lib/validation/universalProfile'
 import type { TableUpdate } from '@/lib/supabase/typed-helpers'
+import type { Json } from '@/types/supabase'
 
 export const runtime = 'nodejs'
 
@@ -227,7 +228,7 @@ export async function POST(req: Request) {
       }
       if (entries.length > 0) cleaned[k] = entries
     }
-    update.service_photos = cleaned
+    update.service_photos = cleaned as Json
   }
 
   if (body.theme_color !== undefined) {
@@ -287,7 +288,7 @@ export async function POST(req: Request) {
         }
         cleaned.effect = ht.effect
       }
-      update.hero_text = Object.keys(cleaned).length ? cleaned : null
+      update.hero_text = (Object.keys(cleaned).length ? cleaned : null) as Json
     }
   }
 

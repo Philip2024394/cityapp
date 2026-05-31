@@ -3,7 +3,7 @@
 // /dashboard/car/qr — Printable profile QR for car/bus/truck drivers
 // ----------------------------------------------------------------------------
 // Pure client-side: pulls the driver row from public.drivers, mints a
-// 360×360 canvas QR for the public profile URL (cityriders.id/<vehicle>/<slug>),
+// 360×360 canvas QR for the public profile URL (citydrivers.id/<vehicle>/<slug>),
 // and offers a 1080×1080 PNG export with a yellow header bar for printing
 // on business cards, car windows, hotel concierge desks, etc.
 //
@@ -26,7 +26,7 @@ import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 
-const SITE_HOST = 'cityriders.id'
+const SITE_HOST = 'citydrivers.id'
 const BRAND_YELLOW = '#FACC15'
 const BRAND_YELLOW_DEEP = '#EAB308'
 const INK = '#0A0A0A'
@@ -136,7 +136,7 @@ export default function CarQrPage() {
   }
 
   // Build the 1080×1080 print PNG off-screen.
-  // Yellow header band, big QR centred, footer = cityriders.id.
+  // Yellow header band, big QR centred, footer = citydrivers.id.
   async function downloadPng() {
     if (!driver || !publicUrl) return
     const SIZE     = 1080

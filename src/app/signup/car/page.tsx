@@ -2,7 +2,7 @@
 // ============================================================================
 // /signup/car — Multi-step sign-up flow for new CAR drivers.
 // ----------------------------------------------------------------------------
-// IndoCity is a SOFTWARE DIRECTORY under PM 12/2019, NOT a transport operator.
+// CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019, NOT a transport operator.
 // This page collects the data needed to create a `drivers` row with
 // vehicle_type='car'. After signup the driver lands on /dashboard/car where
 // the QRIS pay modal handles the Rp 38.000/month subscription that flips
@@ -24,6 +24,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Phone, KeyRound, Check, Loader2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
+import CityDriversBrandStrip from '@/components/dashboard/CityDriversBrandStrip'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
 // ----------------------------------------------------------------------------
@@ -286,6 +287,7 @@ export default function SignupCarPage() {
   // ──────────────────────────────────────────────────────────────────────
   return (
     <main className="min-h-[100dvh] bg-white text-black">
+      <CityDriversBrandStrip subtitle="Sign up — Car driver" />
       <AppNav />
       <div className="max-w-md mx-auto px-4 pt-6 pb-24">
         <ProgressBar step={step} total={TOTAL_STEPS} />
@@ -554,10 +556,10 @@ export default function SignupCarPage() {
             <>
               <Header
                 title="Your published rates"
-                sub="These are YOUR rates. CityRiders displays them as-is — we never set or modify driver prices."
+                sub="These are YOUR rates. CityDrivers displays them as-is — we never set or modify driver prices."
               />
               <ComplianceNote>
-                CityRiders is a software directory. Customers select drivers and agree fares directly. We never set, compute, or modify driver prices.
+                CityDrivers is a software directory. Customers select drivers and agree fares directly. We never set, compute, or modify driver prices.
               </ComplianceNote>
               <Field label="Price per km (Rp)" hint="What you charge per kilometre.">
                 <input
@@ -599,7 +601,7 @@ export default function SignupCarPage() {
             <>
               <Header
                 title="Payment methods accepted"
-                sub="Tell customers how you accept payment. CityRiders never handles funds — payments go directly between you and the customer."
+                sub="Tell customers how you accept payment. CityDrivers never handles funds — payments go directly between you and the customer."
               />
               <Toggle label="Accept cash" checked={acceptsCash} onChange={setAcceptsCash} />
               <Toggle label="Accept QR (QRIS)" checked={acceptsQr} onChange={setAcceptsQr} />
@@ -674,8 +676,8 @@ export default function SignupCarPage() {
                 />
                 <span className="text-[13px] text-black/75 leading-relaxed">
                   By creating my listing, I confirm I have a valid <strong className="text-black">SIM A</strong> and <strong className="text-black">STNK</strong> for the vehicle above.
-                  CityRiders is a software directory and does not verify driving licences.
-                  I am an independent driver business — not an employee or contractor of CityRiders.
+                  CityDrivers is a software directory and does not verify driving licences.
+                  I am an independent driver business — not an employee or contractor of CityDrivers.
                 </span>
               </label>
 

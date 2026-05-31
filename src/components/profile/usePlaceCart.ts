@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 //
 // Founder direction: customer adds priced offers to a cart on the place
 // profile, taps a cart icon on the hero, reviews the itemised list and
-// hands the whole order off to the venue's WhatsApp. IndoCity never
+// hands the whole order off to the venue's WhatsApp. CityDrivers never
 // touches money — the cart is a pre-fill helper, nothing more.
 //
 // State is keyed per place_id so a customer can have a Gudeg cart at
@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // because a stale browser could hold a payload from an older shape.
 // =============================================================================
 
-const STORAGE_PREFIX = 'indocity:cart:place:'
+const STORAGE_PREFIX = 'citydrivers:cart:place:'
 
 export type PlaceCartOffer = {
   offer_id:  string

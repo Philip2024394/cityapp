@@ -8,9 +8,9 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // ============================================================================
 
 export const metadata = {
-  title: 'Property · IndoCity',
+  title: 'Property · CityDrivers',
   description: 'Browse self-listed property — sales, rentals, and new construction across Indonesia.',
-  alternates: { canonical: 'https://indocity.id/property' },
+  alternates: { canonical: 'https://citydrivers.id/property' },
 }
 
 export const dynamic = 'force-dynamic'
@@ -51,13 +51,13 @@ export default async function PropertyBrowsePage({
       className="relative min-h-[100dvh]"
       style={{ background: '#FFFFFF', color: '#0A0A0A' }}
     >
-      {/* HEADER — same IndoCity wordmark as /food + /places. */}
+      {/* HEADER — same CityDrivers wordmark as /food + /places. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
             className="inline-flex items-center hover:opacity-85 transition"
-            aria-label="IndoCity home"
+            aria-label="CityDrivers home"
           >
             <span
               className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"

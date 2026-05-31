@@ -127,7 +127,7 @@ export async function POST(req: Request) {
     })
 
   // Realtime broadcast — provider PWA listens on this exact channel.
-  // Channel name stays `driver:<id>` for historical reasons (CityRiders
+  // Channel name stays `driver:<id>` for historical reasons (CityDrivers
   // shipped first); the BookingAlertProvider component used by every
   // vertical subscribes to the same name.
   try {
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
 
   // Web push to backgrounded/closed devices — fire-and-forget.
   sendDriverWebPush(admin, providerUserId, {
-    title: 'IndoCity — incoming WhatsApp',
+    title: 'CityDrivers — incoming WhatsApp',
     body:  'A customer just tapped your WhatsApp button.',
     tag:   'inbound_intent',
     url:   '/dashboard',

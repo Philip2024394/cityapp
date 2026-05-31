@@ -6,7 +6,7 @@ import JsonLd from '@/components/seo/JsonLd'
 // Server-side SEO + lapsed redirect for /beautician/[slug].
 // Same canonical pattern as /r/[slug]/layout.tsx and /massage/[slug]/layout.tsx.
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 
 type ProviderRow = {
   id?: string

@@ -285,7 +285,7 @@ export default function PlacesPicker({
         </div>
 
         <p className="mt-3 text-center text-[11px] font-bold leading-snug px-2 shrink-0" style={{ color: '#52525B' }}>
-          Self-listed venues · IndoCity is a software directory. Hours and details are owner-published.
+          Self-listed venues · CityDrivers is a software directory. Hours and details are owner-published.
         </p>
       </div>
     </section>

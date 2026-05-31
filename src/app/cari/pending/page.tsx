@@ -429,10 +429,10 @@ export default function PendingBookingPage() {
       {/* Header */}
       <header className="pt-safe">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="CityRiders home">
+          <Link href="/" className="flex items-center hover:opacity-85 transition" aria-label="CityDrivers home">
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-              alt="CityRiders"
+              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
+              alt="CityDrivers"
               className="h-7 sm:h-8 w-auto"
             />
           </Link>
@@ -615,7 +615,7 @@ export default function PendingBookingPage() {
               <p>
                 Chat selanjutnya dilanjutkan langsung di WhatsApp — tarif,
                 jam berangkat, dan pembayaran kamu sepakati dengan driver.
-                CityRiders adalah direktori, bukan operator perjalanan.
+                CityDrivers adalah direktori, bukan operator perjalanan.
               </p>
               <ul className="mt-1.5 space-y-0.5 text-muted">
                 <li>· Cek helm tersedia sebelum berangkat</li>

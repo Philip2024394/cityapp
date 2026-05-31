@@ -191,7 +191,7 @@
 
   /* Massage surface — the top AppNav header is transparent so it
      doesn't add a black bar over the marketplace background image.
-     The IndoCity brand text + drawer icon still float on the page. */
+     The CityDrivers brand text + drawer icon still float on the page. */
   body[data-surface="massage"] header.glass-strong {
     background: transparent;
     backdrop-filter: none;

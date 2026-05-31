@@ -35,18 +35,47 @@ export const HOURLY_DEFAULTS_INNOVA: HourlyDefaults = {
   tier_8h: 600_000,
 }
 
+// Jeep (Bromo / Merapi / Ijen sunrise charter, off-road, adventure
+// tours). Yogya market norms 2026: per-jeep rates run premium because
+// the trip is the product (no per-km billing) and the operator covers
+// driver + bensin in most package deals.
+export const HOURLY_DEFAULTS_JEEP: HourlyDefaults = {
+  tier_3h: 350_000,
+  tier_6h: 600_000,
+  tier_8h: 800_000,
+}
+
 /**
  * Look up a sensible default tier-set from vehicle make + model strings.
- * Falls back to Avanza pricing for any 7-seat MPV-ish vehicle, Innova
- * pricing for premium models. Unknown → Avanza defaults (the safer floor).
+ * Jeep makes (Jimny / Land Cruiser / Rocky / Wrangler / Defender) get
+ * jeep-tier pricing. Innova / Alphard / Fortuner / Pajero / Hiace get
+ * premium-MPV pricing. Everything else gets the Avanza floor.
  */
 export function hourlyDefaultsForVehicle(make?: string | null, model?: string | null): HourlyDefaults {
   const m = `${make ?? ''} ${model ?? ''}`.toLowerCase()
+  if (
+    m.includes('jimny') || m.includes('land cruiser') || m.includes('rocky') ||
+    m.includes('wrangler') || m.includes('defender') || m.includes('jeep')
+  ) {
+    return HOURLY_DEFAULTS_JEEP
+  }
   if (m.includes('innova') || m.includes('alphard') || m.includes('fortuner') || m.includes('pajero') || m.includes('hiace')) {
     return HOURLY_DEFAULTS_INNOVA
   }
   // Avanza / Mobilio / Xenia / Ertiga / Confero / Veloz — standard MPV tier.
   return HOURLY_DEFAULTS_AVANZA
+}
+
+/** Vehicle-type-aware variant. Forces jeep defaults regardless of make/
+ *  model — useful for the /jeep marketplace card where the discriminator
+ *  is the vehicle_type column, not the brand string. */
+export function hourlyDefaultsForVehicleType(
+  vehicleType: string | null | undefined,
+  make?: string | null,
+  model?: string | null,
+): HourlyDefaults {
+  if (vehicleType === 'jeep') return HOURLY_DEFAULTS_JEEP
+  return hourlyDefaultsForVehicle(make, model)
 }
 
 export function formatIDR(amount: number | null | undefined): string {

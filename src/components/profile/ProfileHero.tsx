@@ -25,7 +25,7 @@ export type ProfileHeroProps = {
   overlayLeft?: React.ReactNode
   /** Per-provider accent hex — drives the category-label pill, rating
    *  star fill, and the cover gradient when no coverUrl is set.
-   *  Defaults to IndoCity brand yellow. */
+   *  Defaults to CityDrivers brand yellow. */
   themeColor?: string
 }
 

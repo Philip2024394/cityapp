@@ -8,7 +8,7 @@ import {
 // =============================================================================
 // /rentals/car/[slug] — public per-listing car-rental profile page
 // =============================================================================
-// IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. This page renders a
+// CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019. This page renders a
 // single car-rental listing — driver self-publishes daily / weekly / monthly
 // rates plus a rental_type (self-drive, with-driver, or both). The customer
 // taps "Contact via WhatsApp" → wa.me handoff; the driver and customer agree

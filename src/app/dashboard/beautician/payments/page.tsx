@@ -6,7 +6,7 @@ import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 
 // /dashboard/beautician/payments — vendor wires up their own Stripe or
-// Midtrans account. Card data never touches IndoCity; we hold encrypted
+// Midtrans account. Card data never touches CityDrivers; we hold encrypted
 // API credentials and surface the webhook URL the vendor pastes into
 // their provider dashboard. WhatsApp-only ('none') is the default and
 // keeps the public profile in its lightweight messaging mode.
@@ -110,7 +110,7 @@ export default function BeauticianPaymentsPage() {
                 </span>
               </div>
               <p className="text-[12.5px] text-black/70 leading-snug">
-                Customers pay you directly. Cards never touch IndoCity. Bring your own Stripe or Midtrans keys.
+                Customers pay you directly. Cards never touch CityDrivers. Bring your own Stripe or Midtrans keys.
               </p>
             </div>
           </div>

@@ -63,7 +63,7 @@ async function readQuota(userId: string): Promise<QuotaState> {
 async function readDriverBasics(userId: string): Promise<DriverBasics> {
   const admin = getAdminSupabase()
   const fallback: DriverBasics = {
-    business_name:  'CityRiders Driver',
+    business_name:  'CityDrivers Driver',
     slug:           '',
     brand_logo_url: null,
     city:           null,

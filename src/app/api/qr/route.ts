@@ -9,7 +9,7 @@ import QRCode from 'qrcode'
 //
 // Used by the public driver page share row and (later) the PDF sticker
 // generator. The "text" param should typically be an absolute URL like
-// https://indocity.id/r/wayan-bali.
+// https://citydrivers.id/r/wayan-bali.
 // ============================================================================
 
 // Dynamic — the SVG is a pure function of the `text` query param, but

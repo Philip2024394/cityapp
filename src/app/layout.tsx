@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { headers } from 'next/headers'
 import './globals.css'
 import PageBackground from '@/components/layout/PageBackground'
 
@@ -12,53 +13,113 @@ import InstallPrompt from '@/components/pwa/InstallPrompt'
 import PreloadTiles from '@/components/pwa/PreloadTiles'
 import CapacitorBoot from '@/components/pwa/CapacitorBoot'
 import DevToolbar from '@/components/dev/DevToolbar'
+import LocationGateProvider from '@/components/onboarding/LocationGateProvider'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://indocity.id'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: 'Kita2u — Marketplace kurir motor Indonesia',
-    template: '%s · Kita2u',
-  },
-  description:
-    'Platform bisnis untuk rider motor independen. Profil rider, harga sendiri, kontak langsung via WhatsApp. Tidak ada komisi.',
-  manifest: '/manifest.webmanifest',
-  applicationName: 'Kita2u',
-  alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    siteName: 'Kita2u',
-    locale: 'id_ID',
-    url: SITE_URL,
-    title: 'Kita2u — Marketplace kurir motor Indonesia',
-    description:
-      'Cari rider motor independen di kota kamu. Bayar langsung, kontak via WhatsApp, tanpa komisi.',
-    images: [
-      {
-        url: '/og-default.png',
-        width: 1200,
-        height: 630,
-        alt: 'Kita2u',
+const CITYRIDERS_HOSTS = new Set([
+  'citydrivers.id',
+  'www.citydrivers.id',
+])
+
+// Host-aware metadata. Install prompts, OG previews, and the apple-web-app
+// title all read these — must match the host the user is actually on.
+export async function generateMetadata(): Promise<Metadata> {
+  const h = await headers()
+  const host = (h.get('host') || '').toLowerCase().split(':')[0]
+  const isCityriders = CITYRIDERS_HOSTS.has(host)
+
+  if (isCityriders) {
+    const SITE = 'https://citydrivers.id'
+    return {
+      metadataBase: new URL(SITE),
+      title: {
+        default: 'CityDrivers — indoriders, indonesia local driver community',
+        template: '%s · CityDrivers',
       },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Kita2u',
-    description: 'Marketplace kurir motor Indonesia — tanpa komisi.',
-    images: ['/og-default.png'],
-  },
-  appleWebApp: {
-    capable: true,
-    title: 'Kita2u',
-    statusBarStyle: 'black-translucent',
-  },
-  formatDetection: { telephone: false },
-  // Browser translate (Google Translate, Microsoft Edge translate) rewrites
-  // the DOM after SSR which breaks React hydration. Native Bahasa serves
-  // Indonesian users directly; we will add real i18n with next-intl later.
-  other: { google: 'notranslate' },
+      description: 'indoriders — indonesia local driver community',
+      // Cache-bust the manifest URL so phones that previously cached the
+      // old (CityDrivers) manifest fetch the new CityDrivers one on next visit.
+      manifest: '/manifest.webmanifest?v=2026-05-31-cr',
+      applicationName: 'CityDrivers',
+      icons: {
+        icon: [
+          { url: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351', sizes: '192x192', type: 'image/png' },
+          { url: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351', sizes: '512x512', type: 'image/png' },
+        ],
+        apple: [
+          { url: 'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351', sizes: '180x180', type: 'image/png' },
+        ],
+      },
+      alternates: { canonical: '/' },
+      openGraph: {
+        type: 'website',
+        siteName: 'CityDrivers',
+        locale: 'id_ID',
+        url: SITE,
+        title: 'CityDrivers — indoriders, indonesia local driver community',
+        description: 'indoriders — indonesia local driver community',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: 'CityDrivers',
+        description: 'indoriders — indonesia local driver community',
+      },
+      appleWebApp: {
+        capable: true,
+        title: 'CityDrivers',
+        statusBarStyle: 'black-translucent',
+      },
+      formatDetection: { telephone: false },
+      other: { google: 'notranslate' },
+    }
+  }
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: 'Kita2u — Marketplace kurir motor Indonesia',
+      template: '%s · Kita2u',
+    },
+    description:
+      'Platform bisnis untuk rider motor independen. Profil rider, harga sendiri, kontak langsung via WhatsApp. Tidak ada komisi.',
+    manifest: '/manifest.webmanifest',
+    applicationName: 'Kita2u',
+    alternates: { canonical: '/' },
+    openGraph: {
+      type: 'website',
+      siteName: 'Kita2u',
+      locale: 'id_ID',
+      url: SITE_URL,
+      title: 'Kita2u — Marketplace kurir motor Indonesia',
+      description:
+        'Cari rider motor independen di kota kamu. Bayar langsung, kontak via WhatsApp, tanpa komisi.',
+      images: [
+        {
+          url: '/og-default.png',
+          width: 1200,
+          height: 630,
+          alt: 'Kita2u',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Kita2u',
+      description: 'Marketplace kurir motor Indonesia — tanpa komisi.',
+      images: ['/og-default.png'],
+    },
+    appleWebApp: {
+      capable: true,
+      title: 'Kita2u',
+      statusBarStyle: 'black-translucent',
+    },
+    formatDetection: { telephone: false },
+    // Browser translate (Google Translate, Microsoft Edge translate) rewrites
+    // the DOM after SSR which breaks React hydration. Native Bahasa serves
+    // Indonesian users directly; we will add real i18n with next-intl later.
+    other: { google: 'notranslate' },
+  }
 }
 
 export const viewport: Viewport = {
@@ -97,7 +158,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <RegisterServiceWorker />
         <PreloadTiles />
         <CapacitorBoot />
-        {children}
+        <LocationGateProvider>
+          {children}
+        </LocationGateProvider>
         <InstallPrompt />
         <DevToolbar />
       </body>

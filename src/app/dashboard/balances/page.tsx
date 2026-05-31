@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 
 // Driver-side view: what you owe to each partner from attributed bookings.
-// Settlement happens OUTSIDE IndoCity (cash / GoPay / transfer). When
+// Settlement happens OUTSIDE CityDrivers (cash / GoPay / transfer). When
 // the partner marks paid, the row disappears from here. If you don't pay
 // within 7 days you get suspended from the partner program.
 

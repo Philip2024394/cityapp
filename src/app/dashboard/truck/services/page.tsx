@@ -20,7 +20,7 @@
 // All other UX matches the car page: light theme, white cards, yellow
 // accents, save-on-blur, "Saved" flash, 13px text floor, 44px tap targets.
 //
-// COMPLIANCE: IndoCity is a software directory under PM 12/2019. The driver
+// COMPLIANCE: CityDrivers is a software directory under PM 12/2019. The driver
 // self-publishes every price here. We never compute fares, never appoint
 // orders, never custody funds. Copy frames pricing as "YOUR published rates".
 // ============================================================================
@@ -196,7 +196,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
                 </span>
               </div>
               <p className="text-[12.5px] text-[#0A0A0A]/75 leading-snug">
-                Pick what truck jobs you accept and set <strong>your</strong> rates. CityRiders displays them as-is.
+                Pick what truck jobs you accept and set <strong>your</strong> rates. CityDrivers displays them as-is.
               </p>
             </div>
           </div>
@@ -625,7 +625,7 @@ function ParcelB2BCard({
 
       {!enabled && (
         <p className="text-[12px] text-black/60 leading-snug">
-          When enabled, customers find you at <strong>cityriders.id/parcel</strong> under truck drivers.
+          When enabled, customers find you at <strong>citydrivers.id/parcel</strong> under truck drivers.
         </p>
       )}
 

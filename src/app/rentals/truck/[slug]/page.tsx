@@ -8,7 +8,7 @@ import {
 // =============================================================================
 // /rentals/truck/[slug] — public per-listing truck-rental profile page
 // =============================================================================
-// IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. This page renders a
+// CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019. This page renders a
 // single truck-rental listing — driver self-publishes daily / weekly /
 // monthly rates plus a rental_type (typically 'with_driver' for pindahan
 // rumah, distribusi barang, jasa angkut, but self-drive truck rental also

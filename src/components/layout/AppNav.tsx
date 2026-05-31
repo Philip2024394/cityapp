@@ -187,7 +187,7 @@ export default function AppNav() {
         }}
       >
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          {/* Brand block (logo + "IndoCity" text) removed per founder
+          {/* Brand block (logo + "CityDrivers" text) removed per founder
               request. The header bar stays so the right action (drawer
               / Home icon) keeps its sticky position; the empty div
               preserves the flex justify-between so the right action

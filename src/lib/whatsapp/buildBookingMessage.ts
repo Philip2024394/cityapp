@@ -1,6 +1,6 @@
 // =============================================================================
 // buildBookingMessage — single canonical WhatsApp deep-link builder for every
-// CityRiders booking surface (/cari sticky CTA, /r/[slug] + /car/[slug]
+// CityDrivers booking surface (/cari sticky CTA, /r/[slug] + /car/[slug]
 // profile widgets, anything else that opens a wa.me with a ride/parcel
 // prefill). Before this consolidation, three separate inline implementations
 // drifted — /cari and the profile shell used PICKUP/DROP OFF copy with the
@@ -67,8 +67,8 @@ function gmapsDirections(
 export function buildBookingMessage(opts: BookingMessageOptions): string {
   const name = opts.driver.business_name
   const opener = opts.mode === 'parcel'
-    ? `Halo *${name}*, saya mau kirim paket via CityRiders.`
-    : `Halo *${name}*, saya mau pesan ride via CityRiders.`
+    ? `Halo *${name}*, saya mau kirim paket via CityDrivers.`
+    : `Halo *${name}*, saya mau pesan ride via CityDrivers.`
 
   const lines: string[] = [opener, '', DIVIDER, '']
 

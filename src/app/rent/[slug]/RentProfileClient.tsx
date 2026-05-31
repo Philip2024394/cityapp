@@ -150,7 +150,7 @@ export default function RentProfileClient({ row: r }: { row: BikeRentalPublic })
   // services_offered: a single-element array derived from bike_type.
   const servicesOffered: string[] = r.bike_type ? [r.bike_type] : []
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
   const profileUrl = `${siteOrigin}/rent/${r.slug}`
 
   // WhatsApp prefill text used by the share-sheet wa.me link and as the
@@ -725,7 +725,7 @@ export default function RentProfileClient({ row: r }: { row: BikeRentalPublic })
               service.trim() ? ` (${service.trim()})` : '',
               ` pada ${date} jam ${time}.`,
               notes.trim() ? `\nCatatan: ${notes.trim()}` : '',
-              `\n\n— Dikirim via indocity.id`,
+              `\n\n— Dikirim via citydrivers.id`,
             ].join(''),
           }}
           onClose={() => setContactOpen(false)}

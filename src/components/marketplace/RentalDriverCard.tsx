@@ -5,7 +5,7 @@ import { User, Users, Calendar, MapPin } from 'lucide-react'
 // ============================================================================
 // RentalDriverCard — shared card for /rentals/car + /rentals/truck
 // ----------------------------------------------------------------------------
-// IndoCity rental marketplaces sell a different mental model from /car
+// CityDrivers rental marketplaces sell a different mental model from /car
 // (per-km rides): customers compare DAILY RATES, pick by type (self-drive
 // lepas kunci vs. with-driver chauffeur), then WhatsApp the driver to agree
 // the rental terms directly. The card surfaces the rate as the visual
@@ -13,7 +13,7 @@ import { User, Users, Calendar, MapPin } from 'lucide-react'
 // a "View details" CTA.
 //
 // Compliance: rates are self-published. Never label them as "our price",
-// "total cost", or anything implying IndoCity sets fares.
+// "total cost", or anything implying CityDrivers sets fares.
 //
 // Visual style: light/white card (matches /car after the white redesign),
 // brand-yellow accent border, prominent daily rate.

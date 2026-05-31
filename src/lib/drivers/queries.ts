@@ -140,7 +140,7 @@ export async function fetchActiveDriversBrowser(
    *  results when the customer has picked a vehicle category. Default
    *  'bike' preserves the legacy behaviour (all callers that don't pass
    *  this parameter continue to see motorbike drivers only). */
-  vehicleType: 'bike' | 'car' | 'truck' | 'premium_car' | 'minibus' = 'bike',
+  vehicleType: 'bike' | 'car' | 'truck' | 'premium_car' | 'minibus' | 'jeep' = 'bike',
 ): Promise<Rider[]> {
   if (!isSupabaseConfigured()) return MOCK_RIDERS
   const supabase = getBrowserSupabase()
@@ -209,7 +209,7 @@ export async function fetchActiveDriversBrowser(
 // marketplace. The vehicleType filter avoids cross-mixing (e.g., returning
 // bike mocks when the customer is on the Car toggle).
 async function fetchMockDriversBrowser(
-  vehicleType: 'bike' | 'car' | 'truck' | 'premium_car' | 'minibus' = 'bike',
+  vehicleType: 'bike' | 'car' | 'truck' | 'premium_car' | 'minibus' | 'jeep' = 'bike',
 ): Promise<Rider[]> {
   const supabase = getBrowserSupabase()
   if (!supabase) return []

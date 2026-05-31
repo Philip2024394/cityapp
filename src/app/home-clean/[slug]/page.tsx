@@ -139,12 +139,12 @@ export default function HomeCleanProviderPage() {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
   }
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
   const profileUrl = `${siteOrigin}/home-clean/${p.slug}`
 
   // WhatsApp prefill text for the under-carousel contact button.
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di IndoCity.`,
+    `Halo ${p.display_name}, saya menemukan profil Anda di CityDrivers.`,
     `Saya tertarik untuk booking layanan bersih rumah.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
@@ -714,7 +714,7 @@ export default function HomeCleanProviderPage() {
 
               {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di IndoCity: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di CityDrivers: ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -799,7 +799,7 @@ export default function HomeCleanProviderPage() {
           vertical "BACK" text below. Diverts back to /home-clean. */}
       <Link
         href="/home-clean"
-        aria-label="Back to IndoCity cleaners"
+        aria-label="Back to CityDrivers cleaners"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
@@ -898,7 +898,7 @@ export default function HomeCleanProviderPage() {
               service.trim() ? ` (${service.trim()})` : '',
               ` pada ${date} jam ${time}.`,
               notes.trim() ? `\nCatatan: ${notes.trim()}` : '',
-              `\n\n— Sent via indocity.id`,
+              `\n\n— Sent via citydrivers.id`,
             ].join(''),
           }}
           onClose={() => setContactOpen(false)}

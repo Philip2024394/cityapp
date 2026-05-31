@@ -10,7 +10,7 @@ import type { ServiceType } from '@/types/rider'
 import { SERVICE_LABELS, SERVICE_SHORT } from '@/types/rider'
 
 // Service tile imagery — same artwork used as the service buttons on
-// the public landing page (IndoCitySellingPage). Keeps the dashboard
+// the public landing page (CityDriversSellingPage). Keeps the dashboard
 // + selling-page visual language consistent.
 const SERVICE_IMAGES: Record<ServiceType, string> = {
   person: 'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
@@ -20,6 +20,8 @@ const SERVICE_IMAGES: Record<ServiceType, string> = {
   car:    'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
   // TODO: replace with dedicated bus / minibus hero art once founder provides one.
   bus:    'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
+  truck:  'https://ik.imagekit.io/nepgaxllc/Untitleddasdas-removebg-preview.png',
+  jeep:   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_44_53%20AM.png',
 }
 import { legalMinPerKm, legalMinFare, SERVICE_REGULATION, suggestedPerKm, suggestedMinFee } from '@/lib/tariffs/zones'
 

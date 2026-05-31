@@ -4,20 +4,24 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 // ============================================================================
 // GET /api/cron/partner-suspend?secret=$CRON_SECRET
 // ----------------------------------------------------------------------------
-// Weekly sweep — calls suspend_delinquent_partner_drivers() (defined in
-// 0044_partner_program.sql). Any driver with a partner_bookings row in
-// status='pending' past its due_at (7 days from booking creation) gets
-// flipped to partner_program_status='suspended'. While suspended:
+// Hourly sweep (founder spec 2026-05-31) — calls
+// suspend_delinquent_partner_drivers() (refreshed in 0161). Any driver with
+// a partner_bookings row in status='pending' past its due_at (48 hours from
+// booking creation, per migration 0161) gets flipped to
+// partner_program_status='suspended'. While suspended:
 //
 //   • new partner-QR attributions skip them (see /api/contact/ping gate)
 //   • driver sees red banner on /dashboard/balances asking them to settle
+//   • the /dashboard/{vehicle}/info opt-in toggle is locked
 //
 // Drivers auto-reactivate the moment the partner marks the last overdue
 // booking 'settled' in their dashboard (handled in /api/partners/me/settle).
 //
-// Scheduled in vercel.json at 03:00 UTC Mondays (10:00 WIB) — late enough
-// that a partner who got paid Sunday night has a chance to mark settled
-// before the driver gets suspended.
+// Scheduled via Cloudflare Cron Triggers (wrangler.jsonc) at minute 0 of
+// every hour. Hourly cadence means a driver with a 48h overdue booking is
+// suspended within an hour of crossing the threshold — fast enough to
+// matter, slow enough that a partner who got paid 5 minutes ago has a
+// chance to mark it settled before the cron fires.
 // ============================================================================
 
 export const dynamic = 'force-dynamic'

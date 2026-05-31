@@ -11,7 +11,7 @@
 // an inline "Saved" toast on success. Availability uses a dedicated
 // three-button selector that writes immediately on tap.
 //
-// COMPLIANCE: IndoCity is a software directory under PM 12/2019. No fares
+// COMPLIANCE: CityDrivers is a software directory under PM 12/2019. No fares
 // are computed here — pricing lives on /dashboard/truck/services and the
 // rental rates on /dashboard/truck/vehicle. This page is identity +
 // reachability only.
@@ -23,6 +23,7 @@ import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 import { LANGUAGES } from '@/lib/languages'
+import PartnerProgramSection from '@/components/dashboard/PartnerProgramSection'
 
 type Availability = 'online' | 'busy' | 'offline'
 
@@ -373,9 +374,10 @@ function InfoEditor({ row, onReload }: { row: TruckDriverInfoRow; onReload: () =
       </Card>
 
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">
-        Changes save automatically when you tap out of a field. CityRiders is a
+        Changes save automatically when you tap out of a field. CityDrivers is a
         software directory — your profile reflects exactly what you publish.
       </p>
+      <PartnerProgramSection />
     </Shell>
   )
 }

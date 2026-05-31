@@ -5,7 +5,7 @@
  * average (sourced May 2026 from public listings: Naga Tour, Sabila
  * Transport, Kejawa Tour, Hiredriveryogyakarta, NusantaraTrip). Drivers
  * clone a template in their dashboard, override price/photo/notes, then
- * publish. IndoCity never sets the final price — these are starting
+ * publish. CityDrivers never sets the final price — these are starting
  * points only (PM 12/2019 directory posture).
  *
  * `place_slugs` references rows in the `places` table where they exist;
@@ -13,7 +13,7 @@
  * customer-facing tour card.
  */
 
-export type TourVehicleKind = 'car' | 'bike'
+export type TourVehicleKind = 'car' | 'bike' | 'jeep'
 
 export type TourTemplate = {
   id:              string
@@ -485,6 +485,56 @@ export const TOUR_TEMPLATES: ReadonlyArray<TourTemplate> = [
     place_slugs: ['kotagede', 'bantul'],
     tags: ['craft', 'umkm', 'cultural'],
   },
+
+  // ── Jeep tours · Adventure charter ──────────────────────────────────────
+  {
+    id: 'jeep-merapi-lava',
+    vehicle: 'jeep',
+    title: 'Merapi Lava Tour',
+    description: 'Open-jeep adventure to the southern Merapi slope — Kaliadem Bunker, Batu Alien volcanic boulder, and the Mini Museum of the 2010 eruption.',
+    duration_hours: 3, max_pax: 4,
+    suggested_price: 450_000, market_floor: 550_000,
+    includes: ['jeep', 'driver', 'fuel', 'mineral water'],
+    excludes: ['entrance fees', 'meals'],
+    place_slugs: ['bunker-kaliadem', 'batu-alien', 'merapi-lava-tour'],
+    tags: ['adventure', 'volcano', 'off_road'],
+  },
+  {
+    id: 'jeep-bromo-sunrise',
+    vehicle: 'jeep',
+    title: 'Bromo Sunrise Charter',
+    description: 'Pre-dawn departure from Yogya for sunrise at Mount Bromo viewpoint, then crater rim + sea of sand. Returns by evening. Full-day premium charter.',
+    duration_hours: 18, max_pax: 4,
+    suggested_price: 1_800_000, market_floor: 2_200_000,
+    includes: ['jeep', 'driver', 'fuel', 'mineral water'],
+    excludes: ['entrance fees (Bromo ~ Rp 220k foreigner)', 'meals', 'horse hire at sea of sand'],
+    place_slugs: ['gunung-merapi'],
+    tags: ['sunrise', 'volcano', 'adventure', 'premium'],
+  },
+  {
+    id: 'jeep-cave-tubing-pindul',
+    vehicle: 'jeep',
+    title: 'Goa Pindul Cave Tubing + Sri Gethuk',
+    description: 'Jeep to Gunungkidul karst country — cave tubing through Goa Pindul, then waterfall lunch at Sri Gethuk. Half-day, family-friendly.',
+    duration_hours: 6, max_pax: 4,
+    suggested_price: 750_000, market_floor: 900_000,
+    includes: ['jeep', 'driver', 'fuel'],
+    excludes: ['tubing fee (~ Rp 45k pp)', 'boat fee', 'meals'],
+    place_slugs: ['goa-pindul', 'air-terjun-sri-gethuk'],
+    tags: ['cave', 'waterfall', 'adventure', 'family'],
+  },
+  {
+    id: 'jeep-south-coast-adventure',
+    vehicle: 'jeep',
+    title: 'South Coast Adventure',
+    description: 'Off-road jeep run along the Gunungkidul south coast — Timang gondola, Pok Tunggal, Indrayanti for sunset. Bring swimwear.',
+    duration_hours: 8, max_pax: 4,
+    suggested_price: 950_000, market_floor: 1_200_000,
+    includes: ['jeep', 'driver', 'fuel', 'mineral water'],
+    excludes: ['entrance fees (each beach ~ Rp 10k)', 'gondola ride at Timang', 'meals'],
+    place_slugs: ['timang-beach', 'pok-tunggal-beach', 'indrayanti-beach'],
+    tags: ['beach', 'sunset', 'adventure'],
+  },
 ] as const
 
 export function tourTemplatesForVehicle(vehicle: TourVehicleKind): readonly TourTemplate[] {
@@ -515,6 +565,11 @@ export const MOCK_TOUR_ASSIGNMENTS: Record<string, string[]> = {
   'demo-andi-cb':              ['bike-sunset-city', 'bike-parangtritis'],
   'demo-budi-beat':            ['bike-village-coffee', 'bike-streetfood-night', 'bike-market-warung'],
   'demo-citra-scoopy':         ['bike-kraton-tamansari', 'bike-umkm-workshop', 'bike-mangunan-sunrise'],
+  // Jeep mocks — each gets a different tour mix so the profiles read
+  // visibly distinct on the demo /jeep marketplace + profiles.
+  'demo-jeep-yusuf-bromo-yogya':       ['jeep-bromo-sunrise', 'jeep-merapi-lava', 'jeep-cave-tubing-pindul'],
+  'demo-jeep-wahyu-merapi-yogya':      ['jeep-merapi-lava', 'jeep-cave-tubing-pindul', 'jeep-south-coast-adventure'],
+  'demo-jeep-bambang-adventure-yogya': ['jeep-south-coast-adventure', 'jeep-cave-tubing-pindul', 'jeep-merapi-lava'],
 }
 
 export const MOCK_LANGUAGES: Record<string, string[]> = {
@@ -526,6 +581,10 @@ export const MOCK_LANGUAGES: Record<string, string[]> = {
   'demo-andi-cb':              ['id', 'en'],
   'demo-budi-beat':            ['id'],
   'demo-citra-scoopy':         ['id', 'en', 'jv'],
+  // Jeep mocks
+  'demo-jeep-yusuf-bromo-yogya':       ['id', 'en'],
+  'demo-jeep-wahyu-merapi-yogya':      ['id', 'en'],
+  'demo-jeep-bambang-adventure-yogya': ['id', 'en'],
 }
 
 /**

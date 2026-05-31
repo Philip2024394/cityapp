@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getLegalEntity } from '@/lib/legal/entity'
 
-// What IndoCity is + isn't. Anchors our SaaS positioning publicly.
+// What CityDrivers is + isn't. Anchors our SaaS positioning publicly.
 // Plain HTML, no client components — readable + crawlable by search +
 // regulators alike.
 export const metadata = {

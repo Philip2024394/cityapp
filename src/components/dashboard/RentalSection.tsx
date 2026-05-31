@@ -6,8 +6,8 @@
 // drivers.rental_type / rental_daily_rate_idr / rental_weekly_rate_idr /
 // rental_monthly_rate_idr / rental_min_days columns (migration 0097).
 //
-// IndoCity is a SOFTWARE DIRECTORY under PM 12/2019. Rental rates are
-// self-published — the driver sets every value. IndoCity displays them
+// CityDrivers is a SOFTWARE DIRECTORY under PM 12/2019. Rental rates are
+// self-published — the driver sets every value. CityDrivers displays them
 // as-is, never sets or modifies driver prices, and never computes fares.
 //
 // The component owns local "draft" state for the inputs and calls onSave

@@ -31,14 +31,14 @@ const HERO_URL =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_53_26%20PM.png'
 
 const BRAND_LOGO_URL =
-  'https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714'
+  'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
 
 // Public WhatsApp number for driver-side support — sourced from env via getSupportWhatsApp().
 
-const PAGE_TITLE = 'Drive your car with CityRiders — Airport, rental, tours'
+const PAGE_TITLE = 'Drive your car with CityDrivers — Airport, rental, tours'
 const PAGE_DESCRIPTION =
-  'Join CityRiders as a car driver. You set the rates. Customers pay you directly via WhatsApp. Built for airport transfers, daily rentals, and tours.'
-const PAGE_URL = 'https://indocity.id/drivers/car'
+  'Join CityDrivers as a car driver. You set the rates. Customers pay you directly via WhatsApp. Built for airport transfers, daily rentals, and tours.'
+const PAGE_URL = 'https://citydrivers.id/drivers/car'
 
 export const metadata = {
   title:       PAGE_TITLE,
@@ -83,7 +83,7 @@ export default function CarDriversLandingPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={HERO_URL}
-            alt="CityRiders car driver next to a yellow sedan at sunset in Bali"
+            alt="CityDrivers car driver next to a yellow sedan at sunset in Bali"
             className="absolute inset-0 w-full h-full object-cover object-center"
             loading="eager"
           />
@@ -93,7 +93,7 @@ export default function CarDriversLandingPage() {
               area + the brand row below. */}
           <div
             aria-hidden
-            className="absolute inset-x-0 top-0"
+            className="absolute inset-x-0 top-0 pointer-events-none"
             style={{
               height: 160,
               background:
@@ -102,7 +102,7 @@ export default function CarDriversLandingPage() {
           />
           <div
             aria-hidden
-            className="absolute inset-x-0 bottom-0"
+            className="absolute inset-x-0 bottom-0 pointer-events-none"
             style={{
               height: '55%',
               background:
@@ -121,22 +121,21 @@ export default function CarDriversLandingPage() {
               style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 32px)' }}
             >
               <Link
-                href="/drivers/car"
+                href="/cityriders"
                 className="inline-flex items-center gap-2 active:scale-[0.97] transition"
-                aria-label="CityRiders home"
+                aria-label="CityDrivers home"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={BRAND_LOGO_URL}
                   alt=""
-                  className="w-9 h-9 rounded-xl"
-                  style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.18)' }}
+                  className="h-11 w-auto rounded-xl object-contain"
                 />
                 <span
                   className="font-black text-[18px] tracking-tight leading-none"
                   style={{ color: '#0A0A0A' }}
                 >
-                  CityRiders
+                  CityDrivers
                 </span>
               </Link>
               <VehicleSwitcher active="car" />
@@ -163,7 +162,7 @@ export default function CarDriversLandingPage() {
 
               <div className="mt-4 flex flex-col gap-2">
                 <Link
-                  href="/signup?role=driver&vehicle=car"
+                  href="/signup/car"
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
                   style={{ minHeight: 48 }}
                 >
@@ -172,7 +171,7 @@ export default function CarDriversLandingPage() {
                 </Link>
                 <a
                   href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                    "Hi, I'm interested in listing my car on CityRiders. Can I get more info?",
+                    "Hi, I'm interested in listing my car on CityDrivers. Can I get more info?",
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -263,11 +262,11 @@ export default function CarDriversLandingPage() {
         </div>
       </section>
 
-      {/* ─── Why CityRiders ─────────────────────────────────────────── */}
+      {/* ─── Why CityDrivers ─────────────────────────────────────────── */}
       <section className="px-5 py-12">
         <div className="text-center mb-10">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-            Why CityRiders
+            Why CityDrivers
           </div>
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
             Your rates. Your customers. Your earnings.
@@ -293,7 +292,7 @@ export default function CarDriversLandingPage() {
           <Differentiator
             icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />}
             title="Personal page"
-            body="A cityriders.id/car/you page you can share to regulars, partner hotels, or Instagram."
+            body="A citydrivers.id/car/you page you can share to regulars, partner hotels, or Instagram."
           />
         </div>
       </section>
@@ -354,7 +353,7 @@ export default function CarDriversLandingPage() {
           </div>
 
           <ul className="mt-6 space-y-2.5 text-[13px] sm:text-[14px] text-black/80">
-            <Bullet>Your personal public page (cityriders.id/car/you)</Bullet>
+            <Bullet>Your personal public page (citydrivers.id/car/you)</Bullet>
             <Bullet>Offer airport transfers, daily rentals, or tours</Bullet>
             <Bullet>Listed in Yogyakarta, Bali, Jogja car search</Bullet>
             <Bullet>0% commission per trip — forever</Bullet>
@@ -364,7 +363,7 @@ export default function CarDriversLandingPage() {
 
           <div className="mt-7 flex flex-col sm:flex-row gap-3">
             <Link
-              href="/signup?role=driver&vehicle=car"
+              href="/signup/car"
               className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.45)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
@@ -391,7 +390,7 @@ export default function CarDriversLandingPage() {
           </p>
           <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
             <Link
-              href="/signup?role=driver&vehicle=car"
+              href="/signup/car"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
@@ -400,7 +399,7 @@ export default function CarDriversLandingPage() {
             </Link>
             <a
               href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                "Hi, I'm interested in listing my car on CityRiders. Can I get more info?",
+                "Hi, I'm interested in listing my car on CityDrivers. Can I get more info?",
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -413,7 +412,7 @@ export default function CarDriversLandingPage() {
           </div>
 
           <div className="mt-10 pt-6 border-t border-white/10 text-[12px] text-white/45">
-            CityRiders is a directory and profile management tool — not a
+            CityDrivers is a directory and profile management tool — not a
             ride-hailing app. Drivers and customers transact directly,
             off-platform.
           </div>
@@ -426,16 +425,15 @@ export default function CarDriversLandingPage() {
 
 // ─── Small presentational helpers ───────────────────────────────────
 
-// 3-way Bike/Car/Truck mini selector. Active chip renders as plain
-// text (no link); inactive chips are pill links. Matches the existing
-// cross-nav pill style: white-blur background, rounded-full, 11px
-// font, charcoal text. Duplicated in /drivers and /drivers/truck —
-// same pattern these pages already use for Step/Differentiator/Bullet.
-function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'truck' }) {
-  const items: { key: 'bike' | 'car' | 'truck'; label: string; href: string }[] = [
-    { key: 'bike', label: 'Bike', href: '/drivers' },
-    { key: 'car', label: 'Car', href: '/drivers/car' },
+// 4-way Bike/Car/Bus/Truck mini selector. Active chip renders as plain
+// text (no link); inactive chips are pill links.
+function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'bus' | 'truck' | 'jeep' }) {
+  const items: { key: 'bike' | 'car' | 'bus' | 'truck' | 'jeep'; label: string; href: string }[] = [
+    { key: 'bike',  label: 'Bike',  href: '/drivers' },
+    { key: 'car',   label: 'Car',   href: '/drivers/car' },
+    { key: 'bus',   label: 'Bus',   href: '/drivers/bus' },
     { key: 'truck', label: 'Truck', href: '/drivers/truck' },
+    { key: 'jeep',  label: 'Jeep',  href: '/drivers/jeep' },
   ]
   return (
     <div

@@ -17,8 +17,10 @@
 		}
 	],
 	"routes": [
-		{ "pattern": "cityriders.id",     "custom_domain": true },
-		{ "pattern": "www.cityriders.id", "custom_domain": true }
+		{ "pattern": "cityriders.id",      "custom_domain": true },
+		{ "pattern": "www.cityriders.id",  "custom_domain": true },
+		{ "pattern": "citydrivers.id",     "custom_domain": true },
+		{ "pattern": "www.citydrivers.id", "custom_domain": true }
 	],
 	// Cron Triggers — schedules ported from vercel.json. The scheduled
 	// handler in worker-entry.mjs dispatches each cron expression to its
@@ -37,7 +39,7 @@
 			"0 21 * * *",  // payment-intents/expire (daily)
 			"0 1 * * *",   // reminders/payments (daily 08:00 WIB)
 			"0 2 * * *",   // pdp/overdue (daily)
-			"0 3 * * 1"    // cron/partner-suspend (weekly Mon)
+			"0 * * * *"    // cron/partner-suspend (hourly — checks 48h overdue)
 		]
 	},
 	"observability": {

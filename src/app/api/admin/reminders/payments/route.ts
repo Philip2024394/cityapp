@@ -19,7 +19,7 @@ import { sendEmail, renderEmail } from '@/lib/email/resend'
 // same day will skip already-sent rows.
 //
 // Email channel: Resend via lib/email/resend.ts. WhatsApp can be added
-// later (indocity has no WA Cloud API config yet — Phase 2).
+// later (citydrivers has no WA Cloud API config yet — Phase 2).
 //
 // Returns a JSON summary suitable for cron logs / admin debugging.
 // ============================================================================
@@ -40,7 +40,7 @@ type Plan = 'driver' | 'rental_company' | 'tour_guide'
   | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://indocity.id'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://citydrivers.id'
 const RENEW_URL          = APP_URL + '/dashboard'
 const UPGRADE_URL        = APP_URL + '/rent/upgrade'
 const TOUR_UPGRADE_URL   = APP_URL + '/tour/upgrade'

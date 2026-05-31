@@ -30,6 +30,7 @@ import { fireConnectIntent } from '@/lib/connectIntent'
 import type { Rider, ServiceType } from '@/types/rider'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl, GENERIC_CAR_FALLBACK } from '@/data/carImages'
+import { getJeepImageUrl } from '@/data/jeepImages'
 
 // ============================================================================
 // /cari — Card-based booking page (full redesign 2026-05-27)
@@ -40,7 +41,7 @@ import { getCarImageUrl, GENERIC_CAR_FALLBACK } from '@/data/carImages'
 // list, and the Citypass promo. The Find-my-ride CTA sits OUTSIDE the
 // container as a primary action terminus.
 //
-// Compliance posture: IndoCity is a software directory (PM 12/2019). The
+// Compliance posture: CityDrivers is a software directory (PM 12/2019). The
 // driver cards label fares as "From Rp X" — never as a calculated trip
 // price. A persistent disclaimer sits under the CTA.
 //
@@ -57,7 +58,7 @@ import { getCarImageUrl, GENERIC_CAR_FALLBACK } from '@/data/carImages'
 // transport" — especially those that handle fare collection — as
 // transport aplikators (Gojek/Grab category). That triggers licensing,
 // KIR inspection, cooperative routing, commission caps, and OJK fintech
-// regs. CityRiders deliberately sits in the lighter "directory + driver
+// regs. CityDrivers deliberately sits in the lighter "directory + driver
 // SaaS" lane: drivers pay a flat subscription, the platform never moves
 // money, customers and drivers transact privately over WhatsApp.
 //
@@ -73,16 +74,19 @@ const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
   person: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
   parcel: { pickup: 'Where to pick up the package?', dropoff: 'Destination address' },
   food: { pickup: 'Restaurant or warung name', dropoff: 'Drop-off address' },
-  car: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
-  bus: { pickup: 'Group pickup location', dropoff: 'Destination or tour itinerary' },
+  car:   { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
+  bus:   { pickup: 'Group pickup location', dropoff: 'Destination or tour itinerary' },
+  truck: { pickup: 'Pickup address (warehouse / home)', dropoff: 'Drop-off address' },
+  jeep:  { pickup: 'Pickup location (hotel / villa)', dropoff: 'Tour destination (Bromo / Merapi / etc.)' },
 }
 
 function parseService(raw: string | null): ServiceType {
-  if (raw === 'person' || raw === 'parcel' || raw === 'food' || raw === 'car' || raw === 'bus') return raw
-  // New layout defaults to 'car' per founder spec (Car tile shown active
-  // first in the vehicle toggle). Legacy entries still resolve correctly.
-  // NOTE: 'person' MUST be in the recognised set above — the Bike toggle
-  // navigates to ?service=person and we need vehicleType to flip to 'bike'.
+  if (
+    raw === 'person' || raw === 'parcel' || raw === 'food' ||
+    raw === 'car'    || raw === 'bus'    || raw === 'truck' || raw === 'jeep'
+  ) return raw
+  // Default to 'car'. Legacy entries (?service=person|parcel|food) still
+  // resolve correctly to the bike side via the vehicleType derivation.
   return 'car'
 }
 
@@ -98,7 +102,7 @@ function parseMode(raw: string | null): BookingMode {
 
 // Recent-places localStorage cache (same shape as the old /cari so the
 // store is shared and doesn't reset between deploys).
-const RECENT_PLACES_KEY = 'indocity:recent-places:v1'
+const RECENT_PLACES_KEY = 'citydrivers:recent-places:v1'
 const RECENT_PLACES_CAP = 10
 
 type RecentPlace = { lat: number; lng: number; label: string; usedAt: number }
@@ -196,7 +200,15 @@ function PlanTripPageInner() {
   // New default is 'car' so the toggle lands on Car first per spec; the
   // Bike legacy mappings (person/parcel/food → Bike side) still resolve.
   const service: ServiceType = parseService(params.get('service'))
-  const vehicleType: 'car' | 'bike' = service === 'car' ? 'car' : 'bike'
+  // Map customer-facing service → DB vehicle_type discriminator used by
+  // the driver query. Bike is the catch-all for any service that doesn't
+  // map to its own vehicle category (person/parcel/food are all bikes).
+  const vehicleType: 'bike' | 'car' | 'minibus' | 'truck' | 'jeep' =
+    service === 'car'   ? 'car'
+    : service === 'bus' ? 'minibus'
+    : service === 'truck' ? 'truck'
+    : service === 'jeep'  ? 'jeep'
+    : 'bike'
   const mode: BookingMode = parseMode(params.get('mode'))
 
   // perf instrumentation
@@ -584,9 +596,96 @@ function PlanTripPageInner() {
             varies by hour: few in early morning, many in afternoon /
             evening. See DriverDotsOverlay header for the schedule. */}
         <DriverDotsOverlay />
+
+        {/* Pickup + dropoff pin overlay + animated dashed route line.
+            Pins are founder-supplied PNG art. Route is an SVG path with
+            cubic-bezier control points so it reads as a "real" turning
+            route (not a straight ruler), gradient stroke from black at
+            the pickup end to yellow at the dropoff end, and an animated
+            stroke-dashoffset for the "running" marching-ants effect. */}
       </div>
 
-      {/* HEADER — CityRiders brand mark on the left, nearby pill on the
+      {/* PICKUP + DROPOFF PIN OVERLAY — hoisted OUT of the hero (z-0)
+          stacking context into its own z-25 fixed layer so the pins +
+          animated route line render ABOVE the booking container (z-20)
+          but BELOW the header (z-30). Pointer-events disabled so taps
+          pass through to the map / booking sheet underneath. */}
+      {(pickupLabel.trim().length > 0 || dropoffLabel.trim().length > 0) && (
+        <div
+          className="cari-fixed fixed inset-0 z-[25] pointer-events-none"
+          aria-hidden
+        >
+          {pickupLabel.trim().length > 0 && (
+            <div
+              className="absolute"
+              style={{ left: '18%', top: '14%', transform: 'translate(-50%, -100%)' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2002_38_07%20PM.png"
+                alt=""
+                className="h-14 w-auto object-contain"
+                style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.55))' }}
+              />
+            </div>
+          )}
+
+          {dropoffLabel.trim().length > 0 && (
+            <div
+              className="absolute"
+              style={{ left: '82%', top: '20%', transform: 'translate(-50%, -100%)' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2002_40_21%20PM.png"
+                alt=""
+                className="h-14 w-auto object-contain"
+                style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.55))' }}
+              />
+            </div>
+          )}
+
+          {pickupLabel.trim().length > 0 && dropoffLabel.trim().length > 0 && (
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="cariRouteGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stopColor="#0A0A0A" />
+                  <stop offset="55%"  stopColor="#0A0A0A" />
+                  <stop offset="80%"  stopColor="#FACC15" />
+                  <stop offset="100%" stopColor="#FACC15" />
+                </linearGradient>
+              </defs>
+              {/* Route path runs across the upper hero band (between the
+                  two pins at y=14% → 20%). Cubic bezier inflections give
+                  it the right-straight-left rhythm of a real route. */}
+              <path
+                d="M 18 14 C 30 8, 40 22, 50 16 S 70 26, 82 20"
+                stroke="url(#cariRouteGrad)"
+                strokeWidth="0.9"
+                strokeDasharray="2.4 1.6"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.55))' }}
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  from="0"
+                  to="-8"
+                  dur="0.9s"
+                  repeatCount="indefinite"
+                />
+              </path>
+            </svg>
+          )}
+        </div>
+      )}
+
+      {/* HEADER — CityDrivers brand mark on the left, nearby pill on the
           right. Logo + wordmark style matches the /cityriders, /drivers,
           and /drivers/car landings so the whole family reads consistent. */}
       <header className="relative z-30 pt-safe">
@@ -594,11 +693,11 @@ function PlanTripPageInner() {
           <Link
             href="/cityriders"
             className="inline-flex items-center gap-2 hover:opacity-85 active:scale-[0.97] transition"
-            aria-label="CityRiders home"
+            aria-label="CityDrivers home"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitleddasdasdasasd-removebg-preview.png?updatedAt=1779015947714"
+              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
               alt=""
               className="w-9 h-9 rounded-xl"
               style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.18)' }}
@@ -607,7 +706,7 @@ function PlanTripPageInner() {
               className="font-black tracking-tight text-[20px] sm:text-[22px] leading-none"
               style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
             >
-              CityRiders
+              CityDrivers
             </span>
           </Link>
 
@@ -844,23 +943,15 @@ function PlanTripPageInner() {
                   (compass / star icon taps) when that flow is wired. */}
             </div>
 
-            {/* ROW 3 — Vehicle toggle (Car / Bike). Drives the inline
-                driver list + the vehicleType URL param when CTA is tapped.
-                Preserves the current `mode` so flipping between Car/Bike
-                doesn't reset Ride↔Parcel. The Ride/Parcel decision is made
-                ONE screen back on /cityriders; here we just respect it
-                via the URL param + a small icon next to "Where to?". */}
-            <div className="mt-3 shrink-0 grid grid-cols-2 gap-2">
-              <VehicleToggleButton
-                href={`/cari?service=car&mode=${mode}`}
-                active={vehicleType === 'car'}
-                label="Car"
-              />
-              <VehicleToggleButton
-                href={`/cari?service=person&mode=${mode}`}
-                active={vehicleType === 'bike'}
-                label="Bike"
-              />
+            {/* ROW 3 — Vehicle picker (5 round buttons). Drives the inline
+                driver list. Preserves the current `mode` so flipping
+                between vehicle types doesn't reset Ride↔Parcel. */}
+            <div className="mt-3 shrink-0 grid grid-cols-5 gap-2">
+              <VehicleRoundButton href={`/cari?service=person&mode=${mode}`} active={vehicleType === 'bike'}    label="Bike"  icon="🏍️" />
+              <VehicleRoundButton href={`/cari?service=car&mode=${mode}`}    active={vehicleType === 'car'}     label="Car"   icon="🚗" />
+              <VehicleRoundButton href={`/cari?service=bus&mode=${mode}`}    active={vehicleType === 'minibus'} label="Bus"   icon="🚐" />
+              <VehicleRoundButton href={`/cari?service=jeep&mode=${mode}`}   active={vehicleType === 'jeep'}    label="Jeep"  icon="🚙" />
+              <VehicleRoundButton href={`/cari?service=truck&mode=${mode}`}  active={vehicleType === 'truck'}   label="Truck" icon="🚚" />
             </div>
 
             {/* Hourly-filter banner — surfaces when the customer arrived
@@ -992,7 +1083,7 @@ function PlanTripPageInner() {
                     )
                     haptic.impact()
                   }}
-                  className="mt-3 shrink-0 flex items-center justify-center rounded-2xl font-extrabold tracking-tight active:scale-[0.99] transition"
+                  className="mt-3 mb-6 shrink-0 flex items-center justify-center rounded-2xl font-extrabold tracking-tight active:scale-[0.99] transition"
                   style={{
                     minHeight: 56,
                     padding: '14px 18px',
@@ -1014,10 +1105,6 @@ function PlanTripPageInner() {
               )
             })()}
 
-            <p className="mt-3 shrink-0 text-center text-[11px] text-[#52525B] font-bold leading-snug px-2">
-              Self-published rates · CityRiders is a software directory.
-              You agree the fare directly with the driver.
-            </p>
           </div>
         </div>
       </div>
@@ -1059,6 +1146,45 @@ function VehicleToggleButton({
   )
 }
 
+// Round 5-way vehicle button. Yellow circle on active, light grey on
+// inactive. Tap target is the entire Link (circle + label).
+function VehicleRoundButton({
+  href, active, label, icon,
+}: {
+  href:   string
+  active: boolean
+  label:  string
+  icon:   string
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
+      className="flex flex-col items-center gap-1 active:scale-95 transition"
+    >
+      <div
+        className="w-11 h-11 rounded-full flex items-center justify-center text-[20px] transition"
+        style={{
+          background: active ? '#FACC15' : '#F4F4F5',
+          border:     active ? '1px solid #FACC15' : '1px solid #E4E4E7',
+          boxShadow:  active ? '0 4px 12px rgba(250,204,21,0.35)' : 'none',
+        }}
+        aria-hidden
+      >
+        {icon}
+      </div>
+      <span
+        className="text-[10.5px] font-extrabold tracking-tight"
+        style={{ color: active ? '#0A0A0A' : '#52525B' }}
+      >
+        {label}
+      </span>
+    </Link>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Driver card — landscape layout per spec. Image left, title + subtitle +
 // rating in the middle, price + ETA on the right. The card BODY is a
@@ -1079,7 +1205,7 @@ function DriverCard({
   onSelect,
 }: {
   driver:     Rider
-  vehicleType:'car' | 'bike'
+  vehicleType:'bike' | 'car' | 'minibus' | 'truck' | 'jeep'
   pickup:     GeoPoint | null
   selected:   boolean
   isFastest:  boolean
@@ -1101,9 +1227,15 @@ function DriverCard({
   // when the make/model isn't in the catalog yet) so there's never a
   // null src; the <img onError> below catches transient 404s and swaps
   // to the silhouette so a broken URL never leaves a blank tile.
-  const imgSrc = vehicleType === 'car'
-    ? getCarImageUrl(make, model)
-    : getBikeImageUrl(make, model)
+  // Jeep cards always render the colour-keyed jeep photo (founder spec —
+  // one curated jeep image per body colour, picked by the driver from
+  // their dashboard /dashboard/jeep/vehicle). Bike uses the bike catalog;
+  // everything else (car / bus / truck) falls through to the car catalog
+  // silhouette helper.
+  const imgSrc =
+    vehicleType === 'jeep' ? getJeepImageUrl(driver.bike?.color)
+    : vehicleType === 'bike' ? getBikeImageUrl(make, model)
+    : getCarImageUrl(make, model)
 
   // Subtitle: year + color when set, otherwise area/city.
   const year = driver.bike?.year
@@ -1128,20 +1260,33 @@ function DriverCard({
   }
 
   // Price label — "From Rp X" or "Rp X". Never "trip price" / "total fare"
-  // (PM 12/2019 safe-harbour copy).
-  const fee = driver.minFee ?? driver.pricePerKm ?? null
-  const priceLabel = fee != null ? `Rp ${fee.toLocaleString('en-US')}` : null
+  // (PM 12/2019 safe-harbour copy). Charter vehicles (jeep / minibus /
+  // truck) surface the 3h hourly-tier price because they charter as
+  // packages, not per-km. Bike + car keep the legacy min_fee display.
+  const TIER_3H_BY_TYPE: Record<string, number> = {
+    jeep:    350_000, // matches HOURLY_DEFAULTS_JEEP
+    minibus: 250_000, // matches HOURLY_DEFAULTS_INNOVA (Hiace / Innova tier)
+    truck:   400_000, // pindahan / charter 3h floor
+  }
+  const tierFee = TIER_3H_BY_TYPE[vehicleType]
+  const fee = tierFee ?? driver.minFee ?? driver.pricePerKm ?? null
+  const priceLabel = fee != null
+    ? (tierFee
+        ? `From Rp ${tierFee.toLocaleString('id-ID')}/3h`
+        : `Rp ${fee.toLocaleString('en-US')}`)
+    : null
 
   // Route to the driver's profile based on the active vehicleType toggle.
   // /cari's driver list is server-filtered by vehicle_type (see
-  // fetchActiveDriversBrowser), so every card under the Car toggle is a
-  // car driver and every card under the Bike toggle is a bike driver —
-  // no per-row vehicle_type lookup needed. Truck / minibus drivers
-  // surface on the car list (per types/rider.ts dashboard mapping) and
-  // also route to /car/{slug}.
-  const profileHref = vehicleType === 'car'
-    ? `/car/${driver.slug}`
-    : `/r/${driver.slug}`
+  // fetchActiveDriversBrowser), so every card under the picked vehicle
+  // is the matching type. Route to the vertical's own /[slug] page so
+  // mock + real drivers both land somewhere intentional.
+  const profileHref =
+    vehicleType === 'car'     ? `/car/${driver.slug}`
+    : vehicleType === 'minibus' ? `/bus/${driver.slug}`
+    : vehicleType === 'jeep'    ? `/jeep/${driver.slug}`
+    : vehicleType === 'truck'   ? `/truck/${driver.slug}`
+    : `/r/${driver.slug}` // bike
 
   // Selection visuals — yellow border, soft yellow tint, and a small
   // scale-up so the chosen card visibly "lifts" out of the list. The

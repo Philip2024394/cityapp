@@ -88,7 +88,7 @@ export type UniversalProviderCardProps = {
    *  fewer; rows simply collapse. */
   portfolioThumbs?:   string[]
   /** Per-vertical brand accent. The marketplace consistently uses
-   *  IndoCity yellow `#FACC15`, regardless of provider theme_color
+   *  CityDrivers yellow `#FACC15`, regardless of provider theme_color
    *  (per-provider colour lives on the public profile page itself). */
   themeColor?:        string
   /** Bottom-left items — caller-provided icon + label pills. Anything

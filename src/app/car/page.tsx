@@ -9,7 +9,7 @@ import { haversineKm } from '@/lib/geo/haversine'
 // ============================================================================
 // /car — Car driver marketplace (Phase 1)
 // ----------------------------------------------------------------------------
-// IndoCity is an Indonesian SOFTWARE DIRECTORY (PM 12/2019), NOT a transport
+// CityDrivers is an Indonesian SOFTWARE DIRECTORY (PM 12/2019), NOT a transport
 // operator. Customers select drivers themselves and WhatsApp them directly.
 // We never set fares, never appoint orders, never match drivers.
 //
@@ -25,14 +25,14 @@ import { haversineKm } from '@/lib/geo/haversine'
 // Compliance copy guard-rails:
 //   • "Published by driver" not "our price"
 //   • "From Rp X" not "trip price" / "total fare"
-//   • Footer disclaimer reminds users IndoCity surfaces — never sets — fares
+//   • Footer disclaimer reminds users CityDrivers surfaces — never sets — fares
 // ============================================================================
 
 export const metadata = {
-  title: 'Car Drivers · IndoCity',
+  title: 'Car Drivers · CityDrivers',
   description:
     'Browse independent car drivers in Indonesia. Self-published rates — ' +
-    'WhatsApp the driver directly to agree the fare. IndoCity is a directory; ' +
+    'WhatsApp the driver directly to agree the fare. CityDrivers is a directory; ' +
     'we never set fares or appoint orders.',
 }
 
@@ -348,7 +348,7 @@ export default async function CarMarketplacePage({
           </div>
         )}
 
-        {/* Compliance footer — surfaces the IndoCity directory model so
+        {/* Compliance footer — surfaces the CityDrivers directory model so
             users understand the platform doesn't compute, set, or appoint
             fares. Matches the safe-harbour copy used on /cari and the
             lowest-fare banner. */}
@@ -446,18 +446,22 @@ function CarDriverCard({ driver: d }: { driver: CarDriver }) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   // White-background marketplace shell — matches /tour, /handyman, /laundry,
-  // and the rest of the app-wide white redesign. IndoCity wordmark links
+  // and the rest of the app-wide white redesign. CityDrivers wordmark links
   // home; no AppNav by design (these vertical marketplaces present as a
   // standalone surface, not part of the authenticated dashboard chrome).
   return (
     <main className="relative min-h-[100dvh] bg-white text-black">
       <header className="px-4 pt-safe pt-[35px] pb-2 max-w-4xl mx-auto">
-        <Link href="/" aria-label="Home" className="inline-block">
+        <Link href="/cityriders" aria-label="CityDrivers home" className="inline-flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://ik.imagekit.io/nepgaxllc/Untitleddfsdfsdfs-removebg-preview.png"
-            alt="IndoCity"
-            className="h-8 sm:h-10 w-auto"
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
+            alt="CityDrivers"
+            className="h-10 w-auto object-contain"
           />
+          <span className="font-black text-[18px] tracking-tight leading-none text-[#0A0A0A]">
+            CityDrivers
+          </span>
         </Link>
       </header>
       {children}

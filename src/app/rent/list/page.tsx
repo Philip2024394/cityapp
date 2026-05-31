@@ -4,9 +4,9 @@ import AppNav from '@/components/layout/AppNav'
 import ContractTemplates from '@/components/rent/ContractTemplates'
 
 export const metadata = {
-  title: 'List Your Bike · IndoCity',
+  title: 'List Your Bike · CityDrivers',
   description:
-    'Daftarkan motormu untuk disewakan di IndoCity. GRATIS 7 hari pertama, lalu Rp 38.000/bulan atau Rp 350.000/tahun — ' +
+    'Daftarkan motormu untuk disewakan di CityDrivers. GRATIS 7 hari pertama, lalu Rp 38.000/bulan atau Rp 350.000/tahun — ' +
     'tayang setelah ditinjau admin.',
 }
 
@@ -51,7 +51,7 @@ export default function ListBikePage() {
             List your <span className="gradient-text">bike</span>
           </h1>
           <p className="mt-2 text-[14px] text-muted leading-snug">
-            Punya motor yang nganggur saat kamu nggak kerja? Sewakan di IndoCity dan dapatkan
+            Punya motor yang nganggur saat kamu nggak kerja? Sewakan di CityDrivers dan dapatkan
             passive income. <strong className="text-ink">GRATIS 7 hari pertama</strong> — lalu hanya
             <strong className="text-ink"> Rp 38.000/bulan</strong> atau <strong className="text-ink">Rp 350.000/tahun</strong> per listing, tayang setelah ditinjau admin.
           </p>
@@ -86,7 +86,7 @@ export default function ListBikePage() {
             <span className="text-[14px] font-extrabold uppercase tracking-wider">Ready to list</span>
           </div>
           <p className="text-[13px] font-bold leading-snug">
-            Isi detail motormu, upload foto, dan kirim — admin IndoCity akan meninjau dalam
+            Isi detail motormu, upload foto, dan kirim — admin CityDrivers akan meninjau dalam
             24–48 jam.
           </p>
           <div className="mt-3 flex items-center gap-2 flex-wrap">

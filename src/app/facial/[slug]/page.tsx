@@ -167,7 +167,7 @@ export default function FacialProviderPage() {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
   }
 
-  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://indocity.id'
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
   const profileUrl = `${siteOrigin}/facial/${p.slug}`
 
   // WhatsApp prefill text for the under-carousel contact button.

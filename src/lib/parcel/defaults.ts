@@ -1,7 +1,7 @@
 // ============================================================================
 // Parcel B2B suggested defaults
 // ----------------------------------------------------------------------------
-// IndoCity is a SOFTWARE DIRECTORY — drivers self-publish their own
+// CityDrivers is a SOFTWARE DIRECTORY — drivers self-publish their own
 // rates. The values below are SUGGESTIONS, surfaced as defaults in the
 // driver dashboard with a one-click "Reset to defaults" button and on
 // the public /cityriders/parcel hub as "typical driver rates".

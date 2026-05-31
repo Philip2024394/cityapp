@@ -22,12 +22,12 @@ import { logNav } from '@/lib/perf/navTiming'
 //                            chose not to share. Subsequent surfaces fall
 //                            back to manual entry / typed addresses.
 //   - Compliance: stays on-device. We never POST these coords to any
-//     IndoCity endpoint. The cache TTL (30 days) ensures we don't keep
+//     CityDrivers endpoint. The cache TTL (30 days) ensures we don't keep
 //     stale location indefinitely; afterward the prompt re-appears.
 // ============================================================================
 
-export const LOCATION_CACHE_KEY = 'indocity:location:v1'
-export const LOCATION_PROMPTED_KEY = 'indocity:location-prompted'
+export const LOCATION_CACHE_KEY = 'citydrivers:location:v1'
+export const LOCATION_PROMPTED_KEY = 'citydrivers:location-prompted'
 export const LOCATION_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000  // 30 days
 
 export type CachedLocation = {
@@ -67,10 +67,22 @@ type Props = {
   onComplete: () => void
 }
 
+function detectHostBrand(): string {
+  if (typeof window === 'undefined') return 'CityDrivers'
+  const h = window.location.host.toLowerCase().split(':')[0]
+  if (h === 'citydrivers.id' || h === 'www.citydrivers.id') return 'CityDrivers'
+  return 'Kita2u'
+}
+
 export default function LocationPermissionPrompt({ open, onComplete }: Props) {
   const [requesting, setRequesting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [hostBrand, setHostBrand] = useState('CityDrivers')
   const completedRef = useRef(false)
+
+  useEffect(() => {
+    if (open) setHostBrand(detectHostBrand())
+  }, [open])
 
   // Reset transient state every time the modal opens.
   useEffect(() => {
@@ -203,7 +215,7 @@ export default function LocationPermissionPrompt({ open, onComplete }: Props) {
           Set your location
         </h2>
         <p className="mt-2 text-center text-[13px] font-medium text-gray-600 leading-relaxed">
-          See distances, prices, and nearby drivers across Kita2u.
+          {hostBrand} uses your location to show distances, prices, and nearby drivers.
         </p>
 
         {errorMsg && (

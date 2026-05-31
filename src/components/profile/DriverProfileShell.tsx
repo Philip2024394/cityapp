@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl } from '@/data/carImages'
+import { getJeepImageUrl } from '@/data/jeepImages'
 import { SERVICE_OFFERINGS } from '@/lib/drivers/serviceOfferings'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import PlacesPicker from '@/components/places/PlacesPicker'
@@ -24,7 +25,6 @@ import AlternativesWidget from './shell/AlternativesWidget'
 import ToursTabContent from './shell/ToursTabContent'
 import HourlyTabContent from './shell/HourlyTabContent'
 import ParcelTierCard from './shell/ParcelTierCard'
-import LanguageFlagsRow from './shell/LanguageBadge'
 import HeroServiceIcon from './shell/HeroServiceIcon'
 import ReviewsPanel, { type Review } from './shell/ReviewsPanel'
 import { buildShellWhatsAppLink } from './shell/shellWhatsApp'
@@ -52,7 +52,7 @@ import { buildShellWhatsAppLink } from './shell/shellWhatsApp'
 //                            instead" + same input set + alternatives list
 //                            of online drivers with the SAME vehicle_type.
 //
-// Compliance (PM 12/2019): IndoCity is a SOFTWARE DIRECTORY. We never
+// Compliance (PM 12/2019): CityDrivers is a SOFTWARE DIRECTORY. We never
 // compute or charge fares — we show the driver's published rate and open
 // WhatsApp for the rest. Estimate copy is always "Estimate · driver's own
 // rate", never "Fare" or "Final price". Submission is a wa.me redirect,
@@ -166,9 +166,11 @@ const DEFAULT_BIKE_HERO =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png'
 const DEFAULT_CAR_HERO =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2028,%202026,%2003_38_55%20AM.png'
+const DEFAULT_JEEP_HERO =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2011_44_53%20AM.png'
 
 // Hero route-preview overlay templates — six SVG path shapes picked
-// deterministically per driver slug. ZERO backend — IndoCity remains a
+// deterministically per driver slug. ZERO backend — CityDrivers remains a
 // software directory; we do not geocode, route, dispatch, or coordinate.
 const ROUTE_TEMPLATES: string[] = [
   'M60 230 L340 70',
@@ -263,8 +265,9 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
   // vehicle_photos[0] — driver-uploaded photos still live on the model
   // for other consumers but the public showcase needs ONE clean curated
   // image per make+model.
-  const showcasePhoto = driver.vehicle_type === 'bike'
-    ? getBikeImageUrl(driver.vehicle_make, driver.vehicle_model)
+  const showcasePhoto =
+    driver.vehicle_type === 'jeep' ? getJeepImageUrl(driver.vehicle_color)
+    : driver.vehicle_type === 'bike' ? getBikeImageUrl(driver.vehicle_make, driver.vehicle_model)
     : getCarImageUrl(driver.vehicle_make, driver.vehicle_model)
 
   // Estimate line — see file header for the compliance reasoning. We
@@ -319,6 +322,27 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     [driver.tours],
   )
   const toursAvailable = publishedTours.length > 0
+
+  // Place-image cascade for tour cards. Fetch image_url for every slug
+  // referenced by any published tour so the card can auto-fill the
+  // thumbnail when the driver hasn't uploaded their own photo.
+  const tourPlaceSlugs = useMemo(() => {
+    const set = new Set<string>()
+    for (const t of publishedTours) for (const s of t.place_slugs) set.add(s)
+    return Array.from(set)
+  }, [publishedTours])
+
+  const [tourPlaceImages, setTourPlaceImages] = useState<Record<string, string | null>>({})
+  useEffect(() => {
+    if (tourPlaceSlugs.length === 0) {
+      setTourPlaceImages({})
+      return
+    }
+    void fetch(`/api/places/images?slugs=${tourPlaceSlugs.join(',')}`, { cache: 'force-cache' })
+      .then((r) => (r.ok ? r.json() : { images: {} }))
+      .then((j: { images: Record<string, string | null> }) => setTourPlaceImages(j.images || {}))
+      .catch(() => { /* swallow — cards just won't show thumbnails */ })
+  }, [tourPlaceSlugs])
 
   type TabId = 'all' | 'passenger' | 'parcel' | 'hourly' | 'tours'
   const tabs: { id: TabId; label: string; emoji?: string }[] = []
@@ -397,7 +421,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16 / 9', background: '#F4F4F5' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={driver.cover_image_url || (driver.vehicle_type === 'bike' ? DEFAULT_BIKE_HERO : DEFAULT_CAR_HERO)}
+          src={
+            driver.cover_image_url ||
+            (driver.vehicle_type === 'bike' ? DEFAULT_BIKE_HERO
+              : driver.vehicle_type === 'jeep' ? DEFAULT_JEEP_HERO
+              : DEFAULT_CAR_HERO)
+          }
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -549,8 +578,6 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 )}
               </div>
             )}
-            <LanguageFlagsRow languages={driver.languages ?? null} />
-
             {pills.length > 0 && (
               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                 {pills.map((label) => (
@@ -687,6 +714,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
               onSelect={(place) => {
                 setDropoff(place.name)
                 setShowPlacesPicker(false)
+                // Snap the tab back to the bookable view so the freshly
+                // filled drop-off + pickup field are visible — otherwise
+                // a customer who was on Tours / Hourly would land back on
+                // those panels (which hide the booking inputs) and feel
+                // like the place tap "did nothing".
+                setActiveTab('all')
                 if (typeof window !== 'undefined') {
                   requestAnimationFrame(() => {
                     const el = document.querySelector('[data-booking-widget]')
@@ -738,7 +771,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             and parcel are offered. AllSummaryCard is retained in the
             shell/ folder for future reuse but is NOT invoked here. */}
         {activeTab === 'tours' ? (
-          <ToursTabContent driver={driver} tours={publishedTours} />
+          <ToursTabContent driver={driver} tours={publishedTours} placeImages={tourPlaceImages} />
         ) : activeTab === 'hourly' ? (
           <HourlyTabContent
             driver={driver}
