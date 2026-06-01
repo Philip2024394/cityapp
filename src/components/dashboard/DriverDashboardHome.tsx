@@ -298,7 +298,7 @@ function DashboardHome({
       {sub.kind !== 'active' && (
         <SubscriptionBanner sub={sub} renewHref={renew} config={config} />
       )}
-      {sub.kind === 'active' && sub.daysLeft <= 7 && (
+      {sub.kind === 'active' && sub.daysLeft <= 15 && (
         <SubscriptionBanner sub={sub} renewHref={renew} config={config} />
       )}
 
@@ -611,10 +611,12 @@ function SubscriptionBanner({
   renewHref: string
   config:    DashboardVerticalConfig
 }) {
-  const isUrgent = sub.kind !== 'active'
-  // Only the soft "<=7 days" nudge can be dismissed. Never/expired must
-  // stay visible — driver is non-functional until they renew.
-  const isDismissible = !isUrgent
+  // ≤ 5 days = treated as urgent (red-ish styling + non-dismissible) so the
+  // driver actually sees the trial ending. Soft nudge (6-15 days) can be
+  // dismissed for 24h. Never/expired states are always urgent.
+  const isVeryUrgent = sub.kind === 'active' && sub.daysLeft <= 5
+  const isUrgent = sub.kind !== 'active' || isVeryUrgent
+  const isDismissible = sub.kind === 'active' && !isVeryUrgent
 
   // null = "still deciding" — render nothing until the first effect reads
   // localStorage, so the banner doesn't flash then hide. Once decided,

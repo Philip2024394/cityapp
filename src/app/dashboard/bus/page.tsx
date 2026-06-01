@@ -66,7 +66,7 @@ const CONFIG: DashboardVerticalConfig = {
   subscriptionExpiredBody: (until) =>
     `Your access ended ${until}. Renew to come back online.`,
   subscriptionActiveBody: (until) =>
-    `Active until ${until}. WhatsApp admin to renew early.`,
+    `Active until ${until}. Rp 38.000/month — tap Renew to pay via QRIS.`,
   buildProfileHref: (row) => (row.slug ? `/bus/${row.slug}` : null),
 }
 
