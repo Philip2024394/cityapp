@@ -605,6 +605,10 @@ export const MOCK_LANGUAGES: Record<string, string[]> = {
   'demo-jeep-yusuf-bromo-yogya':       ['id', 'en'],
   'demo-jeep-wahyu-merapi-yogya':      ['id', 'en'],
   'demo-jeep-bambang-adventure-yogya': ['id', 'en'],
+  // Bus / minibus mocks
+  'rahmat-hiace-jogja-charter':        ['id', 'en'],
+  // Truck mocks
+  'l300-pickup-pindahan-yogya':        ['id', 'en'],
 }
 
 /**

@@ -302,8 +302,12 @@ export default function OnlineBookingWidget({
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider" style={{ color: '#854D0E' }}>
                 Estimate · {driver.business_name.split(' ')[0]}&apos;s own rate
               </div>
+              {/* Big number stays Rp 0 until both pickup + drop-off are
+                  picked from the autocomplete (both carry lat/lng → live
+                  total). Until then the small line below discloses the
+                  driver's per-km rate so the customer still sees pricing. */}
               <div className="text-[28px] sm:text-[32px] font-black leading-none mt-1" style={{ color: TEXT_INK }}>
-                {idr(estimate.totalIdr ?? estimate.minFee)}
+                {estimate.totalIdr != null ? idr(estimate.totalIdr) : 'Rp 0'}
               </div>
               <div className="text-[11px] font-semibold mt-1" style={{ color: TEXT_SECOND }}>
                 {estimate.distanceKm != null && estimate.totalIdr != null ? (
@@ -315,7 +319,7 @@ export default function OnlineBookingWidget({
                   </>
                 ) : (
                   <>
-                    Driver&apos;s rate {idr(estimate.pricePerKm)}/km
+                    Add pickup + drop-off to see total · {idr(estimate.pricePerKm)}/km
                     {estimate.numStops > 0 && estimate.pitstopFee > 0 && (
                       <> · + {idr(estimate.pitstopFee)} per stop</>
                     )}
@@ -327,7 +331,7 @@ export default function OnlineBookingWidget({
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider shrink-0"
               style={{ background: BRAND_YELLOW, color: TEXT_INK }}
             >
-              {estimate.distanceKm != null && estimate.totalIdr != null ? 'Estimate' : 'From'}
+              {estimate.distanceKm != null && estimate.totalIdr != null ? 'Estimate' : 'Pending'}
             </div>
           </div>
         </div>

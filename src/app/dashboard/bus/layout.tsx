@@ -9,6 +9,7 @@ import { getCurrentUser } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import BookingAlertProvider from '@/components/dashboard/BookingAlertProvider'
 import CityDriversBrandStrip from '@/components/dashboard/CityDriversBrandStrip'
+import PartnerOverdueBanner from '@/components/dashboard/PartnerOverdueBanner'
 
 export default async function BusDashboardLayout({
   children,
@@ -33,6 +34,7 @@ export default async function BusDashboardLayout({
   return (
     <>
       <CityDriversBrandStrip subtitle="Bus driver dashboard" />
+      <PartnerOverdueBanner />
       {children}
       {shouldMount && <BookingAlertProvider driverId={user!.id} />}
     </>

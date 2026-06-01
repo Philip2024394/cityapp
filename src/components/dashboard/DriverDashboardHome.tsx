@@ -259,7 +259,10 @@ function DashboardHome({
     return score
   }, [row, photoCount, hasRate, config.vertical])
 
-  const renew = subscriptionWhatsAppHref(config.subscriptionWhatsAppLine)
+  // Renew now routes to the in-app QRIS subscription page (scan QR +
+  // upload payment screenshot). No more WhatsApp handoff — the founder
+  // has the merchant QRIS codes loaded in /lib/pricing/qris.ts.
+  const renew = `/dashboard/${config.vertical}/subscription`
   const vertical = config.vertical
   const VehicleIcon = config.vehicleIcon
 
@@ -668,12 +671,10 @@ function SubscriptionBanner({
       </div>
       <a
         href={renewHref}
-        target="_blank"
-        rel="noopener noreferrer"
         className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#FACC15] text-[#0A0A0A] text-[12px] font-extrabold uppercase tracking-wider transition active:scale-[0.97]"
         style={{ minHeight: 36 }}
       >
-        <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
+        <Wallet className="w-3.5 h-3.5" strokeWidth={2.5} />
         Renew
       </a>
       {isDismissible && (

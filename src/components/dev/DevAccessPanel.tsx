@@ -7,7 +7,7 @@
 // ============================================================================
 
 import { useEffect, useState } from 'react'
-import { Bike, Car, Truck, Sparkles } from 'lucide-react'
+import { Bike, Car, Truck, Sparkles, Building2 } from 'lucide-react'
 
 type Quick = { slug: string; label: string; vertical: 'bike' | 'car' | 'truck' }
 
@@ -68,6 +68,27 @@ export default function DevAccessPanel() {
             </a>
           ))}
         </div>
+
+        {/* Partner dashboard quick-link — impersonates the seeded
+            philip-ofarrell partner row owner so the founder can verify the
+            partner UI without sending a real phone OTP. */}
+        <a
+          href="/api/dev/impersonate?partner=philip-ofarrell"
+          className="mt-3 inline-flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-[#FACC15] text-[#0A0A0A] text-[13px] font-extrabold active:scale-[0.99] hover:bg-[#FFFBEA] transition w-full"
+          style={{ minHeight: 44 }}
+        >
+          <span
+            aria-hidden
+            className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg"
+            style={{ background: '#FACC15', color: '#0A0A0A' }}
+          >
+            <Building2 className="w-3.5 h-3.5" strokeWidth={2.5} />
+          </span>
+          <span className="flex-1 truncate text-left">Partner dashboard (Philip)</span>
+          <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#EAB308]">
+            Open →
+          </span>
+        </a>
 
         <div className="mt-3 pt-3 border-t border-[#FACC15]/40 grid grid-cols-3 gap-1.5">
           <a

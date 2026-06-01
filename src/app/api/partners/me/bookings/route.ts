@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { cookies, headers } from 'next/headers'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 
@@ -8,12 +9,26 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
+// Mirror of the driver dashboards' dev impersonation — on localhost a
+// `cr-dev-uid` cookie set by /api/dev/impersonate?partner=<slug> stands
+// in for an auth user so the partner dashboard works without phone OTP.
+async function resolveDevUserId(): Promise<string | null> {
+  const hdrs = await headers()
+  const host = (hdrs.get('host') || '').toLowerCase().split(':')[0]
+  if (host !== 'localhost' && host !== '127.0.0.1') return null
+  if (process.env.NODE_ENV === 'production') return null
+  const cookieStore = await cookies()
+  return cookieStore.get('cr-dev-uid')?.value ?? null
+}
+
 export async function GET() {
   const userClient = await getServerSupabase()
   if (!userClient) return NextResponse.json({ error: 'server_not_configured' }, { status: 500 })
 
   const { data: { user } } = await userClient.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
+  const devUid = user ? null : await resolveDevUserId()
+  const actingUserId = user?.id ?? devUid
+  if (!actingUserId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
 
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ error: 'service_role_not_configured' }, { status: 500 })
@@ -26,7 +41,7 @@ export async function GET() {
       payout_method, payout_account_number, payout_account_name,
       payout_bank_code, payout_qris_image_url, payout_notes
     `)
-    .eq('owner_user_id', user.id)
+    .eq('owner_user_id', actingUserId)
 
   if (!partners || partners.length === 0) {
     return NextResponse.json({ partners: [], bookings: [], summary: emptySummary() })

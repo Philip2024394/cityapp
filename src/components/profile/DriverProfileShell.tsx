@@ -30,6 +30,7 @@ import ParcelTierCard from './shell/ParcelTierCard'
 import HeroServiceIcon from './shell/HeroServiceIcon'
 import ReviewsPanel, { type Review } from './shell/ReviewsPanel'
 import { buildShellWhatsAppLink } from './shell/shellWhatsApp'
+import { getLanguage } from '@/lib/languages'
 
 // =============================================================================
 // DriverProfileShell — shared driver-profile renderer for /r/[slug] (bike)
@@ -84,7 +85,13 @@ export type DriverPublic = {
   vehicle_model:       string | null
   vehicle_year:        number | null
   vehicle_color:       string | null
+  /** Vehicle plate / registration number — currently only threaded through
+   *  the car adapter. Surfaced under the vehicle make/model line when set. */
+  vehicle_plate?:      string | null
   vehicle_seats:       number | null
+  /** Driver-published service zone (km radius). Surfaces a tiny "Service
+   *  zone · X km" row under the location line on every profile when > 0. */
+  service_zone_radius_km?: number | null
   /** First entry of this array is the showcase photo. Bikes pass their
    *  bike photo URL; cars pass the first `vehicle_photos` entry. */
   vehicle_photos:      string[]
@@ -159,7 +166,7 @@ const BORDER       = '#E4E4E7'
 // from the hero alone. Override per-driver via `cover_image_url` (added
 // in a follow-up migration + dashboard banner picker).
 const DEFAULT_BIKE_HERO =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png'
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_53_48%20PM.png'
 const DEFAULT_CAR_HERO =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2028,%202026,%2003_38_55%20AM.png'
 const DEFAULT_JEEP_HERO =
@@ -596,28 +603,65 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
               <img
                 src={driver.photo_url}
                 alt={driver.business_name}
-                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow"
+                className="w-16 h-16 rounded-full object-cover"
+                style={{
+                  boxShadow: `0 0 0 2px #FFFFFF, 0 0 0 5px ${BRAND_YELLOW}, 0 4px 12px rgba(0,0,0,0.18)`,
+                }}
               />
             ) : (
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white font-black border-2 border-white shadow"
-                style={{ background: BRAND_YELLOW, fontSize: 22, color: TEXT_INK }}
+                className="w-16 h-16 rounded-full flex items-center justify-center text-white font-black"
+                style={{
+                  background: BRAND_YELLOW,
+                  fontSize: 22,
+                  color: TEXT_INK,
+                  boxShadow: `0 0 0 2px #FFFFFF, 0 0 0 5px ${BRAND_YELLOW}, 0 4px 12px rgba(0,0,0,0.18)`,
+                }}
               >
                 {driver.business_name.charAt(0).toUpperCase()}
               </div>
             )}
+            <AvatarLanguageBadge languages={driver.languages ?? null} />
           </div>
 
           <div className="min-w-0 flex-1">
-            <h1 className="text-[18px] font-black leading-tight truncate flex items-center gap-2" style={{ color: TEXT_INK }}>
-              <span className="truncate">{driver.business_name}</span>
+            <h1 className="text-[18px] font-black leading-tight flex items-center gap-2 min-w-0" style={{ color: TEXT_INK }}>
+              <span className="truncate min-w-0">{driver.business_name}</span>
               {/* Heart-beat / satellite-ping availability dot — sits inline
                   after the driver name. Only renders when the driver is
                   online; busy/offline drivers get no dot. */}
+              {availability === 'online' && (
+                <span
+                  aria-label="Driver is online"
+                  className="relative inline-flex items-center justify-center shrink-0"
+                  style={{ width: 14, height: 14 }}
+                >
+                  <span aria-hidden className="cd-driver-ping-ring" />
+                  <span aria-hidden className="cd-driver-ping-ring cd-driver-ping-ring--delayed" />
+                  <span
+                    aria-hidden
+                    className="relative inline-block rounded-full border-2 border-white"
+                    style={{
+                      width: 10,
+                      height: 10,
+                      background: '#22C55E',
+                      boxShadow: '0 0 6px rgba(34,197,94,0.6)',
+                    }}
+                  />
+                </span>
+              )}
             </h1>
             <p className="text-[13px] truncate mt-0.5" style={{ color: TEXT_MUTED }}>
               {driver.city?.trim() || 'Indonesia'}
             </p>
+            {/* Service-zone radius row — only renders when driver has
+                published a non-zero km figure. 11px muted grey, MapPin icon. */}
+            {driver.service_zone_radius_km != null && driver.service_zone_radius_km > 0 && (
+              <p className="text-[11px] truncate mt-0.5 inline-flex items-center gap-1" style={{ color: TEXT_MUTED }}>
+                <MapPin className="w-3 h-3 shrink-0" strokeWidth={2.25} />
+                Service zone · {driver.service_zone_radius_km} km
+              </p>
+            )}
             {(driver.rating != null && driver.rating > 0) && (
               <div className="flex items-center gap-1 mt-1">
                 <Star className="w-3.5 h-3.5" strokeWidth={0} fill={BRAND_YELLOW} style={{ color: BRAND_YELLOW }} />
@@ -631,6 +675,9 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 )}
               </div>
             )}
+            {/* Per-slot availability chips — render only when at least one
+                slot is enabled. Tiny grey chips under the rating row. */}
+            <AvailabilitySlotChips driver={driver} />
           </div>
 
           {/* Vehicle image on the right edge of the profile container.
@@ -670,28 +717,8 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           <div className="text-left">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-extrabold leading-tight inline-flex items-center gap-2" style={{ color: TEXT_INK }}>
-                  <span>{[driver.vehicle_make, driver.vehicle_model].filter(Boolean).join(' ') || vehicleTypeLabel}</span>
-                  {availability === 'online' && (
-                    <span
-                      aria-label="Driver is online"
-                      className="relative inline-flex items-center justify-center shrink-0"
-                      style={{ width: 14, height: 14 }}
-                    >
-                      <span aria-hidden className="cd-driver-ping-ring" />
-                      <span aria-hidden className="cd-driver-ping-ring cd-driver-ping-ring--delayed" />
-                      <span
-                        aria-hidden
-                        className="relative inline-block rounded-full border-2 border-white"
-                        style={{
-                          width: 10,
-                          height: 10,
-                          background: '#22C55E',
-                          boxShadow: '0 0 6px rgba(34,197,94,0.6)',
-                        }}
-                      />
-                    </span>
-                  )}
+                <div className="text-[15px] font-extrabold leading-tight" style={{ color: TEXT_INK }}>
+                  {[driver.vehicle_make, driver.vehicle_model].filter(Boolean).join(' ') || vehicleTypeLabel}
                 </div>
                 {driver.vehicle_type === 'car' && driver.vehicle_seats && driver.vehicle_seats > 0 ? (
                   <div className="text-[12px] mt-0.5 inline-flex items-center gap-1" style={{ color: TEXT_MUTED }}>
@@ -703,6 +730,19 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                     {vehicleTypeLabel}
                   </div>
                 )}
+                {/* Year + plate detail line — only renders for cars when the
+                    driver has filled one or both. Year alone, plate alone,
+                    or both joined with a dot — empty when neither is set. */}
+                {driver.vehicle_type === 'car' && (() => {
+                  const yearStr  = driver.vehicle_year ? String(driver.vehicle_year) : ''
+                  const plateStr = driver.vehicle_plate?.trim() ?? ''
+                  if (!yearStr && !plateStr) return null
+                  return (
+                    <div className="text-[11px] mt-0.5 tabular-nums" style={{ color: TEXT_MUTED }}>
+                      {[yearStr, plateStr].filter(Boolean).join(' · ')}
+                    </div>
+                  )
+                })()}
               </div>
               {/* Places pill — toggles the inline PlacesPicker panel. */}
               <button
@@ -977,5 +1017,71 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
         providerName={driver.business_name || 'Driver'}
       />
     </main>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// AvailabilitySlotChips — tiny emoji chip row rendered under the rating row.
+// Surfaces only the slots the driver explicitly opted into (Sunrise / Daytime
+// / Evening / Nightlife). Hidden entirely when none are set, so first-time
+// drivers don't see an empty placeholder row.
+// -----------------------------------------------------------------------------
+function AvailabilitySlotChips({ driver }: { driver: DriverPublic }) {
+  const chips: { key: string; emoji: string; label: string }[] = []
+  if (driver.available_sunrise)   chips.push({ key: 'sunrise',   emoji: '🌅', label: 'Sunrise'   })
+  if (driver.available_daytime)   chips.push({ key: 'daytime',   emoji: '☀️', label: 'Daytime'   })
+  if (driver.available_evening)   chips.push({ key: 'evening',   emoji: '🌆', label: 'Evening'   })
+  if (driver.available_nightlife) chips.push({ key: 'nightlife', emoji: '🌙', label: 'Nightlife' })
+  if (chips.length === 0) return null
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1.5">
+      {chips.map((c) => (
+        <span
+          key={c.key}
+          className="inline-flex items-center gap-1 text-[10.5px] font-extrabold rounded-full px-1.5 py-0.5"
+          style={{ background: '#F4F4F5', color: TEXT_INK, border: `1px solid ${BORDER}` }}
+        >
+          <span aria-hidden>{c.emoji}</span>
+          <span>{c.label}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// AvatarLanguageBadge — tiny flag-only status-dot pattern. Renders the FIRST
+// non-Indonesian language the driver speaks as a flag emoji inside a white
+// circle with a brand-yellow ring. Anchored bottom-right of the avatar.
+// Indonesian is implied (Indonesian app for Indonesian drivers) so we never
+// surface the Indonesian flag. Returns null when:
+//   • languages array is empty / null
+//   • the only language is Indonesian ('id')
+//   • the first non-'id' id isn't in the LANGUAGES catalog
+// -----------------------------------------------------------------------------
+function AvatarLanguageBadge({ languages }: { languages: string[] | null }) {
+  if (!languages || languages.length === 0) return null
+  const pickedId = languages.find((id) => id !== 'id')
+  if (!pickedId) return null
+  const def = getLanguage(pickedId)
+  if (!def) return null
+  return (
+    <span
+      aria-label={`Speaks ${def.label}`}
+      className="absolute inline-flex items-center justify-center rounded-full"
+      style={{
+        bottom: -2,
+        right: -2,
+        width: 22,
+        height: 22,
+        background: '#FFFFFF',
+        border: `2px solid ${BRAND_YELLOW}`,
+        boxShadow: '0 2px 6px rgba(0,0,0,0.20)',
+        fontSize: 12,
+        lineHeight: 1,
+      }}
+    >
+      <span aria-hidden style={{ fontSize: 12, lineHeight: 1 }}>{def.flag}</span>
+    </span>
   )
 }

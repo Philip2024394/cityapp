@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 
 // Driver-side view: what you owe to each partner from attributed bookings.
 // Settlement happens OUTSIDE CityDrivers (cash / GoPay / transfer). When
-// the partner marks paid, the row disappears from here. If you don't pay
-// within 7 days you get suspended from the partner program.
+// the partner marks paid, the row disappears from here.
+// Timeline (founder spec 2026-06-01): 48 hours due + 24 hours grace = 72
+// hours total before the driver is deactivated from the partner program.
 
 type Balance = {
   partner_id: string
@@ -70,9 +71,40 @@ export default function DriverBalancesPage() {
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-2xl mx-auto">
         <h1 className="text-[24px] font-black mb-1">Partner balances</h1>
-        <p className="text-[13px] text-ink/60 mb-6">
+        <p className="text-[13px] text-ink/60 mb-4">
           What you owe to hotel/villa partners for guests they sent you.
         </p>
+
+        <div className="rounded-2xl border border-brand/30 bg-brand/5 p-4 mb-6">
+          <div className="text-[13px] font-extrabold text-ink mb-2">
+            How the 48h / 72h cycle works
+          </div>
+          <ul className="text-[13px] text-ink/75 leading-relaxed space-y-1.5 list-disc pl-5">
+            <li>
+              The clock starts the moment the partner&apos;s QR sends a guest to
+              you and you confirm the booking.
+            </li>
+            <li>
+              <strong>0–48 hours:</strong> pay the partner directly (WhatsApp,
+              cash, GoPay, transfer, QRIS — your arrangement).
+            </li>
+            <li>
+              <strong>48–72 hours:</strong> <span className="text-amber-400 font-bold">OVERDUE.</span>{' '}
+              Warning banner + popup on every dashboard page. You still get
+              partner referrals.
+            </li>
+            <li>
+              <strong>After 72 hours:</strong> <span className="text-red-400 font-bold">DEACTIVATED.</span>{' '}
+              No hotel, villa, gym, tour guide, restaurant, or street guide in
+              the CityDrivers community will refer guests to you until you
+              settle every overdue invoice. Your directory ranking may drop.
+            </li>
+            <li>
+              The moment the partner marks the last overdue booking settled,
+              you reactivate automatically.
+            </li>
+          </ul>
+        </div>
 
         {suspended && (
           <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 mb-6">

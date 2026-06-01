@@ -29,22 +29,45 @@ export const CAR_BANNERS: ReadonlyArray<DriverBanner> = [
 ]
 
 export const BIKE_BANNERS: ReadonlyArray<DriverBanner> = [
-  { id: 'bike-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png', label: 'Banner 1' },
-  { id: 'bike-02', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_30_37%20AM%20(1).png', label: 'Banner 2' },
-  { id: 'bike-03', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_29_03%20AM.png', label: 'Banner 3' },
-  { id: 'bike-04', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_28_37%20AM.png', label: 'Banner 4' },
-  { id: 'bike-05', url: 'https://ik.imagekit.io/nepgaxllc/Untitleddsfsdfsddsssddfssdfsdfsdf.png', label: 'Banner 5' },
-  { id: 'bike-06', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_24_51%20AM.png', label: 'Banner 6' },
-  { id: 'bike-07', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_23_02%20AM.png', label: 'Banner 7' },
-  { id: 'bike-08', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_21_58%20AM.png', label: 'Banner 8' },
-  { id: 'bike-09', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_20_55%20AM.png', label: 'Banner 9' },
-  { id: 'bike-10', url: 'https://ik.imagekit.io/nepgaxllc/Untitleddsfsdfsddsssddfssdf.png', label: 'Banner 10' },
+  { id: 'bike-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_53_48%20PM.png', label: 'Fresh green' },
+  { id: 'bike-02', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_54_13%20PM.png', label: 'Red' },
+  { id: 'bike-03', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_53_21%20PM.png', label: 'Orange' },
+  { id: 'bike-04', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png', label: 'Banner 4' },
+  { id: 'bike-05', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_30_37%20AM%20(1).png', label: 'Banner 5' },
+  { id: 'bike-06', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_29_03%20AM.png', label: 'Banner 6' },
+  { id: 'bike-07', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_28_37%20AM.png', label: 'Banner 7' },
+  { id: 'bike-08', url: 'https://ik.imagekit.io/nepgaxllc/Untitleddsfsdfsddsssddfssdfsdfsdf.png', label: 'Banner 8' },
+  { id: 'bike-09', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_24_51%20AM.png', label: 'Banner 9' },
+  { id: 'bike-10', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_23_02%20AM.png', label: 'Banner 10' },
+  { id: 'bike-11', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_21_58%20AM.png', label: 'Banner 11' },
+  { id: 'bike-12', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_20_55%20AM.png', label: 'Banner 12' },
+  { id: 'bike-13', url: 'https://ik.imagekit.io/nepgaxllc/Untitleddsfsdfsddsssddfssdf.png', label: 'Banner 13' },
+  { id: 'bike-14', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_27_31%20PM.png?updatedAt=1780295269854', label: 'Banner 14' },
+  { id: 'bike-15', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_39_37%20PM.png', label: 'Banner 15' },
+  { id: 'bike-16', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_41_12%20PM.png', label: 'Banner 16' },
+  { id: 'bike-17', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_44_52%20PM.png', label: 'Banner 17' },
+  { id: 'bike-18', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_48_55%20PM.png', label: 'Banner 18' },
+  { id: 'bike-19', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_49_19%20PM.png', label: 'Banner 19' },
 ]
 
 // Truck-specific banners — moving / hauling / utility-rental vibes.
 // Founder-supplied 2026-05-31.
 export const TRUCK_BANNERS: ReadonlyArray<DriverBanner> = [
   { id: 'truck-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2004_39_58%20PM.png', label: 'Banner 1' },
+]
+
+// Bus / minibus-specific banners — charter, airport-transfer, tour-bus
+// vibes. Founder-supplied 2026-06-01 (no duplicates with the other
+// banner libraries above — checked at insertion time).
+export const BUS_BANNERS: ReadonlyArray<DriverBanner> = [
+  { id: 'bus-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2011_14_51%20AM.png', label: 'Banner 1' },
+  { id: 'bus-02', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2010_53_13%20AM.png', label: 'Banner 2' },
+  { id: 'bus-03', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2010_50_53%20AM.png', label: 'Banner 3' },
+  { id: 'bus-04', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2010_49_08%20AM.png', label: 'Banner 4' },
+  { id: 'bus-05', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2010_48_02%20AM.png', label: 'Banner 5' },
+  { id: 'bus-06', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2008_33_38%20AM.png?updatedAt=1780191233610', label: 'Banner 6' },
+  { id: 'bus-07', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2008_09_27%20AM.png?updatedAt=1780189786641', label: 'Banner 7' },
+  { id: 'bus-08', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2007_48_50%20AM.png?updatedAt=1780188551037', label: 'Banner 8' },
 ]
 
 // Jeep-specific banners — off-road / volcano / sunrise tour vibes.
@@ -70,9 +93,10 @@ export const JEEP_BANNERS: ReadonlyArray<DriverBanner> = [
 // hard-coded inside DriverProfileShell so the dashboard preview lines up
 // with what the public profile actually renders when no banner is set.
 export function getDefaultBanner(vehicleType: string | null): string {
-  if (vehicleType === 'bike') return BIKE_BANNERS[0]!.url
-  if (vehicleType === 'jeep') return JEEP_BANNERS[0]!.url
-  if (vehicleType === 'truck') return TRUCK_BANNERS[0]!.url
+  if (vehicleType === 'bike')    return BIKE_BANNERS[0]!.url
+  if (vehicleType === 'jeep')    return JEEP_BANNERS[0]!.url
+  if (vehicleType === 'truck')   return TRUCK_BANNERS[0]!.url
+  if (vehicleType === 'minibus' || vehicleType === 'bus') return BUS_BANNERS[0]!.url
   return CAR_BANNERS[0]!.url
 }
 
@@ -81,9 +105,10 @@ export function getDefaultBanner(vehicleType: string | null): string {
  *  image keyed off the slug rather than every mock falling back to the
  *  same vehicle-type default. */
 export function bannersForVehicleType(vehicleType: string | null): ReadonlyArray<DriverBanner> {
-  if (vehicleType === 'bike') return BIKE_BANNERS
-  if (vehicleType === 'jeep') return JEEP_BANNERS
-  if (vehicleType === 'truck') return TRUCK_BANNERS
+  if (vehicleType === 'bike')    return BIKE_BANNERS
+  if (vehicleType === 'jeep')    return JEEP_BANNERS
+  if (vehicleType === 'truck')   return TRUCK_BANNERS
+  if (vehicleType === 'minibus' || vehicleType === 'bus') return BUS_BANNERS
   return CAR_BANNERS
 }
 

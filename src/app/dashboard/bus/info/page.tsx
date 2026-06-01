@@ -16,7 +16,7 @@
 // ============================================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock, Languages as LanguagesIcon } from 'lucide-react'
+import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock, Languages as LanguagesIcon, Image as ImageIcon, Link2, Mail, Home, Info } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
@@ -42,6 +42,15 @@ type BusDriverInfoRow = {
   available_evening: boolean | null
   available_nightlife: boolean | null
   languages: string[] | null
+  brand_logo_url: string | null
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  // mig 0170 + 0171 — bus-specific contact + passenger-cost rule
+  contact_email: string | null
+  company_address: string | null
+  passenger_cost_rule: string | null
+  service_zone_radius_km: number | null
 }
 
 type LoadState =
@@ -72,7 +81,9 @@ export default function BusDriverInfoPage() {
       .select(
         'user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability, ' +
         'working_hours_start, working_hours_end, ' +
-        'available_sunrise, available_daytime, available_evening, available_nightlife, languages',
+        'available_sunrise, available_daytime, available_evening, available_nightlife, languages, ' +
+        'brand_logo_url, instagram_url, tiktok_url, facebook_url, ' +
+        'contact_email, company_address, passenger_cost_rule, service_zone_radius_km',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -112,6 +123,20 @@ function InfoEditor({ row, onReload }: { row: BusDriverInfoRow; onReload: () => 
     const init = Array.isArray(row.languages) ? row.languages : []
     return init.includes('id') ? init : ['id', ...init]
   })
+  // Avatar + social URLs (mig 0172). Paste-URL pattern matching the rest
+  // of the editor — no upload widget, just a text input committed on blur.
+  const [brandLogoUrl, setBrandLogoUrl] = useState(row.brand_logo_url ?? '')
+  const [instagramUrl, setInstagramUrl] = useState(row.instagram_url ?? '')
+  const [tiktokUrl,    setTiktokUrl]    = useState(row.tiktok_url ?? '')
+  const [facebookUrl,  setFacebookUrl]  = useState(row.facebook_url ?? '')
+  const [serviceZoneKm, setServiceZoneKm] = useState<string>(
+    row.service_zone_radius_km != null && row.service_zone_radius_km > 0 ? String(row.service_zone_radius_km) : '',
+  )
+  // Bus-specific contact + cost-rule (mig 0170 / 0171). Save-on-blur with
+  // basic email-shape guard. company_address capped at 200, cost rule at 240.
+  const [contactEmail,      setContactEmail]      = useState(row.contact_email ?? '')
+  const [companyAddress,    setCompanyAddress]    = useState(row.company_address ?? '')
+  const [passengerCostRule, setPassengerCostRule] = useState(row.passenger_cost_rule ?? '')
 
   // Track which fields are currently saving + transient flash state.
   const [savingField, setSavingField] = useState<string | null>(null)
@@ -209,6 +234,58 @@ function InfoEditor({ row, onReload }: { row: BusDriverInfoRow; onReload: () => 
     setLanguages(next)
     const ok = await save('languages', { languages: next }, has ? 'Language removed' : 'Language added')
     if (!ok) setLanguages(languages)
+  }
+  function commitBrandLogoUrl() {
+    const next = brandLogoUrl.trim() || null
+    if (next === (row.brand_logo_url ?? null)) return
+    void save('brand_logo_url', { brand_logo_url: next }, 'Profile photo URL saved')
+  }
+  function commitInstagramUrl() {
+    const next = instagramUrl.trim() || null
+    if (next === (row.instagram_url ?? null)) return
+    void save('instagram_url', { instagram_url: next }, 'Instagram saved')
+  }
+  function commitTiktokUrl() {
+    const next = tiktokUrl.trim() || null
+    if (next === (row.tiktok_url ?? null)) return
+    void save('tiktok_url', { tiktok_url: next }, 'TikTok saved')
+  }
+  function commitFacebookUrl() {
+    const next = facebookUrl.trim() || null
+    if (next === (row.facebook_url ?? null)) return
+    void save('facebook_url', { facebook_url: next }, 'Facebook saved')
+  }
+  function commitServiceZoneKm() {
+    const digits = serviceZoneKm.replace(/\D/g, '')
+    const n = digits ? Number(digits) : null
+    const next = n != null && Number.isFinite(n) ? Math.max(1, Math.min(100, n)) : null
+    if (next !== row.service_zone_radius_km) {
+      void save('service_zone_radius_km', { service_zone_radius_km: next }, 'Service zone saved')
+    }
+    setServiceZoneKm(next != null ? String(next) : '')
+  }
+  // Bus-only — basic email shape guard before save. On invalid input we
+  // revert the local state to whatever the row carries so the field doesn't
+  // get stuck in an error state.
+  function commitContactEmail() {
+    const next = contactEmail.trim() || null
+    if (next === (row.contact_email ?? null)) return
+    if (next && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) {
+      showError('Email format looks off — example: name@example.com')
+      setContactEmail(row.contact_email ?? '')
+      return
+    }
+    void save('contact_email', { contact_email: next }, 'Contact email saved')
+  }
+  function commitCompanyAddress() {
+    const next = companyAddress.trim().slice(0, 200) || null
+    if (next === (row.company_address ?? null)) return
+    void save('company_address', { company_address: next }, 'Company address saved')
+  }
+  function commitPassengerCostRule() {
+    const next = passengerCostRule.trim().slice(0, 240) || null
+    if (next === (row.passenger_cost_rule ?? null)) return
+    void save('passenger_cost_rule', { passenger_cost_rule: next }, 'Passenger cost rule saved')
   }
 
   return (
@@ -364,6 +441,23 @@ function InfoEditor({ row, onReload }: { row: BusDriverInfoRow; onReload: () => 
             />
           </Field>
         </div>
+        <Field
+          label="Service zone radius (km)"
+          hint="Optional · 1–100 km. Shown under your location on the public profile."
+          saving={savingField === 'service_zone_radius_km'}
+        >
+          <input
+            type="number"
+            min={1}
+            max={100}
+            inputMode="numeric"
+            value={serviceZoneKm}
+            onChange={(e) => setServiceZoneKm(e.target.value)}
+            onBlur={commitServiceZoneKm}
+            placeholder="40"
+            className={inputCls}
+          />
+        </Field>
       </Card>
 
       {/* Working hours & availability */}
@@ -457,6 +551,118 @@ function InfoEditor({ row, onReload }: { row: BusDriverInfoRow; onReload: () => 
         <p className="text-[13px] text-black/55 leading-snug mt-2">
           Tip → drivers speaking 3+ languages land more tourist bookings.
         </p>
+      </Card>
+
+      {/* Bus contact email (mig 0170) */}
+      <Card title="Company contact email" hint="Shown inside the Contact Us panel on your bus profile." icon={<Mail size={18} />}>
+        <Field label="Contact email" saving={savingField === 'contact_email'}>
+          <input
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            onBlur={commitContactEmail}
+            placeholder="you@example.com"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+      </Card>
+
+      {/* Bus company address (mig 0170) */}
+      <Card title="Company / yard address" hint="Physical address shown inside the Contact Us panel." icon={<Home size={18} />}>
+        <Field label="Company address" hint={`${companyAddress.length}/200`} saving={savingField === 'company_address'}>
+          <textarea
+            value={companyAddress}
+            onChange={(e) => setCompanyAddress(e.target.value.slice(0, 200))}
+            onBlur={commitCompanyAddress}
+            maxLength={200}
+            rows={3}
+            placeholder="Jl. Kaliurang KM 8.5, Sleman, Yogyakarta 55581"
+            className={inputCls + ' resize-y leading-relaxed'}
+          />
+        </Field>
+      </Card>
+
+      {/* Passenger-cost rule (mig 0171) */}
+      <Card title="Passenger-cost extras rule" hint="One-line rule shown on each tour rate — overrides the default English copy on your public profile." icon={<Info size={18} />}>
+        <Field label="Passenger-cost rule" hint={`${passengerCostRule.length}/240`} saving={savingField === 'passenger_cost_rule'}>
+          <textarea
+            value={passengerCostRule}
+            onChange={(e) => setPassengerCostRule(e.target.value.slice(0, 240))}
+            onBlur={commitPassengerCostRule}
+            maxLength={240}
+            rows={3}
+            placeholder="toll bridges, parking fees, and meals for the driver are payable by the passenger."
+            className={inputCls + ' resize-y leading-relaxed'}
+          />
+        </Field>
+      </Card>
+
+      {/* Profile photo URL (mig 0172 — single text input, paste pattern) */}
+      <Card title="Profile photo URL" hint="Paste a public image URL — shown next to your name on the public profile." icon={<ImageIcon size={18} />}>
+        <Field label="Profile photo URL" saving={savingField === 'brand_logo_url'}>
+          <input
+            type="url"
+            value={brandLogoUrl}
+            onChange={(e) => setBrandLogoUrl(e.target.value)}
+            onBlur={commitBrandLogoUrl}
+            placeholder="https://example.com/your-photo.jpg"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+      </Card>
+
+      {/* Social links (mig 0172). Three paste-URL inputs save-on-blur. */}
+      <Card title="Social links" hint="Optional — add the social handles your customers can follow." icon={<Link2 size={18} />}>
+        <Field label="Instagram URL" saving={savingField === 'instagram_url'}>
+          <input
+            type="url"
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            onBlur={commitInstagramUrl}
+            placeholder="https://instagram.com/yourname"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="TikTok URL" saving={savingField === 'tiktok_url'}>
+          <input
+            type="url"
+            value={tiktokUrl}
+            onChange={(e) => setTiktokUrl(e.target.value)}
+            onBlur={commitTiktokUrl}
+            placeholder="https://tiktok.com/@yourname"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Facebook URL" saving={savingField === 'facebook_url'}>
+          <input
+            type="url"
+            value={facebookUrl}
+            onChange={(e) => setFacebookUrl(e.target.value)}
+            onBlur={commitFacebookUrl}
+            placeholder="https://facebook.com/yourpage"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
       </Card>
 
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">

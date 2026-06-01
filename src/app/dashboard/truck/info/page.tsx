@@ -18,7 +18,7 @@
 // ============================================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Languages as LanguagesIcon } from 'lucide-react'
+import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Languages as LanguagesIcon, Image as ImageIcon, Link2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
@@ -37,6 +37,11 @@ type TruckDriverInfoRow = {
   area: string | null
   availability: Availability | null
   languages: string[] | null
+  brand_logo_url: string | null
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  service_zone_radius_km: number | null
 }
 
 type LoadState =
@@ -64,7 +69,10 @@ export default function TruckDriverInfoPage() {
     if (authErr || !user) { setState({ kind: 'unauth' }); return }
     const { data, error } = await supabase
       .from('drivers')
-      .select('user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability, languages')
+      .select(
+        'user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability, languages, ' +
+        'brand_logo_url, instagram_url, tiktok_url, facebook_url, service_zone_radius_km',
+      )
       .eq('user_id', user.id)
       .maybeSingle()
     if (error) { setState({ kind: 'error', message: error.message }); return }
@@ -99,6 +107,15 @@ function InfoEditor({ row, onReload }: { row: TruckDriverInfoRow; onReload: () =
     const init = Array.isArray(row.languages) ? row.languages : []
     return init.includes('id') ? init : ['id', ...init]
   })
+  // Avatar + social URLs (mig 0172). Paste-URL pattern matching the rest
+  // of the editor — no upload widget, just a text input committed on blur.
+  const [brandLogoUrl, setBrandLogoUrl] = useState(row.brand_logo_url ?? '')
+  const [instagramUrl, setInstagramUrl] = useState(row.instagram_url ?? '')
+  const [tiktokUrl,    setTiktokUrl]    = useState(row.tiktok_url ?? '')
+  const [facebookUrl,  setFacebookUrl]  = useState(row.facebook_url ?? '')
+  const [serviceZoneKm, setServiceZoneKm] = useState<string>(
+    row.service_zone_radius_km != null && row.service_zone_radius_km > 0 ? String(row.service_zone_radius_km) : '',
+  )
 
   // Track which fields are currently saving + transient flash state.
   const [savingField, setSavingField] = useState<string | null>(null)
@@ -182,6 +199,35 @@ function InfoEditor({ row, onReload }: { row: TruckDriverInfoRow; onReload: () =
     setLanguages(next)
     const ok = await save('languages', { languages: next }, has ? 'Language removed' : 'Language added')
     if (!ok) setLanguages(languages)
+  }
+  function commitBrandLogoUrl() {
+    const next = brandLogoUrl.trim() || null
+    if (next === (row.brand_logo_url ?? null)) return
+    void save('brand_logo_url', { brand_logo_url: next }, 'Profile photo URL saved')
+  }
+  function commitInstagramUrl() {
+    const next = instagramUrl.trim() || null
+    if (next === (row.instagram_url ?? null)) return
+    void save('instagram_url', { instagram_url: next }, 'Instagram saved')
+  }
+  function commitTiktokUrl() {
+    const next = tiktokUrl.trim() || null
+    if (next === (row.tiktok_url ?? null)) return
+    void save('tiktok_url', { tiktok_url: next }, 'TikTok saved')
+  }
+  function commitFacebookUrl() {
+    const next = facebookUrl.trim() || null
+    if (next === (row.facebook_url ?? null)) return
+    void save('facebook_url', { facebook_url: next }, 'Facebook saved')
+  }
+  function commitServiceZoneKm() {
+    const digits = serviceZoneKm.replace(/\D/g, '')
+    const n = digits ? Number(digits) : null
+    const next = n != null && Number.isFinite(n) ? Math.max(1, Math.min(100, n)) : null
+    if (next !== row.service_zone_radius_km) {
+      void save('service_zone_radius_km', { service_zone_radius_km: next }, 'Service zone saved')
+    }
+    setServiceZoneKm(next != null ? String(next) : '')
   }
 
   return (
@@ -336,6 +382,23 @@ function InfoEditor({ row, onReload }: { row: TruckDriverInfoRow; onReload: () =
             />
           </Field>
         </div>
+        <Field
+          label="Service zone radius (km)"
+          hint="Optional · 1–100 km. Shown under your location on the public profile."
+          saving={savingField === 'service_zone_radius_km'}
+        >
+          <input
+            type="number"
+            min={1}
+            max={100}
+            inputMode="numeric"
+            value={serviceZoneKm}
+            onChange={(e) => setServiceZoneKm(e.target.value)}
+            onBlur={commitServiceZoneKm}
+            placeholder="50"
+            className={inputCls}
+          />
+        </Field>
       </Card>
 
       {/* Languages — tourist-market signal. Indonesian is locked-on. */}
@@ -371,6 +434,70 @@ function InfoEditor({ row, onReload }: { row: TruckDriverInfoRow; onReload: () =
         <p className="text-[13px] text-black/55 leading-snug mt-2">
           Tip → drivers speaking 3+ languages land more tourist bookings.
         </p>
+      </Card>
+
+      {/* Profile photo URL (mig 0172 — single text input, paste pattern) */}
+      <Card title="Profile photo URL" hint="Paste a public image URL — shown next to your name on the public profile." icon={<ImageIcon size={18} />}>
+        <Field label="Profile photo URL" saving={savingField === 'brand_logo_url'}>
+          <input
+            type="url"
+            value={brandLogoUrl}
+            onChange={(e) => setBrandLogoUrl(e.target.value)}
+            onBlur={commitBrandLogoUrl}
+            placeholder="https://example.com/your-photo.jpg"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+      </Card>
+
+      {/* Social links (mig 0172). Three paste-URL inputs save-on-blur. */}
+      <Card title="Social links" hint="Optional — add the social handles your customers can follow." icon={<Link2 size={18} />}>
+        <Field label="Instagram URL" saving={savingField === 'instagram_url'}>
+          <input
+            type="url"
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            onBlur={commitInstagramUrl}
+            placeholder="https://instagram.com/yourname"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="TikTok URL" saving={savingField === 'tiktok_url'}>
+          <input
+            type="url"
+            value={tiktokUrl}
+            onChange={(e) => setTiktokUrl(e.target.value)}
+            onBlur={commitTiktokUrl}
+            placeholder="https://tiktok.com/@yourname"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Facebook URL" saving={savingField === 'facebook_url'}>
+          <input
+            type="url"
+            value={facebookUrl}
+            onChange={(e) => setFacebookUrl(e.target.value)}
+            onBlur={commitFacebookUrl}
+            placeholder="https://facebook.com/yourpage"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
       </Card>
 
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">

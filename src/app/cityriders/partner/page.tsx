@@ -245,10 +245,25 @@ export default function PartnerProgramLandingPage() {
               holds money. We&apos;re just the ledger.
             </Step>
             <Step n={5} icon={<Clock className="w-5 h-5" strokeWidth={2.5} />} title="Unpaid? Driver loses access">
-              If a driver doesn&apos;t settle within 48 hours they&apos;re
-              suspended from the partner-referred pool. You&apos;ll never be
-              routed to defaulters.
+              If a driver doesn&apos;t settle within 48 hours they get a 24-hour
+              grace warning. After 72 hours total they&apos;re deactivated
+              from the partner-referred pool. You&apos;ll never be routed to
+              defaulters.
             </Step>
+          </div>
+
+          <div className="mt-8 max-w-xl mx-auto rounded-2xl border-2 border-[#FACC15] bg-white p-5">
+            <div className="text-[13px] font-extrabold uppercase tracking-wider text-[#A16207] mb-2">
+              Community standard — your protection
+            </div>
+            <p className="text-[13px] text-black/75 leading-relaxed">
+              Every driver who joins the CityDrivers Partner Program agrees,
+              in writing, that they must pay you within <strong>48 hours</strong>{' '}
+              of each confirmed booking. They get a <strong>1-day grace
+              warning</strong> at 48 hours, and at <strong>72 hours total they
+              are deactivated</strong> — every partner in our community skips
+              them until they settle. We protect each other.
+            </p>
           </div>
         </div>
       </section>
@@ -300,7 +315,7 @@ export default function PartnerProgramLandingPage() {
           <Bullet>Live ledger — pending, paid, overdue commissions</Bullet>
           <Bullet>Booking-by-booking list with driver name + WhatsApp</Bullet>
           <Bullet>Payout setup — cash / GoPay / transfer / QRIS</Bullet>
-          <Bullet>Driver suspended after 48h overdue, one-tap reactivate</Bullet>
+          <Bullet>Driver deactivated after 72h overdue (48h due + 24h grace), one-tap reactivate</Bullet>
         </ul>
       </section>
 

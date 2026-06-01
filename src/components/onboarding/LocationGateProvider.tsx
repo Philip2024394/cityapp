@@ -15,7 +15,7 @@
 // threading a React context through every page. Pure side-channel.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import LocationPermissionPrompt, { readCachedLocation, writeCachedLocation } from './LocationPermissionPrompt'
+import LocationPermissionPrompt, { hasAnsweredLocationPrompt, readCachedLocation, writeCachedLocation } from './LocationPermissionPrompt'
 
 type Resolve = (point: { lat: number; lng: number; accuracyM: number } | null) => void
 
@@ -33,22 +33,20 @@ export function requestLocationViaGate(): Promise<{ lat: number; lng: number; ac
       resolve({ lat: cached.lat, lng: cached.lng, accuracyM: 0 })
       return
     }
+    // User already answered (skipped/denied) — don't re-prompt. They can
+    // override per-booking via typed address inputs.
+    if (hasAnsweredLocationPrompt()) {
+      resolve(null)
+      return
+    }
     if (openModal) {
       openModal(resolve)
       return
     }
-    // Modal not mounted (yet) — fall back to plain native API.
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      resolve(null); return
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        writeCachedLocation(pos.coords.latitude, pos.coords.longitude)
-        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracyM: pos.coords.accuracy })
-      },
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
-    )
+    // Modal not yet mounted (very first paint). Resolve null rather than
+    // firing the raw native prompt — the next hook tick after mount will
+    // route through the friendly modal.
+    resolve(null)
   })
 }
 

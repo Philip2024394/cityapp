@@ -20,7 +20,7 @@ import {
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
-import { CAR_BANNERS, getDefaultBanner } from '@/lib/drivers/banners'
+import { BUS_BANNERS, getDefaultBanner } from '@/lib/drivers/banners'
 
 // ----------------------------------------------------------------------------
 // Types
@@ -150,7 +150,7 @@ function EditShell({ row, onSaved }: { row: DriverRow; onSaved: () => void }) {
           )}
         </Section>
 
-        {/* Banner picker — curated CAR_BANNERS + upload + paste URL */}
+        {/* Banner picker — curated BUS_BANNERS + upload + paste URL */}
         <BannerPickerSection row={row} onSaved={onSaved} />
       </div>
     </main>
@@ -172,7 +172,7 @@ function BannerPickerSection({ row, onSaved }: { row: DriverRow; onSaved: () => 
   // Keep local selection in sync if the row reloads from upstream.
   useEffect(() => { setSelected(row.cover_image_url ?? null) }, [row.cover_image_url])
 
-  const curatedUrls = useMemo(() => new Set(CAR_BANNERS.map((b) => b.url)), [])
+  const curatedUrls = useMemo(() => new Set(BUS_BANNERS.map((b) => b.url)), [])
   const customUrl = selected && !curatedUrls.has(selected) ? selected : null
 
   // Save-on-change: commits the new URL immediately when the driver
@@ -273,7 +273,7 @@ function BannerPickerSection({ row, onSaved }: { row: DriverRow; onSaved: () => 
           />
         )}
 
-        {CAR_BANNERS.map((b) => (
+        {BUS_BANNERS.map((b) => (
           <BannerTile
             key={b.id}
             active={selected === b.url}

@@ -35,17 +35,38 @@ export async function GET(req: Request) {
     return new NextResponse('Not found', { status: 404 })
   }
 
-  const url  = new URL(req.url)
-  const slug = url.searchParams.get('slug')?.trim()
-  if (!slug) return NextResponse.json({ error: 'missing_slug' }, { status: 400 })
+  const url     = new URL(req.url)
+  const slug    = url.searchParams.get('slug')?.trim()
+  const partner = url.searchParams.get('partner')?.trim()
+  if (!slug && !partner) return NextResponse.json({ error: 'missing_slug' }, { status: 400 })
 
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ error: 'service_role_not_configured' }, { status: 503 })
 
+  // Partner branch — impersonate the partner owner so the partner dashboard
+  // and /api/partners/me/* routes resolve to this user_id via the dev cookie.
+  if (partner) {
+    const { data: p, error: pErr } = await admin
+      .from('partners')
+      .select('owner_user_id, slug, name')
+      .eq('slug', partner)
+      .maybeSingle()
+    if (pErr) return NextResponse.json({ error: 'partner_lookup_failed', detail: pErr.message }, { status: 500 })
+    if (!p)   return NextResponse.json({ error: 'partner_not_found', partner }, { status: 404 })
+    const cookieStore = await cookies()
+    cookieStore.set('cr-dev-uid', p.owner_user_id as string, {
+      httpOnly: false,
+      sameSite: 'lax',
+      path:     '/',
+      maxAge:   60 * 60 * 12,
+    })
+    return NextResponse.redirect(`${url.protocol}//${url.host}/dashboard/partner`, { status: 302 })
+  }
+
   const { data: driver, error: driverErr } = await admin
     .from('drivers')
     .select('user_id, slug, vehicle_type')
-    .eq('slug', slug)
+    .eq('slug', slug!)
     .maybeSingle()
   if (driverErr) return NextResponse.json({ error: 'driver_lookup_failed', detail: driverErr.message }, { status: 500 })
   if (!driver)   return NextResponse.json({ error: 'driver_not_found', slug }, { status: 404 })

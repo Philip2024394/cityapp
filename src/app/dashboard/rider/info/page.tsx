@@ -16,7 +16,7 @@
 // ============================================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock, Languages as LanguagesIcon } from 'lucide-react'
+import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock, Languages as LanguagesIcon, Image as ImageIcon, Link2, Upload, Trash2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
@@ -42,6 +42,11 @@ type RiderInfoRow = {
   available_evening: boolean | null
   available_nightlife: boolean | null
   languages: string[] | null
+  brand_logo_url: string | null
+  instagram_url: string | null
+  tiktok_url: string | null
+  facebook_url: string | null
+  service_zone_radius_km: number | null
 }
 
 type LoadState =
@@ -72,7 +77,8 @@ export default function RiderInfoPage() {
       .select(
         'user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability, ' +
         'working_hours_start, working_hours_end, ' +
-        'available_sunrise, available_daytime, available_evening, available_nightlife, languages',
+        'available_sunrise, available_daytime, available_evening, available_nightlife, languages, ' +
+        'brand_logo_url, instagram_url, tiktok_url, facebook_url, service_zone_radius_km',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -111,6 +117,15 @@ function InfoEditor({ row, onReload }: { row: RiderInfoRow; onReload: () => void
     const init = Array.isArray(row.languages) ? row.languages : []
     return init.includes('id') ? init : ['id', ...init]
   })
+  // Avatar + social URLs (mig 0172). Paste-URL pattern matching the rest
+  // of the editor — no upload widget, just a text input committed on blur.
+  const [brandLogoUrl, setBrandLogoUrl] = useState(row.brand_logo_url ?? '')
+  const [instagramUrl, setInstagramUrl] = useState(row.instagram_url ?? '')
+  const [tiktokUrl,    setTiktokUrl]    = useState(row.tiktok_url ?? '')
+  const [facebookUrl,  setFacebookUrl]  = useState(row.facebook_url ?? '')
+  const [serviceZoneKm, setServiceZoneKm] = useState<string>(
+    row.service_zone_radius_km != null && row.service_zone_radius_km > 0 ? String(row.service_zone_radius_km) : '',
+  )
 
   // Track which fields are currently saving + transient flash state.
   const [savingField, setSavingField] = useState<string | null>(null)
@@ -208,6 +223,66 @@ function InfoEditor({ row, onReload }: { row: RiderInfoRow; onReload: () => void
     setLanguages(next)
     const ok = await save('languages', { languages: next }, has ? 'Language removed' : 'Language added')
     if (!ok) setLanguages(languages)
+  }
+  function commitBrandLogoUrl() {
+    const next = brandLogoUrl.trim() || null
+    if (next === (row.brand_logo_url ?? null)) return
+    void save('brand_logo_url', { brand_logo_url: next }, 'Profile photo URL saved')
+  }
+
+  // ----- Profile photo upload (Supabase Storage → profile-images bucket) -----
+  // Mirrors the upload pattern used by HandymanServicePhotosEditor /
+  // BeauticianServicePhotosEditor — same bucket, same MAX_BYTES + MIME guard.
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  async function uploadProfilePhoto(file: File) {
+    if (file.size > 6 * 1024 * 1024)                                { showError('Photo too large (max 6MB).'); return }
+    if (!/^image\/(jpe?g|png|webp)$/i.test(file.type))             { showError('JPG, PNG or WEBP only.'); return }
+    const supabase = getBrowserSupabase()
+    if (!supabase) { showError('Supabase not configured.'); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { showError('Not signed in.'); return }
+    setUploadingPhoto(true)
+    const ext  = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const path = `${user.id}/profile/${crypto.randomUUID()}.${ext}`
+    const up = await supabase.storage.from('profile-images')
+      .upload(path, file, { contentType: file.type, upsert: false })
+    if (up.error) { setUploadingPhoto(false); showError(`Upload failed: ${up.error.message}`); return }
+    const { data: pub } = supabase.storage.from('profile-images').getPublicUrl(path)
+    if (!pub?.publicUrl) { setUploadingPhoto(false); showError('Could not derive URL.'); return }
+    setBrandLogoUrl(pub.publicUrl)
+    const ok = await save('brand_logo_url', { brand_logo_url: pub.publicUrl }, 'Profile photo uploaded')
+    setUploadingPhoto(false)
+    if (!ok) setBrandLogoUrl(row.brand_logo_url ?? '')
+  }
+  async function removeProfilePhoto() {
+    setBrandLogoUrl('')
+    const ok = await save('brand_logo_url', { brand_logo_url: null }, 'Profile photo removed')
+    if (!ok) setBrandLogoUrl(row.brand_logo_url ?? '')
+  }
+  function commitInstagramUrl() {
+    const next = instagramUrl.trim() || null
+    if (next === (row.instagram_url ?? null)) return
+    void save('instagram_url', { instagram_url: next }, 'Instagram saved')
+  }
+  function commitTiktokUrl() {
+    const next = tiktokUrl.trim() || null
+    if (next === (row.tiktok_url ?? null)) return
+    void save('tiktok_url', { tiktok_url: next }, 'TikTok saved')
+  }
+  function commitFacebookUrl() {
+    const next = facebookUrl.trim() || null
+    if (next === (row.facebook_url ?? null)) return
+    void save('facebook_url', { facebook_url: next }, 'Facebook saved')
+  }
+  function commitServiceZoneKm() {
+    const digits = serviceZoneKm.replace(/\D/g, '')
+    const n = digits ? Number(digits) : null
+    // Clamp to the 1–100 km range when a value is present; null clears.
+    const next = n != null && Number.isFinite(n) ? Math.max(1, Math.min(100, n)) : null
+    if (next !== row.service_zone_radius_km) {
+      void save('service_zone_radius_km', { service_zone_radius_km: next }, 'Service zone saved')
+    }
+    setServiceZoneKm(next != null ? String(next) : '')
   }
 
   return (
@@ -363,6 +438,23 @@ function InfoEditor({ row, onReload }: { row: RiderInfoRow; onReload: () => void
             />
           </Field>
         </div>
+        <Field
+          label="Service zone radius (km)"
+          hint="Optional · 1–100 km. Shown under your location on the public profile."
+          saving={savingField === 'service_zone_radius_km'}
+        >
+          <input
+            type="number"
+            min={1}
+            max={100}
+            inputMode="numeric"
+            value={serviceZoneKm}
+            onChange={(e) => setServiceZoneKm(e.target.value)}
+            onBlur={commitServiceZoneKm}
+            placeholder="20"
+            className={inputCls}
+          />
+        </Field>
       </Card>
 
       {/* Working hours & availability */}
@@ -456,6 +548,131 @@ function InfoEditor({ row, onReload }: { row: RiderInfoRow; onReload: () => void
         <p className="text-[13px] text-black/55 leading-snug mt-2">
           Tip → drivers speaking 3+ languages land more tourist bookings.
         </p>
+      </Card>
+
+      {/* Profile photo — file upload (Supabase Storage, profile-images bucket).
+          Dashed drop-zone container + round preview + upload/remove toggle.
+          Shown next to the driver's name on the public profile. */}
+      <Card title="Profile photo" hint="Upload a clear photo of yourself — shown next to your name on the public profile." icon={<ImageIcon size={18} />}>
+        <div
+          className="rounded-2xl border-2 border-dashed flex flex-col items-center gap-3 p-5"
+          style={{ borderColor: '#E4E4E7', background: '#FAFAFA' }}
+        >
+          {/* Round preview — uses an <img> tag intentionally so we can render
+              both Supabase public URLs and the legacy pasted URLs from before
+              this upload pattern existed. */}
+          <div
+            className="rounded-full overflow-hidden flex items-center justify-center shrink-0"
+            style={{
+              width: 96,
+              height: 96,
+              background: '#F4F4F5',
+              border: '3px solid #FFFFFF',
+              boxShadow: '0 0 0 2px #E4E4E7, 0 4px 12px rgba(0,0,0,0.08)',
+            }}
+          >
+            {brandLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brandLogoUrl} alt="Profile photo" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-10 h-10 text-gray-300" strokeWidth={1.5} />
+            )}
+          </div>
+
+          {/* Action button — yellow Upload when empty, red Remove when set. */}
+          {brandLogoUrl ? (
+            <button
+              type="button"
+              onClick={removeProfilePhoto}
+              disabled={uploadingPhoto || savingField === 'brand_logo_url'}
+              className="inline-flex items-center justify-center gap-2 px-4 rounded-xl font-extrabold text-[13px] active:scale-[0.98] transition disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{
+                minHeight: 44,
+                background: '#DC2626',
+                color: '#FFFFFF',
+                boxShadow: '0 4px 12px rgba(220,38,38,0.25)',
+              }}
+            >
+              <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+              Remove photo
+            </button>
+          ) : (
+            <label
+              className="inline-flex items-center justify-center gap-2 px-4 rounded-xl font-extrabold text-[13px] active:scale-[0.98] transition cursor-pointer"
+              style={{
+                minHeight: 44,
+                background: '#FACC15',
+                color: '#0A0A0A',
+                boxShadow: '0 4px 12px rgba(250,204,21,0.25)',
+                opacity: uploadingPhoto ? 0.6 : 1,
+                pointerEvents: uploadingPhoto ? 'none' : 'auto',
+              }}
+            >
+              {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.5} /> : <Upload className="w-4 h-4" strokeWidth={2.5} />}
+              {uploadingPhoto ? 'Uploading…' : 'Upload photo'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  e.target.value = ''  // reset so picking the same file twice re-fires
+                  if (f) void uploadProfilePhoto(f)
+                }}
+              />
+            </label>
+          )}
+
+          <p className="text-[11px] text-gray-500 text-center font-medium leading-snug max-w-[280px]">
+            JPG, PNG or WEBP · 6MB max · square photo works best
+          </p>
+        </div>
+      </Card>
+
+      {/* Social links (mig 0172). Three paste-URL inputs save-on-blur. */}
+      <Card title="Social links" hint="Optional — add the social handles your customers can follow." icon={<Link2 size={18} />}>
+        <Field label="Instagram URL" saving={savingField === 'instagram_url'}>
+          <input
+            type="url"
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            onBlur={commitInstagramUrl}
+            placeholder="https://instagram.com/yourname"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="TikTok URL" saving={savingField === 'tiktok_url'}>
+          <input
+            type="url"
+            value={tiktokUrl}
+            onChange={(e) => setTiktokUrl(e.target.value)}
+            onBlur={commitTiktokUrl}
+            placeholder="https://tiktok.com/@yourname"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Facebook URL" saving={savingField === 'facebook_url'}>
+          <input
+            type="url"
+            value={facebookUrl}
+            onChange={(e) => setFacebookUrl(e.target.value)}
+            onBlur={commitFacebookUrl}
+            placeholder="https://facebook.com/yourpage"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
       </Card>
 
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">

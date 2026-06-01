@@ -5,6 +5,7 @@ import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 import VehicleProfileShell, { type VehiclePublic } from '@/components/profile/VehicleProfileShell'
 import { JEEP_BANNERS, bannerForSlug } from '@/lib/drivers/banners'
+import { MOCK_LANGUAGES } from '@/lib/tours/templates'
 
 // =============================================================================
 // /jeep/[slug] — public per-driver profile page (Jeep vertical).
@@ -56,6 +57,26 @@ type JeepDriver = {
   vehicle_seats:       number | null
   vehicle_photos:      string[]
   service_offerings:   string[]
+  /** Spoken languages (mig 0157, ISO 639-1). Real-driver rows pull from
+   *  drivers.languages; mock rows fall back to MOCK_LANGUAGES so demo
+   *  profiles still surface the avatar flag badge. */
+  languages:           string[]
+  // Per-slot availability flags (mig 0156) — surfaced as emoji chips on
+  // the public profile when at least one is enabled.
+  available_sunrise:   boolean | null
+  available_daytime:   boolean | null
+  available_evening:   boolean | null
+  available_nightlife: boolean | null
+  // Hourly hire opt-in + per-tier rates (mig 0156).
+  hourly_enabled:      boolean | null
+  hourly_3h_rate_idr:  number | null
+  hourly_6h_rate_idr:  number | null
+  hourly_8h_rate_idr:  number | null
+  // Long-term rental rates — bus parity. Surfaced via RentalContractCards
+  // on the public profile when at least one tier > 0.
+  rental_daily_rate_idr:   number | null
+  rental_weekly_rate_idr:  number | null
+  rental_monthly_rate_idr: number | null
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -83,7 +104,11 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       min_fee, price_per_km, service_zone_radius_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
-      service_offerings, status
+      service_offerings, languages,
+      available_sunrise, available_daytime, available_evening, available_nightlife,
+      hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr,
+      rental_daily_rate_idr, rental_weekly_rate_idr, rental_monthly_rate_idr,
+      status
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'jeep')
@@ -117,6 +142,20 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
       service_offerings:      parseServiceOfferings(r.service_offerings),
+      languages:              Array.isArray(r.languages)
+        ? (r.languages as unknown[]).filter((x): x is string => typeof x === 'string')
+        : ['id'],
+      available_sunrise:       (r.available_sunrise   as boolean | null) ?? null,
+      available_daytime:       (r.available_daytime   as boolean | null) ?? null,
+      available_evening:       (r.available_evening   as boolean | null) ?? null,
+      available_nightlife:     (r.available_nightlife as boolean | null) ?? null,
+      hourly_enabled:          (r.hourly_enabled        as boolean | null) ?? null,
+      hourly_3h_rate_idr:      (r.hourly_3h_rate_idr    as number | null) ?? null,
+      hourly_6h_rate_idr:      (r.hourly_6h_rate_idr    as number | null) ?? null,
+      hourly_8h_rate_idr:      (r.hourly_8h_rate_idr    as number | null) ?? null,
+      rental_daily_rate_idr:   (r.rental_daily_rate_idr   as number | null) ?? null,
+      rental_weekly_rate_idr:  (r.rental_weekly_rate_idr  as number | null) ?? null,
+      rental_monthly_rate_idr: (r.rental_monthly_rate_idr as number | null) ?? null,
     }
   }
 
@@ -165,6 +204,21 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
       service_offerings:      parseServiceOfferings(r.service_offerings),
+      // mock_drivers doesn't carry mig 0157's `languages` column — mocks
+      // borrow the per-slug entries from MOCK_LANGUAGES, defaulting to
+      // Indonesian-only when the slug isn't seeded there.
+      languages:              MOCK_LANGUAGES[slug] ?? ['id'],
+      available_sunrise:       null,
+      available_daytime:       null,
+      available_evening:       null,
+      available_nightlife:     null,
+      hourly_enabled:          null,
+      hourly_3h_rate_idr:      null,
+      hourly_6h_rate_idr:      null,
+      hourly_8h_rate_idr:      null,
+      rental_daily_rate_idr:   null,
+      rental_weekly_rate_idr:  null,
+      rental_monthly_rate_idr: null,
     }
   }
 
@@ -230,6 +284,18 @@ function jeepDriverToVehiclePublic(d: JeepDriver): VehiclePublic {
     start_price_idr:        d.min_fee,
     rate_rows:              rateRows,
     rate_footnote:          capacityNote,
+    languages:              d.languages,
+    available_sunrise:      d.available_sunrise,
+    available_daytime:      d.available_daytime,
+    available_evening:      d.available_evening,
+    available_nightlife:    d.available_nightlife,
+    hourly_enabled:         d.hourly_enabled,
+    hourly_3h_rate_idr:     d.hourly_3h_rate_idr,
+    hourly_6h_rate_idr:     d.hourly_6h_rate_idr,
+    hourly_8h_rate_idr:     d.hourly_8h_rate_idr,
+    rental_daily_rate_idr:  d.rental_daily_rate_idr,
+    rental_weekly_rate_idr: d.rental_weekly_rate_idr,
+    rental_monthly_rate_idr:d.rental_monthly_rate_idr,
   }
 }
 

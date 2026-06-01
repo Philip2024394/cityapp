@@ -31,6 +31,7 @@ import type { Rider, ServiceType } from '@/types/rider'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl, GENERIC_CAR_FALLBACK } from '@/data/carImages'
 import { getJeepImageUrl } from '@/data/jeepImages'
+import { getBusImageUrl } from '@/data/busImages'
 
 // ============================================================================
 // /cari — Card-based booking page (full redesign 2026-05-27)
@@ -1250,8 +1251,9 @@ function DriverCard({
   // everything else (car / bus / truck) falls through to the car catalog
   // silhouette helper.
   const imgSrc =
-    vehicleType === 'jeep' ? getJeepImageUrl(driver.bike?.color)
-    : vehicleType === 'bike' ? getBikeImageUrl(make, model)
+    vehicleType === 'jeep'    ? getJeepImageUrl(driver.bike?.color)
+    : vehicleType === 'minibus' ? getBusImageUrl(driver.bike?.color)
+    : vehicleType === 'bike'  ? getBikeImageUrl(make, model)
     : getCarImageUrl(make, model)
 
   // Subtitle: year + color when set, otherwise area/city.

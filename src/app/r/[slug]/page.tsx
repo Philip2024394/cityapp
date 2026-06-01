@@ -120,7 +120,7 @@ async function loadBikeDriver(slug: string): Promise<BikeDriver | null> {
         city, area, rating, trips_count, availability,
         min_fee, price_per_km, pitstop_fee, service_zone_radius_km,
         vehicle_type, bike_make, bike_model, bike_year, bike_color, bike_plate,
-        bike_photo_url, services, service_offerings,
+        bike_photo_url, vehicle_photos, services, service_offerings,
         current_lat, current_lng, cover_image_url,
         hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr,
         working_hours_start, working_hours_end,
@@ -161,7 +161,12 @@ async function loadBikeDriver(slug: string): Promise<BikeDriver | null> {
         bike_year:              (r.bike_year as number | null) ?? null,
         bike_color:             (r.bike_color as string | null) ?? null,
         bike_plate:             (r.bike_plate as string | null) ?? null,
-        bike_photo_url:         (r.bike_photo_url as string | null) ?? null,
+        // mig 0172 audit fix — the rider/vehicle dashboard writes the gallery to
+        // `vehicle_photos[]`, but the loader still selects `bike_photo_url` for
+        // backwards compatibility. Coalesce so existing photo uploads reach the
+        // profile when the legacy single-URL column is unset.
+        bike_photo_url:         (r.bike_photo_url as string | null)
+          ?? (Array.isArray(r.vehicle_photos) ? (r.vehicle_photos as unknown[]).find((x): x is string => typeof x === 'string' && x.trim().length > 0) ?? null : null),
         services:               parseStrings(r.services),
         service_offerings:      parseStrings(r.service_offerings),
         current_lat:            (r.current_lat as number | null) ?? null,
@@ -196,6 +201,7 @@ async function loadBikeDriver(slug: string): Promise<BikeDriver | null> {
         city, area, rating, availability,
         min_fee, price_per_km,
         vehicle_type, bike_make, bike_model, bike_year, bike_type,
+        vehicle_photos,
         services, service_offerings, cover_image_url, lat, lng, trips_count
       `)
       .eq('slug', slug)
@@ -227,9 +233,13 @@ async function loadBikeDriver(slug: string): Promise<BikeDriver | null> {
         bike_year:              (r.bike_year as number | null) ?? null,
         bike_color:             null,
         bike_plate:             null,
-        // mock_drivers doesn't store a bike photo URL; the shell falls
-        // back to the bike-catalog stock photo via getBikeImageUrl().
-        bike_photo_url:         null,
+        // mig 0172 audit fix — mock_drivers doesn't carry a bike_photo_url
+        // column, but it does mirror `vehicle_photos`. Pull the first entry
+        // so seeded mock photos reach the public profile; falls through to
+        // the bike-catalog stock photo via getBikeImageUrl() when empty.
+        bike_photo_url:         Array.isArray(r.vehicle_photos)
+          ? (r.vehicle_photos as unknown[]).find((x): x is string => typeof x === 'string' && x.trim().length > 0) ?? null
+          : null,
         services:               parseStrings(r.services),
         service_offerings:      parseStrings(r.service_offerings),
         current_lat:            typeof r.lat === 'number' ? (r.lat as number) : null,
@@ -477,6 +487,7 @@ function bikeDriverToDriverPublic(d: BikeDriver, tours: TourPackage[] = []): Dri
     vehicle_color:  d.bike_color,
     vehicle_seats:  null,  // bikes don't carry seat counts
     vehicle_photos: photos,
+    service_zone_radius_km: d.service_zone_radius_km,
     price_per_km:   d.price_per_km,
     min_fee:        d.min_fee,
     pitstop_fee:    d.pitstop_fee,

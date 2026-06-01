@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import {
   LOCATION_CACHE_KEY,
   LOCATION_CACHE_TTL_MS,
+  hasAnsweredLocationPrompt,
   readCachedLocation,
   writeCachedLocation,
 } from '@/components/onboarding/LocationPermissionPrompt'
@@ -68,6 +69,13 @@ export function useGeolocation(autoRequest = true) {
       setCoords({ lat: cached.lat, lng: cached.lng, accuracyM: 0 })
       setStatus('granted')
       setError(null)
+      return
+    }
+    // Already answered (skipped/denied) — don't auto-reprompt on every hook
+    // mount. The customer can still tap a "Use my GPS" button on a booking
+    // surface to trigger request() manually.
+    if (hasAnsweredLocationPrompt()) {
+      setStatus('denied')
       return
     }
     if (autoRequest) request()

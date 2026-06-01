@@ -4,7 +4,8 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 import VehicleProfileShell, { type VehiclePublic } from '@/components/profile/VehicleProfileShell'
-import { CAR_BANNERS, bannerForSlug } from '@/lib/drivers/banners'
+import { BUS_BANNERS, bannerForSlug } from '@/lib/drivers/banners'
+import { MOCK_LANGUAGES } from '@/lib/tours/templates'
 
 // =============================================================================
 // /bus/[slug] — public per-driver profile page (Minibus charter vertical).
@@ -57,6 +58,20 @@ type BusDriver = {
   vehicle_photos:      string[]
   service_offerings:   string[]
   service_rates:       Record<string, { rates: { label: string; idr: number; per?: string }[] }>
+  contact_email:       string | null
+  company_address:     string | null
+  faqs:                { q: string; a: string }[]
+  passenger_cost_rule: string | null
+  /** Spoken languages (mig 0157, ISO 639-1). Real-driver rows pull from
+   *  drivers.languages; mock rows fall back to MOCK_LANGUAGES so demo
+   *  profiles still surface the avatar flag badge. */
+  languages:           string[]
+  // Per-slot availability flags (mig 0156) — surfaced as chips on the
+  // public profile when at least one is enabled.
+  available_sunrise:   boolean | null
+  available_daytime:   boolean | null
+  available_evening:   boolean | null
+  available_nightlife: boolean | null
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -67,6 +82,22 @@ function parseVehiclePhotos(raw: unknown): string[] {
 function parseServiceOfferings(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
   return raw.filter((x): x is string => typeof x === 'string')
+}
+
+// Bus FAQ jsonb (mig 0170) — returns [] on anything but a well-shaped array
+// of { q: string; a: string }. Empty / whitespace-only rows are dropped.
+function parseFaqs(raw: unknown): { q: string; a: string }[] {
+  if (!Array.isArray(raw)) return []
+  const out: { q: string; a: string }[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const row = item as { q?: unknown; a?: unknown }
+    const q = typeof row.q === 'string' ? row.q.trim() : ''
+    const a = typeof row.a === 'string' ? row.a.trim() : ''
+    if (!q || !a) continue
+    out.push({ q, a })
+  }
+  return out
 }
 
 // service_rates jsonb (mig 0169) — { [service_id]: { rates: RateRow[] } }.
@@ -109,7 +140,11 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       min_fee, price_per_km, service_zone_radius_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
-      service_offerings, service_rates, status
+      service_offerings, service_rates,
+      contact_email, company_address, faqs, passenger_cost_rule,
+      languages,
+      available_sunrise, available_daytime, available_evening, available_nightlife,
+      status
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'minibus')
@@ -144,6 +179,17 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
       service_offerings:      parseServiceOfferings(r.service_offerings),
       service_rates:          parseServiceRates(r.service_rates),
+      contact_email:          (r.contact_email   as string | null) ?? null,
+      company_address:        (r.company_address as string | null) ?? null,
+      faqs:                   parseFaqs(r.faqs),
+      passenger_cost_rule:    (r.passenger_cost_rule as string | null) ?? null,
+      languages:              Array.isArray(r.languages)
+        ? (r.languages as unknown[]).filter((x): x is string => typeof x === 'string')
+        : ['id'],
+      available_sunrise:      (r.available_sunrise   as boolean | null) ?? null,
+      available_daytime:      (r.available_daytime   as boolean | null) ?? null,
+      available_evening:      (r.available_evening   as boolean | null) ?? null,
+      available_nightlife:    (r.available_nightlife as boolean | null) ?? null,
     }
   }
 
@@ -156,7 +202,8 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       min_fee, price_per_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
-      service_offerings, service_rates
+      service_offerings, service_rates,
+      contact_email, company_address, faqs, passenger_cost_rule
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'minibus')
@@ -173,9 +220,9 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       bio:                    (r.bio as string | null) ?? null,
       whatsapp_e164:          (r.whatsapp_e164 as string | null) ?? null,
       profile_image_url:      (r.profile_image_url as string | null) ?? null,
-      // Mock fallback: no BUS_BANNERS library yet, so we reuse the
-      // CAR_BANNERS pool with a deterministic per-slug pick for varied heroes.
-      cover_image_url:        (r.cover_image_url as string | null) ?? bannerForSlug(slug, CAR_BANNERS),
+      // Mock fallback: pick a deterministic bus-specific banner from
+      // BUS_BANNERS so each demo profile gets a distinct, on-brand hero.
+      cover_image_url:        (r.cover_image_url as string | null) ?? bannerForSlug(slug, BUS_BANNERS),
       city:                   (r.city as string | null) ?? null,
       area:                   (r.area as string | null) ?? null,
       rating:                 (r.rating as number | null) ?? null,
@@ -193,6 +240,18 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
       service_offerings:      parseServiceOfferings(r.service_offerings),
       service_rates:          parseServiceRates(r.service_rates),
+      contact_email:          (r.contact_email   as string | null) ?? null,
+      company_address:        (r.company_address as string | null) ?? null,
+      faqs:                   parseFaqs(r.faqs),
+      passenger_cost_rule:    (r.passenger_cost_rule as string | null) ?? null,
+      // mock_drivers doesn't carry mig 0157's `languages` column — mocks
+      // borrow the per-slug entries from MOCK_LANGUAGES, defaulting to
+      // Indonesian-only when the slug isn't seeded there.
+      languages:              MOCK_LANGUAGES[slug] ?? ['id'],
+      available_sunrise:      null,
+      available_daytime:      null,
+      available_evening:      null,
+      available_nightlife:    null,
     }
   }
 
@@ -220,14 +279,8 @@ function busDriverToVehiclePublic(d: BusDriver): VehiclePublic {
   const minFee = formatIdr(d.min_fee)
   const perKm  = formatIdr(d.price_per_km)
   const rateRows: VehiclePublic['rate_rows'] = [
-    {
-      label: 'From',
-      value: minFee ? `From ${minFee}` : 'Not yet published',
-    },
-    {
-      label: 'Per kilometer',
-      value: perKm ? `${perKm} / km` : 'Not yet published',
-    },
+    { label: 'From',          value: minFee ? `From ${minFee}` : 'Not yet published' },
+    { label: 'Per kilometer', value: perKm  ? `${perKm} / km`  : 'Not yet published' },
   ]
   const capacityNote = (d.vehicle_seats != null && d.vehicle_seats > 0)
     ? `Group capacity: ${d.vehicle_seats} passengers + luggage.`
@@ -256,11 +309,22 @@ function busDriverToVehiclePublic(d: BusDriver): VehiclePublic {
     vehicle_photos:         d.vehicle_photos,
     service_offerings:      d.service_offerings,
     start_price_idr:        d.min_fee,
+    price_per_km:           d.price_per_km,
     rate_rows:              rateRows,
     rate_footnote:          capacityNote,
     service_rates:          d.service_rates,
+    contact_email:          d.contact_email,
+    company_address:        d.company_address,
+    faqs:                   d.faqs,
+    passenger_cost_rule:    d.passenger_cost_rule,
+    languages:              d.languages,
+    available_sunrise:      d.available_sunrise,
+    available_daytime:      d.available_daytime,
+    available_evening:      d.available_evening,
+    available_nightlife:    d.available_nightlife,
   }
 }
+
 
 // -----------------------------------------------------------------------------
 // Metadata

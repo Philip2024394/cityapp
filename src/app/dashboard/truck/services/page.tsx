@@ -33,7 +33,7 @@ import {
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
-import { SERVICE_OFFERINGS, type ServiceOfferingId } from '@/lib/drivers/serviceOfferings'
+import { TRUCK_SERVICE_OFFERINGS } from '@/lib/drivers/serviceOfferings'
 import {
   defaultsFor,
   parseRateTiers,
@@ -41,6 +41,7 @@ import {
   type ParcelRateTiers,
   type ParcelRateTierKey,
 } from '@/lib/parcel/defaults'
+import { getMarketDefault } from '@/lib/pricing/marketDefaults'
 
 // ----------------------------------------------------------------------------
 // Row shape — only the columns this page edits.
@@ -154,7 +155,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
     return true
   }, [onReload])
 
-  const offerings = (row.service_offerings ?? []) as ServiceOfferingId[]
+  const offerings = (row.service_offerings ?? []) as string[]
 
   return (
     <Shell>
@@ -219,15 +220,15 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
 function OfferingsCard({
   offerings, onSave,
 }: {
-  offerings: ServiceOfferingId[]
+  offerings: string[]
   onSave:    (patch: Record<string, unknown>) => Promise<boolean>
 }) {
-  const [selected, setSelected] = useState<ServiceOfferingId[]>(offerings)
-  const [busy, setBusy] = useState<ServiceOfferingId | null>(null)
+  const [selected, setSelected] = useState<string[]>(offerings)
+  const [busy, setBusy] = useState<string | null>(null)
 
   useEffect(() => { setSelected(offerings) }, [offerings])
 
-  async function toggle(id: ServiceOfferingId) {
+  async function toggle(id: string) {
     if (busy) return
     const next = selected.includes(id)
       ? selected.filter((x) => x !== id)
@@ -246,7 +247,7 @@ function OfferingsCard({
       icon={<Layers size={18} />}
     >
       <div className="flex flex-wrap gap-1.5">
-        {SERVICE_OFFERINGS.map((s) => {
+        {TRUCK_SERVICE_OFFERINGS.map((s) => {
           const on  = selected.includes(s.id)
           const sp  = busy === s.id
           return (
@@ -265,7 +266,7 @@ function OfferingsCard({
               }}
             >
               {sp && <Loader2 size={12} className="animate-spin" />}
-              {s.label}
+              {s.label_en}
             </button>
           )
         })}
@@ -416,6 +417,15 @@ function PricingCard({
     await onSave({ [field]: next })
   }
 
+  // Yogya-market defaults — informational placeholder + one-tap reset.
+  // NOT a regulated rate; Permenhub 12/2019 leaves rate-setting to drivers.
+  const market = getMarketDefault('truck')
+  async function resetField(field: 'price_per_km' | 'min_fee', value: number) {
+    if (field === 'price_per_km') setPerKm(formatIdr(value))
+    if (field === 'min_fee')      setMinFee(formatIdr(value))
+    await onSave({ [field]: value })
+  }
+
   return (
     <Card
       title="Per-km transport rates"
@@ -423,20 +433,42 @@ function PricingCard({
       icon={<DollarSign size={18} />}
     >
       <div className="grid grid-cols-2 gap-2">
-        <IdrInput
-          label="Price per km"
-          placeholder="8.000"
-          value={perKm}
-          onChange={setPerKm}
-          onBlur={() => commit('price_per_km', perKm, row.price_per_km)}
-        />
-        <IdrInput
-          label="Minimum fee"
-          placeholder="75.000"
-          value={minFee}
-          onChange={setMinFee}
-          onBlur={() => commit('min_fee', minFee, row.min_fee)}
-        />
+        <div className="space-y-1">
+          <IdrInput
+            label="Price per km"
+            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.price_per_km)}` : '8.000'}
+            value={perKm}
+            onChange={setPerKm}
+            onBlur={() => commit('price_per_km', perKm, row.price_per_km)}
+          />
+          {market && (
+            <button
+              type="button"
+              onClick={() => void resetField('price_per_km', market.price_per_km)}
+              className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
+            >
+              Reset to Yogya default (Rp {formatIdr(market.price_per_km)})
+            </button>
+          )}
+        </div>
+        <div className="space-y-1">
+          <IdrInput
+            label="Minimum fee"
+            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.min_fee)}` : '75.000'}
+            value={minFee}
+            onChange={setMinFee}
+            onBlur={() => commit('min_fee', minFee, row.min_fee)}
+          />
+          {market && (
+            <button
+              type="button"
+              onClick={() => void resetField('min_fee', market.min_fee)}
+              className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
+            >
+              Reset to Yogya default (Rp {formatIdr(market.min_fee)})
+            </button>
+          )}
+        </div>
       </div>
     </Card>
   )

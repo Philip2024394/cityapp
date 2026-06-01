@@ -5,6 +5,7 @@ import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 import VehicleProfileShell, { type VehiclePublic } from '@/components/profile/VehicleProfileShell'
 import { getDefaultBanner } from '@/lib/drivers/banners'
+import { MOCK_LANGUAGES } from '@/lib/tours/templates'
 
 // =============================================================================
 // /truck/[slug] — public per-driver profile page (Truck rental vertical).
@@ -57,6 +58,16 @@ type TruckDriver = {
   rental_min_days:         number | null
   service_offerings:       string[]
   service_rates:           Record<string, { rates: { label: string; idr: number; per?: string }[] }>
+  /** Spoken languages (mig 0157, ISO 639-1). Real-driver rows pull from
+   *  drivers.languages; mock rows fall back to MOCK_LANGUAGES so demo
+   *  profiles still surface the avatar flag badge. */
+  languages:               string[]
+  // Per-slot availability flags (mig 0156) — surfaced as chips on the
+  // public profile when at least one is enabled.
+  available_sunrise:       boolean | null
+  available_daytime:       boolean | null
+  available_evening:       boolean | null
+  available_nightlife:     boolean | null
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -104,7 +115,9 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
       rental_daily_rate_idr, rental_weekly_rate_idr,
       rental_monthly_rate_idr, rental_min_days,
-      service_offerings, service_rates, status
+      service_offerings, service_rates, languages,
+      available_sunrise, available_daytime, available_evening, available_nightlife,
+      status
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'truck')
@@ -142,6 +155,13 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
         ? (r.service_offerings as unknown[]).filter((x): x is string => typeof x === 'string')
         : [],
       service_rates:           parseServiceRates(r.service_rates),
+      languages:               Array.isArray(r.languages)
+        ? (r.languages as unknown[]).filter((x): x is string => typeof x === 'string')
+        : ['id'],
+      available_sunrise:       (r.available_sunrise   as boolean | null) ?? null,
+      available_daytime:       (r.available_daytime   as boolean | null) ?? null,
+      available_evening:       (r.available_evening   as boolean | null) ?? null,
+      available_nightlife:     (r.available_nightlife as boolean | null) ?? null,
     }
   }
 
@@ -192,6 +212,14 @@ async function loadTruckDriver(slug: string): Promise<TruckDriver | null> {
       ? (m.service_offerings as unknown[]).filter((x): x is string => typeof x === 'string')
       : [],
     service_rates:           parseServiceRates(m.service_rates),
+    // mock_drivers doesn't carry mig 0157's `languages` column — mocks
+    // borrow the per-slug entries from MOCK_LANGUAGES, defaulting to
+    // Indonesian-only when the slug isn't seeded there.
+    languages:               MOCK_LANGUAGES[slug] ?? ['id'],
+    available_sunrise:       null,
+    available_daytime:       null,
+    available_evening:       null,
+    available_nightlife:     null,
   }
 }
 
@@ -256,6 +284,11 @@ function truckDriverToVehiclePublic(d: TruckDriver): VehiclePublic {
     rate_rows:              rateRows,
     rate_footnote:          minDaysNote,
     service_rates:          d.service_rates,
+    languages:              d.languages,
+    available_sunrise:      d.available_sunrise,
+    available_daytime:      d.available_daytime,
+    available_evening:      d.available_evening,
+    available_nightlife:    d.available_nightlife,
   }
 }
 

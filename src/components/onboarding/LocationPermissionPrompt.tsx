@@ -62,6 +62,19 @@ export function writeCachedLocation(lat: number, lng: number): void {
   }
 }
 
+// True if the user has already answered the location prompt this device
+// (granted, denied, or skipped). Callers use it to suppress re-prompting
+// on every hook mount — the user sets location ONCE per app session and
+// can override per-booking via address inputs.
+export function hasAnsweredLocationPrompt(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return localStorage.getItem(LOCATION_PROMPTED_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
 type Props = {
   open: boolean
   onComplete: () => void

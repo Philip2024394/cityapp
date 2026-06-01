@@ -17,13 +17,13 @@
 // ============================================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Bike, Image as ImageIcon, X, Plus, CheckCircle2, Package } from 'lucide-react'
+import { ArrowLeft, Loader2, Bike, Image as ImageIcon, CheckCircle2, Package } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
+import { getBikeImageUrl } from '@/data/bikeImages'
 import type { BikeType } from '@/types/database'
 
-const MAX_PHOTOS = 6
 const CURRENT_YEAR = new Date().getFullYear()
 
 type BikeVehicleRow = {
@@ -37,7 +37,6 @@ type BikeVehicleRow = {
   bike_cc: number | null
   bike_type: BikeType | null
   has_box: boolean | null
-  vehicle_photos: string[] | null
 }
 
 type LoadState =
@@ -67,7 +66,7 @@ export default function RiderVehicleDetailsPage() {
       .from('drivers')
       .select(
         'user_id, vehicle_type, bike_make, bike_model, bike_year, ' +
-        'bike_color, bike_plate, bike_cc, bike_type, has_box, vehicle_photos',
+        'bike_color, bike_plate, bike_cc, bike_type, has_box',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -99,14 +98,6 @@ function VehicleEditor({ row, onReload }: { row: BikeVehicleRow; onReload: () =>
   const [cc,    setCc]    = useState<string>(row.bike_cc != null ? String(row.bike_cc) : '')
   const [bikeType, setBikeType] = useState<BikeType | null>(row.bike_type ?? null)
   const [hasBox,   setHasBox]   = useState<boolean>(row.has_box ?? false)
-
-  // Photo state — held locally so add/remove are immediate without
-  // round-tripping a single URL change to the DB on every keystroke.
-  const initialPhotos = Array.isArray(row.vehicle_photos)
-    ? row.vehicle_photos.filter((u): u is string => typeof u === 'string')
-    : []
-  const [photos, setPhotos] = useState<string[]>(initialPhotos)
-  const [photoDraft, setPhotoDraft] = useState('')
 
   const [savingField, setSavingField] = useState<string | null>(null)
   const [savedFlash,  setSavedFlash]  = useState<string | null>(null)
@@ -201,37 +192,13 @@ function VehicleEditor({ row, onReload }: { row: BikeVehicleRow; onReload: () =>
     if (!ok) setHasBox(previous)
   }
 
-  // ── Photo list ────────────────────────────────────────────────────
-  async function addPhoto() {
-    const url = photoDraft.trim()
-    if (!url) return
-    if (!/^https?:\/\//i.test(url)) {
-      showError('Photo URL must start with http:// or https://')
-      return
-    }
-    if (photos.length >= MAX_PHOTOS) {
-      showError(`Max ${MAX_PHOTOS} photos.`)
-      return
-    }
-    if (photos.includes(url)) {
-      showError('That photo is already in your list.')
-      return
-    }
-    const next = [...photos, url]
-    setPhotos(next)
-    setPhotoDraft('')
-    const ok = await save('vehicle_photos', { vehicle_photos: next }, 'Photo added')
-    if (!ok) {
-      // Revert on failure.
-      setPhotos(photos)
-    }
-  }
-  async function removePhoto(idx: number) {
-    const next = photos.filter((_, i) => i !== idx)
-    setPhotos(next)
-    const ok = await save('vehicle_photos', { vehicle_photos: next }, 'Photo removed')
-    if (!ok) setPhotos(photos)
-  }
+  // Auto-resolved bike image — driven entirely by the make+model the
+  // driver enters above. `getBikeImageUrl` falls back through the curated
+  // BIKE_CATALOG → BIKE_MODEL_IMAGES → generic silhouette so we always
+  // have something to render. No manual upload needed — by design.
+  const autoBikeImage = make.trim() || model.trim()
+    ? getBikeImageUrl(make.trim() || null, model.trim() || null)
+    : null
 
   return (
     <Shell>
@@ -255,7 +222,7 @@ function VehicleEditor({ row, onReload }: { row: BikeVehicleRow; onReload: () =>
           <div className="flex-1 min-w-0">
             <h1 className="text-[20px] font-black leading-tight text-[#0A0A0A] truncate">Bike details</h1>
             <p className="text-[12.5px] text-black/70 leading-snug mt-0.5">
-              Make, model, plate, and photos — what customers see when they pick a ride.
+              Make, model, plate — what customers see when they pick a ride. Your bike photo is auto-selected from our catalog.
             </p>
           </div>
         </div>
@@ -417,101 +384,45 @@ function VehicleEditor({ row, onReload }: { row: BikeVehicleRow; onReload: () =>
         </button>
       </Card>
 
-      {/* Photos */}
+      {/* Your public bike image — auto-resolved from the curated CityDrivers
+          bike catalog (BIKE_CATALOG → BIKE_MODEL_IMAGES → silhouette). No
+          upload: when the rider sets make + model above, the matching stock
+          photo appears here AND on the public profile, /cari, /parcel etc. */}
       <Card
-        title="Bike photos"
-        hint={`Paste public image URLs (max ${MAX_PHOTOS}). File upload is coming in v2.`}
+        title="Your public bike image"
+        hint="Auto-selected from our bike catalog based on your make and model. To change it, update the Make or Model field above."
         icon={<ImageIcon size={18} />}
       >
-        {/* Thumbnails grid */}
-        {photos.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {photos.map((url, i) => (
-              <div
-                key={`${url}-${i}`}
-                className="relative aspect-[4/3] rounded-xl overflow-hidden border border-gray-200 bg-gray-50"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`Bike photo ${i + 1}`}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement
-                    img.style.display = 'none'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => void removePhoto(i)}
-                  disabled={savingField === 'vehicle_photos'}
-                  aria-label={`Remove photo ${i + 1}`}
-                  className="absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-white/85 hover:bg-white text-[#0A0A0A] ring-1 ring-black/15 flex items-center justify-center transition active:scale-[0.96] disabled:opacity-50"
-                  style={{ minHeight: 32 }}
-                >
-                  <X className="w-4 h-4" strokeWidth={2.5} />
-                </button>
-                <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-white/85 text-[#0A0A0A]">
-                  {i + 1}/{photos.length}
-                </span>
-              </div>
-            ))}
+        <div className="flex flex-col items-center gap-3 py-2">
+          <div
+            className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center"
+            style={{ width: 220, height: 165 }}
+          >
+            {autoBikeImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={autoBikeImage}
+                alt={[make.trim(), model.trim()].filter(Boolean).join(' ') || 'Your bike'}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <Bike className="w-12 h-12 text-gray-300" strokeWidth={1.5} />
+            )}
           </div>
-        )}
-
-        {/* Add URL row */}
-        {photos.length < MAX_PHOTOS ? (
-          <div className="flex items-stretch gap-2">
-            <input
-              type="url"
-              value={photoDraft}
-              onChange={(e) => setPhotoDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  void addPhoto()
-                }
-              }}
-              placeholder="https://… (paste image URL)"
-              inputMode="url"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              className={inputCls + ' flex-1 min-w-0'}
-            />
-            <button
-              type="button"
-              onClick={() => void addPhoto()}
-              disabled={!photoDraft.trim() || savingField === 'vehicle_photos'}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-xl px-4 text-[13px] font-extrabold uppercase tracking-wider transition active:scale-[0.98] disabled:opacity-50"
-              style={{
-                background: '#FACC15',
-                color: '#0A0A0A',
-                minHeight: 44,
-                boxShadow: '0 4px 12px rgba(250,204,21,0.30)',
-              }}
-            >
-              {savingField === 'vehicle_photos'
-                ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-                : <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden />}
-              Add
-            </button>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 text-[12.5px] font-bold text-black/55 px-3 py-3 text-center">
-            Maximum {MAX_PHOTOS} photos reached. Remove one to add another.
-          </div>
-        )}
-
-        <p className="text-[11.5px] text-black/50 leading-snug">
-          Tip — bright daylight, the full bike in frame, plate visible. Customers
-          trust profiles with at least 3 photos.
-        </p>
+          {autoBikeImage ? (
+            <p className="text-[12px] text-black/65 font-semibold text-center leading-snug max-w-[280px]">
+              {[make.trim(), model.trim()].filter(Boolean).join(' ') || 'Bike'} · this image will appear on your public profile.
+            </p>
+          ) : (
+            <p className="text-[12px] text-black/55 font-medium text-center leading-snug max-w-[280px]">
+              Set your bike Make and Model above and the matching catalog photo will appear here.
+            </p>
+          )}
+        </div>
       </Card>
 
       <p className="text-[11.5px] text-black/45 leading-snug px-1 mt-2">
-        Changes save automatically when you tap out of a field. Photos save as
-        you add or remove them.
+        Changes save automatically when you tap out of a field.
       </p>
     </Shell>
   )

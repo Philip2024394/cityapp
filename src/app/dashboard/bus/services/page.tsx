@@ -47,6 +47,7 @@ import {
   hourlyDefaultsForVehicle,
   HOURLY_DEFAULTS_INNOVA,
 } from '@/lib/pricing/hourlyHire'
+import { getMarketDefault } from '@/lib/pricing/marketDefaults'
 
 // ----------------------------------------------------------------------------
 // Row shape — only the columns this page edits.
@@ -451,6 +452,15 @@ function PricingCard({
     await onSave({ [field]: next })
   }
 
+  // Yogya-market defaults — informational placeholder + one-tap reset.
+  // NOT a regulated rate; Permenhub 12/2019 leaves rate-setting to drivers.
+  const market = getMarketDefault('minibus')
+  async function resetField(field: 'price_per_km' | 'min_fee', value: number) {
+    if (field === 'price_per_km') setPerKm(formatIdr(value))
+    if (field === 'min_fee')      setMinFee(formatIdr(value))
+    await onSave({ [field]: value })
+  }
+
   return (
     <Card
       title="Per-km transport rates"
@@ -458,20 +468,42 @@ function PricingCard({
       icon={<DollarSign size={18} />}
     >
       <div className="grid grid-cols-2 gap-2">
-        <IdrInput
-          label="Price per km"
-          placeholder="6.000"
-          value={perKm}
-          onChange={setPerKm}
-          onBlur={() => commit('price_per_km', perKm, row.price_per_km)}
-        />
-        <IdrInput
-          label="Minimum fee"
-          placeholder="35.000"
-          value={minFee}
-          onChange={setMinFee}
-          onBlur={() => commit('min_fee', minFee, row.min_fee)}
-        />
+        <div className="space-y-1">
+          <IdrInput
+            label="Price per km"
+            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.price_per_km)}` : '6.000'}
+            value={perKm}
+            onChange={setPerKm}
+            onBlur={() => commit('price_per_km', perKm, row.price_per_km)}
+          />
+          {market && (
+            <button
+              type="button"
+              onClick={() => void resetField('price_per_km', market.price_per_km)}
+              className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
+            >
+              Reset to Yogya default (Rp {formatIdr(market.price_per_km)})
+            </button>
+          )}
+        </div>
+        <div className="space-y-1">
+          <IdrInput
+            label="Minimum fee"
+            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.min_fee)}` : '35.000'}
+            value={minFee}
+            onChange={setMinFee}
+            onBlur={() => commit('min_fee', minFee, row.min_fee)}
+          />
+          {market && (
+            <button
+              type="button"
+              onClick={() => void resetField('min_fee', market.min_fee)}
+              className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
+            >
+              Reset to Yogya default (Rp {formatIdr(market.min_fee)})
+            </button>
+          )}
+        </div>
       </div>
     </Card>
   )
