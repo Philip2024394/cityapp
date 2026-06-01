@@ -56,6 +56,7 @@ type BusDriver = {
   vehicle_seats:       number | null
   vehicle_photos:      string[]
   service_offerings:   string[]
+  service_rates:       Record<string, { rates: { label: string; idr: number; per?: string }[] }>
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -66,6 +67,31 @@ function parseVehiclePhotos(raw: unknown): string[] {
 function parseServiceOfferings(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
   return raw.filter((x): x is string => typeof x === 'string')
+}
+
+// service_rates jsonb (mig 0169) — { [service_id]: { rates: RateRow[] } }.
+// Defensive parser: returns {} on any shape mismatch so the public profile
+// just falls back to the catalog default_rates.
+function parseServiceRates(raw: unknown): Record<string, { rates: { label: string; idr: number; per?: string }[] }> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, { rates: { label: string; idr: number; per?: string }[] }> = {}
+  for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+    if (!val || typeof val !== 'object') continue
+    const ratesRaw = (val as { rates?: unknown }).rates
+    if (!Array.isArray(ratesRaw)) continue
+    const rates: { label: string; idr: number; per?: string }[] = []
+    for (const r of ratesRaw) {
+      if (!r || typeof r !== 'object') continue
+      const row = r as { label?: unknown; idr?: unknown; per?: unknown }
+      const label = typeof row.label === 'string' ? row.label : ''
+      const idr   = typeof row.idr === 'number' && Number.isFinite(row.idr) ? row.idr : NaN
+      if (!label || !Number.isFinite(idr) || idr <= 0) continue
+      const per = typeof row.per === 'string' && row.per.trim() ? row.per : undefined
+      rates.push({ label, idr, ...(per ? { per } : {}) })
+    }
+    if (rates.length > 0) out[key] = { rates }
+  }
+  return out
 }
 
 async function loadBusDriver(slug: string): Promise<BusDriver | null> {
@@ -83,7 +109,7 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       min_fee, price_per_km, service_zone_radius_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
-      service_offerings, status
+      service_offerings, service_rates, status
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'minibus')
@@ -117,6 +143,7 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
       service_offerings:      parseServiceOfferings(r.service_offerings),
+      service_rates:          parseServiceRates(r.service_rates),
     }
   }
 
@@ -129,7 +156,7 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       min_fee, price_per_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
-      service_offerings
+      service_offerings, service_rates
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'minibus')
@@ -165,6 +192,7 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       vehicle_seats:          (r.vehicle_seats as number | null) ?? null,
       vehicle_photos:         parseVehiclePhotos(r.vehicle_photos),
       service_offerings:      parseServiceOfferings(r.service_offerings),
+      service_rates:          parseServiceRates(r.service_rates),
     }
   }
 
@@ -230,6 +258,7 @@ function busDriverToVehiclePublic(d: BusDriver): VehiclePublic {
     start_price_idr:        d.min_fee,
     rate_rows:              rateRows,
     rate_footnote:          capacityNote,
+    service_rates:          d.service_rates,
   }
 }
 

@@ -5,8 +5,9 @@ import {
   MapPin, Star, Bike as BikeIcon,
   Car as CarIcon, Users as UsersIcon,
   PlaneTakeoff, Building2, MapPinned,
-  ChevronLeft, Sparkles, ArrowDown,
+  ChevronLeft, Sparkles, ArrowDown, Share2,
 } from 'lucide-react'
+import SocialShareSheet from './SocialShareSheet'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl } from '@/data/carImages'
 import { getJeepImageUrl } from '@/data/jeepImages'
@@ -185,6 +186,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
   // Profile-view tracking — one ping per session per (provider_type,
   // provider_id) pair. sessionStorage-deduped so refreshes don't double-count.
   useProfileViewTracker({ providerType: 'driver', providerId: driver.id })
+  const [shareOpen, setShareOpen] = useState(false)
   const [pickup, setPickup]   = useState('')
   const [dropoff, setDropoff] = useState('')
   // Coordinates captured when the customer picks pickup/drop-off from the
@@ -440,6 +442,20 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           fills a 16/9 hero slot, with a white-to-transparent gradient
           softening the handoff into the floating profile card below. */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16 / 9', background: '#F4F4F5' }}>
+        {/* Top-right action stack — Share button (matches the VehicleProfileShell
+            pattern on truck/bus/jeep so every profile page carries the same
+            social-share entry point). */}
+        <div className="absolute top-3 right-12 z-30 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            aria-label="Share profile"
+            className="w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-[0.96] transition"
+            style={{ background: BRAND_YELLOW, color: TEXT_INK }}
+          >
+            <Share2 className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+        </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={
@@ -598,26 +614,6 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
               {/* Heart-beat / satellite-ping availability dot — sits inline
                   after the driver name. Only renders when the driver is
                   online; busy/offline drivers get no dot. */}
-              {availability === 'online' && (
-                <span
-                  aria-label="Driver is online"
-                  className="relative inline-flex items-center justify-center shrink-0"
-                  style={{ width: 14, height: 14 }}
-                >
-                  <span aria-hidden className="cd-driver-ping-ring" />
-                  <span aria-hidden className="cd-driver-ping-ring cd-driver-ping-ring--delayed" />
-                  <span
-                    aria-hidden
-                    className="relative inline-block rounded-full border-2 border-white"
-                    style={{
-                      width: 10,
-                      height: 10,
-                      background: '#22C55E',
-                      boxShadow: '0 0 6px rgba(34,197,94,0.6)',
-                    }}
-                  />
-                </span>
-              )}
             </h1>
             <p className="text-[13px] truncate mt-0.5" style={{ color: TEXT_MUTED }}>
               {driver.city?.trim() || 'Indonesia'}
@@ -674,8 +670,28 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           <div className="text-left">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-extrabold leading-tight" style={{ color: TEXT_INK }}>
-                  {[driver.vehicle_make, driver.vehicle_model].filter(Boolean).join(' ') || vehicleTypeLabel}
+                <div className="text-[15px] font-extrabold leading-tight inline-flex items-center gap-2" style={{ color: TEXT_INK }}>
+                  <span>{[driver.vehicle_make, driver.vehicle_model].filter(Boolean).join(' ') || vehicleTypeLabel}</span>
+                  {availability === 'online' && (
+                    <span
+                      aria-label="Driver is online"
+                      className="relative inline-flex items-center justify-center shrink-0"
+                      style={{ width: 14, height: 14 }}
+                    >
+                      <span aria-hidden className="cd-driver-ping-ring" />
+                      <span aria-hidden className="cd-driver-ping-ring cd-driver-ping-ring--delayed" />
+                      <span
+                        aria-hidden
+                        className="relative inline-block rounded-full border-2 border-white"
+                        style={{
+                          width: 10,
+                          height: 10,
+                          background: '#22C55E',
+                          boxShadow: '0 0 6px rgba(34,197,94,0.6)',
+                        }}
+                      />
+                    </span>
+                  )}
                 </div>
                 {driver.vehicle_type === 'car' && driver.vehicle_seats && driver.vehicle_seats > 0 ? (
                   <div className="text-[12px] mt-0.5 inline-flex items-center gap-1" style={{ color: TEXT_MUTED }}>
@@ -946,6 +962,19 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
 
       <PoweredByKita2u
         defaultVertical={driver.vehicle_type === 'bike' ? 'bike-driver' : 'car-driver'}
+      />
+
+      {/* Social share bottom-sheet — triggered by the top-right Share2
+          button on the hero. Uses the shared SocialShareSheet component so
+          car/bike profiles share the exact UX truck/bus/jeep already have. */}
+      <SocialShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={typeof window !== 'undefined'
+          ? `${window.location.origin}/${driver.vehicle_type === 'bike' ? 'r' : 'car'}/${driver.slug}`
+          : `https://citydrivers.id/${driver.vehicle_type === 'bike' ? 'r' : 'car'}/${driver.slug}`}
+        prefillText={`Lihat profil ${driver.business_name || 'driver'} di CityDrivers:`}
+        providerName={driver.business_name || 'Driver'}
       />
     </main>
   )

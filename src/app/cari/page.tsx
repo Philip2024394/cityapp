@@ -344,6 +344,10 @@ function PlanTripPageInner() {
     () => visibleDrivers.filter((d) => d.isOnline || d.availability === 'online').length,
     [visibleDrivers],
   )
+  const busyCount = useMemo(
+    () => visibleDrivers.filter((d) => d.availability === 'busy').length,
+    [visibleDrivers],
+  )
 
   // Sort by distance-to-customer (fastest first), break ties with
   // min_fee ascending (cheapest after that). When the customer hasn't
@@ -595,7 +599,7 @@ function PlanTripPageInner() {
         {/* Live availability dots — yellow (online) + red (busy). Count
             varies by hour: few in early morning, many in afternoon /
             evening. See DriverDotsOverlay header for the schedule. */}
-        <DriverDotsOverlay />
+        <DriverDotsOverlay onlineCount={onlineCount} busyCount={busyCount} />
 
         {/* Pickup + dropoff pin overlay + animated dashed route line.
             Pins are founder-supplied PNG art. Route is an SVG path with
@@ -699,7 +703,7 @@ function PlanTripPageInner() {
             <img
               src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
               alt=""
-              className="w-9 h-9 rounded-xl"
+              className="w-11 h-11 rounded-xl"
               style={{ boxShadow: '0 2px 8px rgba(10,10,10,0.18)' }}
             />
             <span
@@ -1333,13 +1337,27 @@ function DriverCard({
     >
       {/* Top-right badges — FASTEST (charcoal pill with bolt) on the
           nearest driver; CHEAPEST (yellow pill) on the lowest-fee
-          driver. A single driver can carry both if they win on both
-          axes; in that case the FASTEST badge stacks above the
-          CHEAPEST one. Absolute-positioned so the rest of the card
-          row layout doesn't shift. */}
+          driver. Mutually exclusive on a single card: when the same
+          driver wins on both axes, we show CHEAPEST only (matches the
+          cheapest-by-default auto-selection elsewhere in the page).
+          Absolute-positioned so the rest of the card row layout
+          doesn't shift. */}
       {(isFastest || isCheapest) && (
         <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-end gap-1 pointer-events-none">
-          {isFastest && (
+          {isCheapest ? (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+              style={{
+                background: '#FACC15',
+                color:      '#0A0A0A',
+                boxShadow:  '0 4px 10px rgba(250,204,21,0.45)',
+                lineHeight: 1,
+                minHeight:  18,
+              }}
+            >
+              Cheapest
+            </span>
+          ) : (
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
               style={{
@@ -1354,20 +1372,6 @@ function DriverCard({
               Fastest
             </span>
           )}
-          {isCheapest && (
-            <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
-              style={{
-                background: '#FACC15',
-                color:      '#0A0A0A',
-                boxShadow:  '0 4px 10px rgba(250,204,21,0.45)',
-                lineHeight: 1,
-                minHeight:  18,
-              }}
-            >
-              Cheapest
-            </span>
-          )}
         </div>
       )}
       {/* Vehicle / brand image — landscape 84×56 (1.5:1) instead of the
@@ -1376,8 +1380,8 @@ function DriverCard({
           also more landscape than square in side profile, so the same
           shape helps them too. */}
       <div
-        className="shrink-0 rounded-lg overflow-hidden bg-[#F4F4F5]"
-        style={{ width: 84, height: 56 }}
+        className="shrink-0 rounded-lg overflow-hidden"
+        style={{ width: 84, height: 56, background: selected ? 'transparent' : '#F4F4F5' }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -1435,7 +1439,10 @@ function DriverCard({
           to the bottom edge regardless of how tall the middle column
           gets. */}
       <div className="shrink-0 self-stretch flex flex-col items-end justify-between py-0.5">
-        {driver.rating !== undefined ? (
+        {/* Rating star — hidden when a Fastest/Cheapest badge already
+            owns the card's top-right slot, so the two never crowd each
+            other. */}
+        {driver.rating !== undefined && !isFastest && !isCheapest ? (
           <div className="inline-flex items-center gap-1 text-[12px] font-extrabold text-bg">
             <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} />
             {driver.rating.toFixed(1)}

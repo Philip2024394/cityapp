@@ -240,6 +240,7 @@ type MockDriverRow = {
   bike_make: string | null
   bike_model: string | null
   bike_year: number | null
+  bike_color: string | null
   bike_type: 'matic' | 'sport' | 'manual' | null
   // mig 0093 added these columns specifically for the car/truck mocks.
   // The seed data populates vehicle_* and leaves bike_* null when the
@@ -250,7 +251,8 @@ type MockDriverRow = {
   vehicle_make: string | null
   vehicle_model: string | null
   vehicle_year: number | null
-  vehicle_type: 'car' | 'bike' | 'minibus' | 'truck' | 'premium_car' | null
+  vehicle_color: string | null
+  vehicle_type: 'car' | 'bike' | 'minibus' | 'truck' | 'premium_car' | 'jeep' | null
   rating: number | null
   availability: 'online' | 'busy' | 'offline'
   created_at: string
@@ -272,6 +274,11 @@ function mockDriverRowToRider(row: MockDriverRow): Rider {
   const make  = row.bike_make  || row.vehicle_make  || ''
   const model = row.bike_model || row.vehicle_model || ''
   const year  = row.bike_year  || row.vehicle_year  || 0
+  // Colour coalescing — jeep mocks store body colour in vehicle_color
+  // (per /dashboard/jeep/vehicle picker). /cari uses this to swap the
+  // jeep silhouette image via getJeepImageUrl() so each jeep card in the
+  // result list shows the driver's actual body colour, not all yellow.
+  const color = row.bike_color || row.vehicle_color || ''
   // mig 0155 added lat/lng/trips_count — read defensively so older
   // mock rows without those columns still produce a usable Rider.
   const geoRow = row as MockDriverRowWithGeo
@@ -292,7 +299,7 @@ function mockDriverRowToRider(row: MockDriverRow): Rider {
       make,
       model,
       year,
-      color: '',
+      color,
       type: (row.bike_type || 'matic') as 'matic' | 'sport' | 'manual',
       hasBox: false,
     },

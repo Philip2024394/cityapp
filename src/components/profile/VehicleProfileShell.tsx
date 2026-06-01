@@ -44,7 +44,10 @@ import AvatarFrame from '@/components/profile/AvatarFrame'
 import {
   SERVICE_OFFERINGS,
   TRUCK_SERVICE_OFFERINGS,
+  getServiceCatalog,
   type ServiceOfferingId,
+  type ServiceCatalogEntry,
+  type RateRow,
 } from '@/lib/drivers/serviceOfferings'
 import { type ConnectIntentVertical, type ConnectIntentSource } from '@/lib/connectIntent'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
@@ -99,6 +102,10 @@ export type VehiclePublic = {
   /** Optional copy under the rate rows. Used to surface the truck min-days
    *  callout. Driver-published rates only; never platform-set. */
   rate_footnote:       string | null
+  /** Per-service rate overrides (drivers.service_rates jsonb, mig 0169).
+   *  Shape: `{ [service_id]: { rates: RateRow[] } }`. Missing keys / empty
+   *  arrays → public profile falls back to the catalog `default_rates`. */
+  service_rates?:      Record<string, { rates: RateRow[] }>
 }
 
 // -----------------------------------------------------------------------------
@@ -191,8 +198,8 @@ function buildPortfolioPhotos(
   // Driver-uploaded vehicle_photos are intentionally ignored here.
   if (vehicleType === 'truck') {
     return TRUCK_SERVICE_OFFERINGS.map((svc) => ({
-      url:         svc.imageUrl,
-      name:        svc.label,
+      url:         svc.imageUrl ?? '',
+      name:        svc.label_en,
       description: svc.description,
       price_idr:   startPriceIdr ?? null,
     }))
@@ -226,6 +233,24 @@ export default function VehicleProfileShell({
   const [portfolioView, setPortfolioView] = useState<PortfolioView>('carousel')
   const [detailPhoto, setDetailPhoto] = useState<PortfolioPhoto | null>(null)
   const [servicesOpen, setServicesOpen] = useState(false)
+
+  // -- Per-service rate panel state -------------------------------------------
+  // Trucks + minibus share the catalog-driven badge / rate-panel UX. Jeep
+  // keeps the legacy single rate-rows card (no catalog yet) for now.
+  const serviceCatalog: readonly ServiceCatalogEntry[] =
+    vehicleType === 'truck' ? getServiceCatalog('truck')
+    : vehicleType === 'bus' ? getServiceCatalog('minibus')
+    : []
+  const [activeServiceId, setActiveServiceId] = useState<string | null>(
+    serviceCatalog[0]?.id ?? null,
+  )
+  const activeService = serviceCatalog.find((s) => s.id === activeServiceId) ?? serviceCatalog[0] ?? null
+  // Resolution order: driver override (non-empty rates[]) → catalog default.
+  function resolveRates(svc: ServiceCatalogEntry): readonly RateRow[] {
+    const override = v.service_rates?.[svc.id]?.rates
+    if (Array.isArray(override) && override.length > 0) return override
+    return svc.default_rates
+  }
 
   const vehicleLabel = [v.vehicle_make, v.vehicle_model].filter(Boolean).join(' ')
     || (vehicleType === 'truck' ? 'Truck' : vehicleType === 'bus' ? 'Minibus' : 'Jeep')
@@ -280,7 +305,7 @@ export default function VehicleProfileShell({
       {/* -------- Hero block — cover image + floating info-card (beautician parity) -------- */}
       <div className="relative pb-2">
         {/* Top-right action stack — Share button. */}
-        <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+        <div className="absolute top-3 right-12 z-30 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShareOpen(true)}
@@ -385,24 +410,8 @@ export default function VehicleProfileShell({
                 themeColor={theme}
                 fallbackInitial={v.display_name?.[0]?.toUpperCase()}
               />
-              {/* Satellite-ping availability dot — only renders when online.
-                  Sits on the lower-right of the avatar; the
-                  cd-availability-ping rings radiate outward continuously. */}
-              {v.availability === 'online' && (
-                <span
-                  aria-label="Available now"
-                  className="absolute bottom-0 right-0 inline-flex items-center justify-center"
-                  style={{ width: 16, height: 16 }}
-                >
-                  <span aria-hidden className="cd-availability-ring" />
-                  <span aria-hidden className="cd-availability-ring cd-availability-ring--delayed" />
-                  <span
-                    aria-hidden
-                    className="relative inline-block rounded-full border-2 border-white"
-                    style={{ width: 12, height: 12, background: '#16A34A', boxShadow: '0 0 6px rgba(22,163,74,0.6)' }}
-                  />
-                </span>
-              )}
+              {/* Avatar no longer carries the availability dot — it now
+                  sits inline next to the vehicle brand line below. */}
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-[16px] sm:text-[18px] font-black text-black truncate leading-tight flex items-center gap-1">
@@ -415,10 +424,27 @@ export default function VehicleProfileShell({
                   aria-label="Verified"
                 />
               </h1>
-              {/* Vehicle brand on its own line; location goes underneath. */}
+              {/* Vehicle brand on its own line with the satellite-ping
+                  green dot inline after the name. Location goes
+                  underneath. */}
               {vehicleLabel && (
-                <p className="text-[12px] text-gray-700 font-extrabold truncate mt-0.5">
-                  {vehicleLabel}
+                <p className="text-[12px] text-gray-700 font-extrabold truncate mt-0.5 inline-flex items-center gap-2">
+                  <span className="truncate">{vehicleLabel}</span>
+                  {v.availability === 'online' && (
+                    <span
+                      aria-label="Available now"
+                      className="relative inline-flex items-center justify-center shrink-0"
+                      style={{ width: 14, height: 14 }}
+                    >
+                      <span aria-hidden className="cd-availability-ring" />
+                      <span aria-hidden className="cd-availability-ring cd-availability-ring--delayed" />
+                      <span
+                        aria-hidden
+                        className="relative inline-block rounded-full border-2 border-white"
+                        style={{ width: 10, height: 10, background: '#16A34A', boxShadow: '0 0 6px rgba(22,163,74,0.6)' }}
+                      />
+                    </span>
+                  )}
                 </p>
               )}
               {where && (
@@ -530,44 +556,97 @@ export default function VehicleProfileShell({
               </div>
             </section>
 
-            {/* Services Provided — yellow burger-icon toggle that
-                expands a dropdown panel of chips. Trucks always show the
-                canonical TRUCK_SERVICE_OFFERINGS; other vehicles use the
-                driver's opted-in offerings. */}
+            {/* Services Provided — header + as many badges as fit on a
+                single line; if more exist a small round burger button on
+                the right toggles the rest into a second row below.
+                For truck + bus the badges are CLICKABLE and select a
+                catalog service to display in the rate panel underneath.
+                Jeep keeps the legacy read-only chip row. */}
             {(() => {
-              const labels: string[] = vehicleType === 'truck'
-                ? TRUCK_SERVICE_OFFERINGS.map((s) => s.label)
-                : v.service_offerings.map((sid) => SERVICE_OFFERING_LABELS[sid as ServiceOfferingId] ?? sid)
-              if (labels.length === 0) return null
+              type Item = { key: string; label: string; active?: boolean; onClick?: () => void }
+              let items: Item[] = []
+
+              if (vehicleType === 'truck' || vehicleType === 'bus') {
+                items = serviceCatalog.map((svc) => ({
+                  key:     svc.id,
+                  label:   svc.label_en,
+                  active:  svc.id === activeServiceId,
+                  onClick: () => setActiveServiceId(svc.id),
+                }))
+              } else {
+                // Jeep — legacy read-only chip row from driver's opted-in offerings.
+                items = v.service_offerings.map((sid) => ({
+                  key:   sid,
+                  label: SERVICE_OFFERING_LABELS[sid as ServiceOfferingId] ?? sid,
+                }))
+              }
+
+              if (items.length === 0) return null
+              const VISIBLE = 3
+              const inline  = items.slice(0, VISIBLE)
+              const rest    = items.slice(VISIBLE)
+              const hasMore = rest.length > 0
               return (
-                <section className="space-y-2" style={{ marginTop: 15 }}>
-                  <button
-                    type="button"
-                    aria-expanded={servicesOpen}
-                    onClick={() => setServicesOpen((v) => !v)}
-                    className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-[13px] font-extrabold uppercase tracking-wider active:scale-[0.98] transition shadow-sm"
-                    style={{ background: theme, color: '#0A0A0A' }}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <MenuIcon className="w-4 h-4" strokeWidth={2.5} />
-                      Services Provided
-                    </span>
-                    <ChevronDown
-                      className="w-4 h-4 transition-transform"
-                      strokeWidth={2.5}
-                      style={{ transform: servicesOpen ? 'rotate(180deg)' : 'none' }}
-                    />
-                  </button>
-                  {servicesOpen && (
+                <section className="space-y-1.5" style={{ marginTop: 15 }}>
+                  <div className="flex items-center gap-1.5 flex-nowrap overflow-hidden">
+                    <h2 className="text-[12px] font-extrabold uppercase tracking-wider shrink-0" style={{ color: '#0A0A0A' }}>
+                      Services Offered
+                    </h2>
+                    <div className="flex items-center gap-1.5 flex-nowrap overflow-hidden min-w-0 flex-1">
+                      {inline.map((it) => (
+                        <ServiceFilterBadge
+                          key={it.key}
+                          label={it.label}
+                          theme={theme}
+                          active={it.active}
+                          onClick={it.onClick}
+                        />
+                      ))}
+                    </div>
+                    {hasMore && (
+                      <button
+                        type="button"
+                        aria-expanded={servicesOpen}
+                        aria-label={servicesOpen ? 'Hide additional services' : `Show ${rest.length} more services`}
+                        onClick={() => setServicesOpen((s) => !s)}
+                        className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center active:scale-[0.95] transition"
+                        style={{
+                          background: theme,
+                          color: '#0A0A0A',
+                          boxShadow: '0 4px 10px rgba(250,204,21,0.45)',
+                        }}
+                      >
+                        <MenuIcon className="w-3.5 h-3.5" strokeWidth={2.75} />
+                      </button>
+                    )}
+                  </div>
+                  {hasMore && servicesOpen && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      {labels.map((label) => (
-                        <ServiceFilterBadge key={label} label={label} theme={theme} />
+                      {rest.map((it) => (
+                        <ServiceFilterBadge
+                          key={it.key}
+                          label={it.label}
+                          theme={theme}
+                          active={it.active}
+                          onClick={it.onClick}
+                        />
                       ))}
                     </div>
                   )}
                 </section>
               )
             })()}
+
+            {/* Service rate panel — swaps content when a different badge
+                is tapped. Truck + minibus only. */}
+            {activeService && (vehicleType === 'truck' || vehicleType === 'bus') && (
+              <ServiceRatePanel
+                service={activeService}
+                rates={resolveRates(activeService)}
+                driverName={v.display_name}
+                theme={theme}
+              />
+            )}
 
             {/* Portfolio carousel — vehicle photos. Shares the exact card
                 + carousel + view-toggle UI the beautician page uses. */}
@@ -862,23 +941,155 @@ export default function VehicleProfileShell({
 // -----------------------------------------------------------------------------
 
 function ServiceFilterBadge({
-  label, theme,
-}: { label: string; theme: string }) {
-  // Read-only chip — matches the beautician ServiceFilterBadge resting
-  // state. No active toggle because the underlying photo set isn't
-  // categorised; the chip describes a trip type the driver offers.
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 text-[12px] font-extrabold px-3 py-1.5 rounded-full"
-      style={{ background: 'rgba(229, 231, 235, 0.95)', color: '#0A0A0A' }}
-    >
+  label, theme, active, onClick,
+}: { label: string; theme: string; active?: boolean; onClick?: () => void }) {
+  // Read-only chip by default; becomes a single-select toggle when an
+  // `onClick` handler is passed. Truck + minibus profiles use the
+  // clickable variant so tapping a badge swaps the rate panel below.
+  const isClickable = typeof onClick === 'function'
+  const styleProps = active
+    ? { background: theme, color: '#0A0A0A', boxShadow: '0 2px 8px rgba(250,204,21,0.35)' }
+    : { background: 'rgba(229, 231, 235, 0.95)', color: '#0A0A0A' }
+  const sharedCls =
+    'inline-flex items-center gap-1.5 text-[12px] font-extrabold px-3 py-1.5 rounded-full transition'
+  const inner = (
+    <>
       <Sparkles
         className="w-3.5 h-3.5"
         strokeWidth={2.5}
-        style={{ color: theme }}
+        style={{ color: active ? '#0A0A0A' : theme }}
       />
       {label}
-    </span>
+    </>
+  )
+  if (!isClickable) {
+    return <span className={sharedCls} style={styleProps}>{inner}</span>
+  }
+  return (
+    <button
+      type="button"
+      aria-pressed={!!active}
+      onClick={onClick}
+      className={sharedCls + ' active:scale-[0.97]'}
+      style={styleProps}
+    >
+      {inner}
+    </button>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// IDR formatter for the rate-row chart. Mirrors the beautician page idiom
+// — plain "Rp 325.000" — so the rate panel reads the same as the existing
+// PriceRow style elsewhere in the shell.
+// -----------------------------------------------------------------------------
+function idr(amount: number): string {
+  if (!Number.isFinite(amount) || amount <= 0) return '—'
+  return `Rp ${amount.toLocaleString('id-ID')}`
+}
+
+// -----------------------------------------------------------------------------
+// ServiceRatePanel — swaps content when a different "Services Offered" badge
+// is tapped. Renders the catalog header / subtext, a 2-column rate chart
+// (label · idr), and two chip lists (Includes / Excludes). Driver-published
+// footer reinforces the PM 12/2019 directory positioning.
+// -----------------------------------------------------------------------------
+function ServiceRatePanel({
+  service, rates, driverName, theme,
+}: {
+  service:    ServiceCatalogEntry
+  rates:      readonly RateRow[]
+  driverName: string
+  theme:      string
+}) {
+  return (
+    <section className="space-y-2" style={{ marginTop: 12 }}>
+      <div
+        className="rounded-2xl border border-gray-200 bg-white p-4"
+        style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
+      >
+        {/* Header */}
+        <div className="mb-1.5">
+          <h3 className="text-[14px] font-black text-black leading-tight">
+            {service.header}
+          </h3>
+          <p className="text-[12px] text-gray-600 leading-snug mt-0.5">
+            {service.subtext}
+          </p>
+        </div>
+
+        {/* Rate chart — 2-column list (label · idr + optional per-unit). */}
+        <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/60 divide-y divide-gray-100">
+          {rates.length === 0 ? (
+            <div className="px-3 py-2.5 text-[12px] text-gray-500 italic">
+              Belum ada tarif dipublikasikan untuk layanan ini.
+            </div>
+          ) : (
+            rates.map((row, i) => (
+              <div key={`${row.label}-${i}`} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                <div className="text-[12px] font-extrabold text-gray-700 truncate">
+                  {row.label}
+                </div>
+                <div className="text-[13px] font-black text-black shrink-0 tabular-nums">
+                  {idr(row.idr)}
+                  {row.per && (
+                    <span className="text-[11px] font-bold text-gray-500 ml-0.5">{row.per}</span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Includes / Excludes chips */}
+        {(service.includes.length > 0 || service.excludes.length > 0) && (
+          <div className="mt-3 space-y-1.5">
+            {service.includes.length > 0 && (
+              <div className="flex items-start gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 shrink-0 mt-1">
+                  Inc
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {service.includes.map((chip) => (
+                    <span
+                      key={`inc-${chip}`}
+                      className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(16,185,129,0.10)', color: '#065F46' }}
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {service.excludes.length > 0 && (
+              <div className="flex items-start gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 shrink-0 mt-1">
+                  Exc
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {service.excludes.map((chip) => (
+                    <span
+                      key={`exc-${chip}`}
+                      className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(245,158,11,0.10)', color: '#92400E' }}
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Driver-published footer */}
+        <p className="text-[11px] text-gray-500 italic mt-3 leading-snug">
+          Rates published by <span className="font-bold" style={{ color: theme }}>{driverName}</span>.
+          Discuss final terms on WhatsApp.
+        </p>
+      </div>
+    </section>
   )
 }
 

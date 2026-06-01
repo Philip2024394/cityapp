@@ -6,24 +6,11 @@
 
 import Link from 'next/link'
 
-// Customer hero pool — rotates daily so the landing doesn't feel static.
-// All on-brand: young Indonesian + yellow vehicle imagery against Bali /
-// golden-hour backdrops. The original launch hero stays in the pool.
-const HERO_POOL: ReadonlyArray<string> = [
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2030,%202026,%2001_51_17%20AM.png',
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2002_59_07%20PM.png?updatedAt=1780214364056',
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2002_56_33%20PM.png?updatedAt=1780214206553',
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2002_55_58%20PM.png?updatedAt=1780214183700',
-]
-
-// Daily-seeded pick: stable for every visit within the same UTC day so
-// SSR and client hydration agree (no Math.random() at render time), but
-// rotates the next day so customers don't see the same image forever.
-function dailyHero(): string {
-  const now  = new Date()
-  const seed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate()
-  return HERO_POOL[seed % HERO_POOL.length]!
-}
+// Customer hero — young Indonesian man between a yellow car and a
+// yellow motorbike at golden hour with a Bali gate backdrop. Signals
+// "both vehicle types available, ready to book."
+const HERO_URL =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2030,%202026,%2001_51_17%20AM.png'
 
 const BRAND_LOGO_URL =
   'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
@@ -42,18 +29,17 @@ export const metadata = {
     description: PAGE_DESCRIPTION,
     type:        'website',
     url:         PAGE_URL,
-    images:      [{ url: HERO_POOL[0]! }],
+    images:      [{ url: HERO_URL }],
   },
   twitter: {
     card:        'summary_large_image',
     title:       PAGE_TITLE,
     description: PAGE_DESCRIPTION,
-    images:      [HERO_POOL[0]!],
+    images:      [HERO_URL],
   },
 }
 
 export default function CityDriversHomePage() {
-  const heroUrl = dailyHero()
   return (
     <main
       className="relative h-[100dvh] overflow-hidden text-[#0A0A0A]"
@@ -70,7 +56,7 @@ export default function CityDriversHomePage() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={heroUrl}
+              src={HERO_URL}
               alt="Young Indonesian holding a phone between a yellow car and a yellow motorbike at golden hour"
               className="absolute inset-0 w-full h-full object-cover object-center"
               loading="eager"

@@ -3,22 +3,9 @@
 // DriverDotsOverlay — animated availability dots scattered across the
 // /cari hero map. Visualises live driver supply at a glance.
 //
-// Density varies by local hour (WIB, customer's clock):
-//   • 00-05 (late night / dawn)  → 5-8 dots
-//   • 06-09 (commute morning)    → 10-15
-//   • 10-14 (midday)             → 18-25
-//   • 15-19 (afternoon / evening)→ 25-35
-//   • 20-23 (night)              → 18-25
-//
-// Colours: ~80% yellow (online), ~20% red (busy / on a trip).
-// Each dot has:
-//   • A solid centre with a white ring (visibility on any background)
-//   • A pulsing outer ring (CSS animate-ping, varied delay)
-//   • A gentle 2-axis wobble over 8-14s to feel "live"
-//
-// Deterministic per-hour seed so the SSR/CSR pass produces the same
-// initial layout (no hydration warnings); a tick once per minute
-// re-shuffles so the supply visualisation refreshes during a session.
+// Count is driven by the LIVE props (`onlineCount` + `busyCount`) passed
+// from the /cari page — one dot per real online/busy driver in the
+// filtered vehicle pool. Yellow dot = online, red dot = busy.
 // ============================================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -34,14 +21,6 @@ type Dot = {
   wobbleDur: number     // seconds — slow drift period
 }
 
-function countForHour(hour: number, rand: () => number): number {
-  if (hour >= 0 && hour <= 5)   return 5  + Math.floor(rand() * 4)   //  5-8
-  if (hour >= 6 && hour <= 9)   return 10 + Math.floor(rand() * 6)   // 10-15
-  if (hour >= 10 && hour <= 14) return 18 + Math.floor(rand() * 8)   // 18-25
-  if (hour >= 15 && hour <= 19) return 25 + Math.floor(rand() * 11)  // 25-35
-  return 18 + Math.floor(rand() * 8)                                 // 18-25
-}
-
 /** Cheap deterministic PRNG so SSR + first client render agree. */
 function mulberry32(seed: number): () => number {
   let t = seed >>> 0
@@ -54,30 +33,47 @@ function mulberry32(seed: number): () => number {
   }
 }
 
-function buildDots(seed: number): Dot[] {
+function buildDots(seed: number, onlineCount: number, busyCount: number): Dot[] {
   const rand = mulberry32(seed)
-  const hour = new Date().getHours()
-  const n = countForHour(hour, rand)
   const dots: Dot[] = []
-  for (let i = 0; i < n; i++) {
+  // Online dots first (yellow), then busy (red). Position is randomised
+  // per-render but seeded so SSR/CSR agree.
+  for (let i = 0; i < onlineCount; i++) {
     dots.push({
       id:        i,
-      x:         4 + rand() * 92,       // keep 4% margin off edges
-      y:         6 + rand() * 70,       // top 76% of overlay (avoid bottom where the booking sheet sits)
-      color:     rand() < 0.8 ? 'yellow' : 'red',
-      pingDur:   1.6 + rand() * 1.6,    // 1.6–3.2s
-      pingDel:   rand() * 2.5,          // 0–2.5s
+      x:         4 + rand() * 92,
+      y:         6 + rand() * 70,
+      color:     'yellow',
+      pingDur:   1.6 + rand() * 1.6,
+      pingDel:   rand() * 2.5,
       wobbleId:  Math.floor(rand() * 4),
-      wobbleDur: 8 + rand() * 6,        // 8–14s
+      wobbleDur: 8 + rand() * 6,
+    })
+  }
+  for (let i = 0; i < busyCount; i++) {
+    dots.push({
+      id:        onlineCount + i,
+      x:         4 + rand() * 92,
+      y:         6 + rand() * 70,
+      color:     'red',
+      pingDur:   1.6 + rand() * 1.6,
+      pingDel:   rand() * 2.5,
+      wobbleId:  Math.floor(rand() * 4),
+      wobbleDur: 8 + rand() * 6,
     })
   }
   return dots
 }
 
-export default function DriverDotsOverlay() {
-  // Re-shuffle the dot layout every minute so the "supply" visual
-  // refreshes during a long-running session. Seed by hour so it stays
-  // stable within an hour (SSR + first client paint match).
+export default function DriverDotsOverlay({
+  onlineCount,
+  busyCount,
+}: {
+  onlineCount: number
+  busyCount:   number
+}) {
+  // Re-seed periodically so positions drift; visible count still tracks
+  // the live props 1:1 (3 online drivers → exactly 3 yellow dots).
   const [tick, setTick] = useState(0)
   useEffect(() => {
     const t = setInterval(() => setTick((v) => v + 1), 60_000)
@@ -85,9 +81,9 @@ export default function DriverDotsOverlay() {
   }, [])
 
   const dots = useMemo(() => {
-    const hourSeed = new Date().getHours() * 100 + Math.floor(tick / 5)
-    return buildDots(hourSeed)
-  }, [tick])
+    const seed = ((onlineCount * 31 + busyCount) * 100 + tick) >>> 0
+    return buildDots(seed, onlineCount, busyCount)
+  }, [tick, onlineCount, busyCount])
 
   return (
     <div className="absolute inset-0 z-[5] pointer-events-none" aria-hidden>
