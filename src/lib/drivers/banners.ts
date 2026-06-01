@@ -29,11 +29,16 @@ export const CAR_BANNERS: ReadonlyArray<DriverBanner> = [
 ]
 
 export const BIKE_BANNERS: ReadonlyArray<DriverBanner> = [
-  {
-    id: 'bike-default',
-    url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png',
-    label: 'Default bike hero',
-  },
+  { id: 'bike-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2027,%202026,%2006_53_11%20AM.png', label: 'Banner 1' },
+  { id: 'bike-02', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_30_37%20AM%20(1).png', label: 'Banner 2' },
+  { id: 'bike-03', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_29_03%20AM.png', label: 'Banner 3' },
+  { id: 'bike-04', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_28_37%20AM.png', label: 'Banner 4' },
+  { id: 'bike-05', url: 'https://ik.imagekit.io/nepgaxllc/Untitleddsfsdfsddsssddfssdfsdfsdf.png', label: 'Banner 5' },
+  { id: 'bike-06', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_24_51%20AM.png', label: 'Banner 6' },
+  { id: 'bike-07', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_23_02%20AM.png', label: 'Banner 7' },
+  { id: 'bike-08', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_21_58%20AM.png', label: 'Banner 8' },
+  { id: 'bike-09', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2007_20_55%20AM.png', label: 'Banner 9' },
+  { id: 'bike-10', url: 'https://ik.imagekit.io/nepgaxllc/Untitleddsfsdfsddsssddfssdf.png', label: 'Banner 10' },
 ]
 
 // Truck-specific banners — moving / hauling / utility-rental vibes.
@@ -69,4 +74,25 @@ export function getDefaultBanner(vehicleType: string | null): string {
   if (vehicleType === 'jeep') return JEEP_BANNERS[0]!.url
   if (vehicleType === 'truck') return TRUCK_BANNERS[0]!.url
   return CAR_BANNERS[0]!.url
+}
+
+/** Returns the curated banner library for a given vehicle type. Used by
+ *  mock-driver hero rendering so each demo profile gets a distinct cover
+ *  image keyed off the slug rather than every mock falling back to the
+ *  same vehicle-type default. */
+export function bannersForVehicleType(vehicleType: string | null): ReadonlyArray<DriverBanner> {
+  if (vehicleType === 'bike') return BIKE_BANNERS
+  if (vehicleType === 'jeep') return JEEP_BANNERS
+  if (vehicleType === 'truck') return TRUCK_BANNERS
+  return CAR_BANNERS
+}
+
+/** Deterministic hash of a slug → banner index in the supplied library.
+ *  Same slug always returns the same banner; different slugs spread
+ *  across the library so mock-profile heroes feel varied. */
+export function bannerForSlug(slug: string | null | undefined, banners: ReadonlyArray<DriverBanner>): string | null {
+  if (!slug || banners.length === 0) return null
+  let seed = 0
+  for (const ch of slug) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0
+  return banners[seed % banners.length]!.url
 }

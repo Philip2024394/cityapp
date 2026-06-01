@@ -113,7 +113,7 @@ export default function HourlyBookingPopup({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-md"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -123,18 +123,21 @@ export default function HourlyBookingPopup({
         className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] overflow-y-auto"
         style={{ borderTop: `4px solid ${BRAND_YELLOW}` }}
       >
+        {/* Yellow calendar badge — moved to the LEFT side and bumped up a
+            size so it reads as the popup's brand anchor. Close button
+            stays alone on the right. */}
+        <span
+          aria-hidden
+          className="absolute top-3 left-3 z-10 w-12 h-12 rounded-full inline-flex items-center justify-center"
+          style={{
+            background: BRAND_YELLOW,
+            color: TEXT_INK,
+            boxShadow: '0 6px 16px rgba(250,204,21,0.45)',
+          }}
+        >
+          <CalendarDays className="w-6 h-6" strokeWidth={2.5} />
+        </span>
         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-          <span
-            aria-hidden
-            className="w-9 h-9 rounded-full inline-flex items-center justify-center"
-            style={{
-              background: BRAND_YELLOW,
-              color: TEXT_INK,
-              boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
-            }}
-          >
-            <CalendarDays className="w-4 h-4" strokeWidth={2.5} />
-          </span>
           <button
             type="button"
             onClick={onClose}
@@ -146,7 +149,10 @@ export default function HourlyBookingPopup({
         </div>
 
         <div className="px-5 pt-6 pb-6 space-y-3.5">
-          <div className="border-b border-gray-100 pb-3 pr-24">
+          {/* Title row leaves room for the yellow calendar badge on the
+              left (pl-16 clears the 48px badge + gap) and the close X on
+              the right (pr-14 clears the 36px X button + gap). */}
+          <div className="border-b border-gray-100 pb-3 pl-16 pr-14 min-h-[48px]">
             <div className="text-[10.5px] font-extrabold uppercase tracking-[0.15em]" style={{ color: '#854D0E' }}>
               {tier ? 'Hourly hire' : 'Tour package'}
             </div>

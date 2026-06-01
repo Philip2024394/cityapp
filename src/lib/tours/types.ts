@@ -21,4 +21,11 @@ export type TourPackage = {
   published:       boolean
   created_at:      string
   updated_at:      string
+  /** Average customer rating (1–5). Optional — real driver tours may not
+   *  carry one yet; mocks always seed a deterministic 4.5–5.0 value so
+   *  the public profile card has a credible star pill. */
+  rating?:         number | null
+  /** Number of customer reviews behind the rating. Optional, same
+   *  rationale as `rating`. */
+  rating_count?:   number | null
 }

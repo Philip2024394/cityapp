@@ -5,6 +5,8 @@ import JsonLd from '@/components/seo/JsonLd'
 import DriverProfileShell, { type DriverPublic } from '@/components/profile/DriverProfileShell'
 import type { TourPackage } from '@/lib/tours/types'
 import { MOCK_LANGUAGES, mockToursForSlug } from '@/lib/tours/templates'
+import { CAR_BANNERS, bannerForSlug } from '@/lib/drivers/banners'
+import { PARCEL_RATE_TIER_DEFAULTS_CAR } from '@/lib/parcel/defaults'
 
 // =============================================================================
 // /car/[slug] — public per-driver profile page (car vertical)
@@ -220,7 +222,11 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       service_offerings:      parseServices(r.service_offerings),
       current_lat:            null,
       current_lng:            null,
-      cover_image_url:        (r.cover_image_url as string | null) ?? null,
+      // Mock fallback: when no per-driver cover is set, pick a deterministic
+      // banner from the dashboard CAR_BANNERS library keyed off the slug so
+      // each demo profile gets a distinct hero instead of all sharing the
+      // single vehicle-type default.
+      cover_image_url:        (r.cover_image_url as string | null) ?? bannerForSlug(slug, CAR_BANNERS),
       // Mock rows don't carry the mig-0156 hourly columns; the shell
       // detects this via vehicle_type==='car' + null hourly_enabled and
       // falls back to hourlyDefaultsForVehicle() so the demo car mocks
@@ -235,7 +241,10 @@ async function loadCarDriver(slug: string): Promise<CarDriver | null> {
       available_daytime:      null,
       available_evening:      null,
       available_nightlife:    null,
-      parcel_rate_tiers:      null,
+      // Mock cars surface the canonical car parcel rate ladder so the
+      // Parcel B2B tab has real numbers to display on demo profiles.
+      // Real cars still use their own saved tiers (or empty-state copy).
+      parcel_rate_tiers:      PARCEL_RATE_TIER_DEFAULTS_CAR,
       languages:              MOCK_LANGUAGES[slug] ?? ['id'],
     }
   }

@@ -20,14 +20,31 @@ const BORDER       = '#E4E4E7'
 const INPUT_BG     = '#F4F4F5'
 
 export default function OnlineBookingWidget({
-  driver, pickup, setPickup, dropoff, setDropoff, stops, setStops,
+  driver, pickup, setPickup, dropoff, setDropoff,
+  setPickupCoords, setDropoffCoords,
+  stops, setStops,
   estimate, waLink, mode, setMode, offersRide, offersParcel, onBookingSent,
 }: {
   driver:        DriverPublic
   pickup:        string;  setPickup:  (v: string) => void
   dropoff:       string;  setDropoff: (v: string) => void
+  /** Coord setters fire when the customer picks an address from the
+   *  autocomplete dropdown. Free-typed edits clear them so a stale
+   *  lat/lng never reflects hand-typed copy. */
+  setPickupCoords?:  (c: { lat: number; lng: number } | null) => void
+  setDropoffCoords?: (c: { lat: number; lng: number } | null) => void
   stops:         string[]; setStops:  (v: string[]) => void
-  estimate:      { minFee: number; pricePerKm: number; pitstopFee: number; numStops: number } | null
+  estimate:      {
+    minFee:     number
+    pricePerKm: number
+    pitstopFee: number
+    numStops:   number
+    /** Live distance in km when both pickup+dropoff coords are set. */
+    distanceKm: number | null
+    /** Pre-computed total (min_fee floor + km × per-km + stops). null
+     *  when distance isn't available; widget falls back to disclosure. */
+    totalIdr:   number | null
+  } | null
   waLink:        string
   mode:          'ride' | 'parcel'
   setMode:       (m: 'ride' | 'parcel') => void
@@ -74,7 +91,11 @@ export default function OnlineBookingWidget({
             }}
           >
             <UserRound className="w-4 h-4" strokeWidth={2.5} />
-            <span>Book a ride</span>
+            <span>
+              {driver.vehicle_type === 'car' ? 'Book Car'
+                : driver.vehicle_type === 'bike' ? 'Book Bike'
+                : 'Book a ride'}
+            </span>
           </button>
           <button
             type="button"
@@ -90,7 +111,7 @@ export default function OnlineBookingWidget({
             }}
           >
             <PackageIcon className="w-4 h-4" strokeWidth={2.5} />
-            <span>Send a parcel</span>
+            <span>Book Parcel</span>
           </button>
         </div>
       )}
@@ -154,8 +175,11 @@ export default function OnlineBookingWidget({
             <div className="relative">
               <PlaceAutocomplete
                 value={pickup}
-                onChange={setPickup}
-                onSelect={(s) => setPickup(s.label)}
+                onChange={(v) => { setPickup(v); setPickupCoords?.(null) }}
+                onSelect={(s) => {
+                  setPickup(s.label)
+                  setPickupCoords?.({ lat: s.lat, lng: s.lng })
+                }}
                 placeholder="Where do you want to be picked up?"
                 className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-[#0A0A0A] placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
                 near={geo.coords ?? null}
@@ -182,8 +206,11 @@ export default function OnlineBookingWidget({
             <div className="relative">
               <PlaceAutocomplete
                 value={dropoff}
-                onChange={setDropoff}
-                onSelect={(s) => setDropoff(s.label)}
+                onChange={(v) => { setDropoff(v); setDropoffCoords?.(null) }}
+                onSelect={(s) => {
+                  setDropoff(s.label)
+                  setDropoffCoords?.({ lat: s.lat, lng: s.lng })
+                }}
                 placeholder="Where do you want to go?"
                 className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-[#0A0A0A] placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
                 near={geo.coords ?? null}
@@ -255,23 +282,52 @@ export default function OnlineBookingWidget({
         </div>
       ))}
 
-      {/* Estimate line — driver's own rate. We DO NOT fabricate a km
-          count here because pickup/dropoff are typed addresses (not
-          geocoded). Compliance copy: "Estimate · driver's own rate". */}
+      {/* Estimate card — driver's own rate. Headline price switches to
+          the LIVE km × per-km total the moment pickup AND drop-off are
+          picked from the autocomplete (both carry lat/lng). When either
+          field is hand-typed or empty, we fall back to disclosing the
+          min_fee floor + per-km rate so the customer still sees the
+          driver's pricing model. Compliance copy stays: "Estimate ·
+          driver's own rate". */}
       {estimate ? (
         <div
-          className="rounded-xl p-2.5 flex items-baseline justify-between gap-2"
-          style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+          className="rounded-2xl p-4 cd-estimate-card"
+          style={{
+            background: 'linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%)',
+            border: `2px solid ${BRAND_YELLOW}`,
+          }}
         >
-          <div className="min-w-0">
-            <div className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: '#854D0E' }}>
-              Estimate · {driver.business_name.split(' ')[0]}&apos;s own rate
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-[10.5px] font-extrabold uppercase tracking-wider" style={{ color: '#854D0E' }}>
+                Estimate · {driver.business_name.split(' ')[0]}&apos;s own rate
+              </div>
+              <div className="text-[28px] sm:text-[32px] font-black leading-none mt-1" style={{ color: TEXT_INK }}>
+                {idr(estimate.totalIdr ?? estimate.minFee)}
+              </div>
+              <div className="text-[11px] font-semibold mt-1" style={{ color: TEXT_SECOND }}>
+                {estimate.distanceKm != null && estimate.totalIdr != null ? (
+                  <>
+                    {estimate.distanceKm.toFixed(1)} km · {idr(estimate.pricePerKm)}/km
+                    {estimate.numStops > 0 && estimate.pitstopFee > 0 && (
+                      <> · + {estimate.numStops}× {idr(estimate.pitstopFee)} stop</>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    Driver&apos;s rate {idr(estimate.pricePerKm)}/km
+                    {estimate.numStops > 0 && estimate.pitstopFee > 0 && (
+                      <> · + {idr(estimate.pitstopFee)} per stop</>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            <div className="text-[12px] mt-0.5" style={{ color: TEXT_SECOND }}>
-              From {idr(estimate.minFee)} · driver&apos;s rate {idr(estimate.pricePerKm)}/km
-              {estimate.numStops > 0 && estimate.pitstopFee > 0 && (
-                <> · + {idr(estimate.pitstopFee)} per stop</>
-              )}
+            <div
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider shrink-0"
+              style={{ background: BRAND_YELLOW, color: TEXT_INK }}
+            >
+              {estimate.distanceKm != null && estimate.totalIdr != null ? 'Estimate' : 'From'}
             </div>
           </div>
         </div>

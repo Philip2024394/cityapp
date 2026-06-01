@@ -119,25 +119,43 @@ export default function AlternativesWidget({
         </div>
       ))}
 
-      {ranked.length > 0 ? (
-        <ul className="space-y-2 pt-1">
-          {ranked.map((alt) => (
-            <AlternativeRow
-              key={alt.id}
-              alt={alt}
-              anchorLat={driver.lat}
-              anchorLng={driver.lng}
-            />
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[13px] text-center py-3" style={{ color: TEXT_MUTED }}>
-          No other drivers online right now.{' '}
-          <Link href="/cari" className="font-extrabold underline" style={{ color: TEXT_INK }}>
-            Browse the directory
-          </Link>
-        </p>
-      )}
+      {/* Alternative driver cards are hidden until the customer has
+          typed BOTH pickup and drop-off — until then a card with a price
+          like "From Rp 30,000" isn't actionable and just clutters the
+          flow. Once the destination is set, we surface the nearby
+          available drivers. */}
+      {(() => {
+        const hasRoute = pickup.trim().length > 0 && dropoff.trim().length > 0
+        if (!hasRoute) {
+          return (
+            <p className="text-[12px] text-center py-3 leading-snug" style={{ color: TEXT_MUTED }}>
+              Enter your pickup and drop-off above to see available drivers nearby.
+            </p>
+          )
+        }
+        if (ranked.length === 0) {
+          return (
+            <p className="text-[13px] text-center py-3" style={{ color: TEXT_MUTED }}>
+              No other drivers online right now.{' '}
+              <Link href="/cari" className="font-extrabold underline" style={{ color: TEXT_INK }}>
+                Browse the directory
+              </Link>
+            </p>
+          )
+        }
+        return (
+          <ul className="space-y-2 pt-1">
+            {ranked.map((alt) => (
+              <AlternativeRow
+                key={alt.id}
+                alt={alt}
+                anchorLat={driver.lat}
+                anchorLng={driver.lng}
+              />
+            ))}
+          </ul>
+        )
+      })()}
     </section>
   )
 }

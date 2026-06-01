@@ -175,6 +175,10 @@ export default function PlaceProfileShell({
   // the customer's typed pickup survives the full loop.
   const searchParams = useSearchParams()
   const returnDriverToken = searchParams?.get('return_driver') ?? null
+  // PlacesPicker (driver profile) sends `from=<pathname>` instead of the
+  // legacy `return_driver` token. Either is acceptable — `from` covers
+  // newer verticals (truck/bus/jeep) without minting more prefixes.
+  const fromPath = searchParams?.get('from') ?? null
   const incomingPName = searchParams?.get('pName') ?? null
   const incomingPLat  = searchParams?.get('pLat')  ?? null
   const incomingPLng  = searchParams?.get('pLng')  ?? null
@@ -188,6 +192,12 @@ export default function PlaceProfileShell({
   // the prefix from /r vs /car referers because that bypasses URL state
   // and would silently re-route customers who hand-edited the link.
   const returnDriverTarget = useMemo(() => {
+    // Prefer the modern `from=<pathname>` param — works for car/r/truck/
+    // bus/jeep without minting per-vehicle prefixes. Falls back to the
+    // legacy `return_driver` token shape.
+    if (fromPath && /^\/[a-z0-9/_-]+$/i.test(fromPath)) {
+      return { path: fromPath }
+    }
     if (!returnDriverToken) return null
     const colonIdx = returnDriverToken.indexOf(':')
     if (colonIdx <= 0) return null
@@ -197,7 +207,7 @@ export default function PlaceProfileShell({
     if (prefix === 'r') return { path: `/r/${slug}` }
     if (prefix === 'c') return { path: `/car/${slug}` }
     return null
-  }, [returnDriverToken])
+  }, [returnDriverToken, fromPath])
 
   // Compose the return URL — drops this place's name + coords (when
   // present) onto the driver-profile route so the booking widget
@@ -332,7 +342,9 @@ export default function PlaceProfileShell({
         `Halo, saya tertarik dengan ${place.name} dari Kita2u`,
       )}`
     : null
-  const showContact = contactEnabled && Boolean(waHref)
+  // Places are tour destinations, not service providers — no contact button.
+  // Customers convert via the sticky "Take Me Here" CTA instead.
+  const showContact = false
 
   const panelHours = coerceHoursForPanel(place.hoursJson)
 

@@ -4,6 +4,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 import VehicleProfileShell, { type VehiclePublic } from '@/components/profile/VehicleProfileShell'
+import { JEEP_BANNERS, bannerForSlug } from '@/lib/drivers/banners'
 
 // =============================================================================
 // /jeep/[slug] — public per-driver profile page (Jeep vertical).
@@ -145,7 +146,9 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       bio:                    (r.bio as string | null) ?? null,
       whatsapp_e164:          (r.whatsapp_e164 as string | null) ?? null,
       profile_image_url:      (r.profile_image_url as string | null) ?? null,
-      cover_image_url:        (r.cover_image_url as string | null) ?? null,
+      // Mock fallback: deterministic JEEP_BANNERS pick per slug so each
+      // demo jeep profile gets a distinct hero from the dashboard library.
+      cover_image_url:        (r.cover_image_url as string | null) ?? bannerForSlug(slug, JEEP_BANNERS),
       city:                   (r.city as string | null) ?? null,
       area:                   (r.area as string | null) ?? null,
       rating:                 (r.rating as number | null) ?? null,

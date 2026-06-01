@@ -5,7 +5,7 @@ import {
   MapPin, Star, Bike as BikeIcon,
   Car as CarIcon, Users as UsersIcon,
   PlaneTakeoff, Building2, MapPinned,
-  ChevronLeft,
+  ChevronLeft, Sparkles, ArrowDown,
 } from 'lucide-react'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl } from '@/data/carImages'
@@ -13,6 +13,7 @@ import { getJeepImageUrl } from '@/data/jeepImages'
 import { SERVICE_OFFERINGS } from '@/lib/drivers/serviceOfferings'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import PlacesPicker from '@/components/places/PlacesPicker'
+import { haversineKm } from '@/lib/geo/haversine'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 import {
   hourlyDefaultsForVehicle,
@@ -147,12 +148,6 @@ export type DriverProfileShellProps = {
 // types/rider.ts but trimmed to the two verticals the founder spec
 // explicitly mentioned (Passenger / Parcel). 'person' is the storage
 // key for passenger rides in the existing data layer.
-const SERVICE_PILL_LABELS: Record<string, string> = {
-  parcel: 'Parcel',
-  food:   'Food',
-  bus:    'Group',
-}
-
 const BRAND_YELLOW = '#FACC15'
 const TEXT_INK     = '#0A0A0A'
 const TEXT_MUTED   = '#71717A'
@@ -192,6 +187,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
   useProfileViewTracker({ providerType: 'driver', providerId: driver.id })
   const [pickup, setPickup]   = useState('')
   const [dropoff, setDropoff] = useState('')
+  // Coordinates captured when the customer picks pickup/drop-off from the
+  // PlaceAutocomplete suggestion list. Used to compute a live km-based
+  // total in the estimate card. Manual text edits clear the matching
+  // coord slot so a stale lat/lng never reflects a hand-typed address.
+  const [pickupCoords,  setPickupCoords]  = useState<{ lat: number; lng: number } | null>(null)
+  const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null)
   // Extra typed stops. Customer can add any number — no cap per spec.
   const [stops, setStops]     = useState<string[]>([])
 
@@ -270,26 +271,52 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     : driver.vehicle_type === 'bike' ? getBikeImageUrl(driver.vehicle_make, driver.vehicle_model)
     : getCarImageUrl(driver.vehicle_make, driver.vehicle_model)
 
-  // Estimate line — see file header for the compliance reasoning. We
-  // never fabricate a km count when pickup/dropoff aren't geocoded.
+  // Live distance — only when BOTH pickup and dropoff have geocoded
+  // coordinates from the autocomplete. Free-typed addresses don't carry
+  // lat/lng so we leave distance null and the widget falls back to the
+  // "min_fee + driver's rate per km" rate disclosure.
+  const distanceKm = useMemo(() => {
+    if (!pickupCoords || !dropoffCoords) return null
+    const km = haversineKm(pickupCoords, dropoffCoords)
+    return Number.isFinite(km) && km > 0 ? km : null
+  }, [pickupCoords, dropoffCoords])
+
+  // Estimate line — see file header for the compliance reasoning. When
+  // distanceKm is set we precompute a live total: min_fee + (km × per-km
+  // rate) + (pitstop_fee × stop count). The widget renders the bigger of
+  // (computed total, min_fee) so short hops never undercut the floor.
   const estimateInputs = useMemo(() => {
     if (driver.min_fee == null || driver.price_per_km == null) return null
+    const minFee     = driver.min_fee
+    const pricePerKm = driver.price_per_km
+    const pitstopFee = driver.pitstop_fee ?? 0
+    const numStops   = stops.filter((s) => s.trim().length > 0).length
+    const totalIdr   = distanceKm != null
+      ? Math.max(minFee, Math.round(distanceKm * pricePerKm) + numStops * pitstopFee)
+      : null
     return {
-      minFee:     driver.min_fee,
-      pricePerKm: driver.price_per_km,
-      pitstopFee: driver.pitstop_fee ?? 0,
-      numStops:   stops.filter((s) => s.trim().length > 0).length,
+      minFee,
+      pricePerKm,
+      pitstopFee,
+      numStops,
+      distanceKm,
+      totalIdr,
     }
-  }, [driver.min_fee, driver.price_per_km, driver.pitstop_fee, stops])
+  }, [driver.min_fee, driver.price_per_km, driver.pitstop_fee, stops, distanceKm])
 
   // Ride / Parcel mode toggle. Bike drivers explicitly opt out of rides
   // by leaving 'person' off their services array; cars/trucks default
   // to offering rides since that's the primary use case.
   const offersParcel = useMemo(() => {
+    // Cars default to offering parcel jobs alongside passenger rides —
+    // mirrors the bike-rider default UX, so every car driver page shows
+    // both Book Car / Book Parcel buttons even when the driver hasn't
+    // explicitly added 'parcel' to their services array.
+    if (driver.vehicle_type === 'car') return true
     if (driver.services.includes('parcel')) return true
     if (driver.service_offerings?.includes('cargo_parcel')) return true
     return false
-  }, [driver.services, driver.service_offerings])
+  }, [driver.services, driver.service_offerings, driver.vehicle_type])
   const offersRide = useMemo(() => {
     if (driver.vehicle_type === 'bike') return driver.services.includes('person')
     return true
@@ -306,10 +333,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
 
   // Mocks (no real drivers row) don't carry the mig-0156 hourly columns,
   // so the page loader passes `hourly_enabled === null` for them. For
-  // CAR mocks we still render the Hourly tab using hourlyDefaultsForVehicle.
-  // Bike mocks are person/parcel only in the demo seed → Hourly tab stays off.
-  const isMockCar = driver.vehicle_type === 'car' && driver.hourly_enabled == null
-  const hourlyAvailable = !!driver.hourly_enabled || isMockCar
+  // BOTH car AND bike mocks we still render the Hourly tab using
+  // hourlyDefaultsForVehicle so demo profiles always carry hourly cards.
+  const isMockWithDefaults =
+    (driver.vehicle_type === 'car' || driver.vehicle_type === 'bike') &&
+    driver.hourly_enabled == null
+  const hourlyAvailable = !!driver.hourly_enabled || isMockWithDefaults
   const hourlyDefaults  = useMemo(
     () => hourlyDefaultsForVehicle(driver.vehicle_make, driver.vehicle_model),
     [driver.vehicle_make, driver.vehicle_model],
@@ -346,12 +375,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
 
   type TabId = 'all' | 'passenger' | 'parcel' | 'hourly' | 'tours'
   const tabs: { id: TabId; label: string; emoji?: string }[] = []
-  tabs.push({ id: 'all', label: 'All' })
-  if (offersRide)   tabs.push({ id: 'passenger', label: 'Passenger' })
-  if (offersParcel) tabs.push({ id: 'parcel',    label: 'Parcel B2B', emoji: '📋' })
+  if (offersRide)   tabs.push({ id: 'passenger', label: 'Booking' })
+  if (offersParcel) tabs.push({ id: 'parcel',    label: 'Parcel B2B' })
   if (hourlyAvailable) tabs.push({ id: 'hourly', label: 'Hourly Booking' })
   if (toursAvailable)  tabs.push({ id: 'tours',  label: 'Tours' })
-  const [activeTab, setActiveTab] = useState<TabId>('all')
+  const defaultTab: TabId = tabs[0]?.id ?? 'passenger'
+  const [activeTab, setActiveTab] = useState<TabId>(defaultTab)
 
   // Cheapest parcel-tier price (kept around even though the All-tab
   // summary card is no longer rendered — preserves shape for follow-ups).
@@ -371,43 +400,35 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
-  // Service-mode pills — filter to the dictionary above so unknown
-  // values stored in `services` (from legacy rows) are hidden.
-  const pills = useMemo(() => {
-    const seen = new Set<string>()
-    return driver.services
-      .filter((s) => SERVICE_PILL_LABELS[s] && !seen.has(SERVICE_PILL_LABELS[s]) && seen.add(SERVICE_PILL_LABELS[s]))
-      .map((s) => SERVICE_PILL_LABELS[s])
-  }, [driver.services])
 
   return (
     <main className="relative min-h-[100dvh] bg-white" style={{ color: TEXT_INK }}>
-      {/* Right-edge yellow BACK tab — pinned to the viewport edge so
-          customers can drop back into the /cari driver list at any point. */}
+      {/* Right-edge yellow BACK tab — pinned to the viewport edge near the
+          top (hero zone) so it does NOT overlap the booking / contact
+          buttons that sit in the middle-to-bottom region on mobile. */}
       <a
         href="/cari"
         aria-label="Back to booking page"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right:                  0,
-          top:                    '35%',
-          transform:              'translateY(-50%)',
-          width:                  34,
-          height:                 110,
+          top:                    'calc(env(safe-area-inset-top, 0px) + 12px)',
+          width:                  30,
+          height:                 88,
           background:             '#FACC15',
           color:                  '#0A0A0A',
-          borderTopLeftRadius:    14,
-          borderBottomLeftRadius: 14,
+          borderTopLeftRadius:    12,
+          borderBottomLeftRadius: 12,
           boxShadow:              '-4px 4px 14px rgba(0,0,0,0.22)',
         }}
       >
-        <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+        <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
         <span
           className="font-extrabold uppercase"
           style={{
             writingMode:    'vertical-rl',
             transform:      'rotate(180deg)',
-            fontSize:       11,
+            fontSize:       10,
             letterSpacing:  '0.18em',
           }}
         >
@@ -430,48 +451,89 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
+        {/* Top white seam — keeps the brand header edge cleanly meeting
+            the hero on white-background pages. */}
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-1/3"
-          style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0))' }}
+          className="absolute inset-x-0 top-0 h-1/4"
+          style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.55), rgba(255,255,255,0))' }}
         />
+        {/* Bottom white seam — softens the handoff into the floating
+            profile card that overlaps the hero edge. */}
         <div
           aria-hidden
           className="absolute inset-x-0 bottom-0 h-1/3"
           style={{ background: 'linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0))' }}
         />
+        {/* Readability scrim — dark radial wash anchored top-left where
+            the hero overlay text sits. Guarantees the white text reads
+            against ANY uploaded banner (bright sky, white car, neon
+            poster) without dimming dark images too much because it
+            falls off quickly past the text bounding box. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse 70% 80% at 0% 0%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 35%, rgba(0,0,0,0) 70%)',
+          }}
+        />
 
         {/* HERO OVERLAY — "Professional" + Star, driver name in gold,
-            bio tagline, then 3 service icons (Airport / City / Tours). */}
+            bio tagline, then 3 service icons (Airport / City / Tours).
+            All text rendered WHITE with a strong dark textShadow so it
+            stays legible over any underlying photo. */}
         <div className="absolute left-4 z-10 select-none leading-none" style={{ top: 31 }}>
           <div
-            className="flex items-center gap-0.5 text-[28px] sm:text-[34px] font-normal drop-shadow-[0_2px_6px_rgba(255,255,255,0.55)]"
-            style={{ color: '#000000' }}
+            className="flex items-center gap-0.5 text-[28px] sm:text-[34px] font-normal"
+            style={{
+              color: '#FFFFFF',
+              textShadow: '0 2px 6px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.85)',
+            }}
           >
-            <span>Professional</span>
+            <span>
+              {driver.vehicle_type === 'bike' ? 'City Rider' : 'Professional'}
+            </span>
             <Star
               className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 -mt-3"
               strokeWidth={0}
               fill={BRAND_YELLOW}
-              style={{ color: BRAND_YELLOW, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))' }}
+              style={{ color: BRAND_YELLOW, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.55))' }}
             />
           </div>
           <div
-            className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden"
-            style={{ color: BRAND_YELLOW, maxWidth: 'min(340px, calc(100vw - 32px))' }}
+            className="text-[28px] sm:text-[34px] font-black mt-1 overflow-hidden"
+            style={{
+              color: BRAND_YELLOW,
+              maxWidth: 'min(340px, calc(100vw - 32px))',
+              textShadow: '0 2px 6px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.85)',
+            }}
           >
             <span className="truncate inline-block max-w-full align-bottom">
               {driver.business_name || 'Driver'}
             </span>
           </div>
-          {driver.bio && (
-            <div
-              className="text-[13px] sm:text-[14px] font-semibold mt-1.5 drop-shadow-[0_1px_3px_rgba(255,255,255,0.55)] whitespace-nowrap overflow-hidden text-ellipsis"
-              style={{ color: '#000000', maxWidth: 'min(340px, calc(100vw - 32px))' }}
-            >
-              {driver.bio}
-            </div>
-          )}
+          {/* Hero slogan — strictly 1 line, kept well clear of the right
+              edge of the hero image. Defensively sliced to ~55 chars so
+              long bios don't push toward the edge; anything longer is
+              cleanly cut (no ellipsis). White text + dark text-shadow
+              keeps it readable on any banner. */}
+          {driver.bio?.trim() && (() => {
+            const slogan = driver.bio.replace(/\s*\n\s*/g, ' ').trim().slice(0, 55)
+            return (
+              <div
+                className="text-[13px] sm:text-[14px] font-semibold mt-1.5 whitespace-nowrap overflow-hidden"
+                style={{
+                  color: '#FFFFFF',
+                  maxWidth: 'min(260px, calc(100vw - 96px))',
+                  textOverflow: 'clip',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.75), 0 1px 2px rgba(0,0,0,0.85)',
+                }}
+              >
+                {slogan}
+              </div>
+            )
+          })()}
 
           <div className="flex items-start gap-2" style={{ marginTop: 15 }}>
             <HeroServiceIcon icon={PlaneTakeoff} label="Airport" />
@@ -528,42 +590,37 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 {driver.business_name.charAt(0).toUpperCase()}
               </div>
             )}
-            {/* Availability dot — green online, amber busy, grey offline. */}
-            <span
-              aria-label={`Driver is ${availability}`}
-              className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full"
-              style={{
-                background:
-                  availability === 'online' ? '#22C55E' :
-                  availability === 'busy'   ? '#F59E0B' : '#9CA3AF',
-                border: '2px solid #FFFFFF',
-                boxShadow: availability === 'online'
-                  ? '0 0 8px rgba(34,197,94,0.65)'
-                  : 'none',
-              }}
-            />
           </div>
 
           <div className="min-w-0 flex-1">
-            <h1 className="text-[18px] font-black leading-tight truncate" style={{ color: TEXT_INK }}>
-              {driver.business_name}
+            <h1 className="text-[18px] font-black leading-tight truncate flex items-center gap-2" style={{ color: TEXT_INK }}>
+              <span className="truncate">{driver.business_name}</span>
+              {/* Heart-beat / satellite-ping availability dot — sits inline
+                  after the driver name. Only renders when the driver is
+                  online; busy/offline drivers get no dot. */}
+              {availability === 'online' && (
+                <span
+                  aria-label="Driver is online"
+                  className="relative inline-flex items-center justify-center shrink-0"
+                  style={{ width: 14, height: 14 }}
+                >
+                  <span aria-hidden className="cd-driver-ping-ring" />
+                  <span aria-hidden className="cd-driver-ping-ring cd-driver-ping-ring--delayed" />
+                  <span
+                    aria-hidden
+                    className="relative inline-block rounded-full border-2 border-white"
+                    style={{
+                      width: 10,
+                      height: 10,
+                      background: '#22C55E',
+                      boxShadow: '0 0 6px rgba(34,197,94,0.6)',
+                    }}
+                  />
+                </span>
+              )}
             </h1>
             <p className="text-[13px] truncate mt-0.5" style={{ color: TEXT_MUTED }}>
-              {(() => {
-                const parts = [driver.area, driver.city]
-                  .map((s) => s?.trim())
-                  .filter((s): s is string => Boolean(s))
-                // Dedupe case-insensitively so area+city of the same name
-                // (common for mock drivers) doesn't render "Yogyakarta, Yogyakarta".
-                const seen = new Set<string>()
-                const unique = parts.filter((s) => {
-                  const k = s.toLowerCase()
-                  if (seen.has(k)) return false
-                  seen.add(k)
-                  return true
-                })
-                return unique.join(', ') || 'Indonesia'
-              })()}
+              {driver.city?.trim() || 'Indonesia'}
             </p>
             {(driver.rating != null && driver.rating > 0) && (
               <div className="flex items-center gap-1 mt-1">
@@ -576,19 +633,6 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                     · {driver.trips_count} trip{driver.trips_count === 1 ? '' : 's'}
                   </span>
                 )}
-              </div>
-            )}
-            {pills.length > 0 && (
-              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                {pills.map((label) => (
-                  <span
-                    key={label}
-                    className="text-[12px] font-extrabold rounded-full px-2 py-0.5"
-                    style={{ background: '#FEF9C3', border: '1px solid #FDE68A', color: '#854D0E' }}
-                  >
-                    {label}
-                  </span>
-                ))}
               </div>
             )}
           </div>
@@ -704,22 +748,98 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           </div>
         </section>
 
-        {/* 3.1) PLACES PICKER (inline) — when open, REPLACES the tabs +
-            booking container below. Booking widget reappears once they
-            select a place (hydrates dropoff and smooth-scrolls). */}
-        {showPlacesPicker ? (
-          <div id="driver-places-picker">
+        {/* OFFLINE NOTICE — soft warm card that appears between the
+            profile container and the booking section ONLY when the driver
+            is busy/offline. Sets expectations cleanly: "this specific
+            driver isn't live, but you can still proceed below and we'll
+            show available drivers nearby." Hidden entirely when online. */}
+        {availability !== 'online' && (
+          <section
+            className="mt-3 rounded-2xl p-3.5 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 60%, #FDE68A 100%)',
+              border: `1px solid ${BRAND_YELLOW}`,
+              boxShadow: '0 6px 18px rgba(250,204,21,0.20)',
+            }}
+          >
+            {/* Decorative soft glow in the corner — warm energy without
+                feeling alarming. */}
+            <div
+              aria-hidden
+              className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none"
+              style={{
+                background: 'radial-gradient(circle, rgba(250,204,21,0.55) 0%, rgba(250,204,21,0) 70%)',
+              }}
+            />
+            <div className="relative flex items-start gap-3">
+              <span
+                aria-hidden
+                className="shrink-0 w-10 h-10 rounded-full inline-flex items-center justify-center"
+                style={{
+                  background: BRAND_YELLOW,
+                  color: TEXT_INK,
+                  boxShadow: '0 4px 12px rgba(250,204,21,0.45)',
+                }}
+              >
+                <Sparkles className="w-5 h-5" strokeWidth={2.25} fill={TEXT_INK} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[14px] font-black leading-tight" style={{ color: TEXT_INK }}>
+                  {(driver.business_name || 'Driver').split(' ')[0]}
+                  {availability === 'busy' ? ' is busy right now' : ' is offline right now'}
+                </h3>
+                <p className="text-[12.5px] leading-snug mt-1" style={{ color: '#854D0E' }}>
+                  Continue below to enter your pickup &amp; drop-off — we&apos;ll
+                  show you available drivers near you from{' '}
+                  <span className="font-extrabold">citydrivers.id</span>.
+                </p>
+                <a
+                  href="#booking-widget"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (typeof window !== 'undefined') {
+                      const el = document.querySelector('[data-booking-widget]')
+                      if (el instanceof HTMLElement) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 mt-2 text-[11.5px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
+                  style={{ color: TEXT_INK }}
+                >
+                  Continue below
+                  <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.75} />
+                </a>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 3.1) PLACES PICKER (inline) — sits UNDER the profile container,
+            stays on top of the tabs/booking. Tapping a card hydrates the
+            dropoff field and smooth-scrolls to the booking widget. */}
+        {showPlacesPicker && (
+          <section
+            id="driver-places-picker"
+            className="mt-3 rounded-2xl p-3"
+            style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}
+          >
+            <header className="text-center mb-2">
+              <h2 className="text-[15px] font-black uppercase tracking-wider" style={{ color: TEXT_INK }}>
+                Places To Visit
+              </h2>
+              <p className="text-[11px] mt-1" style={{ color: TEXT_MUTED }}>
+                Select view place for details and auto update your drop-off point by selecting the card.
+              </p>
+            </header>
             <PlacesPicker
               onClose={() => setShowPlacesPicker(false)}
               onSelect={(place) => {
                 setDropoff(place.name)
                 setShowPlacesPicker(false)
-                // Snap the tab back to the bookable view so the freshly
-                // filled drop-off + pickup field are visible — otherwise
-                // a customer who was on Tours / Hourly would land back on
-                // those panels (which hide the booking inputs) and feel
-                // like the place tap "did nothing".
-                setActiveTab('all')
+                // Snap back to the first available bookable tab so the
+                // freshly filled drop-off + pickup fields are visible.
+                if (tabs.length > 0) setActiveTab(tabs[0]!.id)
                 if (typeof window !== 'undefined') {
                   requestAnimationFrame(() => {
                     const el = document.querySelector('[data-booking-widget]')
@@ -730,9 +850,13 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 }
               }}
             />
-          </div>
-        ) : (
-        <>
+          </section>
+        )}
+
+        {/* 3.2) Tabs + booking content. Hidden while the Places panel
+            is open — customer is in "browse places" mode then, the
+            booking widget would just compete for the small viewport. */}
+        {!showPlacesPicker && (<>
         {/* 3.5) SERVICES OFFERED — heading + tab row. */}
         <section className="mt-4">
           <div className="text-[13px] font-extrabold uppercase tracking-wider mb-2" style={{ color: TEXT_INK }}>
@@ -777,11 +901,18 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             driver={driver}
             hourlyDefaults={hourlyDefaults}
           />
+        ) : activeTab === 'parcel' ? (
+          /* Parcel B2B tab — only the rate ladder, no booking widget.
+             The card itself enforces the "show only when driver has
+             submitted their own rates" rule below. */
+          null
         ) : availability === 'online' ? (
           <OnlineBookingWidget
             driver={driver}
             pickup={pickup} setPickup={setPickup}
             dropoff={dropoff} setDropoff={setDropoff}
+            setPickupCoords={setPickupCoords}
+            setDropoffCoords={setDropoffCoords}
             stops={stops} setStops={setStops}
             estimate={estimateInputs}
             waLink={waLink}
@@ -808,8 +939,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
         {activeTab === 'parcel' && offersParcel && (
           <ParcelTierCard driver={driver} />
         )}
-        </>
-        )}
+        </>)}
         </>
         )}
       </div>

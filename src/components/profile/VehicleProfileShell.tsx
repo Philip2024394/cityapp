@@ -788,31 +788,32 @@ export default function VehicleProfileShell({
         </div>
       )}
 
-      {/* -------- Right-edge yellow BACK tab -------- */}
+      {/* -------- Right-edge yellow BACK tab — anchored to the top of the
+          viewport (hero zone) so it does NOT overlap booking / share /
+          contact buttons in the middle of the screen on mobile. -------- */}
       <Link
         href={chrome.backHref}
         aria-label={`Back to ${chrome.backLabel.toLowerCase()} directory`}
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right:                  0,
-          top:                    '35%',
-          transform:              'translateY(-50%)',
-          width:                  34,
-          height:                 110,
+          top:                    'calc(env(safe-area-inset-top, 0px) + 12px)',
+          width:                  30,
+          height:                 88,
           background:             BRAND_YELLOW,
           color:                  '#0A0A0A',
-          borderTopLeftRadius:    14,
-          borderBottomLeftRadius: 14,
+          borderTopLeftRadius:    12,
+          borderBottomLeftRadius: 12,
           boxShadow:              '-4px 4px 14px rgba(0,0,0,0.22)',
         }}
       >
-        <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+        <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
         <span
           className="font-extrabold uppercase"
           style={{
             writingMode:   'vertical-rl',
             transform:     'rotate(180deg)',
-            fontSize:      11,
+            fontSize:      10,
             letterSpacing: '0.18em',
           }}
         >

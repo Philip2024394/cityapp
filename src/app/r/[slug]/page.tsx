@@ -6,6 +6,8 @@ import DriverProfileShell, { type DriverPublic } from '@/components/profile/Driv
 import type { TourPackage } from '@/lib/tours/types'
 import { MOCK_LANGUAGES, mockToursForSlug } from '@/lib/tours/templates'
 import { MOCK_RIDERS } from '@/data/mockRiders'
+import { BIKE_BANNERS, bannerForSlug } from '@/lib/drivers/banners'
+import { PARCEL_RATE_TIER_DEFAULTS_BIKE } from '@/lib/parcel/defaults'
 
 // =============================================================================
 // /r/[slug] — public per-driver profile page (bike vertical)
@@ -232,7 +234,8 @@ async function loadBikeDriver(slug: string): Promise<BikeDriver | null> {
         service_offerings:      parseStrings(r.service_offerings),
         current_lat:            typeof r.lat === 'number' ? (r.lat as number) : null,
         current_lng:            typeof r.lng === 'number' ? (r.lng as number) : null,
-        cover_image_url:        (r.cover_image_url as string | null) ?? null,
+        // Mock fallback: deterministic BIKE_BANNERS pick per slug.
+        cover_image_url:        (r.cover_image_url as string | null) ?? bannerForSlug(slug, BIKE_BANNERS),
         hourly_enabled:         null,
         hourly_3h_rate_idr:     null,
         hourly_6h_rate_idr:     null,
@@ -243,7 +246,9 @@ async function loadBikeDriver(slug: string): Promise<BikeDriver | null> {
         available_daytime:      null,
         available_evening:      null,
         available_nightlife:    null,
-        parcel_rate_tiers:      null,
+        // Mock bikes surface the canonical bike parcel rate ladder so
+        // the Parcel B2B tab has real numbers on demo profiles.
+        parcel_rate_tiers:      PARCEL_RATE_TIER_DEFAULTS_BIKE,
         languages:              MOCK_LANGUAGES[slug] ?? ['id'],
         subscription_status:    'active',
       }

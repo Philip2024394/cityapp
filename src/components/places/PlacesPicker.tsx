@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronRight, MapPin, Search, Star, X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { MapPin, Search, Star, X } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { useHaptic } from '@/hooks/useHaptic'
@@ -257,8 +258,8 @@ export default function PlacesPicker({
         </div>
 
         <div
-          className="mt-3 overflow-y-auto overscroll-contain space-y-2 -mx-1 px-1"
-          style={{ maxHeight: '55vh', scrollbarWidth: 'thin' }}
+          className="cd-places-scroll mt-3 overflow-y-auto overscroll-contain space-y-2 -mx-1 px-1"
+          style={{ maxHeight: '55vh' }}
         >
           {loading && (
             <div className="py-10 text-center">
@@ -306,21 +307,27 @@ function PlaceRowCard({
   const open = isOpenNow(place.category, place.tags)
 
   return (
-    <button
-      type="button"
-      onClick={onPick}
-      aria-label={`Set ${place.name} as drop-off`}
-      className="w-full text-left flex items-center gap-3 p-2.5 rounded-xl bg-white border border-[#E4E4E7] hover:border-[#FACC15] active:scale-[0.99] transition"
+    <div
+      className="relative w-full flex items-center gap-3 p-2.5 rounded-xl bg-white border border-[#E4E4E7] hover:border-[#FACC15] transition"
       style={{
         minHeight: 92,
         boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
       }}
     >
-      <div className="shrink-0 rounded-lg overflow-hidden bg-[#F4F4F5]" style={{ width: 72, height: 72 }}>
+      {/* Primary area — tap to set this place as drop-off. */}
+      <button
+        type="button"
+        onClick={onPick}
+        aria-label={`Set ${place.name} as drop-off`}
+        className="absolute inset-0 rounded-xl active:scale-[0.99] transition"
+        style={{ background: 'transparent' }}
+      />
+
+      <div className="relative shrink-0 rounded-lg overflow-hidden bg-[#F4F4F5] pointer-events-none" style={{ width: 72, height: 72 }}>
         <PlaceImage place={place} className="w-full h-full" />
       </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="relative min-w-0 flex-1 pointer-events-none">
         <div className="flex items-start gap-1.5">
           <span className="text-[14px] font-black text-[#0A0A0A] truncate leading-tight flex-1">
             {place.name}
@@ -352,13 +359,36 @@ function PlaceRowCard({
         </div>
       </div>
 
-      <div className="shrink-0 flex flex-col items-end justify-between h-[72px] py-0.5">
-        <span className="inline-flex items-center gap-0.5 text-[12px] font-extrabold text-[#0A0A0A]">
+      <div className="relative shrink-0 flex flex-col items-end justify-between h-[72px] py-0.5">
+        <span className="inline-flex items-center gap-0.5 text-[12px] font-extrabold text-[#0A0A0A] pointer-events-none">
           <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} aria-hidden />
           {rating}
         </span>
-        <ChevronRight className="w-4 h-4 text-[#A1A1AA]" strokeWidth={2.5} aria-hidden />
+        {/* View Place — anchor sits on top of the primary tap area so
+            its click is captured first. Navigates to the place profile
+            with a `from` param so /places/[slug] can render a "Take Me
+            Here" button that bounces back with dropoff set. */}
+        <ViewPlaceLink slug={place.slug} />
       </div>
-    </button>
+    </div>
+  )
+}
+
+function ViewPlaceLink({ slug }: { slug: string }) {
+  // usePathname returns the current driver-profile route so the place
+  // profile knows where to send the customer back when they tap
+  // "Take Me Here". Safe to call inside a child renderer because the
+  // parent is already a client component.
+  const fromPath = usePathname() || '/'
+  const href = `/places/${slug}?from=${encodeURIComponent(fromPath)}`
+  return (
+    <a
+      href={href}
+      onClick={(e) => e.stopPropagation()}
+      className="z-10 inline-flex items-center gap-0.5 text-[10.5px] font-extrabold uppercase tracking-wider rounded-full px-2 py-1 active:scale-[0.97] transition"
+      style={{ background: '#FACC15', color: '#0A0A0A' }}
+    >
+      View
+    </a>
   )
 }

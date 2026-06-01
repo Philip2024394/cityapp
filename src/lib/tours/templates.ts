@@ -37,6 +37,26 @@ export type TourTemplate = {
   tags:            readonly string[]
 }
 
+/** Universal safe fallback image for any tour that has no driver upload
+ *  and no resolvable place image. Points at a known-good ImageKit asset
+ *  inside the founder's CDN bucket — guaranteed to load.
+ *
+ *  TODO (Supabase backfill): upload location-specific tour cover images
+ *  to Supabase Storage (or upload to ImageKit at /nepgaxllc/tours/<slug>.jpg)
+ *  and either (a) populate `public.places.image_url` for every place_slug
+ *  referenced below — the existing tour-card cascade will then surface
+ *  the place image automatically — or (b) extend TourTemplate with an
+ *  explicit `image_url` field per tour. */
+const DEFAULT_TOUR_IMAGE =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2030,%202026,%2001_51_17%20AM.png'
+
+/** Returns a guaranteed-to-load image URL for a tour template. The card
+ *  cascade in ToursTabContent still prefers driver upload → place image
+ *  first, so this is only used when neither is set. */
+export function templateImageUrl(_template: TourTemplate): string {
+  return DEFAULT_TOUR_IMAGE
+}
+
 export const TOUR_TEMPLATES: ReadonlyArray<TourTemplate> = [
   // ── Car tours · Temple loops ─────────────────────────────────────────────
   {
@@ -615,6 +635,11 @@ export function mockToursForSlug(slug: string): Array<{
   for (const id of ids) {
     const t = tourTemplateById(id)
     if (!t) continue
+    // Deterministic 4.5–5.0 rating from template+driver-slug hash so each
+    // mock card shows a stable but varied star score.
+    const seed = [...`${slug}:${id}`].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+    const rating = Math.round((4.5 + (seed % 51) / 100) * 10) / 10
+    const reviewCount = 18 + (seed % 84)
     tours.push({
       id:             `mock-${slug}-${id}`,
       driver_id:      `mock-${slug}`,
@@ -627,10 +652,12 @@ export function mockToursForSlug(slug: string): Array<{
       includes:       [...t.includes],
       excludes:       [...t.excludes],
       place_slugs:    [...t.place_slugs],
-      photo_url:      null,
+      photo_url:      templateImageUrl(t),
       published:      true,
       created_at:     now,
       updated_at:     now,
+      rating,
+      rating_count:   reviewCount,
     })
   }
   return tours

@@ -4,6 +4,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 import VehicleProfileShell, { type VehiclePublic } from '@/components/profile/VehicleProfileShell'
+import { CAR_BANNERS, bannerForSlug } from '@/lib/drivers/banners'
 
 // =============================================================================
 // /bus/[slug] — public per-driver profile page (Minibus charter vertical).
@@ -145,7 +146,9 @@ async function loadBusDriver(slug: string): Promise<BusDriver | null> {
       bio:                    (r.bio as string | null) ?? null,
       whatsapp_e164:          (r.whatsapp_e164 as string | null) ?? null,
       profile_image_url:      (r.profile_image_url as string | null) ?? null,
-      cover_image_url:        (r.cover_image_url as string | null) ?? null,
+      // Mock fallback: no BUS_BANNERS library yet, so we reuse the
+      // CAR_BANNERS pool with a deterministic per-slug pick for varied heroes.
+      cover_image_url:        (r.cover_image_url as string | null) ?? bannerForSlug(slug, CAR_BANNERS),
       city:                   (r.city as string | null) ?? null,
       area:                   (r.area as string | null) ?? null,
       rating:                 (r.rating as number | null) ?? null,

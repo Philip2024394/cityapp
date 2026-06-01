@@ -943,15 +943,15 @@ function PlanTripPageInner() {
                   (compass / star icon taps) when that flow is wired. */}
             </div>
 
-            {/* ROW 3 — Vehicle picker (5 round buttons). Drives the inline
+            {/* ROW 3 — Vehicle picker (5 image buttons). Drives the inline
                 driver list. Preserves the current `mode` so flipping
                 between vehicle types doesn't reset Ride↔Parcel. */}
             <div className="mt-3 shrink-0 grid grid-cols-5 gap-2">
-              <VehicleRoundButton href={`/cari?service=person&mode=${mode}`} active={vehicleType === 'bike'}    label="Bike"  icon="🏍️" />
-              <VehicleRoundButton href={`/cari?service=car&mode=${mode}`}    active={vehicleType === 'car'}     label="Car"   icon="🚗" />
-              <VehicleRoundButton href={`/cari?service=bus&mode=${mode}`}    active={vehicleType === 'minibus'} label="Bus"   icon="🚐" />
-              <VehicleRoundButton href={`/cari?service=jeep&mode=${mode}`}   active={vehicleType === 'jeep'}    label="Jeep"  icon="🚙" />
-              <VehicleRoundButton href={`/cari?service=truck&mode=${mode}`}  active={vehicleType === 'truck'}   label="Truck" icon="🚚" />
+              <VehicleImageButton href={`/cari?service=person&mode=${mode}`} active={vehicleType === 'bike'}    label="Bike"  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasad.png?tr=e-bgremove" />
+              <VehicleImageButton href={`/cari?service=car&mode=${mode}`}    active={vehicleType === 'car'}     label="Car"   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsa.png?tr=e-bgremove" />
+              <VehicleImageButton href={`/cari?service=bus&mode=${mode}`}    active={vehicleType === 'minibus'} label="Bus"   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasd.png?tr=e-bgremove" />
+              <VehicleImageButton href={`/cari?service=jeep&mode=${mode}`}   active={vehicleType === 'jeep'}    label="Jeep"  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasadasda.png?tr=e-bgremove" sizeBoost={1.15} />
+              <VehicleImageButton href={`/cari?service=truck&mode=${mode}`}  active={vehicleType === 'truck'}   label="Truck" imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasda.png?tr=e-bgremove" />
             </div>
 
             {/* Hourly-filter banner — surfaces when the customer arrived
@@ -1146,16 +1146,23 @@ function VehicleToggleButton({
   )
 }
 
-// Round 5-way vehicle button. Yellow circle on active, light grey on
-// inactive. Tap target is the entire Link (circle + label).
-function VehicleRoundButton({
-  href, active, label, icon,
+// 5-way vehicle picker button — renders the founder-supplied vehicle
+// PNG (transparent, on-brand yellow vehicle silhouette) directly without
+// a containing circle. Active state gets a soft yellow glow under the
+// image + bold label; inactive state dims the image slightly.
+function VehicleImageButton({
+  href, active, label, imageUrl, sizeBoost = 1,
 }: {
-  href:   string
-  active: boolean
-  label:  string
-  icon:   string
+  href:      string
+  active:    boolean
+  label:     string
+  imageUrl:  string
+  /** Optional per-vehicle scale multiplier on the rendered image, layered
+   *  on top of the active-state scale. e.g. sizeBoost=1.15 makes the
+   *  vehicle render 15% larger than its siblings. */
+  sizeBoost?: number
 }) {
+  const activeScale = active ? 1.05 : 1
   return (
     <Link
       href={href}
@@ -1165,15 +1172,21 @@ function VehicleRoundButton({
       className="flex flex-col items-center gap-1 active:scale-95 transition"
     >
       <div
-        className="w-11 h-11 rounded-full flex items-center justify-center text-[20px] transition"
+        className="w-14 h-14 flex items-center justify-center transition"
         style={{
-          background: active ? '#FACC15' : '#F4F4F5',
-          border:     active ? '1px solid #FACC15' : '1px solid #E4E4E7',
-          boxShadow:  active ? '0 4px 12px rgba(250,204,21,0.35)' : 'none',
+          filter: active
+            ? 'drop-shadow(0 6px 14px rgba(250,204,21,0.55))'
+            : 'grayscale(0.35) opacity(0.7)',
+          transform: `scale(${activeScale * sizeBoost})`,
         }}
         aria-hidden
       >
-        {icon}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt=""
+          className="max-w-full max-h-full object-contain"
+        />
       </div>
       <span
         className="text-[10.5px] font-extrabold tracking-tight"
