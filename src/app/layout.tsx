@@ -3,11 +3,17 @@ import { headers } from 'next/headers'
 import './globals.css'
 import PageBackground from '@/components/layout/PageBackground'
 
-// App-wide dynamic rendering. Indocity is mostly auth-gated / per-request
-// (admin, dashboards, profile pages, marketplace queries) so prerendering
-// buys nothing and trips on every `useSearchParams()` without a Suspense
-// boundary. One switch, no Suspense boilerplate sprinkled across the tree.
-export const dynamic = 'force-dynamic'
+// Root layout intentionally does NOT set `export const dynamic = 'force-dynamic'`.
+// That switch poisons every route — including marketing landings, vertical
+// homepages, and profile pages — and prevents Cloudflare from caching pages
+// that have no per-request state. `force-dynamic` is now scoped per-page (or
+// per sub-layout) for auth-gated areas only. See:
+//   - src/app/dashboard/layout.tsx (auth-gated)
+//   - src/app/admin/layout.tsx (auth-gated, via requireAdmin in code)
+//   - src/app/login/page.tsx, /signup, /forgot, /onboarding (auth flows)
+//   - /cari, /explore (read searchParams)
+// Routes with `revalidate = <n>` (e.g. all /car/[slug] profile pages) cache
+// at the CDN as expected.
 import RegisterServiceWorker from '@/components/pwa/RegisterServiceWorker'
 import InstallPrompt from '@/components/pwa/InstallPrompt'
 import PreloadTiles from '@/components/pwa/PreloadTiles'

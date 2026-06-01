@@ -13,12 +13,27 @@
 // ============================================================================
 
 import { NextResponse } from 'next/server'
+import { cookies, headers } from 'next/headers'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { SOCIAL_QUOTA_MONTHLY } from '@/lib/social/banners'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+// Localhost-only dev shim — when /api/dev/impersonate?slug=<driver> has set
+// a `cr-dev-uid` cookie, treat that as the acting user. Mirrors the same
+// pattern in /api/partners/me/bookings so every dashboard API behaves
+// uniformly under dev impersonation. Refuses anything off localhost or in
+// production builds.
+async function resolveDevUserId(): Promise<string | null> {
+  const hdrs = await headers()
+  const host = (hdrs.get('host') || '').toLowerCase().split(':')[0]
+  if (host !== 'localhost' && host !== '127.0.0.1') return null
+  if (process.env.NODE_ENV === 'production') return null
+  const cookieStore = await cookies()
+  return cookieStore.get('cr-dev-uid')?.value ?? null
+}
 
 function currentMonth(): string {
   // YYYY-MM in WIB (UTC+7) — matches the driver's local calendar so
@@ -86,15 +101,17 @@ async function readDriverBasics(userId: string): Promise<DriverBasics> {
 export async function GET() {
   const supabase = await getServerSupabase()
   const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } }
-  if (!user) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
+  const devUid = user ? null : await resolveDevUserId()
+  const actingUserId = user?.id ?? devUid
+  if (!actingUserId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
   // The GET response keeps the original QuotaState fields at the top
   // level (callers like the composer already destructure month/used/cap/
   // remaining) and adds a `driver` block alongside. This preserves
   // backward compatibility with any older client still reading just the
   // quota numbers.
   const [quota, driver] = await Promise.all([
-    readQuota(user.id),
-    readDriverBasics(user.id),
+    readQuota(actingUserId),
+    readDriverBasics(actingUserId),
   ])
   return NextResponse.json({ ...quota, driver })
 }
@@ -102,7 +119,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const supabase = await getServerSupabase()
   const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } }
-  if (!user) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
+  const devUid = user ? null : await resolveDevUserId()
+  const actingUserId = user?.id ?? devUid
+  if (!actingUserId) return NextResponse.json({ error: 'not_signed_in' }, { status: 401 })
 
   const admin = getAdminSupabase()
   if (!admin) return NextResponse.json({ error: 'service_role_not_configured' }, { status: 503 })
@@ -112,7 +131,7 @@ export async function POST(req: Request) {
   const banner_id = typeof body.banner_id === 'string' ? body.banner_id.slice(0, 64) : null
   const platform  = typeof body.platform  === 'string' ? body.platform.toLowerCase().slice(0, 32) : null
 
-  const current = await readQuota(user.id)
+  const current = await readQuota(actingUserId)
   if (current.remaining <= 0) {
     return NextResponse.json(
       { error: 'quota_exceeded', ...current },
@@ -127,7 +146,7 @@ export async function POST(req: Request) {
     .from('social_share_quota')
     .upsert(
       {
-        driver_user_id:  user.id,
+        driver_user_id:  actingUserId,
         month_yyyy_mm:   current.month,
         count:           next,
         last_banner_id:  banner_id,

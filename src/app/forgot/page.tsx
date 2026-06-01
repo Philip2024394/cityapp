@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { ChevronLeft, KeyRound, Phone } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'

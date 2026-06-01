@@ -23,28 +23,41 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import nextDynamic from 'next/dynamic'
 import {
   Star, Award, MessageCircle, Share2, Link2, X, ChevronLeft, BadgeCheck,
   MapPin, Truck as TruckIcon, Bus as BusIcon, Mountain as JeepIcon,
   Sparkles, Menu as MenuIcon, ChevronDown, Mail, Phone,
 } from 'lucide-react'
 import { PlaneTakeoff, MapPinned, Landmark } from 'lucide-react'
-import PlacesPicker from '@/components/places/PlacesPicker'
-import ReviewsPanel, { type Review } from './shell/ReviewsPanel'
 import HeroServiceIcon from './shell/HeroServiceIcon'
-import VisitUsPanel, {
+// VisitUsPanel re-exports the social icons used inline in this shell — keep
+// the icon imports static (they're tiny), lazy-load the panel itself.
+import {
   SocialInstagramIcon,
   SocialTikTokIcon,
   SocialFacebookIcon,
 } from '@/components/profile/VisitUsPanel'
 import RunningMarquee from '@/components/profile/RunningMarquee'
-import PortfolioCarousel, {
-  PortfolioDetailPopup,
-  type PortfolioPhoto,
-} from '@/components/profile/PortfolioCarousel'
 import PortfolioViewToggle, { type PortfolioView } from '@/components/profile/PortfolioViewToggle'
 import WaIntentAnchor from '@/components/profile/WaIntentAnchor'
 import AvatarFrame from '@/components/profile/AvatarFrame'
+// Type-only re-exports so the dynamic chunk split is preserved (these do
+// NOT generate runtime imports).
+import type { Review } from './shell/ReviewsPanel'
+import type { PortfolioPhoto } from '@/components/profile/PortfolioCarousel'
+
+// Below-fold + modal-only widgets — code-split out of the shell's initial
+// chunk. Each lazily loads on first render (ssr:false) so the profile's
+// hero + service-icon row paint without waiting on these payloads.
+const ReviewsPanel        = nextDynamic(() => import('./shell/ReviewsPanel'),                  { ssr: false, loading: () => null })
+const PortfolioCarousel   = nextDynamic(() => import('@/components/profile/PortfolioCarousel'), { ssr: false, loading: () => null })
+const PortfolioDetailPopup = nextDynamic(
+  () => import('@/components/profile/PortfolioCarousel').then((m) => ({ default: m.PortfolioDetailPopup })),
+  { ssr: false, loading: () => null }
+)
+const VisitUsPanel        = nextDynamic(() => import('@/components/profile/VisitUsPanel'),     { ssr: false, loading: () => null })
+const PlacesPicker        = nextDynamic(() => import('@/components/places/PlacesPicker'),      { ssr: false, loading: () => null })
 import {
   SERVICE_OFFERINGS,
   TRUCK_SERVICE_OFFERINGS,

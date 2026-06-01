@@ -203,49 +203,53 @@ export default function SocialComposer({ backHref, vertical }: {
     <Shell>
       <BackLink backHref={backHref} />
 
-      {/* Hero strip — quota bar. Kept the yellow gradient, it works. */}
-      <section
-        className="rounded-3xl p-5 sm:p-6 mb-4"
-        style={{
-          background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)',
-          color: '#0A0A0A',
-          boxShadow: '0 12px 32px rgba(250,204,21,0.30)',
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] opacity-70">
-              Social posts
+      {/* Brand header — structure mirrors /dashboard/beautician/promos
+          (pink there, CityDrivers yellow here). Icon + title + status pill
+          + short blurb. Pixel-parity goal: drivers + beauticians get
+          visually identical share-flow chrome, just different accent. */}
+      <div className="rounded-3xl border p-5 shadow-sm mb-4" style={{ borderColor: 'rgba(250,204,21,0.45)', background: 'linear-gradient(135deg, #FFFBEA 0%, #FFFFFF 100%)' }}>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-12 h-12 rounded-2xl text-[#0A0A0A] flex items-center justify-center shadow-sm shrink-0"
+            style={{ background: 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)' }}
+          >
+            <Sparkles size={22} strokeWidth={2.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h1 className="text-[20px] font-black leading-tight text-black truncate">Social posts</h1>
+              <span
+                className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider rounded-full px-2 py-0.5 border"
+                style={{ color: '#854D0E', background: '#FEF3C7', borderColor: '#FACC15' }}
+              >
+                Active
+              </span>
             </div>
-            <h1 className="text-[22px] sm:text-[26px] font-black leading-tight mt-0.5">
-              Bagikan ke media sosial Anda
-            </h1>
-            <p className="text-[12.5px] font-bold opacity-80 mt-1">
-              {vertical === 'car'
-                ? 'Pilih banner siap-pakai, share ke WhatsApp / Instagram / Facebook.'
-                : 'Pilih banner siap-pakai, share ke pelanggan via WhatsApp / IG / FB.'}
+            <p className="text-[12.5px] text-black/70 leading-snug">
+              Pick a pre-made banner and share to Instagram, WhatsApp, Facebook.
             </p>
           </div>
-          <div className="shrink-0 text-right">
-            <div className="text-[11px] font-extrabold uppercase tracking-wider opacity-80">Kuota</div>
-            <div className="text-[20px] font-black leading-none mt-0.5 tabular-nums">{remaining}<span className="text-[12px] opacity-65">/{cap}</span></div>
-          </div>
         </div>
+      </div>
 
-        <div className="mt-4">
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(10,10,10,0.18)' }}>
-            <div
-              className="h-full rounded-full transition-[width]"
-              style={{ width: `${Math.min(100, (used / cap) * 100)}%`, background: '#0A0A0A' }}
-            />
-          </div>
-          <div className="mt-2 text-[11px] font-bold opacity-75">
-            {exhausted
-              ? 'Kuota bulan ini habis — reset tanggal 1.'
-              : `${used} dari ${cap} digunakan bulan ini. Reset tanggal 1.`}
-          </div>
+      {/* Usage strip — mirrors the beautician quota card. No "New" button
+          here because the banner grid below IS the create surface; tapping
+          a banner card opens the share modal. */}
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-[14px] font-black text-black">{used} / {cap} banners shared this month</div>
+          <span className="text-[12px] font-extrabold uppercase tracking-wider text-black/55 tabular-nums">{remaining} left</span>
         </div>
-      </section>
+        <div className="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
+          <div
+            className="h-full transition-[width]"
+            style={{ width: `${Math.min(100, (used / cap) * 100)}%`, background: '#FACC15' }}
+          />
+        </div>
+        {exhausted && (
+          <p className="text-[12px] text-amber-700 mt-2">Monthly limit reached — resets on the 1st.</p>
+        )}
+      </div>
 
       {/* Toast — keep current pattern (top-center floating pill, 1.6s) */}
       {toast && (

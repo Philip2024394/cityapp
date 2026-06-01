@@ -1,13 +1,13 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import {
   MapPin, Star, Bike as BikeIcon,
   Car as CarIcon, Users as UsersIcon,
   PlaneTakeoff, Building2, MapPinned,
   ChevronLeft, Sparkles, ArrowDown, Share2,
 } from 'lucide-react'
-import SocialShareSheet from './SocialShareSheet'
 import { getBikeImageUrl } from '@/data/bikeImages'
 import { getCarImageUrl } from '@/data/carImages'
 import { getJeepImageUrl } from '@/data/jeepImages'
@@ -22,15 +22,27 @@ import {
 import { parseRateTiers, type ParcelVehicleKind } from '@/lib/parcel/defaults'
 import type { TourPackage } from '@/lib/tours/types'
 
+// Visible on first paint — keep eager so the booking CTA renders without
+// a hydration flash.
 import OnlineBookingWidget from './shell/OnlineBookingWidget'
-import AlternativesWidget from './shell/AlternativesWidget'
-import ToursTabContent from './shell/ToursTabContent'
-import HourlyTabContent from './shell/HourlyTabContent'
 import ParcelTierCard from './shell/ParcelTierCard'
 import HeroServiceIcon from './shell/HeroServiceIcon'
-import ReviewsPanel, { type Review } from './shell/ReviewsPanel'
 import { buildShellWhatsAppLink } from './shell/shellWhatsApp'
 import { getLanguage } from '@/lib/languages'
+
+// Tab content (only one tab visible at a time) + below-fold widgets +
+// share-sheet modal — code-split so they don't ship in the profile's
+// initial chunk. ssr:false keeps them out of the server bundle too.
+const AlternativesWidget = dynamic(() => import('./shell/AlternativesWidget'), { ssr: false, loading: () => null })
+const ToursTabContent    = dynamic(() => import('./shell/ToursTabContent'),    { ssr: false, loading: () => null })
+const HourlyTabContent   = dynamic(() => import('./shell/HourlyTabContent'),   { ssr: false, loading: () => null })
+const ReviewsPanel       = dynamic(() => import('./shell/ReviewsPanel'),       { ssr: false, loading: () => null })
+const SocialShareSheet   = dynamic(() => import('./SocialShareSheet'),         { ssr: false, loading: () => null })
+
+// Type-only re-export from the lazy module — pulling the `Review` type
+// via `import type` does NOT generate a runtime import, so the dynamic
+// chunk split is preserved.
+import type { Review } from './shell/ReviewsPanel'
 
 // =============================================================================
 // DriverProfileShell — shared driver-profile renderer for /r/[slug] (bike)

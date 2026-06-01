@@ -1,6 +1,11 @@
 import type { Metadata } from 'next'
 import ExploreClient from './ExploreClient'
 
+// Reads search params (filters) via ExploreClient — keep dynamic so
+// shareable filter URLs always render fresh data and never serve stale
+// search results from the CDN.
+export const dynamic = 'force-dynamic'
+
 // ============================================================================
 // /explore — the new "hub" page (May 2026 restructure)
 // ----------------------------------------------------------------------------
