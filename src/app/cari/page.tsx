@@ -1080,9 +1080,21 @@ function PlanTripPageInner() {
             </div>
 
             {/* ROW 5 — Citypass promo banner. Yellow shaded card with a
-                bright yellow Explore button on the right. Routes to /places. */}
+                bright yellow Explore button on the right. Routes to /places
+                with `from=cari` + the customer's current pickup so the
+                place picker can redirect back here with the chosen place
+                set as the drop-off (auto-fills /cari?dLat=&dLng=&dName=). */}
             <Link
-              href="/places"
+              href={(() => {
+                const sp = new URLSearchParams()
+                sp.set('from', 'cari')
+                if (pickup) {
+                  sp.set('pLat', pickup.lat.toString())
+                  sp.set('pLng', pickup.lng.toString())
+                  if (pickupLabel) sp.set('pName', pickupLabel)
+                }
+                return `/places?${sp.toString()}`
+              })()}
               prefetch
               onClick={() => haptic.tap()}
               className="mt-3 shrink-0 flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 active:scale-[0.99] transition"

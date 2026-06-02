@@ -139,6 +139,10 @@ export default function PlacesBrowser({
   const pName = searchParams?.get('pName') ?? null
   const pLat  = searchParams?.get('pLat')  ?? null
   const pLng  = searchParams?.get('pLng')  ?? null
+  // When `?from=cari` is present the customer arrived from the booking
+  // page's City Pass button. A place tap then bounces straight back to
+  // /cari with `?dLat=&dLng=&dName=` filled — auto-fill drop-off flow.
+  const fromCari = (searchParams?.get('from') ?? null) === 'cari'
 
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<ChipFilter>('all')
@@ -179,15 +183,31 @@ export default function PlacesBrowser({
     return formatDistanceKm(km)
   }
 
-  function handleOpen(slug: string) {
+  function handleOpen(place: Place) {
     haptic.tap()
+    // /cari → place picker handoff: tap a place card and we're back on
+    // /cari with that place set as the drop-off. Pickup is forwarded
+    // through so the customer doesn't have to re-enter it. This is the
+    // shortest path from "I want to go somewhere from the City Pass
+    // list" to a complete booking row.
+    if (fromCari) {
+      const sp = new URLSearchParams()
+      sp.set('dLat',  place.lat.toString())
+      sp.set('dLng',  place.lng.toString())
+      sp.set('dName', place.name)
+      if (pName) sp.set('pName', pName)
+      if (pLat)  sp.set('pLat',  pLat)
+      if (pLng)  sp.set('pLng',  pLng)
+      router.push(`/cari?${sp.toString()}`)
+      return
+    }
     // Forward driver-return + pickup params when present so the place
     // detail page can render the "Take me here →" CTA + round-trip the
     // customer's typed pickup back to the driver profile. When
     // `return_driver` is absent we route bare — preserving the existing
     // /places/[slug] behavior for customers who arrived organically.
     if (!returnDriver) {
-      router.push(`/places/${slug}`)
+      router.push(`/places/${place.slug}`)
       return
     }
     const sp = new URLSearchParams()
@@ -195,7 +215,7 @@ export default function PlacesBrowser({
     if (pName) sp.set('pName', pName)
     if (pLat)  sp.set('pLat',  pLat)
     if (pLng)  sp.set('pLng',  pLng)
-    router.push(`/places/${slug}?${sp.toString()}`)
+    router.push(`/places/${place.slug}?${sp.toString()}`)
   }
 
   return (
@@ -322,7 +342,7 @@ export default function PlacesBrowser({
               key={p.id}
               place={p}
               distanceLabel={distanceFor(p)}
-              onOpen={() => handleOpen(p.slug)}
+              onOpen={() => handleOpen(p)}
             />
           ))}
         </div>
