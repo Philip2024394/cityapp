@@ -3,8 +3,12 @@
 // Mirror of /drivers/car but tuned for minibus charter drivers: copy
 // emphasises group transport, weddings, school trips, and airport
 // pickups — different economics from the single-passenger ojek model.
+//
+// All copy comes from messages/{id,en}.json under the `driversBus`
+// namespace.
 
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import {
   ArrowRight,
   MessageCircle,
@@ -23,7 +27,6 @@ import { getSupportWhatsApp } from '@/lib/support/contacts'
 import {
   MONTHLY_PRICE_LABEL,
   YEARLY_PRICE_LABEL,
-  TRIAL_LABEL_EN,
 } from '@/lib/pricing/constants'
 
 const HERO_URL =
@@ -32,33 +35,32 @@ const HERO_URL =
 const BRAND_LOGO_URL =
   'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
 
-// Public WhatsApp number for driver-side support — sourced from env via getSupportWhatsApp().
-
-const PAGE_TITLE = 'Drive your minibus with CityDrivers — Charter, weddings, tours'
-const PAGE_DESCRIPTION =
-  'Join CityDrivers as a minibus driver. You set the rates. Customers pay you directly via WhatsApp. Built for charter, weddings, school trips, and group tours.'
 const PAGE_URL = 'https://citydrivers.id/drivers/bus'
 
-export const metadata = {
-  title:       PAGE_TITLE,
-  description: PAGE_DESCRIPTION,
-  alternates:  { canonical: PAGE_URL },
-  openGraph: {
-    title:       PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-    type:        'website',
-    url:         PAGE_URL,
-    images:      [{ url: HERO_URL }],
-  },
-  twitter: {
-    card:        'summary_large_image',
-    title:       PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-    images:      [HERO_URL],
-  },
+export async function generateMetadata() {
+  const t = await getTranslations('driversBus')
+  return {
+    title:       t('metaTitle'),
+    description: t('metaDescription'),
+    alternates:  { canonical: PAGE_URL },
+    openGraph: {
+      title:       t('metaTitle'),
+      description: t('metaDescription'),
+      type:        'website',
+      url:         PAGE_URL,
+      images:      [{ url: HERO_URL }],
+    },
+    twitter: {
+      card:        'summary_large_image',
+      title:       t('metaTitle'),
+      description: t('metaDescription'),
+      images:      [HERO_URL],
+    },
+  }
 }
 
-export default function BusDriversLandingPage() {
+export default async function BusDriversLandingPage() {
+  const t = await getTranslations('driversBus')
   return (
     <main
       className="relative min-h-[100dvh] text-[#0A0A0A]"
@@ -76,7 +78,7 @@ export default function BusDriversLandingPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={HERO_URL}
-            alt="CityDrivers minibus driver next to a yellow Hiace at sunset"
+            alt={t('heroAlt')}
             className="absolute inset-0 w-full h-full object-cover object-center"
             loading="eager"
           />
@@ -123,7 +125,16 @@ export default function BusDriversLandingPage() {
                   CityDrivers
                 </span>
               </Link>
-              <VehicleSwitcher active="bus" />
+              <VehicleSwitcher
+                active="bus"
+                labels={{
+                  bike:  t('vehicleBike'),
+                  car:   t('vehicleCar'),
+                  bus:   t('vehicleBus'),
+                  truck: t('vehicleTruck'),
+                  jeep:  t('vehicleJeep'),
+                }}
+              />
             </header>
 
             <div className="flex-1 min-h-0" aria-hidden />
@@ -133,12 +144,11 @@ export default function BusDriversLandingPage() {
               style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)' }}
             >
               <h1 className="text-[26px] xs:text-[28px] sm:text-[32px] font-black leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)]">
-                Your bus.<br />
-                <span style={{ color: '#FACC15' }}>Your rates.</span>
+                {t('h1Line1')}<br />
+                <span style={{ color: '#FACC15' }}>{t('h1Line2')}</span>
               </h1>
               <p className="mt-2.5 text-[13px] text-white/85 leading-relaxed">
-                Charter, weddings, school trips, group tours — you choose.
-                Customers pay you directly. No platform cut.
+                {t('heroParagraph')}
               </p>
 
               <div className="mt-4 flex flex-col gap-2">
@@ -147,13 +157,11 @@ export default function BusDriversLandingPage() {
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
                   style={{ minHeight: 48 }}
                 >
-                  List your bus
+                  {t('ctaSignUp')}
                   <ArrowRight className="w-4 h-4" strokeWidth={3} />
                 </Link>
                 <a
-                  href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                    "Hi, I'm interested in listing my minibus on CityDrivers. Can I get more info?",
-                  )}`}
+                  href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(t('waMessage'))}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl text-[13px] font-extrabold active:scale-[0.97] transition"
@@ -167,7 +175,7 @@ export default function BusDriversLandingPage() {
                   }}
                 >
                   <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-                  Ask via WhatsApp
+                  {t('ctaWhatsApp')}
                 </a>
               </div>
             </div>
@@ -178,37 +186,36 @@ export default function BusDriversLandingPage() {
       <section className="px-5 py-12">
         <div className="text-center mb-10">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-            What you can offer
+            {t('offerLabel')}
           </div>
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Four ways to earn from one minibus.
+            {t('offerTitle')}
           </h2>
           <p className="mt-3 text-[14px] text-black/65 max-w-xl mx-auto">
-            You decide. Show one service or all of them on your public
-            profile. Customers contact you for the one they need.
+            {t('offerIntro')}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <UseCase
             icon={<Plane className="w-5 h-5" strokeWidth={2.5} />}
-            title="Group airport pickups"
-            body="YIA, Adisutjipto, DPS — families, tour groups, work teams. One vehicle, one fare."
+            title={t('useCase1Title')}
+            body={t('useCase1Body')}
           />
           <UseCase
             icon={<Calendar className="w-5 h-5" strokeWidth={2.5} />}
-            title="Weddings &amp; events"
-            body="Antar jemput tamu pernikahan, ulang tahun, rapat perusahaan. Charter harian dengan driver."
+            title={t('useCase2Title')}
+            body={t('useCase2Body')}
           />
           <UseCase
             icon={<Users className="w-5 h-5" strokeWidth={2.5} />}
-            title="School &amp; office trips"
-            body="Field trips, study tours, company outings. Daily or multi-day charter with you driving."
+            title={t('useCase3Title')}
+            body={t('useCase3Body')}
           />
           <UseCase
             icon={<Smartphone className="w-5 h-5" strokeWidth={2.5} />}
-            title="Tour packages"
-            body="Yogyakarta, Bali, cross-city tours. Day rate + fuel. You drive and guide groups of 7–16."
+            title={t('useCase4Title')}
+            body={t('useCase4Body')}
           />
         </div>
       </section>
@@ -217,25 +224,22 @@ export default function BusDriversLandingPage() {
         <div className="px-5 py-12">
           <div className="text-center mb-10">
             <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-              How it works
+              {t('howLabel')}
             </div>
             <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-              Three steps. You stay in full control.
+              {t('howTitle')}
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <Step n={1} icon={<Smartphone className="w-5 h-5" strokeWidth={2.5} />} title="Sign up &amp; verify">
-              Upload ID, vehicle registration, minibus photos. Verified within
-              24 hours. Profile goes live in one business day.
+            <Step n={1} stepLabel={t('stepLabel')} icon={<Smartphone className="w-5 h-5" strokeWidth={2.5} />} title={t('step1Title')}>
+              {t('step1Body')}
             </Step>
-            <Step n={2} icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />} title="Customers find you">
-              Your profile appears in minibus search. They see your rates, seat
-              count, services — and tap WhatsApp to book.
+            <Step n={2} stepLabel={t('stepLabel')} icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />} title={t('step2Title')}>
+              {t('step2Body')}
             </Step>
-            <Step n={3} icon={<Wallet className="w-5 h-5" strokeWidth={2.5} />} title="Agree &amp; drive">
-              Rate, time, location — all in chat. They pay cash or your own
-              QRIS. You keep 100%, no platform cut.
+            <Step n={3} stepLabel={t('stepLabel')} icon={<Wallet className="w-5 h-5" strokeWidth={2.5} />} title={t('step3Title')}>
+              {t('step3Body')}
             </Step>
           </div>
         </div>
@@ -244,33 +248,33 @@ export default function BusDriversLandingPage() {
       <section className="px-5 py-12">
         <div className="text-center mb-10">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-            Why CityDrivers
+            {t('whyLabel')}
           </div>
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Your rates. Your customers. Your earnings.
+            {t('whyTitle')}
           </h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Differentiator
             icon={<Wallet className="w-5 h-5" strokeWidth={2.5} />}
-            title="0% commission per trip"
-            body={`Just ${MONTHLY_PRICE_LABEL}/month flat. Charter at Rp 1,500,000/day? You keep all of it.`}
+            title={t('diff1Title')}
+            body={t('diff1Body', { price: MONTHLY_PRICE_LABEL })}
           />
           <Differentiator
             icon={<MessageCircle className="w-5 h-5" strokeWidth={2.5} />}
-            title="Direct relationship"
-            body="Customers WhatsApp you for repeat bookings. Build regulars — schools, hotels, tour agents."
+            title={t('diff2Title')}
+            body={t('diff2Body')}
           />
           <Differentiator
             icon={<ShieldCheck className="w-5 h-5" strokeWidth={2.5} />}
-            title="Pick your services"
-            body="Charter only? Weddings only? All of them? Your public profile shows what you offer."
+            title={t('diff3Title')}
+            body={t('diff3Body')}
           />
           <Differentiator
             icon={<Sparkles className="w-5 h-5" strokeWidth={2.5} />}
-            title="Personal page"
-            body="A citydrivers.id/bus/you page you can share to regulars, partner hotels, or Instagram."
+            title={t('diff4Title')}
+            body={t('diff4Body')}
           />
         </div>
       </section>
@@ -278,33 +282,33 @@ export default function BusDriversLandingPage() {
       <section className="px-5 py-12 bg-[#FFFBEA]">
         <div className="text-center mb-8">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-            Two ways to earn
+            {t('earnLabel')}
           </div>
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Groups and cargo — one minibus.
+            {t('earnTitle')}
           </h2>
           <p className="mt-2 text-[13px] sm:text-[14px] text-black/70 max-w-md mx-auto">
-            Penumpang grup dan barang besar — satu mobil, dua sumber penghasilan.
+            {t('earnSubtitle')}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md sm:max-w-2xl mx-auto">
           <EarningModeCard
             icon={<UserRound className="w-5 h-5" strokeWidth={2.5} />}
-            title="Group passenger trips"
-            subtitle="Antar grup"
-            body="Airport groups, family rombongan, hotel transfers, full-day charter. Set your day rate or per-km rate."
+            title={t('earnPassengerTitle')}
+            subtitle={t('earnPassengerSubtitle')}
+            body={t('earnPassengerBody')}
           />
           <EarningModeCard
             icon={<Package className="w-5 h-5" strokeWidth={2.5} />}
-            title="Bulk cargo"
-            subtitle="Kirim barang besar"
-            body="Pindahan, furniture, multi-box couriers. Minibuses carry what cars can't — often a premium rate."
+            title={t('earnParcelTitle')}
+            subtitle={t('earnParcelSubtitle')}
+            body={t('earnParcelBody')}
           />
         </div>
 
         <p className="mt-6 text-center text-[12px] text-black/55 max-w-md mx-auto">
-          Opt into both from your driver dashboard. Customers pick the mode on the booking page, then see only drivers who offer it.
+          {t('earnFooter')}
         </p>
       </section>
 
@@ -313,28 +317,28 @@ export default function BusDriversLandingPage() {
           <div className="text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFFBEA] border border-[#FACC15] text-[11px] font-extrabold uppercase tracking-wider text-[#0A0A0A] mb-3">
               <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} style={{ color: '#EAB308' }} />
-              Founder Pricing — Locked Forever
+              {t('pricingBadge')}
             </div>
             <div className="text-[44px] sm:text-[56px] font-black leading-none">
               {MONTHLY_PRICE_LABEL}
-              <span className="text-[16px] font-bold text-black/55">/month</span>
+              <span className="text-[16px] font-bold text-black/55">{t('pricingPerMonth')}</span>
             </div>
             <div className="text-[13px] text-black/60 mt-2">
-              or {YEARLY_PRICE_LABEL}/year (save ~23%)
+              {t('pricingYearly', { price: YEARLY_PRICE_LABEL })}
             </div>
             <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0A0A0A] text-white text-[12px] font-extrabold">
               <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} style={{ color: '#FACC15' }} />
-              {TRIAL_LABEL_EN}
+              {t('pricingTrial')}
             </div>
           </div>
 
           <ul className="mt-6 space-y-2.5 text-[13px] sm:text-[14px] text-black/80">
-            <Bullet>Your personal public page (citydrivers.id/bus/you)</Bullet>
-            <Bullet>Offer charter, weddings, school trips, or tours</Bullet>
-            <Bullet>Listed in Yogyakarta, Bali, Jogja minibus search</Bullet>
-            <Bullet>0% commission per trip — forever</Bullet>
-            <Bullet>WhatsApp direct — customers chat you</Bullet>
-            <Bullet>Set day rates, per-km rates, or charter packages</Bullet>
+            <Bullet>{t('pricingBullet1')}</Bullet>
+            <Bullet>{t('pricingBullet2')}</Bullet>
+            <Bullet>{t('pricingBullet3')}</Bullet>
+            <Bullet>{t('pricingBullet4')}</Bullet>
+            <Bullet>{t('pricingBullet5')}</Bullet>
+            <Bullet>{t('pricingBullet6')}</Bullet>
           </ul>
 
           <div className="mt-7 flex flex-col sm:flex-row gap-3">
@@ -343,12 +347,12 @@ export default function BusDriversLandingPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.45)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
-              Start 30-day free trial
+              {t('pricingCta')}
               <ArrowRight className="w-4 h-4" strokeWidth={3} />
             </Link>
           </div>
           <p className="mt-3 text-center text-[11px] text-black/45">
-            No credit card required for the trial. Cancel anytime.
+            {t('pricingFine')}
           </p>
         </div>
       </section>
@@ -356,12 +360,10 @@ export default function BusDriversLandingPage() {
       <section className="bg-[#0A0A0A] text-white">
         <div className="px-5 py-12 text-center">
           <h2 className="text-[24px] sm:text-[32px] font-black leading-tight">
-            Ready to make your minibus earn?
+            {t('finalTitle')}
           </h2>
           <p className="mt-3 text-[14px] sm:text-[16px] text-white/70 max-w-xl mx-auto">
-            Early founder drivers get
-            {' '}{MONTHLY_PRICE_LABEL}/month locked in for life. Price goes up
-            for new signups once the early cohort fills.
+            {t('finalBody', { price: MONTHLY_PRICE_LABEL })}
           </p>
           <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
             <Link
@@ -369,27 +371,23 @@ export default function BusDriversLandingPage() {
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
-              Sign up now — 30 days free
+              {t('finalCta')}
               <ArrowRight className="w-4 h-4" strokeWidth={3} />
             </Link>
             <a
-              href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(
-                "Hi, I'm interested in listing my minibus on CityDrivers. Can I get more info?",
-              )}`}
+              href={`https://wa.me/${getSupportWhatsApp()}?text=${encodeURIComponent(t('waMessage'))}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white/10 border border-white/25 text-white text-[14px] font-extrabold active:scale-[0.97] transition hover:bg-white/15"
               style={{ minHeight: 48 }}
             >
               <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-              Ask via WhatsApp first
+              {t('finalWa')}
             </a>
           </div>
 
           <div className="mt-10 pt-6 border-t border-white/10 text-[12px] text-white/45">
-            CityDrivers is a directory and profile management tool — not a
-            ride-hailing app. Drivers and customers transact directly,
-            off-platform.
+            {t('footerDisclaimer')}
           </div>
         </div>
       </section>
@@ -400,15 +398,19 @@ export default function BusDriversLandingPage() {
 
 // ─── Small presentational helpers ───────────────────────────────────
 
-// 4-way Bike/Car/Bus/Truck mini selector. Active chip renders as plain
-// text (no link); inactive chips are pill links.
-function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'bus' | 'truck' | 'jeep' }) {
-  const items: { key: 'bike' | 'car' | 'bus' | 'truck' | 'jeep'; label: string; href: string }[] = [
-    { key: 'bike',  label: 'Bike',  href: '/drivers' },
-    { key: 'car',   label: 'Car',   href: '/drivers/car' },
-    { key: 'bus',   label: 'Bus',   href: '/drivers/bus' },
-    { key: 'truck', label: 'Truck', href: '/drivers/truck' },
-    { key: 'jeep',  label: 'Jeep',  href: '/drivers/jeep' },
+function VehicleSwitcher({
+  active,
+  labels,
+}: {
+  active: 'bike' | 'car' | 'bus' | 'truck' | 'jeep'
+  labels: Record<'bike' | 'car' | 'bus' | 'truck' | 'jeep', string>
+}) {
+  const items: { key: 'bike' | 'car' | 'bus' | 'truck' | 'jeep'; href: string }[] = [
+    { key: 'bike',  href: '/drivers' },
+    { key: 'car',   href: '/drivers/car' },
+    { key: 'bus',   href: '/drivers/bus' },
+    { key: 'truck', href: '/drivers/truck' },
+    { key: 'jeep',  href: '/drivers/jeep' },
   ]
   return (
     <div
@@ -428,7 +430,7 @@ function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'bus' | 'truck' 
             style={{ color: '#0A0A0A', background: '#FACC15' }}
             aria-current="page"
           >
-            {it.label}
+            {labels[it.key]}
           </span>
         ) : (
           <Link
@@ -437,7 +439,7 @@ function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'bus' | 'truck' 
             className="px-2 py-0.5 rounded-full text-[11px] font-extrabold transition active:scale-[0.97]"
             style={{ color: '#0A0A0A' }}
           >
-            {it.label}
+            {labels[it.key]}
           </Link>
         ),
       )}
@@ -446,9 +448,10 @@ function VehicleSwitcher({ active }: { active: 'bike' | 'car' | 'bus' | 'truck' 
 }
 
 function Step({
-  n, icon, title, children,
+  n, stepLabel, icon, title, children,
 }: {
   n: number
+  stepLabel: string
   icon: React.ReactNode
   title: React.ReactNode
   children: React.ReactNode
@@ -463,7 +466,7 @@ function Step({
           {icon}
         </div>
         <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308]">
-          Step {n}
+          {stepLabel} {n}
         </span>
       </div>
       <h3 className="text-[16px] sm:text-[18px] font-black leading-tight">{title}</h3>
