@@ -26,7 +26,11 @@ import { PARCEL_RATE_TIER_DEFAULTS_CAR } from '@/lib/parcel/defaults'
 // data into it as props.
 // =============================================================================
 
-export const revalidate = 300
+// CRITICAL: force-dynamic on Cloudflare Workers (ISR `revalidate=300`
+// silently breaks on open-next — Worker serves the empty build-time
+// shell instead of SSR'ing per request). See /r/[slug] for the full
+// incident note.
+export const dynamic = 'force-dynamic'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 

@@ -35,7 +35,14 @@ import { PARCEL_RATE_TIER_DEFAULTS_BIKE } from '@/lib/parcel/defaults'
 // improvement lands in both places.
 // =============================================================================
 
-export const revalidate = 300
+// CRITICAL: must be force-dynamic on Cloudflare Workers. The previous
+// `revalidate = 300` (ISR) silently broke on open-next — the Worker
+// served the build-time-generated empty shell instead of SSR'ing the
+// page per request. Result: every bike profile URL returned a ~23KB
+// HTML stub with no driver name / banner / vehicle photos. Customers
+// who tapped the Profile pill on /cari landed on what looked like the
+// landing page. Forcing per-request render fixes it definitively.
+export const dynamic = 'force-dynamic'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://citydrivers.id'
 

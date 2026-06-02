@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { haversineKm } from '@/lib/geo/haversine'
 
 export type PlaceSuggestion = {
   id: string
@@ -24,15 +25,23 @@ type Options = {
    *  rather than London or Bangkok when the user types ambiguous text.
    *  Pass `[]` explicitly to opt back into a global search. */
   countryCodes?: string[]
-  /** Bias results around this point (helps surface nearby places first). */
+  /** Bias results around this point (helps surface nearby places first).
+   *  Required for the local-only radius filter (`maxDistanceKm`) to do
+   *  anything useful — without `near` we have no centre to measure from. */
   near?: { lat: number; lng: number } | null
+  /** Hard radius (km) from `near` to filter results down to. Anything
+   *  further than this is dropped from the suggestion list AFTER fetch.
+   *  Default 50 — CityDrivers is a city directory, not a long-haul
+   *  marketplace. A user in Bantul shouldn't see Jakarta in autosuggest.
+   *  Pass `0` (or `Infinity`) to disable the filter explicitly. */
+  maxDistanceKm?: number
 }
 
 // Self-contained place-search hook. Pass it the current input value and
 // it returns debounced suggestions from Nominatim. AbortController cancels
 // in-flight requests when the user keeps typing.
 export function usePlaceSearch(query: string, opts: Options = {}) {
-  const { debounceMs = 350, minChars = 3, countryCodes = ['id'], near = null } = opts
+  const { debounceMs = 350, minChars = 3, countryCodes = ['id'], near = null, maxDistanceKm = 50 } = opts
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
@@ -57,14 +66,19 @@ export function usePlaceSearch(query: string, opts: Options = {}) {
         url.searchParams.set('addressdetails', '1')
         if (countryCodes.length) url.searchParams.set('countrycodes', countryCodes.join(','))
         if (near) {
-          // 0.3deg ~ 33km — a soft local bias, not a hard bound.
+          // Tight viewbox when we'll enforce a hard 50km radius client-side.
+          // 0.5 deg ≈ 55km — slightly wider than the radius to give the
+          // haversine filter a small margin against the rectangle vs
+          // circle mismatch.
+          const wide = maxDistanceKm > 0 ? 0.5 : 0.3
           url.searchParams.set(
             'viewbox',
-            `${near.lng - 0.3},${near.lat + 0.3},${near.lng + 0.3},${near.lat - 0.3}`,
+            `${near.lng - wide},${near.lat + wide},${near.lng + wide},${near.lat - wide}`,
           )
-          // bounded=0 means "prefer but don't restrict" → global queries
-          // still find Bandung when biased to Yogyakarta.
-          url.searchParams.set('bounded', '0')
+          // bounded=1 strict-clips Nominatim to the viewbox so it doesn't
+          // surface Jakarta when the user is in Bantul. bounded=0 (soft
+          // bias) was the old behaviour.
+          url.searchParams.set('bounded', maxDistanceKm > 0 ? '1' : '0')
         }
 
         const res = await fetch(url.toString(), {
@@ -74,15 +88,23 @@ export function usePlaceSearch(query: string, opts: Options = {}) {
         })
         if (!res.ok) throw new Error(`Nominatim ${res.status}`)
         const data: NominatimItem[] = await res.json()
-        setSuggestions(
-          data.map((d): PlaceSuggestion => ({
-            id: String(d.place_id),
-            label: pickShortLabel(d),
-            detail: d.display_name,
-            lat: parseFloat(d.lat),
-            lng: parseFloat(d.lon),
-          })),
-        )
+        const mapped = data.map((d): PlaceSuggestion => ({
+          id: String(d.place_id),
+          label: pickShortLabel(d),
+          detail: d.display_name,
+          lat: parseFloat(d.lat),
+          lng: parseFloat(d.lon),
+        }))
+        // Hard radius cull — CityDrivers is a city service. A user in
+        // Bantul typing "Ja" should not see Jakarta (575km) or Jambi
+        // (1200km) suggested. Without `near` we have no reference
+        // point, so the filter no-ops and the country-code bias is all
+        // that remains.
+        const filtered =
+          near && maxDistanceKm > 0
+            ? mapped.filter((s) => haversineKm(near, { lat: s.lat, lng: s.lng }) <= maxDistanceKm)
+            : mapped
+        setSuggestions(filtered)
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           setSuggestions([])
@@ -93,7 +115,7 @@ export function usePlaceSearch(query: string, opts: Options = {}) {
     }, debounceMs)
 
     return () => { clearTimeout(t); abortRef.current?.abort() }
-  }, [query, debounceMs, minChars, countryCodes.join(','), near?.lat, near?.lng])
+  }, [query, debounceMs, minChars, countryCodes.join(','), near?.lat, near?.lng, maxDistanceKm])
 
   return { suggestions, loading, clear: () => setSuggestions([]) }
 }

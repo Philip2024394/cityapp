@@ -551,20 +551,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             <span className="truncate inline-block max-w-full align-bottom">
               {driver.business_name || 'Driver'}
             </span>
-            {driver.is_mock && (
-              <span
-                className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md align-middle text-[11px] font-extrabold uppercase tracking-wider"
-                style={{
-                  background: '#FACC15',
-                  color: '#0A0A0A',
-                  textShadow: 'none',
-                  verticalAlign: 'middle',
-                }}
-                title="This is a demo profile — not a real contactable driver. The marketplace seeds these while we onboard real drivers."
-              >
-                Demo
-              </span>
-            )}
+            {/* Per founder direction the "Demo" pill is hidden from the
+                public profile hero — mocks should read as ordinary
+                drivers to keep the marketplace feeling populated. The
+                `driver.is_mock` flag is still threaded through the data
+                layer in case we want to surface it elsewhere (admin,
+                debug, etc.). */}
           </div>
           {/* Hero slogan — strictly 1 line, kept well clear of the right
               edge of the hero image. Defensively sliced to ~55 chars so
