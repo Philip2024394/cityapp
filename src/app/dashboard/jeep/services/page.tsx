@@ -31,6 +31,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, Layers, DollarSign, Car, Check, Loader2, Package, Clock, Lock, MapPin,
+  Tag, ChevronRight,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -215,6 +216,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
         </div>
 
         <OfferingsCard offerings={offerings} onSave={save} />
+        <TourPackageRatesLinkCard />
         <PricingCard row={row} onSave={save} />
         <PitstopFeeCard row={row} onSave={save} />
         {rentalEnabled && <RentalCard row={row} onSave={save} />}
@@ -222,6 +224,50 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
         <HourlyHireCard row={row} onSave={save} />
       </div>
     </Shell>
+  )
+}
+
+// ============================================================================
+// Tour package rates — entry link to the per-package rate editor.
+// ----------------------------------------------------------------------------
+// Jeep drivers publish their own rates for each Temple / City / Offroad /
+// Beach / 8h / 4h tour package on /dashboard/jeep/rates. The catalog ships
+// pre-filled with Yogya-market defaults (Merapi Lava Tour Rp 350-650k,
+// Parangtritis Rp 500-700k, etc.) so a new driver goes live without
+// touching anything; this card surfaces the editor for those who want to
+// override.
+// ============================================================================
+function TourPackageRatesLinkCard() {
+  return (
+    <Link
+      href="/dashboard/jeep/rates"
+      className="block group rounded-3xl bg-white border border-gray-200 p-5 shadow-sm mb-4 hover:border-[#FACC15] hover:shadow transition active:scale-[0.995]"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center"
+          style={{ background: '#FEF9C3', color: '#854D0E' }}
+        >
+          <Tag size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[15px] font-black text-[#0A0A0A] leading-tight">
+              Tour package rates
+            </h2>
+            <ChevronRight size={18} className="shrink-0 text-black/40 group-hover:text-[#854D0E] transition" />
+          </div>
+          <p className="text-[12px] text-black/65 leading-snug mt-1">
+            Set YOUR price per Temple / City / Offroad / Beach package, plus 8h and 4h day-hire.
+            Hotel + villa pickup included; tolls, bridge fees, entrance tickets,
+            and food (guests + driver) are NOT included.
+          </p>
+          <span className="inline-flex items-center gap-1 text-[11.5px] font-extrabold uppercase tracking-wider mt-2 text-[#854D0E]">
+            Manage prices
+          </span>
+        </div>
+      </div>
+    </Link>
   )
 }
 

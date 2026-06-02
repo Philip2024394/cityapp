@@ -360,11 +360,13 @@ export default function VehicleProfileShell({
   }, [vehicleType, showReviews, v.id, reviewsRefreshCount])
 
   // -- Per-service rate panel state -------------------------------------------
-  // Trucks + minibus share the catalog-driven badge / rate-panel UX. Jeep
-  // keeps the legacy single rate-rows card (no catalog yet) for now.
+  // Truck, minibus, AND jeep share the catalog-driven badge / rate-panel UX.
+  // Jeep catalog (Jun 2026): Temple / City / Offroad / Beach / 8h / 4h —
+  // see JEEP_SERVICE_OFFERINGS in src/lib/drivers/serviceOfferings.ts.
   const serviceCatalog: readonly ServiceCatalogEntry[] =
     vehicleType === 'truck' ? getServiceCatalog('truck')
-    : vehicleType === 'bus' ? getServiceCatalog('minibus')
+    : vehicleType === 'bus'  ? getServiceCatalog('minibus')
+    : vehicleType === 'jeep' ? getServiceCatalog('jeep')
     : []
   const [activeServiceId, setActiveServiceId] = useState<string | null>(
     serviceCatalog[0]?.id ?? null,
@@ -901,7 +903,10 @@ export default function VehicleProfileShell({
                     },
                   })),
                 ]
-              } else if (vehicleType === 'truck') {
+              } else if (vehicleType === 'truck' || vehicleType === 'jeep') {
+                // Jeep + truck share the same clickable catalog-badge pattern.
+                // Each badge selects a service which renders its rate panel
+                // (header + sub-text + rate rows + includes/excludes) below.
                 items = serviceCatalog.map((svc) => ({
                   key:     svc.id,
                   label:   svc.label_en,
@@ -909,7 +914,7 @@ export default function VehicleProfileShell({
                   onClick: () => setActiveServiceId(svc.id),
                 }))
               } else {
-                // Jeep — legacy read-only chip row from driver's opted-in offerings.
+                // Other verticals — read-only chip row from driver offerings.
                 items = v.service_offerings.map((sid) => ({
                   key:   sid,
                   label: SERVICE_OFFERING_LABELS[sid as ServiceOfferingId] ?? sid,
@@ -918,7 +923,8 @@ export default function VehicleProfileShell({
 
               if (items.length === 0) return null
               // Bus has 4 tabs (Booking + 3 catalog) — fit all on one row.
-              const VISIBLE = vehicleType === 'bus' ? 4 : 3
+              // Jeep has 6 catalog tabs — show 4 inline, burger reveals 8h+4h.
+              const VISIBLE = vehicleType === 'bus' ? 4 : vehicleType === 'jeep' ? 4 : 3
               const inline  = items.slice(0, VISIBLE)
               const rest    = items.slice(VISIBLE)
               const hasMore = rest.length > 0
@@ -989,7 +995,9 @@ export default function VehicleProfileShell({
             {activeService && (
               vehicleType === 'truck'
                 ? true
-                : vehicleType === 'bus' && activeBusTab !== 'booking'
+                : vehicleType === 'jeep'
+                  ? true
+                  : vehicleType === 'bus' && activeBusTab !== 'booking'
             ) && (
               <ServiceRatePanel
                 service={activeService}
@@ -1020,8 +1028,11 @@ export default function VehicleProfileShell({
             )}
 
             {/* Portfolio carousel — vehicle photos. Shares the exact card
-                + carousel + view-toggle UI the beautician page uses. */}
-            {portfolioPhotos.length > 0 && (
+                + carousel + view-toggle UI the beautician page uses. Hidden
+                for jeep: the Services Provided block above owns that
+                real-estate (founder direction Jun 2026, replacing the photo
+                strip with the Temple/City/Offroad/Beach/8h/4h rate panels). */}
+            {vehicleType !== 'jeep' && portfolioPhotos.length > 0 && (
               <section className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">

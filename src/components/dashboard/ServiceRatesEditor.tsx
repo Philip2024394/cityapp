@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, Layers, Plus, Minus, RotateCcw, Loader2, Check, Save, Truck, Bus,
+  ArrowLeft, Layers, Plus, Minus, RotateCcw, Loader2, Check, Save, Truck, Bus, Car,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -68,7 +68,7 @@ function parseIdr(text: string): number {
 export default function ServiceRatesEditor({
   vehicleType, catalog, backHref, title,
 }: {
-  vehicleType: 'truck' | 'bus'
+  vehicleType: 'truck' | 'bus' | 'jeep'
   catalog:     readonly ServiceCatalogEntry[]
   backHref:    string
   title:       string
@@ -173,7 +173,7 @@ function draftToRows(rows: DraftRow[]): RateRow[] {
 function Editor({
   vehicleType, catalog, backHref, title, initialRates, onReload,
 }: {
-  vehicleType:  'truck' | 'bus'
+  vehicleType:  'truck' | 'bus' | 'jeep'
   catalog:      readonly ServiceCatalogEntry[]
   backHref:     string
   title:        string
@@ -302,7 +302,7 @@ function Editor({
     if (ok) onReload()
   }
 
-  const HeroIcon = vehicleType === 'truck' ? Truck : Bus
+  const HeroIcon = vehicleType === 'truck' ? Truck : vehicleType === 'jeep' ? Car : Bus
 
   return (
     <Shell>

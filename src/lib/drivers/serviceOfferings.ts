@@ -326,13 +326,145 @@ export const BUS_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
   },
 ]
 
+// =============================================================================
+// JEEP_SERVICE_OFFERINGS — Yogyakarta jeep tour catalog.
 // -----------------------------------------------------------------------------
-// Public helper — pick the right catalog for the vehicle vertical. Truck and
-// minibus are the only verticals that carry a per-service rate catalog;
-// jeep keeps the simple driver-published rate flow (no panel) for now.
+// Six buckets reflecting the real Yogya jeep market:
+//   - temple   — Borobudur / Prambanan / Mendut / Pawon temple route
+//   - city     — Malioboro + Kraton + Tamansari + markets + Kotagede silver
+//   - offroad  — Merapi Lava Tour (the iconic one), Klangon hill, Kalikuning
+//   - beach    — Parangtritis sand-dune + black-sand + Indrayanti / Timang
+//   - daily_8h — Full-day open hire (8 hours, do-anything package)
+//   - daily_4h — Half-day open hire (4 hours, short window)
+//
+// Yogya market reference rates (June 2026; founder-overridable in dashboard):
+//   - Merapi Lava Tour short  Rp 350k / medium Rp 500k / long Rp 650k (per jeep, ≤4 pax)
+//   - Parangtritis 6-hour     Rp 500k (sand dune + sunset)
+//   - Temple combo (B+P)      Rp 1.5–2M jeep day rate (entrance fees extra)
+//   - 8-hour day hire         Rp 700k–1M
+//   - 4-hour half-day         Rp 400k–600k
+// Sources: Merapi Adventure, Telkomsel Jelajah, Joglo Wisata, Klook, GetYourGuide.
+//
+// Hotel/villa pickup + dropoff is standard across all buckets. Tolls, bridge
+// fees, attraction entrance tickets, parking, and food (for guests AND
+// driver) are NOT included — same language across all 6 entries.
+// =============================================================================
+export const JEEP_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
+  {
+    id:          'temple',
+    label_en:    'Temple',
+    label_id:    'Candi',
+    description: 'Borobudur, Prambanan, Mendut, Pawon — heritage jeep tour with hotel pickup.',
+    rate_model:  'per_destination_package',
+    header:      'Temple tour packages',
+    subtext:     'Open-top jeep ride between the UNESCO heritage temples — Borobudur sunrise / day, Prambanan, plus the smaller Mendut + Pawon stops. Hotel or villa pickup and dropoff included.',
+    default_rates: [
+      { label: 'Borobudur day trip',                  idr: 850000 },
+      { label: 'Prambanan + Ratu Boko sunset',        idr: 750000 },
+      { label: 'Borobudur + Prambanan combo (full day)', idr: 1600000 },
+      { label: 'Borobudur sunrise + Mendut + Pawon',  idr: 1100000 },
+      { label: 'Borobudur + Merapi sunrise combo',    idr: 1800000 },
+    ],
+    includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff'],
+    excludes: ['temple entrance tickets', 'tolls + bridge fees', 'parking', 'food (guests + driver)'],
+  },
+  {
+    id:          'city',
+    label_en:    'City',
+    label_id:    'Kota',
+    description: 'Malioboro, Kraton, Tamansari, traditional markets — open-jeep city ride.',
+    rate_model:  'per_destination_package',
+    header:      'City discovery packages',
+    subtext:     'Roof-down jeep loop through the city: Malioboro, Kraton, Tamansari, Beringharjo market, Kotagede silver district. Picture-friendly transport with hotel/villa pickup + dropoff.',
+    default_rates: [
+      { label: 'Malioboro + Kraton + Tamansari',          idr: 450000 },
+      { label: 'Beringharjo market + Pasar Ngasem',       idr: 400000 },
+      { label: 'Kotagede silver + Kasongan pottery',      idr: 550000 },
+      { label: 'Full city loop (4 stops, 5 hours)',       idr: 750000 },
+      { label: 'Evening street-food + night-market crawl', idr: 500000 },
+    ],
+    includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff'],
+    excludes: ['food + drinks', 'shopping', 'tolls + bridge fees', 'parking', 'driver meals'],
+  },
+  {
+    id:          'offroad',
+    label_en:    'Offroad',
+    label_id:    'Offroad',
+    description: 'Merapi Lava Tour, Klangon hill, Kalikuning — proper 4×4 adventure.',
+    rate_model:  'per_destination_package',
+    header:      'Offroad adventure packages',
+    subtext:     'The iconic Jogja Lava Tour up the slopes of Merapi — bunker Kaliadem, Batu Alien, Stonehenge replica, water-splash river crossing. Hotel/villa pickup included.',
+    default_rates: [
+      { label: 'Merapi Lava Tour — short (1.5–2h)',  idr: 400000 },
+      { label: 'Merapi Lava Tour — medium (3–4h)',   idr: 550000 },
+      { label: 'Merapi Lava Tour — long (4–5h)',     idr: 700000 },
+      { label: 'Merapi sunrise jeep (pre-dawn pickup)', idr: 800000 },
+      { label: 'Klangon hill + Kalikuning offroad',  idr: 600000 },
+    ],
+    includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff', 'helmet (sunrise)'],
+    excludes: ['bunker entrance + spot tickets', 'tolls + bridge fees', 'parking', 'food (guests + driver)'],
+  },
+  {
+    id:          'beach',
+    label_en:    'Beach',
+    label_id:    'Pantai',
+    description: 'Parangtritis sand dunes, Indrayanti, Timang — beach-to-beach 4×4.',
+    rate_model:  'per_destination_package',
+    header:      'Beach adventure packages',
+    subtext:     'Offroad jeep from city to the south coast — Parangtritis black sand, Gumuk Pasir sand dunes, Indrayanti, Timang gondola beach. Sunset variant most popular. Hotel/villa pickup + dropoff included.',
+    default_rates: [
+      { label: 'Parangtritis sunset + sand dunes (5h)', idr: 600000 },
+      { label: 'Parangtritis + Goa Cemara (6h)',         idr: 700000 },
+      { label: 'Indrayanti + Pok Tunggal beach hop',     idr: 850000 },
+      { label: 'Timang gondola + Pantai Sundak',         idr: 900000 },
+      { label: 'Full south-coast 3-beach day',            idr: 1100000 },
+    ],
+    includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff'],
+    excludes: ['beach entry + gondola tickets', 'tolls + bridge fees', 'parking', 'food (guests + driver)'],
+  },
+  {
+    id:          'daily_8h',
+    label_en:    '8h Day Hire',
+    label_id:    'Sewa 8 Jam',
+    description: 'Full-day open jeep hire (8 hours) — point anywhere, driver waits.',
+    rate_model:  'daily',
+    header:      '8-hour full-day jeep hire',
+    subtext:     'Open block — tell the driver where you want to go and they take you. Eight straight hours, hotel/villa pickup + dropoff included. Multiple stops welcome.',
+    default_rates: [
+      { label: 'In-city + Sleman / Bantul (8h)', idr: 850000 },
+      { label: 'Out-of-town 8h block',           idr: 1100000 },
+      { label: 'Overtime per hour',              idr:  100000, per: '/hr' },
+    ],
+    includes: ['jeep + driver', 'fuel (in-city)', 'hotel/villa pickup + dropoff', '8 hours of driving'],
+    excludes: ['fuel surcharge (out-of-town)', 'tolls + bridge fees', 'parking', 'attraction tickets', 'food (guests + driver)'],
+  },
+  {
+    id:          'daily_4h',
+    label_en:    '4h Half-Day',
+    label_id:    'Sewa 4 Jam',
+    description: 'Half-day open jeep hire (4 hours) — quick city loop or sunset run.',
+    rate_model:  'daily',
+    header:      '4-hour half-day jeep hire',
+    subtext:     'Short block for a quick city loop, sunset run, or temple-and-back. Hotel/villa pickup + dropoff included. Best for travellers on tight schedules.',
+    default_rates: [
+      { label: 'In-city half-day (4h)',     idr: 500000 },
+      { label: 'Half-day + 1 attraction',   idr: 650000 },
+      { label: 'Overtime per hour',         idr: 100000, per: '/hr' },
+    ],
+    includes: ['jeep + driver', 'fuel (in-city)', 'hotel/villa pickup + dropoff', '4 hours of driving'],
+    excludes: ['fuel surcharge (out-of-town)', 'tolls + bridge fees', 'parking', 'attraction tickets', 'food (guests + driver)'],
+  },
+]
+
+// -----------------------------------------------------------------------------
+// Public helper — pick the right catalog for the vehicle vertical. Truck,
+// minibus, and jeep each carry a per-service rate catalog; the public profile
+// renders the badge / rate-panel UX uniformly for all three.
 // -----------------------------------------------------------------------------
 export function getServiceCatalog(
-  vehicleType: 'truck' | 'minibus',
+  vehicleType: 'truck' | 'minibus' | 'jeep',
 ): readonly ServiceCatalogEntry[] {
-  return vehicleType === 'truck' ? TRUCK_SERVICE_OFFERINGS : BUS_SERVICE_OFFERINGS
+  if (vehicleType === 'truck')   return TRUCK_SERVICE_OFFERINGS
+  if (vehicleType === 'minibus') return BUS_SERVICE_OFFERINGS
+  return JEEP_SERVICE_OFFERINGS
 }
