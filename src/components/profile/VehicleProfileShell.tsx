@@ -24,6 +24,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import nextDynamic from 'next/dynamic'
+import { useTranslations } from 'next-intl'
 import {
   Star, Award, MessageCircle, Share2, Link2, X, ChevronLeft, BadgeCheck,
   MapPin, Truck as TruckIcon, Bus as BusIcon, Mountain as JeepIcon,
@@ -184,7 +185,9 @@ export type VehiclePublic = {
 
 type VehicleChromeConfig = {
   backHref:        string
-  backLabel:       string
+  /** i18n key inside the `vehicleProfile` namespace — resolves to the
+   *  back-tab label (e.g. "Truk" / "Truck"). Was a literal string. */
+  backLabelKey:    'backLabelTruck' | 'backLabelBus' | 'backLabelJeep'
   heroIcon:        typeof TruckIcon
   intentVertical:  ConnectIntentVertical
   intentSource:    ConnectIntentSource
@@ -195,7 +198,7 @@ const CHROME_BY_VEHICLE: Record<VehicleType, VehicleChromeConfig> = {
   truck: {
     // /truck has no directory page; truck cards live in the parcel hub.
     backHref:       '/cityriders/parcel',
-    backLabel:      'Truck',
+    backLabelKey:   'backLabelTruck',
     heroIcon:       TruckIcon,
     intentVertical: 'rentals',
     intentSource:   'other',
@@ -206,7 +209,7 @@ const CHROME_BY_VEHICLE: Record<VehicleType, VehicleChromeConfig> = {
     // tourist flow; the back tab must drop customers back at the main
     // booking entry (/cari) instead.
     backHref:       '/cari?service=bus',
-    backLabel:      'Booking',
+    backLabelKey:   'backLabelBus',
     heroIcon:       BusIcon,
     intentVertical: 'car',
     intentSource:   'bus_profile',
@@ -214,7 +217,7 @@ const CHROME_BY_VEHICLE: Record<VehicleType, VehicleChromeConfig> = {
   },
   jeep: {
     backHref:       '/cari?vehicle=jeep',
-    backLabel:      'Jeep',
+    backLabelKey:   'backLabelJeep',
     heroIcon:       JeepIcon,
     intentVertical: 'car',
     intentSource:   'other',
@@ -238,8 +241,8 @@ const SERVICE_OFFERING_LABELS: Record<string, string> = Object.fromEntries(
 // render IDR so a fixed Rp prefix is fine.
 // -----------------------------------------------------------------------------
 
-function formatStartFromPrice(amount: number | null | undefined): string {
-  if (typeof amount !== 'number' || amount <= 0) return 'Hubungi'
+function formatStartFromPrice(amount: number | null | undefined, contactLabel: string): string {
+  if (typeof amount !== 'number' || amount <= 0) return contactLabel
   if (amount >= 1_000_000) {
     const jt = amount / 1_000_000
     return `Rp ${Number.isInteger(jt) ? jt : jt.toFixed(1)}jt`
@@ -263,6 +266,7 @@ function buildPortfolioPhotos(
   startPriceIdr: number | null,
   vehicleType: VehicleType,
   vehicleColor: string | null,
+  captions: { uploaded: string; silhouette: string },
 ): PortfolioPhoto[] {
   // Driver-uploaded photos always win when present. Catalog / silhouette
   // fallbacks only kick in when the driver hasn't uploaded any yet — so
@@ -271,7 +275,7 @@ function buildPortfolioPhotos(
     return photos.map((url) => ({
       url,
       name:        vehicleLabel,
-      description: 'Foto kendaraan yang di-upload oleh driver.',
+      description: captions.uploaded,
       price_idr:   startPriceIdr ?? null,
     }))
   }
@@ -297,7 +301,7 @@ function buildPortfolioPhotos(
       return [{
         url:         silhouette,
         name:        vehicleLabel,
-        description: 'Stock illustration — driver belum upload foto kendaraan.',
+        description: captions.silhouette,
         price_idr:   startPriceIdr ?? null,
       }]
     }
@@ -320,6 +324,7 @@ export default function VehicleProfileShell({
   vehicle:      VehiclePublic
   vehicleType:  VehicleType
 }) {
+  const t = useTranslations('vehicleProfile')
   const chrome = CHROME_BY_VEHICLE[vehicleType]
   const theme  = BRAND_YELLOW
 
@@ -379,7 +384,7 @@ export default function VehicleProfileShell({
   }
 
   const vehicleLabel = [v.vehicle_make, v.vehicle_model].filter(Boolean).join(' ')
-    || (vehicleType === 'truck' ? 'Truck' : vehicleType === 'bus' ? 'Minibus' : 'Jeep')
+    || (vehicleType === 'truck' ? t('heroTruck') : vehicleType === 'bus' ? t('heroBus') : t('heroJeep'))
   // Dedupe case-insensitively so "Yogyakarta Kota, Yogyakarta" (area =
   // "Yogyakarta Kota", city = "Yogyakarta") collapses to a single
   // "Yogyakarta Kota" line instead of an awkward duplicate.
@@ -410,21 +415,24 @@ export default function VehicleProfileShell({
   const waDigits = (v.whatsapp_e164 ?? '').replace(/\D+/g, '')
   function buildWaLink(extraLine?: string): string | null {
     if (!waDigits) return null
+    const introKey =
+      vehicleType === 'truck' ? 'waIntroTruck'
+      : vehicleType === 'bus' ? 'waIntroBus'
+      : 'waIntroJeep'
     const msg = [
-      `Halo ${v.display_name}, saya menemukan profil Anda di CityDrivers.`,
-      vehicleType === 'truck'
-        ? 'Saya tertarik menyewa truk Anda.'
-        : vehicleType === 'bus'
-          ? 'Saya tertarik mencharter minibus Anda.'
-          : 'Saya tertarik booking jeep Anda.',
+      t('waSalutation', { name: v.display_name }),
+      t(introKey),
       extraLine ?? '',
-      'Apakah Anda available?',
+      t('waAvailable'),
     ].filter(Boolean).join('\n')
     return `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}`
   }
   const waLink = buildWaLink()
 
-  const portfolioPhotos = buildPortfolioPhotos(v.vehicle_photos, vehicleLabel, v.start_price_idr, vehicleType, v.vehicle_color)
+  const portfolioPhotos = buildPortfolioPhotos(
+    v.vehicle_photos, vehicleLabel, v.start_price_idr, vehicleType, v.vehicle_color,
+    { uploaded: t('photoUploadedCaption'), silhouette: t('jeepSilhouetteCaption') },
+  )
 
   return (
     <main className="relative min-h-[100dvh] bg-white text-ink">
@@ -452,7 +460,7 @@ export default function VehicleProfileShell({
           <button
             type="button"
             onClick={() => setShareOpen(true)}
-            aria-label="Share profile"
+            aria-label={t('shareProfileAria')}
             className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md active:scale-[0.96] transition"
             style={{ background: theme }}
           >
@@ -504,7 +512,7 @@ export default function VehicleProfileShell({
                 textShadow: '0 2px 6px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.85)',
               }}
             >
-              <span>Professional</span>
+              <span>{t('professional')}</span>
               <Sparkles
                 className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 -mt-3"
                 strokeWidth={0}
@@ -517,7 +525,7 @@ export default function VehicleProfileShell({
               style={{ textShadow: '0 2px 6px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.85)' }}
             >
               <span className="inline-block" style={{ color: theme }}>
-                {vehicleType === 'truck' ? 'Truck Rental' : vehicleType === 'bus' ? 'Minibus' : 'Jeep'}
+                {vehicleType === 'truck' ? t('heroTruck') : vehicleType === 'bus' ? t('heroBus') : t('heroJeep')}
               </span>
             </div>
             <div
@@ -529,10 +537,10 @@ export default function VehicleProfileShell({
               }}
             >
               {vehicleType === 'truck'
-                ? 'Sewa harian, mingguan, bulanan — agree langsung dengan driver.'
+                ? t('heroTaglineTruck')
                 : vehicleType === 'bus'
-                  ? 'Charter rombongan, airport transfer, tour — sepakati di chat.'
-                  : 'Offroad, sunrise tour, charter — sepakati di chat.'}
+                  ? t('heroTaglineBus')
+                  : t('heroTaglineJeep')}
             </div>
 
             {/* Bus-only — 3 hero service icons (Tour / Airport / Temple).
@@ -541,11 +549,11 @@ export default function VehicleProfileShell({
                 tapping a badge. */}
             {vehicleType === 'bus' && (
               <div className="flex items-start gap-2" style={{ marginTop: 15 }}>
-                <HeroServiceIcon icon={MapPinned}    label="Tour" />
+                <HeroServiceIcon icon={MapPinned}    label={t('iconTour')} />
                 <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />
-                <HeroServiceIcon icon={PlaneTakeoff} label="Airport" />
+                <HeroServiceIcon icon={PlaneTakeoff} label={t('iconAirport')} />
                 <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />
-                <HeroServiceIcon icon={Landmark}     label="Temple" />
+                <HeroServiceIcon icon={Landmark}     label={t('iconTemple')} />
               </div>
             )}
           </div>
@@ -568,7 +576,7 @@ export default function VehicleProfileShell({
               style={{ background: BRAND_YELLOW, color: '#0A0A0A' }}
             >
               <Star className="w-3.5 h-3.5" strokeWidth={0} fill="#0A0A0A" />
-              {showReviews ? 'Hide reviews' : 'Reviews'}
+              {showReviews ? t('reviewsHide') : t('reviewsShow')}
             </button>
           </div>
         )}
@@ -612,13 +620,13 @@ export default function VehicleProfileShell({
                   strokeWidth={2.5}
                   fill={theme}
                   style={{ color: '#FFFFFF' }}
-                  aria-label="Verified"
+                  aria-label={t('verifiedAria')}
                 />
                 {/* Satellite-ping green dot — sits inline after the
                     driver name. Only renders when online. */}
                 {v.availability === 'online' && (
                   <span
-                    aria-label="Available now"
+                    aria-label={t('availableNowAria')}
                     className="relative inline-flex items-center justify-center shrink-0"
                     style={{ width: 14, height: 14 }}
                   >
@@ -646,7 +654,7 @@ export default function VehicleProfileShell({
               {v.service_zone_radius_km != null && v.service_zone_radius_km > 0 && (
                 <p className="text-[11px] text-gray-500 truncate mt-0.5 inline-flex items-center gap-1">
                   <MapPin className="w-3 h-3 shrink-0" strokeWidth={2.25} />
-                  Service zone · {v.service_zone_radius_km} km
+                  {t('serviceZoneRow', { km: v.service_zone_radius_km })}
                 </p>
               )}
               {vehicleLabel && (
@@ -666,7 +674,9 @@ export default function VehicleProfileShell({
                     {v.rating != null && v.rating > 0 ? v.rating.toFixed(1) : '—'}
                   </span>
                   <span className="text-[11px] text-gray-500">
-                    ({v.rating_count ?? 0} trip{(v.rating_count ?? 0) === 1 ? '' : 's'})
+                    {(v.rating_count ?? 0) === 1
+                      ? t('tripCount', { count: v.rating_count ?? 0 })
+                      : t('tripCountPlural', { count: v.rating_count ?? 0 })}
                   </span>
                 </span>
                 {/* Bus Places control moved to the unified Services
@@ -697,7 +707,7 @@ export default function VehicleProfileShell({
                   setShowReviews(false)
                 }}
                 aria-pressed={showContactUs}
-                aria-label={showContactUs ? 'Close contact panel' : 'Open contact panel'}
+                aria-label={showContactUs ? t('contactUsCloseAria') : t('contactUsOpenAria')}
                 className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full active:scale-[0.97] transition shadow-sm"
                 style={{
                   background: showContactUs ? '#0A0A0A' : theme,
@@ -707,7 +717,7 @@ export default function VehicleProfileShell({
               >
                 <Phone className="w-3.5 h-3.5" strokeWidth={2.5} />
                 <span className="text-[11px] font-extrabold whitespace-nowrap">
-                  Contact Us
+                  {t('contactUsLabel')}
                 </span>
               </button>
             ) : (
@@ -717,7 +727,7 @@ export default function VehicleProfileShell({
               >
                 <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: theme }} />
                 <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
-                  Verified Driver
+                  {t('verifiedDriver')}
                 </span>
               </div>
             )}
@@ -748,7 +758,7 @@ export default function VehicleProfileShell({
             busyDates={[]}
             themeColor={theme}
             onClose={() => setShowVisitUs(false)}
-            noLocationCopy="Service area sesuai radius — sepakati pickup point di chat."
+            noLocationCopy={t('noLocationCopy')}
             bottomCta={null}
           />
         ) : (
@@ -758,7 +768,7 @@ export default function VehicleProfileShell({
             <section className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                  About
+                  {t('aboutHeading')}
                 </h2>
                 {vehicleType === 'bus' ? (
                   <button
@@ -773,7 +783,7 @@ export default function VehicleProfileShell({
                     }}
                   >
                     <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    {showPlacesPicker ? 'Close' : 'Places'}
+                    {showPlacesPicker ? t('placesClose') : t('placesOpen')}
                   </button>
                 ) : (
                   <button
@@ -783,7 +793,7 @@ export default function VehicleProfileShell({
                     style={{ color: theme }}
                   >
                     <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    Service area
+                    {t('serviceAreaButton')}
                   </button>
                 )}
               </div>
@@ -802,7 +812,7 @@ export default function VehicleProfileShell({
                   </p>
                 ) : (
                   <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">
-                    Driver belum menulis bio.
+                    {t('driverBioEmpty')}
                   </p>
                 )}
               </div>
@@ -874,7 +884,7 @@ export default function VehicleProfileShell({
                 items = [
                   {
                     key:     'booking',
-                    label:   'Booking',
+                    label:   t('tabBooking'),
                     active:  activeBusTab === 'booking',
                     onClick: () => { setActiveBusTab('booking'); setShowPlacesPicker(false); setShowReviews(false); setShowContactUs(false) },
                   },
@@ -917,7 +927,7 @@ export default function VehicleProfileShell({
                   {/* Section header on its own line. Places control
                       lives in the About header for bus, not here. */}
                   <h2 className="text-[12px] font-extrabold uppercase tracking-wider" style={{ color: '#0A0A0A' }}>
-                    Services Provided
+                    {t('servicesProvidedHeading')}
                   </h2>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {inline.map((it) => (
@@ -933,7 +943,7 @@ export default function VehicleProfileShell({
                       <button
                         type="button"
                         aria-expanded={servicesOpen}
-                        aria-label={servicesOpen ? 'Hide additional services' : `Show ${rest.length} more services`}
+                        aria-label={servicesOpen ? t('hideMoreServicesAria') : t('showMoreServicesAria', { count: rest.length })}
                         onClick={() => setServicesOpen((s) => !s)}
                         className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center active:scale-[0.95] transition"
                         style={{
@@ -1015,7 +1025,7 @@ export default function VehicleProfileShell({
               <section className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                    Portfolio
+                    {t('portfolioHeading')}
                   </h2>
                   <PortfolioViewToggle
                     view={portfolioView}
@@ -1024,7 +1034,7 @@ export default function VehicleProfileShell({
                   />
                 </div>
                 <p className="text-[11px] text-gray-500 italic -mt-1">
-                  Please contact for additional service options not listed
+                  {t('portfolioExtra')}
                 </p>
                 <PortfolioCarousel
                   photos={portfolioPhotos}
@@ -1043,7 +1053,7 @@ export default function VehicleProfileShell({
             {vehicleType !== 'bus' && v.rate_rows.length > 0 && (
               <section className="space-y-2" style={{ marginTop: 15 }}>
                 <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                  Published rates
+                  {t('publishedRatesHeading')}
                 </h2>
                 <div
                   className="rounded-2xl border border-gray-200 bg-white p-3 space-y-2"
@@ -1052,7 +1062,7 @@ export default function VehicleProfileShell({
                   {v.rate_rows.map((row, i) => (
                     <React.Fragment key={row.label}>
                       {i > 0 && <div className="h-px bg-gray-100" />}
-                      <PriceRow label={row.label} value={row.value} subnote={row.subnote ?? 'Self-published by driver'} />
+                      <PriceRow label={row.label} value={row.value} subnote={row.subnote ?? t('selfPublishedByDriver')} />
                     </React.Fragment>
                   ))}
                 </div>
@@ -1062,8 +1072,7 @@ export default function VehicleProfileShell({
                   </p>
                 )}
                 <p className="text-[12px] text-gray-500 leading-snug px-1">
-                  Self-published rates · agree the final terms directly with the driver.
-                  CityDrivers is a software directory — we never set, calculate, or modify prices.
+                  {t('rateDisclaimer')}
                 </p>
               </section>
             )}
@@ -1072,10 +1081,10 @@ export default function VehicleProfileShell({
             <RunningMarquee
               text={
                 vehicleType === 'truck'
-                  ? 'Hubungi driver minggu ini — diskusikan rencana sewa harian, mingguan, atau project bulanan.'
+                  ? t('marqueeTruck')
                   : vehicleType === 'bus'
-                    ? 'Charter rombongan minggu ini — sepakati rute & tarif langsung dengan driver.'
-                    : 'Charter jeep minggu ini — offroad, sunrise tour, atau private trip.'
+                    ? t('marqueeBus')
+                    : t('marqueeJeep')
               }
             />
 
@@ -1084,10 +1093,10 @@ export default function VehicleProfileShell({
             <div className="flex items-end justify-between gap-3 pb-4">
               <div className="leading-none pb-3">
                 <div className="text-[24px] sm:text-[28px] font-black text-black">
-                  {formatStartFromPrice(v.start_price_idr)}
+                  {formatStartFromPrice(v.start_price_idr, t('startFromContact'))}
                 </div>
                 <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
-                  Start from
+                  {t('startFrom')}
                 </div>
               </div>
               {waLink && (
@@ -1100,7 +1109,7 @@ export default function VehicleProfileShell({
                   style={{ background: theme, color: BRAND_NAVY }}
                 >
                   <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-                  Contact
+                  {t('ctaContact')}
                 </WaIntentAnchor>
               )}
             </div>
@@ -1122,17 +1131,17 @@ export default function VehicleProfileShell({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-[16px] font-black text-black">Share Profile</h3>
+              <h3 className="text-[16px] font-black text-black">{t('shareModalTitle')}</h3>
               <button
                 onClick={() => setShareOpen(false)}
-                aria-label="Close"
+                aria-label={t('shareCloseAria')}
                 className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
               >
                 <X className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
               </button>
             </div>
             <p className="text-[12px] text-gray-500 mb-4">
-              Bagikan profil {v.display_name} ke teman atau kolega.
+              {t('shareModalSubtitle', { name: v.display_name })}
             </p>
             <div className="space-y-2">
               <button
@@ -1149,14 +1158,14 @@ export default function VehicleProfileShell({
                 </span>
                 <div className="flex-1 text-left min-w-0">
                   <div className="text-[13px] font-extrabold text-black">
-                    {shareCopied ? 'Copied!' : 'Copy link'}
+                    {shareCopied ? t('shareCopied') : t('shareCopyLink')}
                   </div>
                   <div className="text-[11px] text-gray-500 truncate">{profileUrl}</div>
                 </div>
               </button>
 
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${v.display_name} di CityDrivers: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(t('shareWaMessage', { name: v.display_name, url: profileUrl }))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -1166,8 +1175,8 @@ export default function VehicleProfileShell({
                   <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
                 </span>
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-extrabold">WhatsApp</div>
-                  <div className="text-[11px] text-white/85">Send link to a contact</div>
+                  <div className="text-[13px] font-extrabold">{t('shareWhatsApp')}</div>
+                  <div className="text-[11px] text-white/85">{t('shareWhatsAppSub')}</div>
                 </div>
               </a>
 
@@ -1182,8 +1191,8 @@ export default function VehicleProfileShell({
                   <SocialFacebookIcon />
                 </span>
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-extrabold">Facebook</div>
-                  <div className="text-[11px] text-white/85">Share to your timeline</div>
+                  <div className="text-[13px] font-extrabold">{t('shareFacebook')}</div>
+                  <div className="text-[11px] text-white/85">{t('shareFacebookSub')}</div>
                 </div>
               </a>
 
@@ -1202,8 +1211,8 @@ export default function VehicleProfileShell({
                   <SocialInstagramIcon />
                 </span>
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-extrabold">Instagram</div>
-                  <div className="text-[11px] text-white/85">Link copied — paste to DM / Story</div>
+                  <div className="text-[13px] font-extrabold">{t('shareInstagram')}</div>
+                  <div className="text-[11px] text-white/85">{t('shareInstagramSub')}</div>
                 </div>
               </button>
 
@@ -1221,8 +1230,8 @@ export default function VehicleProfileShell({
                   <SocialTikTokIcon />
                 </span>
                 <div className="flex-1 text-left">
-                  <div className="text-[13px] font-extrabold">TikTok</div>
-                  <div className="text-[11px] text-white/85">Link copied — paste to bio / DM</div>
+                  <div className="text-[13px] font-extrabold">{t('shareTikTok')}</div>
+                  <div className="text-[11px] text-white/85">{t('shareTikTokSub')}</div>
                 </div>
               </button>
             </div>
@@ -1235,7 +1244,7 @@ export default function VehicleProfileShell({
           contact buttons in the middle of the screen on mobile. -------- */}
       <Link
         href={chrome.backHref}
-        aria-label={`Back to ${chrome.backLabel.toLowerCase()} directory`}
+        aria-label={t('backTabAria', { label: t(chrome.backLabelKey) })}
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right:                  0,
@@ -1259,7 +1268,7 @@ export default function VehicleProfileShell({
             letterSpacing: '0.18em',
           }}
         >
-          Back
+          {t('backVertical')}
         </span>
       </Link>
 
@@ -1284,7 +1293,7 @@ export default function VehicleProfileShell({
           onContact={() => {
             const link = buildWaLink(
               detailPhoto.name
-                ? `Saya ingin menanyakan tentang: ${detailPhoto.name}.`
+                ? t('waPhotoIntro', { label: detailPhoto.name })
                 : undefined,
             )
             setDetailPhoto(null)
@@ -1313,6 +1322,7 @@ function RentalContractCards({
   waE164:     string | null
   theme:      string
 }) {
+  const t = useTranslations('vehicleProfile')
   const DEFAULTS = {
     daily:   1_500_000,
     weekly:  9_000_000,
@@ -1325,15 +1335,15 @@ function RentalContractCards({
     sub:   string
     idr:   number
   }> = [
-    { id: 'daily',   label: 'Daily',   sub: '1 day rental',    idr: DEFAULTS.daily   },
-    { id: 'weekly',  label: 'Weekly',  sub: '7 day rental',    idr: DEFAULTS.weekly  },
-    { id: 'monthly', label: 'Monthly', sub: '30 day rental',   idr: DEFAULTS.monthly },
+    { id: 'daily',   label: t('tierDaily'),   sub: t('tierDailySub'),   idr: DEFAULTS.daily   },
+    { id: 'weekly',  label: t('tierWeekly'),  sub: t('tierWeeklySub'),  idr: DEFAULTS.weekly  },
+    { id: 'monthly', label: t('tierMonthly'), sub: t('tierMonthlySub'), idr: DEFAULTS.monthly },
   ]
 
   function buildWaLink(tier: string, idr: number): string | null {
     const num = (waE164 ?? '').replace(/\D+/g, '')
     if (!num) return null
-    const msg = `Halo ${driverName}, saya tertarik dengan paket rental ${tier} sebesar ${idr.toLocaleString('id-ID')} IDR. Bisa diskusikan tanggal mulai dan ketentuannya?`
+    const msg = t('waRentalIntro', { name: driverName, tier, price: idr.toLocaleString('id-ID') })
     return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
   }
 
@@ -1341,20 +1351,19 @@ function RentalContractCards({
     <section className="space-y-2" style={{ marginTop: 18 }}>
       <div>
         <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-          Rental Contracts
+          {t('rentalContractsHeading')}
         </h2>
         <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-          Long-term rental for school shuttles, company contracts, or extended tours.
-          Driver and BBM included; tolls, parking and meals at passenger cost.
+          {t('rentalContractsSubtitle')}
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {tiers.map((t) => {
-          const isPopular = t.id === 'weekly'
-          const waLink = buildWaLink(t.label, t.idr)
+        {tiers.map((tier) => {
+          const isPopular = tier.id === 'weekly'
+          const waLink = buildWaLink(tier.label, tier.idr)
           return (
             <div
-              key={t.id}
+              key={tier.id}
               className="relative rounded-2xl overflow-hidden flex flex-col"
               style={{
                 background:  'linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%)',
@@ -1373,19 +1382,19 @@ function RentalContractCards({
                   }}
                 >
                   <Sparkles className="w-3 h-3" strokeWidth={0} fill="#0A0A0A" />
-                  Popular
+                  {t('popularRibbon')}
                 </div>
               )}
               <div className="p-4 flex flex-col gap-3 flex-1">
                 <div>
                   <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-800">
-                    {t.label}
+                    {tier.label}
                   </div>
                   <div className="text-[28px] font-black leading-none mt-0.5 text-black">
-                    Rp {(t.idr / 1_000_000).toFixed(t.idr % 1_000_000 === 0 ? 0 : 1)}M
+                    Rp {(tier.idr / 1_000_000).toFixed(tier.idr % 1_000_000 === 0 ? 0 : 1)}M
                   </div>
                   <div className="text-[11.5px] text-gray-500 leading-tight mt-1">
-                    {t.sub}
+                    {tier.sub}
                   </div>
                 </div>
                 <a
@@ -1405,7 +1414,7 @@ function RentalContractCards({
                   }}
                 >
                   <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
-                  Enquire
+                  {t('enquireBtn')}
                 </a>
               </div>
             </div>
@@ -1424,25 +1433,26 @@ function RentalContractCards({
 // "Rp 0" cards.
 // -----------------------------------------------------------------------------
 function JeepHourlyAndRentalSection({ v, theme }: { v: VehiclePublic; theme: string }) {
+  const t = useTranslations('vehicleProfile')
   const hourlyTiers: ReadonlyArray<{ id: '3h' | '6h' | '8h'; label: string; sub: string; idr: number | null }> = [
-    { id: '3h', label: '3-hour block', sub: '3 hours',         idr: v.hourly_3h_rate_idr ?? null },
-    { id: '6h', label: '6-hour block', sub: '6 hours',         idr: v.hourly_6h_rate_idr ?? null },
-    { id: '8h', label: '8-hour block', sub: 'Full day · 8 h',  idr: v.hourly_8h_rate_idr ?? null },
+    { id: '3h', label: t('tier3hLabel'), sub: t('tier3hSub'), idr: v.hourly_3h_rate_idr ?? null },
+    { id: '6h', label: t('tier6hLabel'), sub: t('tier6hSub'), idr: v.hourly_6h_rate_idr ?? null },
+    { id: '8h', label: t('tier8hLabel'), sub: t('tier8hSub'), idr: v.hourly_8h_rate_idr ?? null },
   ]
   const rentalTiers: ReadonlyArray<{ id: 'daily' | 'weekly' | 'monthly'; label: string; sub: string; idr: number | null }> = [
-    { id: 'daily',   label: 'Daily',   sub: '1 day rental',   idr: v.rental_daily_rate_idr   ?? null },
-    { id: 'weekly',  label: 'Weekly',  sub: '7 day rental',   idr: v.rental_weekly_rate_idr  ?? null },
-    { id: 'monthly', label: 'Monthly', sub: '30 day rental',  idr: v.rental_monthly_rate_idr ?? null },
+    { id: 'daily',   label: t('tierDaily'),   sub: t('tierDailySub'),   idr: v.rental_daily_rate_idr   ?? null },
+    { id: 'weekly',  label: t('tierWeekly'),  sub: t('tierWeeklySub'),  idr: v.rental_weekly_rate_idr  ?? null },
+    { id: 'monthly', label: t('tierMonthly'), sub: t('tierMonthlySub'), idr: v.rental_monthly_rate_idr ?? null },
   ]
 
-  const hourlyEnabled = !!v.hourly_enabled && hourlyTiers.some((t) => (t.idr ?? 0) > 0)
-  const rentalEnabled = rentalTiers.some((t) => (t.idr ?? 0) > 0)
+  const hourlyEnabled = !!v.hourly_enabled && hourlyTiers.some((tier) => (tier.idr ?? 0) > 0)
+  const rentalEnabled = rentalTiers.some((tier) => (tier.idr ?? 0) > 0)
   if (!hourlyEnabled && !rentalEnabled) return null
 
   function buildWaLink(tierLabel: string, idr: number): string | null {
     const num = (v.whatsapp_e164 ?? '').replace(/\D+/g, '')
     if (!num) return null
-    const msg = `Halo ${v.display_name}, saya tertarik dengan paket ${tierLabel} sebesar Rp ${idr.toLocaleString('id-ID')}. Bisa diskusikan jadwal dan ketentuannya?`
+    const msg = t('waHourlyIntro', { name: v.display_name, tier: tierLabel, price: idr.toLocaleString('id-ID') })
     return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
   }
 
@@ -1464,18 +1474,18 @@ function JeepHourlyAndRentalSection({ v, theme }: { v: VehiclePublic; theme: str
         <section className="space-y-2" style={{ marginTop: 18 }}>
           <div>
             <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-              Hourly Hire
+              {t('hourlyHireHeading')}
             </h2>
             <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-              Reserve a block of hours — petrol billed separately at SPBU.
+              {t('hourlyHireSubtitle')}
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {hourlyTiers.filter((t) => (t.idr ?? 0) > 0).map((t) => {
-              const waLink = buildWaLink(t.label, t.idr ?? 0)
+            {hourlyTiers.filter((tier) => (tier.idr ?? 0) > 0).map((tier) => {
+              const waLink = buildWaLink(tier.label, tier.idr ?? 0)
               return (
                 <div
-                  key={t.id}
+                  key={tier.id}
                   className="relative rounded-2xl overflow-hidden flex flex-col"
                   style={{
                     background: 'linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%)',
