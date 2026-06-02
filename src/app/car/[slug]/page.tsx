@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
@@ -517,13 +518,14 @@ export async function generateMetadata({
   params,
 }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
+  const tm = await getTranslations('carProfileMeta')
   const d = await loadCarDriver(slug).catch(() => null)
-  if (!d) return { title: 'Driver not found', robots: { index: false, follow: false } }
+  if (!d) return { title: tm('metaNotFound'), robots: { index: false, follow: false } }
   const vehicle = vehicleHeadline(d)
   const where   = [d.area, d.city].filter(Boolean).join(', ') || 'Indonesia'
-  const title       = `${d.business_name} · ${vehicle} · ${where}`
+  const title       = tm('metaTitleFmt', { name: d.business_name, vehicle, where })
   const description = (d.bio?.trim())
-    || `${d.business_name} — driver mobil ${vehicle} di ${where}. Hubungi langsung via WhatsApp untuk menyepakati tarif.`
+    || tm('metaDescriptionDefault', { name: d.business_name, vehicle, where })
   const canonical   = `${SITE_URL}/car/${d.slug}`
   const cover       = d.vehicle_photos[0] || d.profile_image_url || undefined
   return {

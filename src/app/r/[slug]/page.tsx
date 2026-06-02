@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
@@ -541,11 +542,12 @@ export async function generateMetadata({
   params,
 }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
+  const tm = await getTranslations('bikeProfileMeta')
   const d = await loadBikeDriver(slug).catch(() => null)
-  if (!d) return { title: 'Driver not found', robots: { index: false, follow: false } }
+  if (!d) return { title: tm('metaNotFound'), robots: { index: false, follow: false } }
   const where = d.area || d.city || 'Indonesia'
-  const title = `${d.business_name} — Bike rider in ${where} · CityDrivers`
-  const description = ((d.bio?.trim() || `${d.business_name} — ${vehicleHeadline(d)} rider in ${where}. Book directly via WhatsApp.`)).slice(0, 160)
+  const title = tm('metaTitleFmt', { name: d.business_name, where })
+  const description = ((d.bio?.trim() || tm('metaDescriptionDefault', { name: d.business_name, vehicle: vehicleHeadline(d), where }))).slice(0, 160)
   const canonical = `${SITE_URL}/r/${d.slug}`
   // Image preference: cover_image_url → first bike photo → profile photo
   const cover = d.cover_image_url || d.bike_photo_url || d.profile_image_url || undefined

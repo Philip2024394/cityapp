@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import {
   MapPin, Star, Bike as BikeIcon,
@@ -205,6 +206,7 @@ const ROUTE_TEMPLATES: string[] = [
 // /r and /car embed the same widget.
 // -----------------------------------------------------------------------------
 export default function DriverProfileShell({ driver, alternatives }: DriverProfileShellProps) {
+  const t = useTranslations('driverProfile')
   const searchParams = useSearchParams()
   // Profile-view tracking — one ping per session per (provider_type,
   // provider_id) pair. sessionStorage-deduped so refreshes don't double-count.
@@ -280,12 +282,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
     driver.availability === 'online'  ? 'online'  : 'offline'
 
   const vehicleTypeLabel = useMemo(() => {
-    if (driver.vehicle_type === 'bike') return 'Motorbike'
-    if (driver.vehicle_type === 'car')  return 'Car'
-    if (driver.vehicle_type === 'truck') return 'Truck'
-    if (driver.vehicle_type === 'minibus') return 'Minibus'
-    return 'Vehicle'
-  }, [driver.vehicle_type])
+    if (driver.vehicle_type === 'bike') return t('vehicleLabelBike')
+    if (driver.vehicle_type === 'car')  return t('vehicleLabelCar')
+    if (driver.vehicle_type === 'truck') return t('vehicleLabelTruck')
+    if (driver.vehicle_type === 'minibus') return t('vehicleLabelMinibus')
+    return t('vehicleLabelGeneric')
+  }, [driver.vehicle_type, t])
 
   // System-controlled stock photo. We intentionally do NOT use
   // vehicle_photos[0] — driver-uploaded photos still live on the model
@@ -400,10 +402,10 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
 
   type TabId = 'all' | 'passenger' | 'parcel' | 'hourly' | 'tours'
   const tabs: { id: TabId; label: string; emoji?: string }[] = []
-  if (offersRide)   tabs.push({ id: 'passenger', label: 'Booking' })
-  if (offersParcel) tabs.push({ id: 'parcel',    label: 'Parcel B2B' })
-  if (hourlyAvailable) tabs.push({ id: 'hourly', label: 'Hourly Booking' })
-  if (toursAvailable)  tabs.push({ id: 'tours',  label: 'Tours' })
+  if (offersRide)   tabs.push({ id: 'passenger', label: t('tabBooking') })
+  if (offersParcel) tabs.push({ id: 'parcel',    label: t('tabParcelB2B') })
+  if (hourlyAvailable) tabs.push({ id: 'hourly', label: t('tabHourlyBooking') })
+  if (toursAvailable)  tabs.push({ id: 'tours',  label: t('tabTours') })
   const defaultTab: TabId = tabs[0]?.id ?? 'passenger'
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab)
 
@@ -433,7 +435,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           buttons that sit in the middle-to-bottom region on mobile. */}
       <a
         href="/cari"
-        aria-label="Back to booking page"
+        aria-label={t('backTabAria')}
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right:                  0,
@@ -457,7 +459,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             letterSpacing:  '0.18em',
           }}
         >
-          Back
+          {t('backVertical')}
         </span>
       </a>
 
@@ -472,7 +474,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           <button
             type="button"
             onClick={() => setShareOpen(true)}
-            aria-label="Share profile"
+            aria-label={t('shareProfileAria')}
             className="w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-[0.96] transition"
             style={{ background: BRAND_YELLOW, color: TEXT_INK }}
           >
@@ -531,7 +533,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             }}
           >
             <span>
-              {driver.vehicle_type === 'bike' ? 'City Rider' : 'Professional'}
+              {driver.vehicle_type === 'bike' ? t('heroCityRider') : t('heroProfessional')}
             </span>
             <Star
               className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 -mt-3"
@@ -549,7 +551,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             }}
           >
             <span className="truncate inline-block max-w-full align-bottom">
-              {driver.business_name || 'Driver'}
+              {driver.business_name || t('driverFallback')}
             </span>
             {/* Per founder direction the "Demo" pill is hidden from the
                 public profile hero — mocks should read as ordinary
@@ -581,11 +583,11 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           })()}
 
           <div className="flex items-start gap-2" style={{ marginTop: 15 }}>
-            <HeroServiceIcon icon={PlaneTakeoff} label="Airport" />
+            <HeroServiceIcon icon={PlaneTakeoff} label={t('heroIconAirport')} />
             <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />
-            <HeroServiceIcon icon={Building2} label="City" />
+            <HeroServiceIcon icon={Building2} label={t('heroIconCity')} />
             <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />
-            <HeroServiceIcon icon={MapPinned} label="Tours" />
+            <HeroServiceIcon icon={MapPinned} label={t('heroIconTours')} />
           </div>
         </div>
       </div>
@@ -604,7 +606,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           style={{ background: BRAND_YELLOW, color: TEXT_INK }}
         >
           <Star className="w-3.5 h-3.5" strokeWidth={0} fill={TEXT_INK} />
-          {showReviews ? 'Hide reviews' : 'Reviews'}
+          {showReviews ? t('reviewsHide') : t('reviewsShow')}
         </button>
       </div>
 
@@ -654,7 +656,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                   online; busy/offline drivers get no dot. */}
               {availability === 'online' && (
                 <span
-                  aria-label="Driver is online"
+                  aria-label={t('driverOnlineAria')}
                   className="relative inline-flex items-center justify-center shrink-0"
                   style={{ width: 14, height: 14 }}
                 >
@@ -674,14 +676,14 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
               )}
             </h1>
             <p className="text-[13px] truncate mt-0.5" style={{ color: TEXT_MUTED }}>
-              {driver.city?.trim() || 'Indonesia'}
+              {driver.city?.trim() || t('cityFallback')}
             </p>
             {/* Service-zone radius row — only renders when driver has
                 published a non-zero km figure. 11px muted grey, MapPin icon. */}
             {driver.service_zone_radius_km != null && driver.service_zone_radius_km > 0 && (
               <p className="text-[11px] truncate mt-0.5 inline-flex items-center gap-1" style={{ color: TEXT_MUTED }}>
                 <MapPin className="w-3 h-3 shrink-0" strokeWidth={2.25} />
-                Service zone · {driver.service_zone_radius_km} km
+                {t('serviceZoneRow', { km: driver.service_zone_radius_km })}
               </p>
             )}
             {(driver.rating != null && driver.rating > 0) && (
@@ -692,7 +694,9 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 </span>
                 {driver.trips_count != null && driver.trips_count > 0 && (
                   <span className="text-[12px]" style={{ color: TEXT_MUTED }}>
-                    · {driver.trips_count} trip{driver.trips_count === 1 ? '' : 's'}
+                    {driver.trips_count === 1
+                      ? t('tripCountSingle', { count: driver.trips_count })
+                      : t('tripCountPlural', { count: driver.trips_count })}
                   </span>
                 )}
               </div>
@@ -745,7 +749,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 {driver.vehicle_type === 'car' && driver.vehicle_seats && driver.vehicle_seats > 0 ? (
                   <div className="text-[12px] mt-0.5 inline-flex items-center gap-1" style={{ color: TEXT_MUTED }}>
                     <UsersIcon className="w-3 h-3" strokeWidth={2.25} />
-                    {driver.vehicle_seats} seats
+                    {t('seatsLabel', { count: driver.vehicle_seats })}
                   </div>
                 ) : (
                   <div className="text-[12px] mt-0.5" style={{ color: TEXT_MUTED }}>
@@ -772,7 +776,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 onClick={() => setShowPlacesPicker((v) => !v)}
                 aria-expanded={showPlacesPicker}
                 aria-controls="driver-places-picker"
-                aria-label={showPlacesPicker ? 'Close places picker' : 'Browse places to set as drop-off'}
+                aria-label={showPlacesPicker ? t('closePlacesAria') : t('browsePlacesAria')}
                 className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold shadow-md active:scale-[0.97] transition"
                 style={{
                   background: showPlacesPicker ? TEXT_INK : BRAND_YELLOW,
@@ -781,7 +785,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                 }}
               >
                 <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                {showPlacesPicker ? 'Close' : 'Places'}
+                {showPlacesPicker ? t('placesClose') : t('placesOpen')}
               </button>
             </div>
             {driver.bio?.trim() && (
@@ -804,7 +808,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             {driver.service_offerings && driver.service_offerings.length > 0 && (
               <div className="mt-3">
                 <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] mb-2" style={{ color: TEXT_MUTED }}>
-                  Services
+                  {t('servicesHeading')}
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {driver.service_offerings.map((id) => {
@@ -863,12 +867,11 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
               </span>
               <div className="min-w-0 flex-1">
                 <h3 className="text-[14px] font-black leading-tight" style={{ color: TEXT_INK }}>
-                  {(driver.business_name || 'Driver').split(' ')[0]}
-                  {availability === 'busy' ? ' is busy right now' : ' is offline right now'}
+                  {(driver.business_name || t('driverFallback')).split(' ')[0]}
+                  {availability === 'busy' ? t('offlineNoticeBusy') : t('offlineNoticeOffline')}
                 </h3>
                 <p className="text-[12.5px] leading-snug mt-1" style={{ color: '#854D0E' }}>
-                  Continue below to enter your pickup &amp; drop-off — we&apos;ll
-                  show you available drivers near you from{' '}
+                  {t('offlineNoticeBody')}{' '}
                   <span className="font-extrabold">citydrivers.id</span>.
                 </p>
                 <a
@@ -885,7 +888,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
                   className="inline-flex items-center gap-1 mt-2 text-[11.5px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
                   style={{ color: TEXT_INK }}
                 >
-                  Continue below
+                  {t('offlineNoticeContinue')}
                   <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.75} />
                 </a>
               </div>
@@ -904,10 +907,10 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           >
             <header className="text-center mb-2">
               <h2 className="text-[15px] font-black uppercase tracking-wider" style={{ color: TEXT_INK }}>
-                Places To Visit
+                {t('placesPickerHeading')}
               </h2>
               <p className="text-[11px] mt-1" style={{ color: TEXT_MUTED }}>
-                Select view place for details and auto update your drop-off point by selecting the card.
+                {t('placesPickerSubtitle')}
               </p>
             </header>
             <PlacesPicker
@@ -938,7 +941,7 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
         {/* 3.5) SERVICES OFFERED — heading + tab row. */}
         <section className="mt-4">
           <div className="text-[13px] font-extrabold uppercase tracking-wider mb-2" style={{ color: TEXT_INK }}>
-            Services Offered
+            {t('servicesOfferedHeading')}
           </div>
           <div className="flex flex-wrap gap-2">
             {tabs.map((t) => {
@@ -1051,11 +1054,12 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
 // drivers don't see an empty placeholder row.
 // -----------------------------------------------------------------------------
 function AvailabilitySlotChips({ driver }: { driver: DriverPublic }) {
+  const t = useTranslations('driverProfile')
   const chips: { key: string; emoji: string; label: string }[] = []
-  if (driver.available_sunrise)   chips.push({ key: 'sunrise',   emoji: '🌅', label: 'Sunrise'   })
-  if (driver.available_daytime)   chips.push({ key: 'daytime',   emoji: '☀️', label: 'Daytime'   })
-  if (driver.available_evening)   chips.push({ key: 'evening',   emoji: '🌆', label: 'Evening'   })
-  if (driver.available_nightlife) chips.push({ key: 'nightlife', emoji: '🌙', label: 'Nightlife' })
+  if (driver.available_sunrise)   chips.push({ key: 'sunrise',   emoji: '🌅', label: t('slotSunrise')   })
+  if (driver.available_daytime)   chips.push({ key: 'daytime',   emoji: '☀️', label: t('slotDaytime')   })
+  if (driver.available_evening)   chips.push({ key: 'evening',   emoji: '🌆', label: t('slotEvening')   })
+  if (driver.available_nightlife) chips.push({ key: 'nightlife', emoji: '🌙', label: t('slotNightlife') })
   if (chips.length === 0) return null
   return (
     <div className="flex flex-wrap items-center gap-1 mt-1.5">
@@ -1084,6 +1088,7 @@ function AvailabilitySlotChips({ driver }: { driver: DriverPublic }) {
 //   • the first non-'id' id isn't in the LANGUAGES catalog
 // -----------------------------------------------------------------------------
 function AvatarLanguageBadge({ languages }: { languages: string[] | null }) {
+  const t = useTranslations('driverProfile')
   if (!languages || languages.length === 0) return null
   const pickedId = languages.find((id) => id !== 'id')
   if (!pickedId) return null
@@ -1091,7 +1096,7 @@ function AvatarLanguageBadge({ languages }: { languages: string[] | null }) {
   if (!def) return null
   return (
     <span
-      aria-label={`Speaks ${def.label}`}
+      aria-label={t('speaksAria', { label: def.label })}
       className="absolute inline-flex items-center justify-center rounded-full"
       style={{
         bottom: -2,
