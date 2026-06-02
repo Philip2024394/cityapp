@@ -872,7 +872,21 @@ function PlanTripPageInner() {
                         onClick={(e) => {
                           e.stopPropagation()
                           haptic.tap()
-                          void geo.request()
+                          // Force-set pickup to the freshly returned coords.
+                          // The previous behaviour just kicked off geo.request()
+                          // and hoped the useEffect at line ~220 would pick it
+                          // up — but that effect short-circuits when `pickup`
+                          // is already truthy, so a tap on the yellow button
+                          // when pickup had already been auto-filled did
+                          // nothing. Awaiting the promise + setting pickup
+                          // directly here means the button always works.
+                          ;(async () => {
+                            const point = await geo.request()
+                            if (point) {
+                              setPickup(point)
+                              setPickupLabel('My location')
+                            }
+                          })()
                         }}
                         disabled={geo.status === 'requesting'}
                         aria-label={geo.status === 'granted' ? 'Refresh my location' : 'Use my current location'}
@@ -920,22 +934,23 @@ function PlanTripPageInner() {
                   />
                 </div>
 
-                {/* Swap arrows column — single button with stacked up/down
-                    arrows. Tapping swaps pickup ↔ dropoff (coords + labels). */}
+                {/* Swap arrows column — black button with stacked yellow
+                    up/down arrows per founder spec. Tapping swaps
+                    pickup ↔ dropoff (coords + labels). */}
                 <button
                   type="button"
                   onClick={handleSwap}
                   aria-label="Swap pickup and dropoff"
                   className="shrink-0 flex flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 active:scale-95 transition"
                   style={{
-                    background: '#F4F4F5',
-                    border: '1px solid #E4E4E7',
+                    background: '#0A0A0A',
+                    border: '1px solid #0A0A0A',
                     minWidth: 36,
                     minHeight: 44,
                   }}
                 >
-                  <ArrowUp className="w-3.5 h-3.5 text-bg" strokeWidth={3} />
-                  <ArrowDown className="w-3.5 h-3.5 text-bg" strokeWidth={3} />
+                  <ArrowUp className="w-3.5 h-3.5" strokeWidth={3} style={{ color: '#FACC15' }} />
+                  <ArrowDown className="w-3.5 h-3.5" strokeWidth={3} style={{ color: '#FACC15' }} />
                 </button>
               </div>
 
@@ -1509,7 +1524,7 @@ function DriverCard({
         {/* Rating star — hidden when a Fastest/Cheapest badge already
             owns the card's top-right slot, so the two never crowd each
             other. */}
-        {driver.rating !== undefined && !isFastest && !isCheapest ? (
+        {driver.rating !== undefined ? (
           <div className="inline-flex items-center gap-1 text-[12px] font-extrabold text-bg">
             <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} />
             {driver.rating.toFixed(1)}

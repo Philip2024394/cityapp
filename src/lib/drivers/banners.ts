@@ -48,6 +48,8 @@ export const BIKE_BANNERS: ReadonlyArray<DriverBanner> = [
   { id: 'bike-17', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_44_52%20PM.png', label: 'Banner 17' },
   { id: 'bike-18', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_48_55%20PM.png', label: 'Banner 18' },
   { id: 'bike-19', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%201,%202026,%2001_49_19%20PM.png', label: 'Banner 19' },
+  { id: 'bike-20', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_35_14%20AM.png?updatedAt=1780356929487', label: 'Banner 20' },
+  { id: 'bike-21', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_37_19%20AM.png?updatedAt=1780357055699', label: 'Banner 21' },
 ]
 
 // Truck-specific banners — moving / hauling / utility-rental vibes.
