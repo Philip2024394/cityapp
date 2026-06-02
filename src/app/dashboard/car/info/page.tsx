@@ -169,7 +169,7 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
 
   // Per-field blur handlers — only fire if the value actually changed.
   function commitBusinessName() {
-    const next = businessName.trim().slice(0, 80) || null
+    const next = businessName.trim().slice(0, 32) || null
     if (next === (row.business_name ?? null)) return
     void save('business_name', { business_name: next }, 'Business name saved')
   }
@@ -329,18 +329,18 @@ function InfoEditor({ row, onReload }: { row: CarDriverInfoRow; onReload: () => 
       </Card>
 
       {/* Name & bio */}
-      <Card title="Your name & bio" hint="The first thing customers read on your profile." icon={<User size={18} />}>
+      <Card title="Your name &mp; bio" hint="Name or company only — don&apos;t add vehicle type or city. Those already appear on your profile hero." icon={<User size={18} />}>
         <Field
           label="Business / driver name"
-          hint={`${businessName.length}/80`}
+          hint={`${businessName.length}/32`}
           saving={savingField === 'business_name'}
         >
           <input
             type="text"
             value={businessName}
-            onChange={(e) => setBusinessName(e.target.value.slice(0, 80))}
+            onChange={(e) => setBusinessName(e.target.value.slice(0, 32))}
             onBlur={commitBusinessName}
-            maxLength={80}
+            maxLength={32}
             placeholder="e.g. Budi Car Yogya"
             className={inputCls}
           />

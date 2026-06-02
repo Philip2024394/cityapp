@@ -180,7 +180,11 @@ function InfoEditor({ row, onReload }: { row: JeepDriverInfoRow; onReload: () =>
 
   // Per-field blur handlers — only fire if the value actually changed.
   function commitBusinessName() {
-    const next = businessName.trim().slice(0, 80) || null
+    // Hard cap at 32 chars on the SERVER too — drivers stuffing the field
+    // with vehicle type / city / marketing words ("Pak Bambang Adventure
+    // Jeep Yogya") overflow the floating info card on mobile and render
+    // as "Pak Bambang Adv…". The hero overlay carries those keywords.
+    const next = businessName.trim().slice(0, 32) || null
     if (next === (row.business_name ?? null)) return
     void save('business_name', { business_name: next }, 'Business name saved')
   }
@@ -359,19 +363,23 @@ function InfoEditor({ row, onReload }: { row: JeepDriverInfoRow; onReload: () =>
       </Card>
 
       {/* Name & bio */}
-      <Card title="Your name & bio" hint="The first thing customers read on your profile." icon={<User size={18} />}>
+      <Card
+        title="Your name & bio"
+        hint="Name or company only — don't add vehicle type or city. Those already appear on your profile hero."
+        icon={<User size={18} />}
+      >
         <Field
           label="Business / driver name"
-          hint={`${businessName.length}/80`}
+          hint={`${businessName.length}/32`}
           saving={savingField === 'business_name'}
         >
           <input
             type="text"
             value={businessName}
-            onChange={(e) => setBusinessName(e.target.value.slice(0, 80))}
+            onChange={(e) => setBusinessName(e.target.value.slice(0, 32))}
             onBlur={commitBusinessName}
-            maxLength={80}
-            placeholder="e.g. Budi Jeep Yogya"
+            maxLength={32}
+            placeholder="e.g. Pak Bambang"
             className={inputCls}
           />
         </Field>
