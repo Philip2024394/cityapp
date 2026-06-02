@@ -1,13 +1,17 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { withSentryConfig } from '@sentry/nextjs'
-import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Wires `next dev` into the Cloudflare runtime so `getCloudflareContext()`
-// works during local development the same way it does on the deployed Worker.
-initOpenNextCloudflareForDev()
+// Cloudflare dev shim removed 2026-06-02 as part of the Vercel migration.
+// `initOpenNextCloudflareForDev()` from `@opennextjs/cloudflare` used to
+// run here to wire `next dev` into Cloudflare bindings for local
+// `getCloudflareContext()` parity. On Vercel's build runner the shim
+// crashes the build with `unhandledRejection [Error: write EPIPE]` because
+// Cloudflare bindings aren't present. No source file imports
+// `getCloudflareContext()` (verified by grep), so dropping the shim has
+// zero runtime effect — it was only a dev-time convenience.
 
 // ============================================================================
 // Security headers — applied to every response.
