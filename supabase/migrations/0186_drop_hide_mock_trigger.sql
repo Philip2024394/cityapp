@@ -1,0 +1,24 @@
+-- ============================================================================
+-- 0186_drop_hide_mock_trigger.sql
+-- ----------------------------------------------------------------------------
+-- Drop the trigger that auto-hid a mock driver every time a real driver
+-- signed up. Two problems with it in practice:
+--
+--   1. One-way: it hides a mock on INSERT to drivers but never restored
+--      one on DELETE. Our own E2E test agents create + delete drivers,
+--      and each test left an orphan-hidden mock behind. After enough
+--      test runs the entire mock pool for a vehicle_type was hidden,
+--      leaving brand-new verticals (car, bus, jeep) with empty marketplace
+--      pages.
+--
+--   2. Now that the marketplace shows both real + mock cards happily
+--      side-by-side, we no longer want a "card count cap" that suppresses
+--      mocks as reals arrive. The user can see real signups grow over
+--      time without losing the demo seed content.
+--
+-- The function `hide_one_mock_driver()` is intentionally left in place so
+-- it can be re-attached later if a count cap is reintroduced. Just the
+-- AFTER INSERT trigger is removed.
+-- ============================================================================
+
+DROP TRIGGER IF EXISTS trg_hide_mock_on_real_driver_signup ON public.drivers;
