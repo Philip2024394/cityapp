@@ -2421,39 +2421,46 @@ function BusBookingWidget({
 }
 
 // -----------------------------------------------------------------------------
-// AvatarLanguageBadge — tiny flag-only status-dot pattern. Renders the FIRST
-// non-Indonesian language the driver speaks as a flag emoji inside a white
-// circle with a brand-yellow ring. Anchored bottom-right of the avatar.
-// Indonesian is implied (Indonesian app for Indonesian drivers) so we never
-// surface the Indonesian flag. Returns null when:
+// AvatarLanguageBadge — flag pill anchored bottom-right of the avatar.
+// Renders EVERY non-Indonesian language the driver speaks as a flag emoji
+// inside a single white pill with a brand-yellow ring. Indonesian is implied
+// (Indonesian app for Indonesian drivers) so we never surface the ID flag.
+// Returns null when:
 //   • languages array is empty / null
 //   • the only language is Indonesian ('id')
-//   • the first non-'id' id isn't in the LANGUAGES catalog
+//   • none of the non-'id' ids are in the LANGUAGES catalog
 // -----------------------------------------------------------------------------
 function AvatarLanguageBadge({ languages }: { languages: string[] | null }) {
   const t = useTranslations('vehicleProfile')
   if (!languages || languages.length === 0) return null
-  const pickedId = languages.find((id) => id !== 'id')
-  if (!pickedId) return null
-  const def = getLanguage(pickedId)
-  if (!def) return null
+  const picked = languages
+    .filter((id) => id !== 'id')
+    .map((id) => getLanguage(id))
+    .filter((d): d is NonNullable<ReturnType<typeof getLanguage>> => !!d)
+  if (picked.length === 0) return null
   return (
     <span
-      aria-label={t('speaksAria', { label: def.label })}
-      className="absolute inline-flex items-center justify-center rounded-full"
+      aria-label={t('speaksAria', { label: picked.map((d) => d.label).join(', ') })}
+      className="absolute inline-flex items-center justify-center gap-0.5 rounded-full"
       style={{
         bottom: -2,
         right: -2,
-        width: 22,
+        // Pill widens to fit every flag — 16px per flag + 8px horizontal pad
+        // + 2px gaps. Single flag stays roughly the original 22px footprint.
+        minWidth: 22,
         height: 22,
+        paddingLeft: 5,
+        paddingRight: 5,
         background: '#FFFFFF',
         border: `2px solid ${BRAND_YELLOW}`,
         boxShadow: '0 2px 6px rgba(0,0,0,0.20)',
-        fontSize: 12,
+        fontSize: 13,
         lineHeight: 1,
       }}
     >
-      <span aria-hidden style={{ fontSize: 12, lineHeight: 1 }}>{def.flag}</span>
+      {picked.map((d) => (
+        <span key={d.id} aria-hidden style={{ fontSize: 13, lineHeight: 1 }}>{d.flag}</span>
+      ))}
     </span>
   )
 }
