@@ -1704,15 +1704,18 @@ function ServiceRatePanel({
         {/* Jeep-only — founder-uploaded hero image for the active service.
             Truck's catalog uses a single shared placeholder which also
             populates the photo carousel below, so we keep that branch
-            text-only to avoid the duplicate. 4:3 object-cover matches the
-            tour-card aspect for visual consistency across the surface. */}
+            text-only to avoid the duplicate. Natural aspect (w-full +
+            h-auto) — image displays at its full source proportions per
+            founder direction ("fit length and height"). Scrim + title
+            overlay still anchor at the bottom regardless of image
+            height. */}
         {vehicleType === 'jeep' && service.imageUrl && (
-          <div className="relative w-full aspect-[4/3] overflow-hidden bg-zinc-100">
+          <div className="relative w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={service.imageUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover object-center"
+              className="block w-full h-auto"
               loading="lazy"
             />
             <div
