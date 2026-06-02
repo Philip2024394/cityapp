@@ -75,19 +75,6 @@ export function driverRowToRider(row: DriverRow, sub: SubInfo = null): Rider {
     slug: row.slug,
     name: row.business_name,
     photoUrl: row.brand_logo_url || `https://i.pravatar.cc/300?u=${row.slug}`,
-    vehiclePhoto: (() => {
-      // Same intersection-cast trick as `hourly_enabled` further down —
-      // vehicle_photos + cover_image_url exist in the real `drivers`
-      // table but aren't on the central DriverRow type yet.
-      const r = row as DriverRow & {
-        vehicle_photos?: unknown
-        cover_image_url?: string | null
-      }
-      const first = Array.isArray(r.vehicle_photos)
-        ? (r.vehicle_photos as unknown[]).find((u): u is string => typeof u === 'string' && u.trim() !== '')
-        : null
-      return first ?? r.cover_image_url ?? null
-    })(),
     whatsappE164: row.whatsapp_e164,
     bio: row.bio || '',
     area: row.area || '',
@@ -359,12 +346,6 @@ type MockDriverRow = {
   vehicle_year: number | null
   vehicle_color: string | null
   vehicle_type: 'car' | 'bike' | 'minibus' | 'truck' | 'premium_car' | 'jeep' | null
-  // mig 0099 added vehicle_photos (jsonb) + cover_image_url to mock_drivers.
-  // /cari card render now prefers vehicle_photos[0] / cover_image_url over
-  // the generic vehicle-catalog silhouette so the founder-supplied truck
-  // images actually reach the card.
-  vehicle_photos: unknown
-  cover_image_url: string | null
   rating: number | null
   availability: 'online' | 'busy' | 'offline'
   created_at: string
@@ -402,10 +383,6 @@ function mockDriverRowToRider(row: MockDriverRow): Rider {
     slug: row.slug,
     name: row.business_name,
     photoUrl: row.profile_image_url || `https://i.pravatar.cc/300?u=${row.slug}`,
-    vehiclePhoto:
-      (Array.isArray(row.vehicle_photos)
-        ? (row.vehicle_photos as unknown[]).find((u): u is string => typeof u === 'string' && u.trim() !== '') ?? null
-        : null) ?? row.cover_image_url ?? null,
     whatsappE164: row.whatsapp_e164,
     bio: row.bio || '',
     area: row.area || '',

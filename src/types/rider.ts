@@ -75,11 +75,6 @@ export type Rider = {
   slug: string
   name: string
   photoUrl: string
-  /** Driver-supplied banner/vehicle image. Used by /cari card thumbnail
-   *  in preference to the generic vehicle-catalog silhouette. Set from
-   *  drivers.cover_image_url or vehicle_photos[0] for real drivers, and
-   *  mock_drivers.cover_image_url for mocks. */
-  vehiclePhoto?: string | null
   whatsappE164: string
   bio: string
   area: string

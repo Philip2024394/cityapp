@@ -1304,16 +1304,10 @@ function DriverCard({
   // their dashboard /dashboard/jeep/vehicle). Bike uses the bike catalog;
   // everything else (car / bus / truck) falls through to the car catalog
   // silhouette helper.
-  // Trucks are the only vertical where the founder set per-driver photos
-  // (Hino / L300 / Carry ChatGPT renders) — for those, the driver-supplied
-  // image wins. Bikes / cars / jeeps / minibus keep their original
-  // catalog-silhouette behaviour because that's the consistent "small
-  // landscape vehicle shape" the booking cards were designed around.
   const imgSrc =
     vehicleType === 'jeep'    ? getJeepImageUrl(driver.bike?.color)
     : vehicleType === 'minibus' ? getBusImageUrl(driver.bike?.color)
     : vehicleType === 'bike'  ? getBikeImageUrl(make, model)
-    : vehicleType === 'truck' ? (driver.vehiclePhoto || getCarImageUrl(make, model))
     : getCarImageUrl(make, model)
 
   // Subtitle: year + color when set, otherwise area/city.
