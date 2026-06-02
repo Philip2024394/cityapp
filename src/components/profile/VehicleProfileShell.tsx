@@ -594,15 +594,18 @@ export default function VehicleProfileShell({
               <AvatarLanguageBadge languages={v.languages ?? null} />
             </div>
             <div className="min-w-0 flex-1">
-              {/* Driver name — single line, defensively sliced to ~22
-                  chars so a long business_name never wraps or pushes the
-                  BadgeCheck and green dot to a second row. */}
+              {/* Driver name — single line. Truncation handled by CSS
+                  (overflow-hidden + textOverflow: 'ellipsis') so the
+                  string only gets cut when it actually overflows the
+                  container. The previous .slice(0, 22) chopped names
+                  like "Sutarto Innova Reborn Tour" mid-word on every
+                  screen size, including phones where the full text fit. */}
               <h1 className="text-[16px] sm:text-[18px] font-black text-black leading-tight flex items-center gap-2 whitespace-nowrap overflow-hidden">
                 <span
                   className="overflow-hidden"
-                  style={{ textOverflow: 'clip', maxWidth: 'calc(100% - 60px)' }}
+                  style={{ textOverflow: 'ellipsis', maxWidth: 'calc(100% - 60px)' }}
                 >
-                  {(v.display_name || '').slice(0, 22)}
+                  {v.display_name || ''}
                 </span>
                 <BadgeCheck
                   className="w-4 h-4 shrink-0"
