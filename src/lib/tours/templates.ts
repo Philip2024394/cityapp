@@ -75,7 +75,7 @@ const TEMPLATE_IMAGES: Record<string, string> = {
   'bike-leather-craft':        'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_24_07%20PM.png',
   'bike-cupping-massage':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_30_15%20PM.png',
   'bike-city-zoo':             'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_32_54%20PM.png',
-  'bike-botox-treatment':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_36_30%20PM.png',
+  'bike-botox-treatment':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2007_08_50%20PM.png',
   'bike-traditional-tattoo':   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_43_40%20PM.png',
 }
 
