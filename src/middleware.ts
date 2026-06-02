@@ -36,6 +36,7 @@ const CITYRIDERS_PAGE_PREFIXES = [
   '/cityriders',
   '/cari',
   '/drivers',
+  '/r',  // ← bike per-driver profile (/r/[slug]). Without this entry the host-scope rewrite below sent EVERY bike profile URL to /cityriders, which is exactly the "bike profile button bounces to landing page" bug the founder hit repeatedly on 2026-06-02.
   '/car',
   '/truck',
   '/bus',
