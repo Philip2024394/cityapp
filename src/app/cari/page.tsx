@@ -719,9 +719,9 @@ function PlanTripPageInner() {
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
             style={{
-              background: '#FFFFFF',
-              border: '1.5px solid #FACC15',
-              boxShadow: '0 6px 16px rgba(15,23,42,0.18), 0 0 0 3px rgba(250,204,21,0.18)',
+              background: '#FACC15',
+              border: '1.5px solid #EAB308',
+              boxShadow: '0 6px 16px rgba(15,23,42,0.18)',
               minHeight: 32,
             }}
           >
