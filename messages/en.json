@@ -1,0 +1,16 @@
+{
+  "landing": {
+    "headerCtaDrive": "Drive with us →",
+    "heroAlt": "Young Indonesian holding a phone between a yellow car and a yellow motorbike at golden hour",
+    "h1Line1": "Book a ride.",
+    "h1Line2": "Talk to your driver.",
+    "tagline": "Find a local driver, tap WhatsApp, agree the fare. No app needed.",
+    "ctaBookRide": "Book Ride",
+    "ctaBookParcel": "Book Parcel"
+  },
+  "localeSwitcher": {
+    "ariaLabel": "Choose language",
+    "indonesianAria": "Bahasa Indonesia",
+    "englishAria": "English"
+  }
+}

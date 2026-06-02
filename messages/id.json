@@ -1,0 +1,16 @@
+{
+  "landing": {
+    "headerCtaDrive": "Bergabung sebagai driver →",
+    "heroAlt": "Pria muda Indonesia memegang ponsel di antara mobil kuning dan motor kuning saat matahari terbenam",
+    "h1Line1": "Pesan kendaraan.",
+    "h1Line2": "Hubungi driver Anda.",
+    "tagline": "Temukan driver lokal, ketuk WhatsApp, sepakat tarif. Tanpa aplikasi.",
+    "ctaBookRide": "Pesan Perjalanan",
+    "ctaBookParcel": "Pesan Kurir"
+  },
+  "localeSwitcher": {
+    "ariaLabel": "Pilih bahasa",
+    "indonesianAria": "Bahasa Indonesia",
+    "englishAria": "English"
+  }
+}

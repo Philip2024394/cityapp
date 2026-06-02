@@ -3,8 +3,15 @@
 // Single-viewport hero: brand mark + tagline + the 5-way vehicle picker.
 // No scroll. Visitors either pick a vehicle, hit "Drive with us" to join,
 // or tap the secondary Parcel buttons.
+//
+// All copy comes from messages/{id,en}.json — the LocaleSwitcher under
+// the two CTAs lets the visitor flip the entire page (and every other
+// translated surface) between Indonesian and English. Indonesian is
+// the default; English is the opt-in for tourist customers.
 
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
+import LocaleSwitcher from '@/components/i18n/LocaleSwitcher'
 
 // Customer hero — young Indonesian man between a yellow car and a
 // yellow motorbike at golden hour with a Bali gate backdrop. Signals
@@ -39,7 +46,8 @@ export const metadata = {
   },
 }
 
-export default function CityDriversHomePage() {
+export default async function CityDriversHomePage() {
+  const t = await getTranslations('landing')
   return (
     <main
       className="relative h-[100dvh] overflow-hidden text-[#0A0A0A]"
@@ -57,7 +65,7 @@ export default function CityDriversHomePage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={HERO_URL}
-              alt="Young Indonesian holding a phone between a yellow car and a yellow motorbike at golden hour"
+              alt={t('heroAlt')}
               className="absolute inset-0 w-full h-full object-cover object-center"
               loading="eager"
             />
@@ -118,7 +126,7 @@ export default function CityDriversHomePage() {
                     border: '1px solid rgba(0,0,0,0.10)',
                   }}
                 >
-                  Drive with us →
+                  {t('headerCtaDrive')}
                 </Link>
               </header>
 
@@ -129,18 +137,11 @@ export default function CityDriversHomePage() {
                 style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)' }}
               >
                 <h1 className="text-[26px] xs:text-[28px] sm:text-[32px] font-black leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)]">
-                  Book a ride.<br />
-                  <span style={{ color: '#FACC15' }}>Talk to your driver.</span>
+                  {t('h1Line1')}<br />
+                  <span style={{ color: '#FACC15' }}>{t('h1Line2')}</span>
                 </h1>
-                <p className="mt-1 text-[14px] font-extrabold text-white/95 leading-tight">
-                  Pesan kendaraan. <span style={{ color: '#FACC15' }}>Chat driver Anda.</span>
-                </p>
                 <p className="mt-3 text-[12.5px] text-white/85 leading-relaxed">
-                  Find a local driver, tap WhatsApp, agree the fare.
-                  <br />
-                  <span className="text-white/75">
-                    Cari driver lokal, klik WhatsApp, sepakat harga. Tanpa aplikasi.
-                  </span>
+                  {t('tagline')}
                 </p>
 
                 {/* Two primary CTAs. Vehicle picker lives one screen
@@ -152,15 +153,22 @@ export default function CityDriversHomePage() {
                     className="inline-flex items-center justify-center px-4 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
                     style={{ minHeight: 52 }}
                   >
-                    Book Ride
+                    {t('ctaBookRide')}
                   </Link>
                   <Link
                     href="/cari?mode=parcel"
                     className="inline-flex items-center justify-center px-4 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
                     style={{ minHeight: 52 }}
                   >
-                    Book Parcel
+                    {t('ctaBookParcel')}
                   </Link>
+                </div>
+
+                {/* Locale switcher — sits centred under the two CTAs.
+                    Tapping a flag writes the NEXT_LOCALE cookie and the
+                    page re-renders in the chosen language. */}
+                <div className="mt-3 flex justify-center">
+                  <LocaleSwitcher variant="pill" />
                 </div>
               </div>
             </div>
@@ -170,4 +178,3 @@ export default function CityDriversHomePage() {
     </main>
   )
 }
-

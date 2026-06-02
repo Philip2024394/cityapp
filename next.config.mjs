@@ -1,6 +1,12 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { withSentryConfig } from '@sentry/nextjs'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+// next-intl wiring — the plugin teaches Next.js where the server-side
+// locale resolver lives (src/i18n/request.ts). All actual locale logic
+// (cookie read, message catalog import) is in that file.
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -145,8 +151,10 @@ const nextConfig = {
 //   - widens the client error feedback
 const sentryEnabled = !!(process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)
 
+const baseConfig = withNextIntl(nextConfig)
+
 export default sentryEnabled
-  ? withSentryConfig(nextConfig, {
+  ? withSentryConfig(baseConfig, {
       org: process.env.SENTRY_ORG || undefined,
       project: process.env.SENTRY_PROJECT || undefined,
       silent: !process.env.CI,
@@ -157,4 +165,4 @@ export default sentryEnabled
       // builds still work, just without source-map upload.
       authToken: process.env.SENTRY_AUTH_TOKEN || undefined,
     })
-  : nextConfig
+  : baseConfig

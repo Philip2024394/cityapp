@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getMessages } from 'next-intl/server'
 import './globals.css'
 import PageBackground from '@/components/layout/PageBackground'
 
@@ -140,12 +142,17 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // suppressHydrationWarning: Browser translate (Google Translate, etc.) and
   // some extensions rewrite <html>/<body> attributes after SSR. Suppressing the
   // warning here lets React continue with a client re-render instead of bailing.
+  // Locale + messages flow from the NEXT_LOCALE cookie via src/i18n/request.ts;
+  // both are needed by NextIntlClientProvider so client components can call
+  // useTranslations() in the same render tree as server components.
+  const locale = await getLocale()
+  const messages = await getMessages()
   return (
-    <html lang="id" translate="no" className="notranslate" suppressHydrationWarning>
+    <html lang={locale} translate="no" className="notranslate" suppressHydrationWarning>
       <head>
         {/* Preconnect to first-paint-critical third-party origins so the
             TLS + DNS handshakes happen in parallel with HTML parse. On 3G
@@ -164,9 +171,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <RegisterServiceWorker />
         <PreloadTiles />
         <CapacitorBoot />
-        <LocationGateProvider>
-          {children}
-        </LocationGateProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <LocationGateProvider>
+            {children}
+          </LocationGateProvider>
+        </NextIntlClientProvider>
         <InstallPrompt />
         <DevToolbar />
       </body>
