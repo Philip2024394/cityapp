@@ -368,9 +368,19 @@ export default function VehicleProfileShell({
     : vehicleType === 'bus'  ? getServiceCatalog('minibus')
     : vehicleType === 'jeep' ? getServiceCatalog('jeep')
     : []
-  const [activeServiceId, setActiveServiceId] = useState<string | null>(
-    serviceCatalog[0]?.id ?? null,
-  )
+  // Jeep — deterministic per-driver default-active service so the 3 mock
+  // jeep profiles open on visibly different service banners (each landing
+  // page shows a different hero image / package) without manual config
+  // per mock. Truck + bus keep their original first-in-catalog default.
+  const [activeServiceId, setActiveServiceId] = useState<string | null>(() => {
+    if (serviceCatalog.length === 0) return null
+    if (vehicleType !== 'jeep') return serviceCatalog[0]!.id
+    const key = v.slug || v.id || ''
+    let seed = 0
+    for (let i = 0; i < key.length; i++) seed = (seed + key.charCodeAt(i)) | 0
+    const idx = Math.abs(seed) % serviceCatalog.length
+    return serviceCatalog[idx]!.id
+  })
   // Bus profile uses a unified Services Provided tab row that combines
   // two special tabs (Booking, Places) with the 3 catalog services
   // (Airport, Tour, Daily). Default = 'booking' so a fresh visitor lands
@@ -514,7 +524,7 @@ export default function VehicleProfileShell({
                 textShadow: '0 2px 6px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.85)',
               }}
             >
-              <span>{t('professional')}</span>
+              <span>{vehicleType === 'jeep' ? t('adventure') : t('professional')}</span>
               <Sparkles
                 className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 -mt-3"
                 strokeWidth={0}
