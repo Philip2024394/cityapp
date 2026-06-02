@@ -53,8 +53,20 @@ const DEFAULT_TOUR_IMAGE =
 /** Returns a guaranteed-to-load image URL for a tour template. The card
  *  cascade in ToursTabContent still prefers driver upload → place image
  *  first, so this is only used when neither is set. */
-export function templateImageUrl(_template: TourTemplate): string {
-  return DEFAULT_TOUR_IMAGE
+
+// Per-template hero image overrides. Founder-supplied artwork keyed by
+// template `id`. Templates without a key fall through to
+// DEFAULT_TOUR_IMAGE. Adding a new tour is just one line — keys must
+// match the `id` field on the template exactly (typo = silent fallback).
+const TEMPLATE_IMAGES: Record<string, string> = {
+  'bike-kraton-tamansari': 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_37_11%20PM.png',
+  'bike-umkm-workshop':    'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_43_22%20PM.png',
+  'bike-sunset-loop':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_48_48%20PM.png',
+  'bike-parangtritis':     'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_50_13%20PM.png',
+}
+
+export function templateImageUrl(template: TourTemplate): string {
+  return TEMPLATE_IMAGES[template.id] ?? DEFAULT_TOUR_IMAGE
 }
 
 export const TOUR_TEMPLATES: ReadonlyArray<TourTemplate> = [
