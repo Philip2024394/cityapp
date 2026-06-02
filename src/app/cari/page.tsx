@@ -1522,11 +1522,12 @@ function DriverCard({
           prefetch
           onClick={(e) => { e.stopPropagation() }}
           aria-label={`View ${driver.name}'s full profile`}
-          className="inline-flex items-center justify-center rounded-full px-2 text-[10px] font-extrabold uppercase tracking-wider shadow-sm active:scale-[0.97] transition"
+          className="inline-flex items-center justify-center gap-1 rounded-full px-4 text-[13px] font-extrabold uppercase tracking-wider shadow-sm active:scale-[0.97] transition"
           style={{
             background: '#FACC15',
             color: '#0A0A0A',
-            minHeight: 18,
+            minHeight: 44,
+            minWidth: 44,
             lineHeight: 1,
           }}
         >
