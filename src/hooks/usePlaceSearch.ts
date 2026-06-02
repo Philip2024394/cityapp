@@ -19,7 +19,10 @@ type Options = {
   debounceMs?: number
   /** Minimum characters before we start querying. */
   minChars?: number
-  /** Restrict to these ISO-3166 country codes (e.g. ['id']). Empty = global. */
+  /** Restrict to these ISO-3166 country codes. Defaults to ['id'] —
+   *  CityDrivers is Indonesia-only, suggesting Bali / Yogya / etc.
+   *  rather than London or Bangkok when the user types ambiguous text.
+   *  Pass `[]` explicitly to opt back into a global search. */
   countryCodes?: string[]
   /** Bias results around this point (helps surface nearby places first). */
   near?: { lat: number; lng: number } | null
@@ -29,7 +32,7 @@ type Options = {
 // it returns debounced suggestions from Nominatim. AbortController cancels
 // in-flight requests when the user keeps typing.
 export function usePlaceSearch(query: string, opts: Options = {}) {
-  const { debounceMs = 350, minChars = 3, countryCodes = [], near = null } = opts
+  const { debounceMs = 350, minChars = 3, countryCodes = ['id'], near = null } = opts
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)

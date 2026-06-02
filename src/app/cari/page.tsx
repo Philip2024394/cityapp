@@ -1443,7 +1443,15 @@ function DriverCard({
           shape helps them too. */}
       <div
         className="shrink-0 rounded-lg overflow-hidden"
-        style={{ width: 84, height: 56, background: selected ? 'transparent' : '#F4F4F5' }}
+        style={{
+          width: 84,
+          height: 56,
+          background: selected ? 'transparent' : '#F4F4F5',
+          // When a Cheapest / Fastest badge is shown at top-left, push
+          // the vehicle image down so the badge isn't sitting on top
+          // of it. The card naturally grows with the image's offset.
+          marginTop: (isFastest || isCheapest) ? 16 : 0,
+        }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
