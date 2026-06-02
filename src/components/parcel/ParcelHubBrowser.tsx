@@ -19,7 +19,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Bike, Car, Truck, Star, MapPin, Receipt, ChevronDown, ChevronUp } from 'lucide-react'
+import { Bike, Car, Truck, Bus, Mountain, Star, MapPin, Receipt, ChevronDown, ChevronUp } from 'lucide-react'
 import {
   fmtIdr,
   PARCEL_TIER_DEFINITIONS,
@@ -62,12 +62,14 @@ export type ParcelHubTruckRow = {
   rating:                number | null
 }
 
-type ChipId = 'all' | 'bike' | 'car' | 'truck'
+type ChipId = 'all' | 'bike' | 'car' | 'bus' | 'jeep' | 'truck'
 
 const CHIPS: ReadonlyArray<{ id: ChipId; label: string; icon: React.ComponentType<{ className?: string; strokeWidth?: number }> | null }> = [
   { id: 'all',   label: 'All',   icon: null },
   { id: 'bike',  label: 'Bike',  icon: Bike },
   { id: 'car',   label: 'Car',   icon: Car },
+  { id: 'bus',   label: 'Bus',   icon: Bus },
+  { id: 'jeep',  label: 'Jeep',  icon: Mountain },
   { id: 'truck', label: 'Truck', icon: Truck },
 ]
 
@@ -88,6 +90,8 @@ function lowestBikeCarRate(tiers: unknown, defaultLowest: number): number {
 type Props = {
   bikes:               ParcelHubBikeCarRow[]
   cars:                ParcelHubBikeCarRow[]
+  buses:               ParcelHubBikeCarRow[]
+  jeeps:               ParcelHubBikeCarRow[]
   trucks:              ParcelHubTruckRow[]
   /** Bike per-parcel rate used when a driver hasn't published their own. */
   bikeDefaultLowest:   number
@@ -96,7 +100,7 @@ type Props = {
 }
 
 export default function ParcelHubBrowser({
-  bikes, cars, trucks, bikeDefaultLowest, carDefaultLowest,
+  bikes, cars, buses, jeeps, trucks, bikeDefaultLowest, carDefaultLowest,
 }: Props) {
   const [chip, setChip] = useState<ChipId>('all')
   const [showRates, setShowRates] = useState(false)
@@ -106,8 +110,8 @@ export default function ParcelHubBrowser({
   // already pre-sorted from the server query).
   const list = useMemo(() => {
     type Item =
-      | { kind: 'bike'  | 'car';  row: ParcelHubBikeCarRow; lowest: number; href: string }
-      | { kind: 'truck';          row: ParcelHubTruckRow;   lowest: number; href: string }
+      | { kind: 'bike' | 'car' | 'bus' | 'jeep'; row: ParcelHubBikeCarRow; lowest: number; href: string }
+      | { kind: 'truck';                         row: ParcelHubTruckRow;   lowest: number; href: string }
     const items: Item[] = []
     if (chip === 'all' || chip === 'bike') {
       for (const r of bikes) items.push({
@@ -125,6 +129,22 @@ export default function ParcelHubBrowser({
         href:   `/car/${r.slug}`,
       })
     }
+    if (chip === 'all' || chip === 'bus') {
+      for (const r of buses) items.push({
+        kind:   'bus',
+        row:    r,
+        lowest: lowestBikeCarRate(r.parcel_rate_tiers, carDefaultLowest),
+        href:   `/bus/${r.slug}`,
+      })
+    }
+    if (chip === 'all' || chip === 'jeep') {
+      for (const r of jeeps) items.push({
+        kind:   'jeep',
+        row:    r,
+        lowest: lowestBikeCarRate(r.parcel_rate_tiers, carDefaultLowest),
+        href:   `/jeep/${r.slug}`,
+      })
+    }
     if (chip === 'all' || chip === 'truck') {
       for (const t of trucks) items.push({
         kind:   'truck',
@@ -134,7 +154,7 @@ export default function ParcelHubBrowser({
       })
     }
     return items
-  }, [chip, bikes, cars, trucks, bikeDefaultLowest, carDefaultLowest])
+  }, [chip, bikes, cars, buses, jeeps, trucks, bikeDefaultLowest, carDefaultLowest])
 
   return (
     <div
@@ -312,8 +332,8 @@ export default function ParcelHubBrowser({
 // Card — landscape layout: image LEFT, info MIDDLE, "View profile" RIGHT.
 // -----------------------------------------------------------------------------
 type CardItem =
-  | { kind: 'bike'  | 'car';  row: ParcelHubBikeCarRow; lowest: number; href: string }
-  | { kind: 'truck';          row: ParcelHubTruckRow;   lowest: number; href: string }
+  | { kind: 'bike' | 'car' | 'bus' | 'jeep'; row: ParcelHubBikeCarRow; lowest: number; href: string }
+  | { kind: 'truck';                         row: ParcelHubTruckRow;   lowest: number; href: string }
 
 function DriverCard({ item }: { item: CardItem }) {
   const { kind, lowest, href } = item
@@ -469,8 +489,13 @@ function AvailabilityDot({
   )
 }
 
-function VehicleGlyph({ kind }: { kind: 'bike' | 'car' | 'truck' }) {
-  const Icon = kind === 'bike' ? Bike : kind === 'car' ? Car : Truck
+function VehicleGlyph({ kind }: { kind: 'bike' | 'car' | 'bus' | 'jeep' | 'truck' }) {
+  const Icon =
+    kind === 'bike' ? Bike :
+    kind === 'car'  ? Car  :
+    kind === 'bus'  ? Bus  :
+    kind === 'jeep' ? Mountain :
+                      Truck
   return <Icon className="w-7 h-7 text-[#A1A1AA]" strokeWidth={2} />
 }
 
