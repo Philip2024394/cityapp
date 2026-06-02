@@ -1395,22 +1395,22 @@ function DriverCard({
       className={`${cardClass} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]`}
       style={{ minHeight: 72 }}
     >
-      {/* Top-right badges — FASTEST (charcoal pill with bolt) on the
-          nearest driver; CHEAPEST (yellow pill) on the lowest-fee
-          driver. Mutually exclusive on a single card: when the same
-          driver wins on both axes, we show CHEAPEST only (matches the
-          cheapest-by-default auto-selection elsewhere in the page).
-          Absolute-positioned so the rest of the card row layout
-          doesn't shift. */}
+      {/* Top-LEFT badges — FASTEST (black pill with yellow bolt) on the
+          nearest driver; CHEAPEST (black pill, matching style) on the
+          lowest-fee driver. Mutually exclusive on a single card: when
+          the same driver wins on both axes, we show CHEAPEST only
+          (matches the cheapest-by-default auto-selection elsewhere in
+          the page). Absolute-positioned so the rest of the card row
+          layout doesn't shift. */}
       {(isFastest || isCheapest) && (
-        <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-end gap-1 pointer-events-none">
+        <div className="absolute top-1.5 left-1.5 z-10 flex flex-col items-start gap-1 pointer-events-none">
           {isCheapest ? (
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
               style={{
-                background: '#FACC15',
-                color:      '#0A0A0A',
-                boxShadow:  '0 4px 10px rgba(250,204,21,0.45)',
+                background: '#0A0A0A',
+                color:      '#FACC15',
+                boxShadow:  '0 4px 10px rgba(10,10,10,0.32)',
                 lineHeight: 1,
                 minHeight:  18,
               }}
