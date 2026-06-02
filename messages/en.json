@@ -617,7 +617,7 @@
     "passengerCostDefault": "toll bridges, parking fees, and meals for the driver are payable by the passenger.",
     "rateChipInc": "Inc",
     "rateChipExc": "Exc",
-    "ratesPublishedBy": "Rates published by {name}.",
+    "ratesPublishedByPrefix": "Rates published by",
     "ratesPublishedBySuffix": "Discuss final terms on WhatsApp.",
     "busContactCloseAria": "Close contact panel",
     "busContactClose": "Close",

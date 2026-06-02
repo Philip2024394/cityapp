@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
@@ -304,16 +305,17 @@ export async function generateMetadata({
   params,
 }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
+  const tm = await getTranslations('truckProfileMeta')
   const d = await loadTruckDriver(slug).catch(() => null)
-  if (!d) return { title: 'Truck not found', robots: { index: false, follow: false } }
+  if (!d) return { title: tm('metaNotFound'), robots: { index: false, follow: false } }
   const vehicle    = vehicleHeadline(d)
   const where      = [d.area, d.city].filter(Boolean).join(', ') || 'Yogyakarta'
   const dailyLabel = formatIdr(d.rental_daily_rate_idr)
-  const title      = `Sewa truk ${d.business_name} — Yogyakarta`
+  const title      = tm('metaTitleFmt', { name: d.business_name })
   const description = (d.bio?.trim())
     || (dailyLabel
-      ? `${d.business_name} — ${vehicle} di ${where}. Sewa harian mulai ${dailyLabel}/hari. Hubungi langsung via WhatsApp.`
-      : `${d.business_name} — ${vehicle} di ${where}. Sewa harian, mingguan, bulanan. Hubungi langsung via WhatsApp.`)
+      ? tm('metaDescriptionDaily',   { name: d.business_name, vehicle, where, dailyLabel })
+      : tm('metaDescriptionDefault', { name: d.business_name, vehicle, where }))
   const canonical  = `${SITE_URL}/truck/${d.slug}`
   const cover      = d.vehicle_photos[0] || d.cover_image_url || d.profile_image_url || undefined
   return {

@@ -617,7 +617,7 @@
     "passengerCostDefault": "tol, biaya parkir, dan makan driver dibayar oleh penumpang.",
     "rateChipInc": "Inc",
     "rateChipExc": "Exc",
-    "ratesPublishedBy": "Tarif dipublikasikan oleh {name}.",
+    "ratesPublishedByPrefix": "Tarif dipublikasikan oleh",
     "ratesPublishedBySuffix": "Sepakati ketentuan final di WhatsApp.",
     "busContactCloseAria": "Tutup panel kontak",
     "busContactClose": "Tutup",
