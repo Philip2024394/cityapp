@@ -16,6 +16,7 @@
 // =============================================================================
 
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { ArrowRight } from 'lucide-react'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import {
@@ -34,28 +35,28 @@ import ParcelHubBrowser, {
 const BRAND_LOGO_URL =
   'https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351'
 
-const PAGE_TITLE = 'Parcel delivery Yogyakarta — Direct WhatsApp to driver'
-const PAGE_DESCRIPTION =
-  'Bike, car, and truck drivers for bulk parcel delivery in Yogyakarta. From Rp 4,500/parcel. No platform commission.'
 const PAGE_URL = 'https://citydrivers.id/cityriders/parcel'
 
-export const metadata = {
-  title:       PAGE_TITLE,
-  description: PAGE_DESCRIPTION,
-  alternates:  { canonical: PAGE_URL },
-  openGraph: {
-    title:       PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-    type:        'website',
-    url:         PAGE_URL,
-    images:      [{ url: BRAND_LOGO_URL }],
-  },
-  twitter: {
-    card:        'summary_large_image',
-    title:       PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-    images:      [BRAND_LOGO_URL],
-  },
+export async function generateMetadata() {
+  const t = await getTranslations('parcel')
+  return {
+    title:       t('metaTitle'),
+    description: t('metaDescription'),
+    alternates:  { canonical: PAGE_URL },
+    openGraph: {
+      title:       t('metaTitle'),
+      description: t('metaDescription'),
+      type:        'website',
+      url:         PAGE_URL,
+      images:      [{ url: BRAND_LOGO_URL }],
+    },
+    twitter: {
+      card:        'summary_large_image',
+      title:       t('metaTitle'),
+      description: t('metaDescription'),
+      images:      [BRAND_LOGO_URL],
+    },
+  }
 }
 
 // Always SSR per request so a driver who just enabled parcel_b2b shows up
@@ -90,6 +91,7 @@ type MockTruckRow = MockBikeCarRow & {
 }
 
 export default async function CityDriversParcelHubPage() {
+  const t = await getTranslations('parcel')
   const admin = getAdminSupabase()
 
   const DRIVER_COLS =
@@ -323,29 +325,27 @@ export default async function CityDriversParcelHubPage() {
               border: '1px solid rgba(0,0,0,0.10)',
             }}
           >
-            ← Home
+            {t('backHome')}
           </Link>
         </header>
 
         {/* ─── Hero text — what this page actually is, on white. */}
         <section className="px-5 pt-4 pb-5 bg-white">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#EAB308] mb-2">
-            Bulk parcel &middot; city delivery
+            {t('heroLabel')}
           </div>
           <h1 className="text-[22px] sm:text-[26px] font-black leading-[1.1] tracking-tight text-[#0A0A0A]">
-            Lowest customer-paid rates in Yogyakarta.
+            {t('heroTitle')}
           </h1>
           <p className="mt-2 text-[13px] font-bold text-[#0A0A0A]/75 leading-snug">
-            Direct driver pricing &middot; no commission &middot; no platform fees added.
+            {t('heroSubtitlePrimary')}
           </p>
           <p className="mt-1 text-[12.5px] font-bold text-[#0A0A0A]/55 leading-snug">
-            Untuk UMKM, toko online, atau kirim paket sekali dalam kota.
-            Harga driver langsung — tidak ada komisi platform.
+            {t('heroSubtitleSecondary')}
           </p>
           <p className="mt-3 text-[12px] text-[#71717A] leading-relaxed">
-            Pick a vehicle &middot; see the lowest rate &middot; tap the driver
-            and arrange the contract on WhatsApp.{' '}
-            <strong className="text-[#0A0A0A]">Every rupiah you pay goes to the driver.</strong>
+            {t('heroExplainPre')}{' '}
+            <strong className="text-[#0A0A0A]">{t('heroExplainStrong')}</strong>
           </p>
         </section>
 
@@ -364,14 +364,13 @@ export default async function CityDriversParcelHubPage() {
         <section className="bg-[#0A0A0A] text-white">
           <div className="px-5 py-8 text-center">
             <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#FACC15] mb-2">
-              Are you a driver?
+              {t('driverCtaLabel')}
             </div>
             <h2 className="text-[20px] sm:text-[24px] font-black leading-tight">
-              Earn 100% from bulk contracts.
+              {t('driverCtaTitle')}
             </h2>
             <p className="mt-3 text-[12.5px] text-white/70 max-w-md mx-auto">
-              List your bike, car, or truck on the parcel program. We never
-              take commission &middot; you keep every rupiah the customer pays.
+              {t('driverCtaBody')}
             </p>
             <div className="mt-5">
               <Link
@@ -379,7 +378,7 @@ export default async function CityDriversParcelHubPage() {
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
                 style={{ minHeight: 48 }}
               >
-                List your vehicle
+                {t('driverCtaButton')}
                 <ArrowRight className="w-4 h-4" strokeWidth={3} />
               </Link>
             </div>
@@ -389,8 +388,7 @@ export default async function CityDriversParcelHubPage() {
         {/* ─── Disclaimer footer ──────────────────────────────────── */}
         <section className="px-5 py-6 bg-white">
           <p className="text-[11px] text-black/50 leading-relaxed text-center">
-            CityDrivers is a software directory under PM 12/2019. Drivers
-            self-publish rates. The platform takes 0% commission.
+            {t('footerDisclaimer')}
           </p>
         </section>
 

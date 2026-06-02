@@ -457,5 +457,21 @@
     "finalCta": "Sign up now — 30 days free",
     "finalWa": "Ask via WhatsApp first",
     "footerDisclaimer": "CityDrivers is a directory and profile management tool — not a ride-hailing app. Drivers and customers transact directly, off-platform."
+  },
+  "parcel": {
+    "metaTitle": "Parcel delivery Yogyakarta — Direct WhatsApp to driver",
+    "metaDescription": "Bike, car, and truck drivers for bulk parcel delivery in Yogyakarta. From Rp 4,500/parcel. No platform commission.",
+    "backHome": "← Home",
+    "heroLabel": "Bulk parcel · city delivery",
+    "heroTitle": "Lowest customer-paid rates in Yogyakarta.",
+    "heroSubtitlePrimary": "Direct driver pricing · no commission · no platform fees added.",
+    "heroSubtitleSecondary": "For UMKM, online shops, or one-off in-city parcel drops. Driver-direct pricing — no platform commission.",
+    "heroExplainPre": "Pick a vehicle · see the lowest rate · tap the driver and arrange the contract on WhatsApp.",
+    "heroExplainStrong": "Every rupiah you pay goes to the driver.",
+    "driverCtaLabel": "Are you a driver?",
+    "driverCtaTitle": "Earn 100% from bulk contracts.",
+    "driverCtaBody": "List your bike, car, or truck on the parcel program. We never take commission · you keep every rupiah the customer pays.",
+    "driverCtaButton": "List your vehicle",
+    "footerDisclaimer": "CityDrivers is a software directory under PM 12/2019. Drivers self-publish rates. The platform takes 0% commission."
   }
 }

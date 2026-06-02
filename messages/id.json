@@ -457,5 +457,21 @@
     "finalCta": "Daftar sekarang — 30 hari gratis",
     "finalWa": "Tanya dulu di WhatsApp",
     "footerDisclaimer": "CityDrivers adalah direktori dan tool manajemen profil — bukan aplikasi ride-hailing. Driver dan pelanggan bertransaksi langsung, di luar platform."
+  },
+  "parcel": {
+    "metaTitle": "Kirim paket Yogyakarta — WhatsApp langsung ke driver",
+    "metaDescription": "Driver motor, mobil, dan truk untuk kirim paket besar di Yogyakarta. Mulai Rp 4.500/paket. Tanpa komisi platform.",
+    "backHome": "← Beranda",
+    "heroLabel": "Paket besar · antar dalam kota",
+    "heroTitle": "Tarif terendah yang dibayar pelanggan di Yogyakarta.",
+    "heroSubtitlePrimary": "Harga driver langsung · tanpa komisi · tanpa biaya platform tambahan.",
+    "heroSubtitleSecondary": "Untuk UMKM, toko online, atau kirim paket sekali dalam kota. Harga driver langsung — tidak ada komisi platform.",
+    "heroExplainPre": "Pilih kendaraan · lihat tarif terendah · ketuk driver lalu sepakat kontrak di WhatsApp.",
+    "heroExplainStrong": "Setiap rupiah yang Anda bayar masuk ke driver.",
+    "driverCtaLabel": "Anda seorang driver?",
+    "driverCtaTitle": "Dapat 100% dari kontrak paket besar.",
+    "driverCtaBody": "Daftarkan motor, mobil, atau truk Anda di program paket. Kami tidak pernah ambil komisi · Anda simpan setiap rupiah yang dibayar pelanggan.",
+    "driverCtaButton": "Daftarkan kendaraan",
+    "footerDisclaimer": "CityDrivers adalah direktori software menurut PM 12/2019. Driver yang publikasikan tarif sendiri. Platform ambil 0% komisi."
   }
 }
