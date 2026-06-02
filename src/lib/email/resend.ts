@@ -117,3 +117,53 @@ function escapeHtml(s: string): string {
 function escapeAttr(s: string): string {
   return escapeHtml(s).replace(/`/g, '&#96;')
 }
+
+// ============================================================================
+// Ops alert outbound email
+// ----------------------------------------------------------------------------
+// Pages an admin when a critical/error ops alert fires. Recipient list comes
+// from OPS_ALERT_EMAIL_TO (comma-separated); falls back to RESEND_REPLY_TO
+// (streetlocallive@gmail.com by default) so the page always has somewhere
+// to land even before the env is fully wired.
+//
+// Filters: severity 'critical' | 'error' only. 'warn' and 'info' stay
+// in-dashboard. This keeps the inbox usable.
+// ============================================================================
+
+export type OpsAlertEmailInput = {
+  severity: 'info' | 'warn' | 'error' | 'critical'
+  source: string
+  title: string
+  detail?: string | null
+  suggestedFix?: string | null
+}
+
+export async function sendOpsAlertEmail(input: OpsAlertEmailInput): Promise<SendEmailResult | { ok: true; skipped: true }> {
+  if (input.severity !== 'critical' && input.severity !== 'error') {
+    return { ok: true, skipped: true }
+  }
+  const raw = process.env.OPS_ALERT_EMAIL_TO || process.env.RESEND_REPLY_TO || 'streetlocallive@gmail.com'
+  const to = raw.split(',').map((s) => s.trim()).filter(Boolean)
+  if (to.length === 0) return { ok: true, skipped: true }
+
+  const sevTag = input.severity === 'critical' ? '[CRITICAL]' : '[ERROR]'
+  const subject = `${sevTag} ${input.source} — ${input.title}`.slice(0, 200)
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px"><strong>Source:</strong> ${escapeHtml(input.source)}</p>
+    <p style="margin:0 0 12px"><strong>Severity:</strong> ${escapeHtml(input.severity)}</p>
+    ${input.detail ? `<pre style="margin:0 0 12px;padding:12px;background:#0a0a0c;color:#FACC15;border-radius:8px;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word">${escapeHtml(input.detail)}</pre>` : ''}
+    ${input.suggestedFix ? `<p style="margin:0 0 8px"><strong>Suggested fix:</strong></p><p style="margin:0 0 12px;font-size:13px;color:#374151">${escapeHtml(input.suggestedFix)}</p>` : ''}
+    <p style="margin:0;font-size:12px;color:#6b7280">Open /admin/alerts to acknowledge.</p>
+  `.trim()
+
+  return sendEmail({
+    to,
+    subject,
+    html: renderEmail({
+      preheader: `${input.source}: ${input.title}`,
+      heading: `${sevTag} ${input.title}`,
+      bodyHtml,
+    }),
+  })
+}

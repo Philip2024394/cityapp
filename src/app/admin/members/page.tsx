@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import DateRangePicker from '@/components/admin/DateRangePicker'
+import ExportCsv, { type ExportColumn } from '@/components/admin/ExportCsv'
 
 // ============================================================================
 // /admin/members — all auth.users across every account type
@@ -15,7 +17,8 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 //   4. fallback          → "User"
 //
 // Filters: ?type=driver|rental_company|customer|admin
-//          ?since=<iso date>   (default: last 90 days)
+//          ?from=YYYY-MM-DD&to=YYYY-MM-DD   (preferred, drives DateRangePicker)
+//          ?since=<iso date>                (legacy fallback for old bookmarks)
 // ============================================================================
 
 export const dynamic = 'force-dynamic'
@@ -42,19 +45,34 @@ type Row = {
 
 const SINCE_DEFAULT_DAYS = 90
 
+const MEMBERS_CSV_COLUMNS: ReadonlyArray<ExportColumn<Row>> = [
+  { label: 'Name',     get: (r) => r.name },
+  { label: 'WhatsApp', get: (r) => r.whatsapp ?? '' },
+  { label: 'Email',    get: (r) => r.email ?? '' },
+  { label: 'Type',     get: (r) => r.account_type },
+  { label: 'Status',   get: (r) => r.status_badge },
+  { label: 'Joined',   get: (r) => r.created_at },
+  { label: 'User ID',  get: (r) => r.user_id },
+]
+
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; since?: string }>
+  searchParams: Promise<{ type?: string; since?: string; from?: string; to?: string }>
 }) {
   const admin = getAdminSupabase()
   if (!admin) return <p className="text-muted text-[14px]">Server not configured.</p>
 
   const sp = await searchParams
   const typeFilter = (sp?.type ?? 'all') as TypeFilter
-  const since = sp?.since
-    ? new Date(sp.since)
-    : new Date(Date.now() - SINCE_DEFAULT_DAYS * 24 * 60 * 60 * 1000)
+
+  // ?from / ?to (preferred) > ?since (legacy) > 90d default.
+  const since = sp?.from
+    ? new Date(sp.from)
+    : sp?.since
+      ? new Date(sp.since)
+      : new Date(Date.now() - SINCE_DEFAULT_DAYS * 24 * 60 * 60 * 1000)
+  const until = sp?.to ? new Date(sp.to) : null
 
   // listUsers caps at 1000 per page — fine for v1; paginate later.
   const { data: usersData } = await admin.auth.admin.listUsers({ perPage: 1000 })
@@ -86,8 +104,13 @@ export default async function AdminMembersPage({
   }
 
   // Build the unified rows.
+  // Window: created_at in [since, until]. Until is optional (defaults to now).
+  const untilMs = until ? until.getTime() + 24 * 60 * 60 * 1000 - 1 : Number.POSITIVE_INFINITY
   const rows: Row[] = users
-    .filter((u) => new Date(u.created_at).getTime() >= since.getTime())
+    .filter((u) => {
+      const t = new Date(u.created_at).getTime()
+      return t >= since.getTime() && t <= untilMs
+    })
     .map((u) => {
       const profile = profiles.get(u.id)
       const driver  = drivers.get(u.id)
@@ -153,6 +176,15 @@ export default async function AdminMembersPage({
           ))}
         </div>
       </header>
+
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <DateRangePicker defaultDays={SINCE_DEFAULT_DAYS} label="Joined window" />
+        <ExportCsv
+          rows={rows}
+          columns={MEMBERS_CSV_COLUMNS}
+          filename={`members-${typeFilter}`}
+        />
+      </div>
 
       {rows.length === 0 ? (
         <div className="card p-8 text-center text-[13px] text-muted">

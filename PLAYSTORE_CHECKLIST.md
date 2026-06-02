@@ -34,6 +34,17 @@ Without these the AAB is debug-signed and Play will reject it.
 
 - [ ] **Back up `cityrider-release.keystore` somewhere safe.** Losing it = losing the ability to update existing installs forever.
 
+- [ ] **Paste the release SHA256 fingerprint into `public/.well-known/assetlinks.json`** — this enables Android App Links so a shared `https://citydrivers.id/r/<slug>` URL auto-opens the app instead of the browser. Without this, the link works but Play Store deep-link verification will fail. To get the fingerprint:
+
+  ```powershell
+  cd C:\Users\Victus\streetlocal\cityriders\android
+  keytool -list -v -keystore cityrider-release.keystore -alias cityrider | findstr SHA256
+  ```
+
+  Copy the value (looks like `AB:CD:EF:...`) and replace `REPLACE_WITH_RELEASE_KEYSTORE_SHA256` at line 10 of `public/.well-known/assetlinks.json`. Then redeploy so `https://citydrivers.id/.well-known/assetlinks.json` serves the real fingerprint.
+
+  Verify in `adb logcat | findstr -i intentfilter` after install — should see "Domain verification: success".
+
 ---
 
 ## 2. Firebase / FCM push — bookings won't notify until done

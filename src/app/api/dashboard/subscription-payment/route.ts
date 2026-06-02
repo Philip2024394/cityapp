@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
+import {
+  SUBSCRIPTION_MONTHLY_IDR,
+  SUBSCRIPTION_YEARLY_IDR,
+  MONTHLY_PERIOD_DAYS,
+  YEARLY_PERIOD_DAYS,
+} from '@/lib/pricing/constants'
 
 // ============================================================================
 // POST /api/dashboard/subscription-payment
@@ -26,7 +32,7 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 const PAID_VEHICLE_TYPES = new Set(['car', 'truck', 'premium_car', 'minibus'])
 const PAID_LISTING_TYPES = new Set([...PAID_VEHICLE_TYPES, 'place'])
 const MAX_BYTES = 5 * 1024 * 1024 // 5MB cap — payment screenshots are tiny
-const PERIOD_DAYS = 30
+type BillingPeriod = 'monthly' | 'yearly'
 
 export async function POST(req: Request) {
   // 1. Auth
@@ -55,6 +61,15 @@ export async function POST(req: Request) {
   // Optional `placeId` — only required when listingType === 'place'.
   // Lets owners with multiple places target a specific listing.
   const placeIdParam = String(form.get('placeId') ?? '').trim()
+  // Billing period — monthly (Rp 38K / 30d) or yearly (Rp 350K / 365d).
+  // Defaults to monthly for backwards compat with older dashboards that
+  // don't send the field. The QrisPaymentModal added a Monthly/Yearly
+  // toggle 2026 — pre-fix this value was silently ignored and yearly
+  // payments got logged as monthly + only granted 30 days.
+  const billingPeriodRaw = String(form.get('billingPeriod') ?? 'monthly').trim()
+  const billingPeriod: BillingPeriod = billingPeriodRaw === 'yearly' ? 'yearly' : 'monthly'
+  const periodDays = billingPeriod === 'yearly' ? YEARLY_PERIOD_DAYS : MONTHLY_PERIOD_DAYS
+  const amountIdr  = billingPeriod === 'yearly' ? SUBSCRIPTION_YEARLY_IDR : SUBSCRIPTION_MONTHLY_IDR
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'Missing screenshot file' }, { status: 400 })
   }
@@ -157,7 +172,7 @@ export async function POST(req: Request) {
     today.getTime(),
     baselinePaidUntil ? new Date(baselinePaidUntil).getTime() : 0,
   )
-  const newPaidUntil = new Date(baselineMs + PERIOD_DAYS * 24 * 60 * 60 * 1000)
+  const newPaidUntil = new Date(baselineMs + periodDays * 24 * 60 * 60 * 1000)
   const newPaidUntilStr = newPaidUntil.toISOString().slice(0, 10) // YYYY-MM-DD
   const periodStartStr = today.toISOString().slice(0, 10)
 
@@ -167,7 +182,7 @@ export async function POST(req: Request) {
     .insert({
       user_id: user.id,
       vehicle_type: listingType,
-      amount_idr: 38000,
+      amount_idr: amountIdr,
       screenshot_url: objectPath, // stored as object path; signed URL on read
       period_start: periodStartStr,
       period_end: newPaidUntilStr,

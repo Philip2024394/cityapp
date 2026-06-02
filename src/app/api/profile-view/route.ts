@@ -26,6 +26,17 @@ type Body = {
   provider_id?:   string
   source?:        string
   anon_session_id?: string
+  utm_source?:   string | null
+  utm_medium?:   string | null
+  utm_campaign?: string | null
+  utm_content?:  string | null
+  utm_term?:     string | null
+}
+
+function clean(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const s = v.trim()
+  return s.length ? s.slice(0, 100) : null
 }
 
 export async function POST(req: Request) {
@@ -56,6 +67,11 @@ export async function POST(req: Request) {
       provider_id:     providerId,
       anon_session_id: anon,
       source,
+      utm_source:   clean(body.utm_source),
+      utm_medium:   clean(body.utm_medium),
+      utm_campaign: clean(body.utm_campaign),
+      utm_content:  clean(body.utm_content),
+      utm_term:     clean(body.utm_term),
     })
 
   if (error) {

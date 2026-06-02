@@ -6,12 +6,22 @@ import type { DriverAccountStatus } from '@/types/database'
 // ============================================================================
 // PATCH /api/admin/drivers/[id]
 // ----------------------------------------------------------------------------
-// Admin actions on a driver row. Today: suspend / activate. Future: edit
-// hand-tuned overrides (price floor, manual rating reset, etc.).
+// Admin actions on a driver row.
+//   - suspend       → policy violation; status='suspended'
+//   - deactivate    → admin-hidden, non-disciplinary; status='deactivated'
+//   - activate      → restore visibility; status='active'
+//   - clear_snooze  → release a driver's self-snooze (drivers.snoozed_until=null)
+//                     Admin CANNOT set a snooze — only the driver can, via
+//                     /api/drivers/me/snooze. See feedback_cityriders_no_dispatch_ever.
+// Future: edit hand-tuned overrides (price floor, manual rating reset, etc.).
+//
+// Both suspend and deactivate hide the driver from public discovery
+// (queries filter on status='active'). The split exists so the audit
+// trail distinguishes "policy action" from "admin convenience pause".
 // ============================================================================
 
 type PatchPayload = {
-  action: 'suspend' | 'activate'
+  action: 'suspend' | 'deactivate' | 'activate' | 'clear_snooze'
   reason?: string
 }
 
@@ -27,8 +37,37 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   try { body = (await req.json()) as PatchPayload }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
+  // Branch on action: clear_snooze updates a different column from the
+  // status-toggle actions, so handle it separately.
+  if (body.action === 'clear_snooze') {
+    const { data: before } = await admin
+      .from('drivers')
+      .select('user_id, snoozed_until')
+      .eq('user_id', id)
+      .maybeSingle()
+    if (!before) return NextResponse.json({ error: 'Driver not found' }, { status: 404 })
+
+    const { error: updateErr } = await admin
+      .from('drivers')
+      .update({ snoozed_until: null })
+      .eq('user_id', id)
+    if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
+
+    await writeAudit({
+      actorId: me.id,
+      action: 'driver.clear_snooze',
+      entityType: 'driver',
+      entityId: id,
+      before: { snoozed_until: before.snoozed_until },
+      after: { snoozed_until: null, reason: body.reason ?? null },
+    })
+
+    return NextResponse.json({ ok: true, snoozed_until: null })
+  }
+
   const newStatus: DriverAccountStatus | null =
     body.action === 'suspend' ? 'suspended'
+    : body.action === 'deactivate' ? 'deactivated'
     : body.action === 'activate' ? 'active'
     : null
   if (!newStatus) return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

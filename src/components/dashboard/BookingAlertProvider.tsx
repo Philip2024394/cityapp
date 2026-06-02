@@ -221,11 +221,11 @@ function IntentPopup({ onDismiss }: { onDismiss: () => void }) {
         </div>
 
         <h2 id="cr-alert-title" className="mt-4 text-[22px] font-black leading-tight">
-          You have a WhatsApp message
+          Pesan WhatsApp baru
         </h2>
         <p className="mt-2 text-[13px] font-bold leading-snug" style={{ color: '#1f1f1f' }}>
-          A customer just tapped your WhatsApp button. Their message is on its
-          way to your WhatsApp inbox.
+          Ada pelanggan baru saja menekan tombol WhatsApp Anda. Pesannya akan
+          segera masuk ke WhatsApp Anda.
         </p>
 
         <button
@@ -240,10 +240,10 @@ function IntentPopup({ onDismiss }: { onDismiss: () => void }) {
             boxShadow:  '0 8px 18px rgba(0,0,0,0.25)',
           }}
         >
-          OK · stop alert
+          OK · Hentikan alarm
         </button>
         <p className="mt-3 text-[11px] font-bold leading-snug" style={{ color: '#1f1f1f', opacity: 0.75 }}>
-          Tap to stop the sound. Then open WhatsApp to reply.
+          Tekan untuk menghentikan suara. Lalu buka WhatsApp untuk membalas.
         </p>
       </div>
 

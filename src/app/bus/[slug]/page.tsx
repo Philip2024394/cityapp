@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
@@ -370,6 +370,23 @@ export default async function BusDriverProfilePage({
   const { slug } = await params
   const d = await loadBusDriver(slug)
   if (!d) notFound()
+
+  // Lapsed-driver redirect — mirrors /r/[slug]:577-580.
+  if (d.source === 'real') {
+    const adminCheck = getAdminSupabase()
+    if (adminCheck) {
+      const { data: sub } = await adminCheck
+        .from('subscriptions')
+        .select('status')
+        .eq('driver_id', d.id)
+        .maybeSingle()
+      const st = (sub?.status as string | undefined) ?? null
+      if (st === 'past_due' || st === 'canceled') {
+        const qs = new URLSearchParams({ from: 'lapsed_driver', slug: d.slug })
+        redirect(`/cari?${qs.toString()}`)
+      }
+    }
+  }
 
   const jsonLd: Record<string, unknown> = {
     '@context':   'https://schema.org',

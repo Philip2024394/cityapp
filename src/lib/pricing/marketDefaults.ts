@@ -1,20 +1,29 @@
 // =============================================================================
-// Yogya-market km-rate defaults — first-time-driver onboarding suggestions.
+// Vehicle rate defaults — driver-onboarding suggestions, zone-aware.
 // -----------------------------------------------------------------------------
-// **These are Yogya-market averages, NOT regulated rates.** Permenhub 12/2019
-// explicitly says drivers self-publish — there is no nationally enforced km
-// floor. Use these as a starting point only; drivers can adjust freely.
+// **These are REGULATED MINIMUMS used as SUGGESTED DEFAULTS, not enforced
+// fares.** Permenhub PM 12/2019 explicitly says drivers self-publish — there
+// is no platform-enforced km floor. Use these as pre-fill values only;
+// drivers can adjust upward (recommended) or downward (warned in UI, only
+// hard-blocked at the anti-spam floor in zones.ts).
 //
-// CityDrivers is a software directory under PM 12/2019. We never set, compute,
-// or modify fares — the values here are pre-fill placeholders + a one-tap
-// "Reset to Yogya default" reference inside the dashboard services editor.
-// Once a driver overrides the value, their published rate is what customers
-// see.
+// CityDrivers is a software directory under PM 12/2019. We never set,
+// compute, or modify fares — the values here are pre-fill placeholders +
+// a one-tap "Reset to default" reference inside the dashboard services
+// editor. Once a driver overrides the value, their published rate is what
+// customers see.
 //
-// Sourced from informal Yogya market sampling (May 2026) — Avanza / Innova
-// class cars, Hiace class minibus, Toyota Hilux / Mitsubishi Triton class
-// pickup trucks, Suzuki Jimny / Toyota Land Cruiser class jeeps.
+// 2026-06-02: replaced static Yogya-market sampling with per-zone Permenhub
+// batas bawah lookup (KP 667/2022 for bikes, PM 118/2018 for cars). See
+// src/lib/pricing/zones.ts and reference_indonesia_ride_tariffs (memory).
 // =============================================================================
+
+import {
+  suggestedPricePerKm,
+  suggestedMinFee,
+  bikeZoneForCity,
+  carZoneForCity,
+} from './zones'
 
 /** Pair of suggested minimum-fee + per-km values for a vehicle vertical. */
 export type RateDefault = {
@@ -25,29 +34,51 @@ export type RateDefault = {
 }
 
 /**
- * Per-vehicle Yogya-market suggestions. Keys mirror the canonical
- * `drivers.vehicle_type` enum values used by the services dashboards:
- *   - 'bike'    → motorbike rider
- *   - 'car'     → passenger car driver (Avanza / Innova class)
- *   - 'minibus' → minibus charter (Hiace class)
- *   - 'truck'   → pickup-truck rental
- *   - 'jeep'    → jeep tour / offroad
+ * Resolve the suggested default for a given vehicle type + city. When the
+ * city is unknown / unmapped, falls back to Zone I (the lowest rates) so
+ * drivers in new geographies always get a working default.
+ *
+ *   - 'bike'    → motorbike rider (KP 667/2022 three-zone schema)
+ *   - 'car'     → passenger car driver (PM 118/2018 two-zone schema)
+ *   - 'minibus' → minibus charter (uses car schema as baseline)
+ *   - 'truck'   → pickup-truck rental (uses car schema as baseline)
+ *   - 'jeep'    → jeep tour / offroad (uses car schema as baseline)
+ *
+ * The minibus/truck/jeep callers will override upward via the dashboard
+ * since their per-km is typically 2-3× the regulated car floor.
  */
-export const YOGYA_MARKET_DEFAULTS: Record<string, RateDefault> = {
-  bike:    { min_fee:  15_000, price_per_km:  3_500 },
-  car:     { min_fee:  30_000, price_per_km:  5_000 },
-  minibus: { min_fee: 100_000, price_per_km:  7_500 },
-  truck:   { min_fee: 200_000, price_per_km: 12_000 },
-  jeep:    { min_fee: 250_000, price_per_km: 10_000 },
+export function getMarketDefault(
+  vehicleType: string,
+  city?: string | null,
+): RateDefault | null {
+  if (!vehicleType) return null
+  return {
+    min_fee:      suggestedMinFee(vehicleType, city ?? null),
+    price_per_km: suggestedPricePerKm(vehicleType, city ?? null),
+  }
 }
 
 /**
- * Resolve the Yogya default for a given vehicle type. Returns null when the
- * value doesn't map to a known vertical so callers can opt out of rendering
- * the reset-to-default hint entirely.
+ * Legacy export — kept so existing callers that destructure
+ * `YOGYA_MARKET_DEFAULTS[vehicleType]` keep working until the dashboard
+ * onboarding flows are migrated to use getMarketDefault(vehicleType, city).
+ * These values are intentionally the Zone I (lowest) batas bawah —
+ * matching the spirit of the old "Yogya market" naming since Yogya is
+ * in Zone I, while now drawing on the regulated minimum rather than
+ * informal market sampling.
+ *
+ * Truck / minibus / jeep keep their previous higher defaults because those
+ * vehicles are charter-priced, not per-km-ojek-priced, and KP 667 / PM 118
+ * don't set floors for them.
  */
-export function getMarketDefault(vehicleType: string): RateDefault | null {
-  if (!vehicleType) return null
-  const key = vehicleType.toLowerCase()
-  return YOGYA_MARKET_DEFAULTS[key] ?? null
+export const YOGYA_MARKET_DEFAULTS: Record<string, RateDefault> = {
+  bike:    { min_fee:  8_000, price_per_km:  2_000 },   // KP 667 Zone I batas bawah
+  car:     { min_fee: 20_000, price_per_km:  3_500 },   // PM 118 Zone I batas bawah
+  minibus: { min_fee: 100_000, price_per_km:  7_500 },  // charter — no regulated floor
+  truck:   { min_fee: 200_000, price_per_km: 12_000 },  // charter — no regulated floor
+  jeep:    { min_fee: 250_000, price_per_km: 10_000 },  // charter — no regulated floor
 }
+
+// Re-export the zone helpers for callers that want to render the zone
+// badge in the dashboard ("You're in Zone I — Sumatra/Java-ex-Jabo/Bali").
+export { bikeZoneForCity, carZoneForCity }

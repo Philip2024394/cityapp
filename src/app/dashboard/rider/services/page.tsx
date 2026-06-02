@@ -50,6 +50,7 @@ import {
   type ParcelRateTierKey,
 } from '@/lib/parcel/defaults'
 import { getMarketDefault } from '@/lib/pricing/marketDefaults'
+import { bikeZoneForCity, BIKE_BATAS_BAWAH_PER_KM, BIKE_MIN_FEE_BY_ZONE } from '@/lib/pricing/zones'
 
 // ----------------------------------------------------------------------------
 // Row shape — only the columns this page edits.
@@ -57,6 +58,7 @@ import { getMarketDefault } from '@/lib/pricing/marketDefaults'
 type ServicesRow = {
   user_id: string
   vehicle_type: string | null
+  city: string | null
   service_offerings: string[] | null
   price_per_km: number | null
   min_fee: number | null
@@ -119,7 +121,7 @@ export default function RiderServicesPage() {
     const { data, error } = await supabase
       .from('drivers')
       .select(
-        'user_id, vehicle_type, service_offerings, ' +
+        'user_id, vehicle_type, city, service_offerings, ' +
         'price_per_km, min_fee, pitstop_fee, ' +
         'rental_type, rental_daily_rate_idr, rental_weekly_rate_idr, rental_monthly_rate_idr, rental_min_days, ' +
         'parcel_b2b_enabled, parcel_rate_tiers, parcel_daily_capacity, parcel_service_zone, parcel_outer_zone_surcharge, ' +
@@ -425,9 +427,24 @@ function PricingCard({
     await onSave({ [field]: next })
   }
 
-  // Yogya-market defaults — informational placeholder + one-tap reset.
-  // NOT a regulated rate; Permenhub 12/2019 leaves rate-setting to riders.
-  const market = getMarketDefault('bike')
+  // Zone-aware defaults — informational placeholder + one-tap reset.
+  // The numbers come from KP 667/2022 (bike batas bawah per zone). The
+  // platform shows them as a REFERENCE; the driver self-publishes their
+  // actual rate. This keeps CityDrivers outside Permenhub PM 12/2019's
+  // aplikator scope.
+  const market = getMarketDefault('bike', row.city)
+  const zone = bikeZoneForCity(row.city)
+  const bawahPerKm = BIKE_BATAS_BAWAH_PER_KM[zone]
+  const bawahMinFee = BIKE_MIN_FEE_BY_ZONE[zone]
+
+  // Warn banner triggers when the published value falls below the legal
+  // Permenhub minimum for the driver's zone. Parse the IDR string in the
+  // input live so the banner appears as the user types.
+  const perKmParsed = parseIdr(perKm) ?? 0
+  const minFeeParsed = parseIdr(minFee) ?? 0
+  const perKmBelowBawah  = perKmParsed > 0 && perKmParsed < bawahPerKm
+  const minFeeBelowBawah = minFeeParsed > 0 && minFeeParsed < bawahMinFee
+
   async function resetField(field: 'price_per_km' | 'min_fee', value: number) {
     if (field === 'price_per_km') setPerKm(formatIdr(value))
     if (field === 'min_fee')      setMinFee(formatIdr(value))
@@ -437,14 +454,14 @@ function PricingCard({
   return (
     <Card
       title="Per-km transport rates"
-      hint="YOUR published rates for point-to-point trips. CityDrivers shows them as-is — we never compute fares."
+      hint={`YOUR published rates for point-to-point trips. CityDrivers shows them as-is — we never compute fares. Zone ${zone} reference (KP 564/2022 as adjusted Jul 2025): Rp ${formatIdr(bawahPerKm)}/km.`}
       icon={<DollarSign size={18} />}
     >
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <IdrInput
             label="Price per km"
-            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.price_per_km)}` : '3.000'}
+            placeholder={market ? `Zone ${zone}: Rp ${formatIdr(market.price_per_km)}` : '2.000'}
             value={perKm}
             onChange={setPerKm}
             onBlur={() => commit('price_per_km', perKm, row.price_per_km)}
@@ -455,14 +472,14 @@ function PricingCard({
               onClick={() => void resetField('price_per_km', market.price_per_km)}
               className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
             >
-              Reset to Yogya default (Rp {formatIdr(market.price_per_km)})
+              Reset to Zone {zone} default (Rp {formatIdr(market.price_per_km)})
             </button>
           )}
         </div>
         <div className="space-y-1">
           <IdrInput
             label="Minimum fee"
-            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.min_fee)}` : '15.000'}
+            placeholder={market ? `Zone ${zone}: Rp ${formatIdr(market.min_fee)}` : '8.000'}
             value={minFee}
             onChange={setMinFee}
             onBlur={() => commit('min_fee', minFee, row.min_fee)}
@@ -473,11 +490,26 @@ function PricingCard({
               onClick={() => void resetField('min_fee', market.min_fee)}
               className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
             >
-              Reset to Yogya default (Rp {formatIdr(market.min_fee)})
+              Reset to Zone {zone} default (Rp {formatIdr(market.min_fee)})
             </button>
           )}
         </div>
       </div>
+
+      {(perKmBelowBawah || minFeeBelowBawah) && (
+        <div
+          className="mt-3 rounded-2xl p-3 text-[12px] leading-relaxed"
+          style={{
+            background: 'rgba(250, 204, 21, 0.10)',
+            border: '1px solid rgba(250, 204, 21, 0.45)',
+            color: '#854D0E',
+          }}
+        >
+          <strong className="font-extrabold">Below the Zone {zone} minimum (KP 564/2022, Jul 2025 adjustment).</strong>{' '}
+          The regulated minimum for your zone is <strong>Rp {formatIdr(bawahPerKm)}/km</strong>{minFeeBelowBawah ? <> + min fee <strong>Rp {formatIdr(bawahMinFee)}</strong></> : null}.
+          You can publish below this and customers will still see your profile, but most riders earn more by sticking to the zone reference.
+        </div>
+      )}
     </Card>
   )
 }

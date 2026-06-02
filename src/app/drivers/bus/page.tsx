@@ -343,7 +343,7 @@ export default function BusDriversLandingPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.45)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
-              Start 7-day free trial
+              Start 30-day free trial
               <ArrowRight className="w-4 h-4" strokeWidth={3} />
             </Link>
           </div>
@@ -369,7 +369,7 @@ export default function BusDriversLandingPage() {
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold shadow-[0_8px_24px_rgba(250,204,21,0.55)] active:scale-[0.97] transition"
               style={{ minHeight: 48 }}
             >
-              Sign up now — 7 days free
+              Sign up now — 30 days free
               <ArrowRight className="w-4 h-4" strokeWidth={3} />
             </Link>
             <a

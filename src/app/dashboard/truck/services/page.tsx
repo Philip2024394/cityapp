@@ -436,7 +436,7 @@ function PricingCard({
         <div className="space-y-1">
           <IdrInput
             label="Price per km"
-            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.price_per_km)}` : '8.000'}
+            placeholder={market ? `Charter ref: Rp ${formatIdr(market.price_per_km)}` : '8.000'}
             value={perKm}
             onChange={setPerKm}
             onBlur={() => commit('price_per_km', perKm, row.price_per_km)}
@@ -447,14 +447,14 @@ function PricingCard({
               onClick={() => void resetField('price_per_km', market.price_per_km)}
               className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
             >
-              Reset to Yogya default (Rp {formatIdr(market.price_per_km)})
+              Reset to charter reference (Rp {formatIdr(market.price_per_km)})
             </button>
           )}
         </div>
         <div className="space-y-1">
           <IdrInput
             label="Minimum fee"
-            placeholder={market ? `Yogya avg: Rp ${formatIdr(market.min_fee)}` : '75.000'}
+            placeholder={market ? `Charter ref: Rp ${formatIdr(market.min_fee)}` : '75.000'}
             value={minFee}
             onChange={setMinFee}
             onBlur={() => commit('min_fee', minFee, row.min_fee)}
@@ -465,7 +465,7 @@ function PricingCard({
               onClick={() => void resetField('min_fee', market.min_fee)}
               className="text-[11px] font-extrabold text-[#854D0E] hover:text-[#0A0A0A] underline underline-offset-2 active:scale-[0.98] transition"
             >
-              Reset to Yogya default (Rp {formatIdr(market.min_fee)})
+              Reset to charter reference (Rp {formatIdr(market.min_fee)})
             </button>
           )}
         </div>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
+import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 import DriverProfileShell, { type DriverPublic } from '@/components/profile/DriverProfileShell'
 import type { TourPackage } from '@/lib/tours/types'
 import { MOCK_LANGUAGES, mockToursForSlug } from '@/lib/tours/templates'
@@ -509,6 +510,7 @@ function bikeDriverToDriverPublic(d: BikeDriver, tours: TourPackage[] = []): Dri
     parcel_rate_tiers:   d.parcel_rate_tiers,
     languages:           d.languages,
     tours,
+    is_mock:             d.source === 'mock',
   }
 }
 
@@ -634,6 +636,9 @@ export default async function RiderProfilePage({
   return (
     <>
       <JsonLd data={jsonLd} />
+      {d.source === 'real' && (
+        <ProfileViewBeacon providerType="driver" providerId={d.id} />
+      )}
       <DriverProfileShell
         driver={bikeDriverToDriverPublic(d, tours)}
         alternatives={alternatives.map((alt) => bikeDriverToDriverPublic(alt))}

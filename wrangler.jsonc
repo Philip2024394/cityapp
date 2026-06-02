@@ -32,14 +32,15 @@
 	//                   (see worker-entry.mjs).
 	"triggers": {
 		"crons": [
-			"0 1 * * 1",   // payouts/aggregate (weekly Mon)
-			"0 18 * * *",  // subscriptions/expire (daily)
-			"0 19 * * *",  // retention/sweep (daily)
-			"0 20 * * *",  // b2b/recompute-scores (daily)
-			"0 21 * * *",  // payment-intents/expire (daily)
-			"0 1 * * *",   // reminders/payments (daily 08:00 WIB)
-			"0 2 * * *",   // pdp/overdue (daily)
-			"0 * * * *"    // cron/partner-suspend (hourly — checks 48h overdue)
+			"0 1 * * 1",     // payouts/aggregate (weekly Mon)
+			"0 18 * * *",    // subscriptions/expire (daily)
+			"0 19 * * *",    // retention/sweep (daily)
+			"0 20 * * *",    // b2b/recompute-scores (daily)
+			"0 21 * * *",    // payment-intents/expire (daily)
+			"0 1 * * *",     // reminders/payments (daily 08:00 WIB)
+			"0 2 * * *",     // pdp/overdue (daily)
+			"0 * * * *",     // cron/partner-suspend (hourly — checks 48h overdue)
+			"*/5 * * * *"    // ops/route-health (every 5 min — synthetic uptime)
 		]
 	},
 	"observability": {

@@ -48,7 +48,25 @@ export interface HealthSnapshot {
     apiLatency: Metric
     pushFailures: Metric
     appVersionDistribution: Metric
+    dbLatency: Metric
   }
+  /** Per-vertical driver presence breakdown — H4 audit. Always populated
+   *  (zero-counts for verticals with no drivers) so the UI can render five
+   *  cards in a stable order. `null` when SUPABASE_SERVICE_ROLE_KEY missing
+   *  or the underlying query errors. */
+  driversByVehicle: DriversByVehicle | null
+}
+
+/** Vehicle-type keys shown in the per-vertical health row. Matches the
+ *  `drivers.vehicle_type` check constraint (migrations 0092 + 0162), minus
+ *  `premium_car` which collapses into the `car` tile for ops display. */
+export type VehicleTypeKey = 'bike' | 'car' | 'truck' | 'minibus' | 'jeep'
+
+export const VEHICLE_TYPE_KEYS: VehicleTypeKey[] = ['bike', 'car', 'truck', 'minibus', 'jeep']
+
+export interface DriversByVehicle {
+  total: number
+  by_vehicle_type: Record<VehicleTypeKey, { online: number; total: number; signups_7d: number }>
 }
 
 // ---------------------------------------------------------------------------
@@ -102,7 +120,40 @@ export async function getHealthSnapshot(): Promise<HealthSnapshot> {
         apiLatency:             { ...offline, label: 'API response latency' },
         pushFailures:           { ...offline, label: 'Push failures (24h)' },
         appVersionDistribution: { ...offline, label: 'App version distribution' },
+        dbLatency:              { ...offline, label: 'DB round-trip latency' },
       },
+      driversByVehicle: null,
+    }
+  }
+
+  // DB round-trip latency — cheapest probe that exercises the connection
+  // pool + planner: a HEAD-only count over a tiny indexed table. Times
+  // the wall-clock from initiation to first byte. Anything <100ms is
+  // green; 100-500ms is warn (often pool contention or noisy neighbour);
+  // >500ms is red (likely the DB is in trouble — see DR runbook §3.2).
+  let dbLatency: Metric
+  {
+    const startedAt = Date.now()
+    const { error } = await admin
+      .from('cron_run_log')
+      .select('id', { count: 'exact', head: true })
+      .limit(1)
+    const elapsed = Date.now() - startedAt
+    if (error && !isMissingTable(error)) {
+      dbLatency = err('DB round-trip latency', error.message)
+    } else {
+      const status: MetricStatus = elapsed < 100 ? 'ok' : elapsed < 500 ? 'warn' : 'err'
+      const note = status === 'ok'
+        ? 'HEAD count on cron_run_log — connection pool + planner round-trip.'
+        : status === 'warn'
+          ? 'Elevated round-trip. Likely pool contention or noisy neighbour. See DR runbook §3.2.'
+          : 'Slow DB round-trip. Connection pool may be exhausted. Check Supabase project metrics + DR runbook §3.2.'
+      dbLatency = {
+        label: 'DB round-trip latency',
+        value: `${elapsed} ms`,
+        status,
+        note,
+      }
     }
   }
 
@@ -316,6 +367,66 @@ export async function getHealthSnapshot(): Promise<HealthSnapshot> {
     'Driver-side metric. Add app_version to /api/drivers/location body + a column on drivers, then group-by here.',
   )
 
+  // Per-vehicle-type driver breakdown (H4) — drives the "Drivers by
+  // vertical" section. One read of (vehicle_type, availability,
+  // last_active_at, created_at) for every active driver row; aggregation
+  // happens in JS because PostgREST has no GROUP BY surface and we don't
+  // want to add a Postgres function just for an admin tile. The drivers
+  // table is in the low thousands, this stays well under 50ms.
+  let driversByVehicle: DriversByVehicle | null = null
+  {
+    const fiveMinAgoMs = Date.now() - 5 * 60_000
+    const sevenDaysAgoMs = Date.now() - 7 * 24 * 60 * 60_000
+    const { data, error } = await admin
+      .from('drivers')
+      .select('vehicle_type, availability, last_active_at, created_at')
+      .eq('status', 'active')
+    if (error || !data) {
+      driversByVehicle = null
+    } else {
+      const empty = (): DriversByVehicle['by_vehicle_type'][VehicleTypeKey] => ({
+        online: 0, total: 0, signups_7d: 0,
+      })
+      const acc: DriversByVehicle['by_vehicle_type'] = {
+        bike: empty(), car: empty(), truck: empty(), minibus: empty(), jeep: empty(),
+      }
+      let total = 0
+      for (const row of data as Array<{
+        vehicle_type: string | null
+        availability: string | null
+        last_active_at: string | null
+        created_at: string | null
+      }>) {
+        // premium_car collapses into 'car' for the ops display so the row
+        // stays at five tiles. Any unknown type is ignored — better to
+        // under-report than show a "???" bucket.
+        const raw = row.vehicle_type ?? 'bike'
+        const key: VehicleTypeKey | null =
+          raw === 'bike' ? 'bike' :
+          raw === 'car' || raw === 'premium_car' ? 'car' :
+          raw === 'truck' ? 'truck' :
+          raw === 'minibus' ? 'minibus' :
+          raw === 'jeep' ? 'jeep' : null
+        if (!key) continue
+        total += 1
+        acc[key].total += 1
+        const lastActive = row.last_active_at ? Date.parse(row.last_active_at) : NaN
+        if (
+          Number.isFinite(lastActive) &&
+          lastActive > fiveMinAgoMs &&
+          row.availability === 'online'
+        ) {
+          acc[key].online += 1
+        }
+        const created = row.created_at ? Date.parse(row.created_at) : NaN
+        if (Number.isFinite(created) && created > sevenDaysAgoMs) {
+          acc[key].signups_7d += 1
+        }
+      }
+      driversByVehicle = { total, by_vehicle_type: acc }
+    }
+  }
+
   return {
     generatedAt,
     metrics: {
@@ -329,6 +440,294 @@ export async function getHealthSnapshot(): Promise<HealthSnapshot> {
       apiLatency,
       pushFailures,
       appVersionDistribution,
+      dbLatency,
     },
+    driversByVehicle,
   }
+}
+
+// ============================================================================
+// Cron jobs health — last-run-per-job summary for the /admin/health panel
+// ----------------------------------------------------------------------------
+// Reads from cron_run_log (created in migration 0176). Cloudflare crons fire
+// 8 jobs across the week (see wrangler.jsonc:34-43); each cron writes a row
+// before dispatch (status='running') and patches it on completion. This
+// helper rolls those rows up into "for each job: last run + 5 recent runs"
+// so the dashboard can render a compact table.
+//
+// Defensive against the migration not being applied yet: if cron_run_log is
+// missing we return [] so the UI can render its empty state instead of
+// throwing. Same pattern as the push_send_log degradation above.
+// ============================================================================
+
+export interface CronRun {
+  id: string
+  scheduled_at: string
+  started_at: string
+  finished_at: string | null
+  status: 'running' | 'ok' | 'error'
+  duration_ms: number | null
+  error_msg: string | null
+}
+
+export interface CronJobHealth {
+  job_name: string
+  last_started_at: string
+  last_status: 'running' | 'ok' | 'error'
+  last_duration_ms: number | null
+  last_error: string | null
+  recent_runs: CronRun[]
+}
+
+// Cron expression -> human cron schedule, kept in sync with worker-entry.mjs
+// CRON_TO_JOB. We use it to render the "Next scheduled" column without
+// reaching into wrangler.jsonc at runtime.
+const JOB_TO_CRON: Record<string, string> = {
+  'payouts-aggregate':       '0 1 * * 1',
+  'subscription-expire':     '0 18 * * *',
+  'retention-sweep':         '0 19 * * *',
+  'b2b-recompute-scores':    '0 20 * * *',
+  'payment-intents-expire':  '0 21 * * *',
+  'reminders-payments':      '0 1 * * *',
+  'pdp-overdue':             '0 2 * * *',
+  'partner-suspend':         '0 * * * *',
+  'route-health':            '*/5 * * * *',
+}
+
+/** Public list of jobs we expect to see in cron_run_log. Order is stable
+ *  but the page re-sorts (errors first, then alpha). */
+export const KNOWN_CRON_JOBS = Object.keys(JOB_TO_CRON)
+
+export function cronExpressionFor(job: string): string | null {
+  return JOB_TO_CRON[job] ?? null
+}
+
+export async function readCronJobsHealth(): Promise<CronJobHealth[]> {
+  const admin = getAdminSupabase()
+  if (!admin) return []
+
+  // Pull the most recent 200 rows across all jobs (8 jobs * ~25 days worst
+  // case for the hourly partner-suspend). We over-fetch so the "5 recent
+  // runs per job" stays accurate even when one chatty job dominates.
+  const { data, error } = await admin
+    .from('cron_run_log')
+    .select('id, job_name, scheduled_at, started_at, finished_at, status, duration_ms, error_msg')
+    .order('started_at', { ascending: false })
+    .limit(200)
+
+  if (error) {
+    if (isMissingTable(error)) return []
+    // Other errors — surface as empty so the page renders the
+    // "no runs logged yet" state rather than 500'ing the whole dashboard.
+    return []
+  }
+
+  const byJob = new Map<string, CronRun[]>()
+  for (const row of (data ?? []) as Array<{
+    id: string
+    job_name: string
+    scheduled_at: string
+    started_at: string
+    finished_at: string | null
+    status: 'running' | 'ok' | 'error'
+    duration_ms: number | null
+    error_msg: string | null
+  }>) {
+    const list = byJob.get(row.job_name) ?? []
+    if (list.length < 5) {
+      list.push({
+        id: row.id,
+        scheduled_at: row.scheduled_at,
+        started_at: row.started_at,
+        finished_at: row.finished_at,
+        status: row.status,
+        duration_ms: row.duration_ms,
+        error_msg: row.error_msg,
+      })
+    }
+    byJob.set(row.job_name, list)
+  }
+
+  const out: CronJobHealth[] = []
+  for (const [job_name, runs] of byJob.entries()) {
+    const last = runs[0]
+    if (!last) continue
+    out.push({
+      job_name,
+      last_started_at: last.started_at,
+      last_status: last.status,
+      last_duration_ms: last.duration_ms,
+      last_error: last.error_msg,
+      recent_runs: runs,
+    })
+  }
+  return out
+}
+
+// ============================================================================
+// Route health — synthetic-uptime probe results (migration 0178)
+// ----------------------------------------------------------------------------
+// Returns the latest probe per route plus a small recent series for a
+// micro-sparkline. The /api/ops/route-health cron writes one row per
+// route per probe (~every 5 min); this read aggregates to the latest
+// observation per route_path so the admin sees one row per route.
+// ============================================================================
+
+export interface RouteHealthLatest {
+  route_path: string
+  status_code: number | null
+  latency_ms: number | null
+  ok: boolean
+  error_msg: string | null
+  checked_at: string
+  /** Last 12 probes (1h-ish window) — newest first. */
+  recent: Array<{ ok: boolean; latency_ms: number | null; checked_at: string }>
+}
+
+export async function readRouteHealth(): Promise<RouteHealthLatest[]> {
+  const admin = getAdminSupabase()
+  if (!admin) return []
+
+  // Pull the most recent 200 probes globally. With ~7 routes × 12 probes/hr
+  // = 84 rows/hour, 200 covers ~2.5 hours — enough for the per-route latest
+  // + a 12-deep recent series.
+  const { data, error } = await admin
+    .from('route_health')
+    .select('id, route_path, status_code, latency_ms, ok, error_msg, checked_at')
+    .order('checked_at', { ascending: false })
+    .limit(200)
+
+  if (error) {
+    if (isMissingTable(error)) return []
+    return []
+  }
+
+  const byRoute = new Map<string, RouteHealthLatest>()
+  for (const row of (data ?? []) as Array<{
+    route_path: string
+    status_code: number | null
+    latency_ms: number | null
+    ok: boolean
+    error_msg: string | null
+    checked_at: string
+  }>) {
+    const existing = byRoute.get(row.route_path)
+    if (!existing) {
+      byRoute.set(row.route_path, {
+        route_path: row.route_path,
+        status_code: row.status_code,
+        latency_ms: row.latency_ms,
+        ok: row.ok,
+        error_msg: row.error_msg,
+        checked_at: row.checked_at,
+        recent: [{ ok: row.ok, latency_ms: row.latency_ms, checked_at: row.checked_at }],
+      })
+    } else if (existing.recent.length < 12) {
+      existing.recent.push({ ok: row.ok, latency_ms: row.latency_ms, checked_at: row.checked_at })
+    }
+  }
+  return Array.from(byRoute.values()).sort((a, b) => a.route_path.localeCompare(b.route_path))
+}
+
+// ============================================================================
+// Environment health — config probe for critical env vars
+// ----------------------------------------------------------------------------
+// Surfaces which secrets are wired up in the current runtime. We only
+// report set/unset state — never the value — so the rendered page is safe
+// to view even when shared. This caught the Sentry-DSN-missing case the
+// audit flagged: errors were being captured by Sentry SDK calls but the
+// SDK silently no-ops when DSN is empty, so nothing reached the project.
+//
+// Severity rules:
+//   - 'required' env vars unset → status 'err' (red)
+//   - 'recommended' env vars unset → status 'warn' (yellow)
+//   - all set → status 'ok' (green)
+// ============================================================================
+
+export type EnvCheckSeverity = 'required' | 'recommended'
+
+export interface EnvCheck {
+  name: string
+  set: boolean
+  severity: EnvCheckSeverity
+  note: string
+}
+
+export function readEnvHealth(): EnvCheck[] {
+  // Reading env vars at module init would tree-shake out — we read at call
+  // time so the smoke is honest about what the running process sees.
+  const has = (name: string): boolean => {
+    const v = process.env[name]
+    return typeof v === 'string' && v.length > 0
+  }
+
+  return [
+    // Errors / observability
+    {
+      name: 'SENTRY_DSN',
+      set: has('SENTRY_DSN') || has('NEXT_PUBLIC_SENTRY_DSN'),
+      severity: 'required',
+      note: 'Server + client error capture. Without a DSN, Sentry SDK silently drops every event.',
+    },
+    {
+      name: 'NEXT_PUBLIC_SENTRY_DSN',
+      set: has('NEXT_PUBLIC_SENTRY_DSN'),
+      severity: 'recommended',
+      note: 'Client-side error capture. May share value with SENTRY_DSN.',
+    },
+
+    // Ops alert paging
+    {
+      name: 'RESEND_API_KEY',
+      set: has('RESEND_API_KEY'),
+      severity: 'required',
+      note: 'Outbound email — transactional + ops alert paging.',
+    },
+    {
+      name: 'OPS_ALERT_EMAIL_TO',
+      set: has('OPS_ALERT_EMAIL_TO'),
+      severity: 'recommended',
+      note: 'Comma-separated paging recipients. Falls back to RESEND_REPLY_TO if unset.',
+    },
+
+    // Cron + ops
+    {
+      name: 'CRON_SECRET',
+      set: has('CRON_SECRET'),
+      severity: 'required',
+      note: 'Gates /api/cron/* and /api/ops/route-health. Worker refuses to fire crons without it.',
+    },
+
+    // PDP / privacy
+    {
+      name: 'IP_SALT',
+      set: has('IP_SALT'),
+      severity: 'required',
+      note: 'Salt for SHA-256 hashing of visitor IPs in wa_click_events / profile_share_events.',
+    },
+
+    // Payments
+    {
+      name: 'MIDTRANS_SERVER_KEY',
+      set: has('MIDTRANS_SERVER_KEY'),
+      severity: 'required',
+      note: 'Payment webhook signature verification.',
+    },
+
+    // Affiliate
+    {
+      name: 'AFFILIATE_SESSION_SECRET',
+      set: has('AFFILIATE_SESSION_SECRET'),
+      severity: 'required',
+      note: 'Signs the affiliate session cookie.',
+    },
+
+    // Supabase service role
+    {
+      name: 'SUPABASE_SERVICE_ROLE_KEY',
+      set: has('SUPABASE_SERVICE_ROLE_KEY'),
+      severity: 'required',
+      note: 'Admin reads / ops writes. Most of /admin/* and /api/admin/* fall back to errors without it.',
+    },
+  ]
 }

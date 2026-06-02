@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { X, Copy, Check, MessageCircle, Facebook, QrCode, Download } from 'lucide-react'
+import { trackShareClick, type ProviderType } from '@/lib/tracking/shareClick'
 
 // Bottom-sheet share modal. Four actions:
 //   • Share to WhatsApp     — wa.me share intent
@@ -10,15 +11,21 @@ import { X, Copy, Check, MessageCircle, Facebook, QrCode, Download } from 'lucid
 //
 // `url` is the public profile URL the visitor / provider wants to share.
 // `prefillText` is the leading text (e.g. "Lihat profil ini di CityDrivers:").
+//
+// providerType + providerId drive the share-click telemetry (mig 0177).
+// Without those two props nothing is logged — they're required so callers
+// can't accidentally leave them out.
 
 export default function SocialShareSheet({
-  open, onClose, url, prefillText, providerName,
+  open, onClose, url, prefillText, providerName, providerType, providerId,
 }: {
   open: boolean
   onClose: () => void
   url: string
   prefillText: string
   providerName: string
+  providerType: ProviderType
+  providerId: string
 }) {
   const [copied, setCopied] = useState(false)
   const [qrOpen, setQrOpen] = useState(false)
@@ -28,9 +35,14 @@ export default function SocialShareSheet({
   const waUrl = `https://wa.me/?text=${encodeURIComponent(`${prefillText} ${url}`)}`
   const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
   // First-party QR endpoint (api/qr) — no third-party dependency.
-  const qrSrc = `/api/qr?data=${encodeURIComponent(url)}&size=512`
+  // /api/qr accepts ?text= (audit fix 2026-06-02 — was ?data= which the
+  // route ignored, returning 400 and a broken QR image in the share sheet).
+  // The route renders an SVG so the size param isn't needed; CSS handles
+  // sizing in the modal.
+  const qrSrc = `/api/qr?text=${encodeURIComponent(url)}`
 
   async function copy() {
+    trackShareClick({ providerType, providerId, platform: 'copy_link' })
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
@@ -54,10 +66,35 @@ export default function SocialShareSheet({
           </div>
 
           <div className="grid grid-cols-4 gap-2">
-            <ShareTile href={waUrl} icon={MessageCircle} label="WhatsApp" tint="#25D366" />
-            <ShareTile href={fbUrl} icon={Facebook}      label="Facebook" tint="#1877F2" />
-            <ShareTile onClick={copy}                    icon={copied ? Check : Copy} label={copied ? 'Copied' : 'Copy link'} tint="#FACC15" />
-            <ShareTile onClick={() => setQrOpen(true)}   icon={QrCode}    label="QR code" tint="#A78BFA" />
+            <ShareTile
+              href={waUrl}
+              icon={MessageCircle}
+              label="WhatsApp"
+              tint="#25D366"
+              onClick={() => trackShareClick({ providerType, providerId, platform: 'whatsapp' })}
+            />
+            <ShareTile
+              href={fbUrl}
+              icon={Facebook}
+              label="Facebook"
+              tint="#1877F2"
+              onClick={() => trackShareClick({ providerType, providerId, platform: 'facebook' })}
+            />
+            <ShareTile
+              onClick={copy}
+              icon={copied ? Check : Copy}
+              label={copied ? 'Copied' : 'Copy link'}
+              tint="#FACC15"
+            />
+            <ShareTile
+              onClick={() => {
+                trackShareClick({ providerType, providerId, platform: 'qr_view' })
+                setQrOpen(true)
+              }}
+              icon={QrCode}
+              label="QR code"
+              tint="#A78BFA"
+            />
           </div>
 
           <div className="text-[11px] text-muted text-center truncate font-mono">{url}</div>
@@ -73,6 +110,7 @@ export default function SocialShareSheet({
             <a
               href={qrSrc}
               download={`citydrivers-${providerName.toLowerCase().replace(/\s+/g, '-')}-qr.png`}
+              onClick={() => trackShareClick({ providerType, providerId, platform: 'qr_download' })}
               className="inline-flex items-center justify-center gap-2 w-full rounded-full bg-black text-white px-4 py-3 text-[13px] font-extrabold uppercase tracking-wider"
             >
               <Download className="w-4 h-4" strokeWidth={2.5} />
@@ -107,7 +145,13 @@ function ShareTile({
   )
   const className = 'flex flex-col items-center gap-1.5 py-2 rounded-lg hover:bg-white/5 transition'
   if (href) {
-    return <a href={href} target="_blank" rel="noopener noreferrer" className={className}>{inner}</a>
+    // onClick fires synchronously before the browser follows the href so
+    // sendBeacon dispatches before the new tab opens.
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className={className}>
+        {inner}
+      </a>
+    )
   }
   return <button type="button" onClick={onClick} className={className}>{inner}</button>
 }

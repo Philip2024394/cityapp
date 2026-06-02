@@ -862,12 +862,45 @@ function PlanTripPageInner() {
                     dropdownDirection="down"
                     maxResults={3}
                     rightSlot={
-                      <span
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
-                        aria-hidden
-                      >
-                        <Compass className="w-[18px] h-[18px] text-[#52525B]" strokeWidth={2.4} />
-                      </span>
+                      geo.status === 'granted' ? (
+                        // Static compass — GPS already granted, no action needed.
+                        <span
+                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
+                          aria-hidden
+                          title="Location active"
+                        >
+                          <Compass className="w-[18px] h-[18px] text-[#16A34A]" strokeWidth={2.4} />
+                        </span>
+                      ) : (
+                        // Active "Use my GPS" button — fixes the audit gap where
+                        // customers landing directly on /cari (deep links, ads,
+                        // shared URLs) had NO way to trigger geolocation. The
+                        // landing-page warm-up modal is the only other entry
+                        // point and direct-landed customers never see it.
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            haptic.tap()
+                            void geo.request()
+                          }}
+                          disabled={geo.status === 'requesting'}
+                          aria-label="Use my current location"
+                          title="Tap to use your current location"
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-lg active:scale-[0.95] transition disabled:opacity-60"
+                          style={{
+                            minHeight: 36,
+                            minWidth: 36,
+                            background: geo.status === 'requesting' ? 'rgba(250,204,21,0.08)' : '#FACC15',
+                            color: '#0A0A0A',
+                          }}
+                        >
+                          <Compass
+                            className={`w-[16px] h-[16px] ${geo.status === 'requesting' ? 'animate-spin' : ''}`}
+                            strokeWidth={2.6}
+                          />
+                        </button>
+                      )
                     }
                   />
                   <PlaceAutocomplete
@@ -1270,8 +1303,18 @@ function DriverCard({
   // from haversine km / 25 km/h, floored at 2 min so a nearby driver
   // doesn't read "0 min away". Rendered in yellow per founder spec
   // (the same yellow accent the km line used before).
+  //
+  // Freshness gate (2026-06 audit fix): if the driver's GPS is stale,
+  // src/lib/drivers/queries.ts has already swapped their lat/lng to the
+  // service-zone centre. Reporting "8 min away" from a zone centre lies
+  // to the customer, so we hide the ETA and surface a "Based in {area}"
+  // label instead — same behaviour /cari/pending already has.
   let etaLabel: string | null = null
-  if (pickup && driver.lat && driver.lng) {
+  let basedInLabel: string | null = null
+  if (driver.locationFresh === false) {
+    if (driver.area) basedInLabel = `Based in ${driver.area}`
+    else if (driver.city) basedInLabel = `Based in ${driver.city}`
+  } else if (pickup && driver.lat && driver.lng) {
     const km = haversineKm({ lat: pickup.lat, lng: pickup.lng }, { lat: driver.lat, lng: driver.lng })
     if (Number.isFinite(km)) {
       const minutes = Math.max(2, Math.round((km / 25) * 60))
@@ -1429,6 +1472,14 @@ function DriverCard({
               {priceLabel && <span aria-hidden className="text-[11px] text-[#A1A1AA]">·</span>}
               <span className="text-[11px] font-extrabold" style={{ color: '#F59E0B' }}>
                 {etaLabel}
+              </span>
+            </>
+          )}
+          {basedInLabel && (
+            <>
+              {priceLabel && <span aria-hidden className="text-[11px] text-[#A1A1AA]">·</span>}
+              <span className="text-[11px] font-bold text-[#71717A]" title="Driver's GPS hasn't pinged recently — showing their service-zone area instead of an estimated distance.">
+                {basedInLabel}
               </span>
             </>
           )}

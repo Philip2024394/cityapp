@@ -42,6 +42,7 @@ import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import AvailabilitySwitcher from '@/components/dashboard/AvailabilitySwitcher'
+import SnoozeCard from '@/components/dashboard/SnoozeCard'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
 
 const ADMIN_WHATSAPP_E164 = '6285183600015'
@@ -278,6 +279,10 @@ function DashboardHome({
         value={row.availability ?? 'offline'}
         onChange={() => onReload()}
       />
+
+      {/* Driver-initiated 48h snooze (directory-only — drops to bottom of
+          randomised cards while active, never hides). */}
+      <SnoozeCard />
 
       {/* 2-column micro grid — Account Health + Market Position */}
       <section className="grid grid-cols-2 gap-2 mb-4">

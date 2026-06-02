@@ -21,6 +21,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { sendDriverWebPush } from '@/lib/push/sendWebPush'
+import { rateLimit } from '@/lib/security/rateLimit'
 
 export const runtime  = 'nodejs'
 export const dynamic  = 'force-dynamic'
@@ -115,6 +116,18 @@ export async function POST(req: Request) {
   const ip        = getClientIp(req)
   const ipHash    = ip ? hashIpForDay(ip) : null
   const userAgent = req.headers.get('user-agent')?.slice(0, 256) ?? null
+
+  // Rate limit per (ip-hash, driver): one tap per 60 seconds. Without this,
+  // a hostile client could spam a driver with audio + vibration modals
+  // until their browser tab locks up. We still return 204 (not 429) so
+  // legitimate rapid double-taps from a confused customer don't surface
+  // as scary errors; the customer's wa.me redirect goes through either
+  // way, the driver just isn't re-alerted.
+  const rateKey = `intent:${ipHash ?? 'anon'}:${providerUserId}`
+  const rl = rateLimit(rateKey, 1, 60_000)
+  if (!rl.ok) {
+    return NextResponse.json({ ok: true, deduplicated: true }, { status: 200 })
+  }
 
   await admin
     .from('connection_intent')

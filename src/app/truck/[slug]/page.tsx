@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
 import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
@@ -336,6 +336,26 @@ export default async function TruckDriverProfilePage({
   const { slug } = await params
   const d = await loadTruckDriver(slug)
   if (!d) notFound()
+
+  // Lapsed-driver redirect — mirrors /r/[slug]:577-580 and /car/[slug].
+  // Query unconditionally: mock_drivers don't have subscription rows, so
+  // the query returns null and the redirect doesn't fire. Only lapsed
+  // REAL drivers (past_due / canceled) get bounced to /cari alternatives.
+  {
+    const adminCheck = getAdminSupabase()
+    if (adminCheck) {
+      const { data: sub } = await adminCheck
+        .from('subscriptions')
+        .select('status')
+        .eq('driver_id', d.id)
+        .maybeSingle()
+      const st = (sub?.status as string | undefined) ?? null
+      if (st === 'past_due' || st === 'canceled') {
+        const qs = new URLSearchParams({ from: 'lapsed_driver', slug: d.slug })
+        redirect(`/cari?${qs.toString()}`)
+      }
+    }
+  }
 
   const heroCover = d.vehicle_photos[0] || d.cover_image_url
 

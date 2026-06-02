@@ -53,32 +53,36 @@ export type ZoneTariff = {
   areaLabel: string
 }
 
-// Numbers reconciled from KP 667/2022 + KP-DRJD 5201/2025 reporting.
-// PASSENGER rides only. Parcel + food are NOT regulated — see file
-// header.
+// Numbers reconciled from KP 564/2022 framework + Dirjen Hubdat 30-Jun-2025
+// announcement (8–15% hike effective 1 Jul 2025). Last verified 2 Jun 2026
+// against Tempo / Kaltim Today / Kumparan reporting. PASSENGER rides only.
+// Parcel + food are NOT regulated — see file header.
+//
+// MUST stay in sync with src/lib/pricing/zones.ts (the dashboard-side
+// source). When changing one, update the other in the same commit.
 export const ZONE_TARIFFS: Record<Zone, ZoneTariff> = {
   I: {
     zone: 'I',
-    perKmMin: 2_000,
+    perKmMin: 2_000,       // published 1,998–2,127, rounded down to floor
     perKmMax: 2_500,
-    minFareMin: 8_000,
-    minFareMax: 10_000,
+    minFareMin: 10_000,    // 2025 hike: published 9,990–13,225
+    minFareMax: 13_000,
     areaLabel: 'Sumatera · Jawa (di luar Jabodetabek) · Bali',
   },
   II: {
     zone: 'II',
-    perKmMin: 2_650,
-    perKmMax: 2_750,
-    minFareMin: 10_500,
-    minFareMax: 13_000,
+    perKmMin: 2_800,       // 2025 hike: published 2,808–2,990 (was 2,650)
+    perKmMax: 3_000,
+    minFareMin: 14_000,    // published 14,040–15,525
+    minFareMax: 15_500,
     areaLabel: 'Jabodetabek (Jakarta · Bogor · Depok · Tangerang · Bekasi)',
   },
   III: {
     zone: 'III',
-    perKmMin: 2_300,
-    perKmMax: 2_750,
-    minFareMin: 9_200,
-    minFareMax: 11_000,
+    perKmMin: 2_300,       // published 2,268–2,415
+    perKmMax: 2_800,
+    minFareMin: 11_500,    // 2025 hike: published 11,340–14,950
+    minFareMax: 14_500,
     areaLabel: 'Kalimantan · Sulawesi · Nusa Tenggara · Maluku · Papua',
   },
 }

@@ -60,6 +60,8 @@ export default function ProfileSlugIslands(props: {
         url={props.shareUrl}
         prefillText={props.shareText ?? `Lihat profil ${props.shareName} di Kita2u:`}
         providerName={props.shareName}
+        providerType={props.providerType}
+        providerId={props.providerId}
       />
     </>
   )

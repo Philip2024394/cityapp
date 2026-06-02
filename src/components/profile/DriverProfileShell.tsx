@@ -157,6 +157,10 @@ export type DriverPublic = {
   /** Published tour packages (mig 0157). Surfaces a Tours tab on the
    *  profile when at least one row has published=true. */
   tours?:               TourPackage[]
+  /** True when this row came from mock_drivers (seeded marketplace pool)
+   *  rather than the real drivers table. Surface as a "DEMO" badge so
+   *  customers don't think a mock is an actual contactable driver. */
+  is_mock?:             boolean
 }
 
 export type DriverProfileShellProps = {
@@ -547,6 +551,20 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             <span className="truncate inline-block max-w-full align-bottom">
               {driver.business_name || 'Driver'}
             </span>
+            {driver.is_mock && (
+              <span
+                className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md align-middle text-[11px] font-extrabold uppercase tracking-wider"
+                style={{
+                  background: '#FACC15',
+                  color: '#0A0A0A',
+                  textShadow: 'none',
+                  verticalAlign: 'middle',
+                }}
+                title="This is a demo profile — not a real contactable driver. The marketplace seeds these while we onboard real drivers."
+              >
+                Demo
+              </span>
+            )}
           </div>
           {/* Hero slogan — strictly 1 line, kept well clear of the right
               edge of the hero image. Defensively sliced to ~55 chars so
@@ -1027,6 +1045,8 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
           : `https://citydrivers.id/${driver.vehicle_type === 'bike' ? 'r' : 'car'}/${driver.slug}`}
         prefillText={`Lihat profil ${driver.business_name || 'driver'} di CityDrivers:`}
         providerName={driver.business_name || 'Driver'}
+        providerType="driver"
+        providerId={driver.id}
       />
     </main>
   )

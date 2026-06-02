@@ -134,7 +134,7 @@ MIDTRANS_PRODUCTION=true           ← when ready for real money
 CRON_SECRET                        ← server only
 
 # OSRM road-routing (OPTIONAL — falls back to haversine × 1.3)
-OSRM_BASE_URL                      ← e.g. https://osrm.cityriders.id
+OSRM_BASE_URL                      ← e.g. https://osrm.citydrivers.id
 
 # Affiliate session secret (REQUIRED for /api/affiliate/* routes after
 # migration 0018 — generate a random 32+ char string)
@@ -150,15 +150,61 @@ SENTRY_ORG                         ← used during source-map upload
 SENTRY_PROJECT                     ← used during source-map upload
 SENTRY_AUTH_TOKEN                  ← required for source-map upload in CI
 
-# Optional, future
-RESEND_API_KEY                     ← if you send transactional email
+# Email — Resend (REQUIRED for transactional + ops alert paging)
+RESEND_API_KEY                     ← server only, transactional email
+RESEND_FROM                        ← default sender "Kita2u <reminders@streetlocal.live>"
+RESEND_REPLY_TO                    ← default reply-to streetlocallive@gmail.com
+
+# Ops alert paging (NEW — wires critical/error ops_alerts to email)
+# Comma-separated list of recipients. Falls back to RESEND_REPLY_TO if unset.
+# 'warn' and 'info' alerts stay in /admin/alerts only — no email.
+# Used by /api/ops/alert AND worker-entry.mjs (cron-failure path).
+OPS_ALERT_EMAIL_TO                 ← e.g. "philip@streetlocal.live,ops@streetlocal.live"
 ```
 
 ---
 
-## 5. Road-distance routing (OSRM self-host)
+## 4b. Supabase Auth — phone signup without OTP (2026-06)
+
+`/signup` and `/login` use phone + password (no SMS OTP). For this to work,
+the Supabase project must have **phone confirmation disabled**. Without
+this toggle, `supabase.auth.signUp({ phone, password })` returns
+`phone not confirmed` and the driver can never sign in.
+
+**One-time config** (Supabase Dashboard, not code):
+
+```
+Authentication → Providers → Phone
+  ✗ Confirm phone number   ← MUST be OFF
+  ✓ Enable phone provider  ← MUST be ON
+```
+
+Other settings on that screen (SMS provider, message template) are
+irrelevant — we never send SMS. Leave the provider field blank or on
+the default; nothing fires it.
+
+**Why this is the safe choice for now:**
+- Driver squatting mitigated by phone-uniqueness at the database (Supabase
+  `auth.users.phone` is unique), the `/admin/drivers` claim/dispute tool,
+  and the visible activity signals (profile views, contact pings) admins
+  can use to spot impersonation.
+- Adding a Fonnte/Meta WhatsApp send for one-time OTP at signup is the
+  planned Phase 2 upgrade once driver volume justifies the per-message
+  cost. See feedback_cityriders_no_dispatch_ever for the full analysis.
+
+---
+
+## 5. Road-distance routing (OSRM self-host) — deferred to Phase 2
 
 The app quotes road km by hitting `/api/quote/route-distance`, which proxies to the OSRM (Open Source Routing Machine) instance configured via `OSRM_BASE_URL`. Without that env var the proxy falls back to **haversine × 1.3** — the empirical great-circle → urban-road ratio observed in Indonesian cities. Setting OSRM up gets you real road km using OSM data (which has better alley/gang coverage than Google in many Indonesian cities).
+
+**Founder decision 2026-06-02:** OSRM deployment is **deferred**. The haversine × 1.3 fallback was empirically validated within 5–10% across 200 Yogya + Bali routes — well below the noise floor of a directory product where the customer + driver agree the final fare on WhatsApp anyway. The third-party routing alternatives (Mapbox / HERE / Google) all introduce PDP exposure (customer IP + lat/lng sent to a US-resident third party) and per-request cost. Re-evaluate when one of these triggers fires:
+
+- Customer complaints about distance accuracy
+- Booking volume crosses ~1000 quotes/day
+- Founder wants to publish "real road km" as a marketing point
+
+When deploying, host at `osrm.citydrivers.id` (citydrivers.id is the canonical driver-app domain — see deploy section). The probe at `/api/ops/route-health` will automatically start reporting the OSRM endpoint as up once the secret is set.
 
 ### One-time deploy (Hetzner CX21 ~€5.83/mo or DO 2GB droplet ~$12/mo)
 
@@ -179,13 +225,13 @@ docker run -d --restart=always -p 5000:5000 \
   osrm/osrm-backend osrm-routed --algorithm mld /data/indonesia-latest.osrm
 ```
 
-Front this with nginx + Let's Encrypt at `https://osrm.cityriders.id`. Then set `OSRM_BASE_URL=https://osrm.cityriders.id` in Vercel env. No code change needed; the proxy auto-detects and starts using OSRM on the next quote.
+Front this with nginx + Let's Encrypt at `https://osrm.citydrivers.id`. Then set `OSRM_BASE_URL=https://osrm.citydrivers.id` in Vercel env. No code change needed; the proxy auto-detects and starts using OSRM on the next quote.
 
 ### Health check
 
 ```bash
 # Yogya → Bantul (~10 km)
-curl 'https://osrm.cityriders.id/route/v1/driving/110.3657,-7.7928;110.3287,-7.8881?overview=false'
+curl 'https://osrm.citydrivers.id/route/v1/driving/110.3657,-7.7928;110.3287,-7.8881?overview=false'
 # Should return code='Ok' with routes[0].distance ≈ 11000 (metres)
 ```
 

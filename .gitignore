@@ -16,3 +16,6 @@ supabase/.temp
 
 # Local dev-server output
 .dev-server.log
+
+# Transient typecheck logs from `npx tsc --noEmit > tsc-*.log` debugging runs
+tsc-*.log

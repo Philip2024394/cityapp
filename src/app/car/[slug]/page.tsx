@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import JsonLd from '@/components/seo/JsonLd'
+import ProfileViewBeacon from '@/components/profile/ProfileViewBeacon'
 import DriverProfileShell, { type DriverPublic } from '@/components/profile/DriverProfileShell'
 import type { TourPackage } from '@/lib/tours/types'
 import { MOCK_LANGUAGES, mockToursForSlug } from '@/lib/tours/templates'
@@ -490,6 +491,7 @@ function carDriverToDriverPublic(d: CarDriver, tours: TourPackage[] = []): Drive
     parcel_rate_tiers:   d.parcel_rate_tiers,
     languages:           d.languages,
     tours,
+    is_mock:             d.source === 'mock',
   }
 }
 
@@ -550,6 +552,28 @@ export default async function CarDriverProfilePage({
   const d = await loadCarDriver(slug)
   if (!d) notFound()
 
+  // Lapsed-driver redirect — runs BEFORE any HTML renders so a visitor
+  // following a real driver's social-shared link never lands on a dead
+  // profile. Mirrors the /r/[slug] gate (lines 577-580). Only fires for
+  // real drivers (mocks never have a subscriptions row); on past_due /
+  // canceled, redirect to /cari alternatives so the customer can find
+  // a working driver instead.
+  if (d.source === 'real') {
+    const adminCheck = getAdminSupabase()
+    if (adminCheck) {
+      const { data: sub } = await adminCheck
+        .from('subscriptions')
+        .select('status')
+        .eq('driver_id', d.id)
+        .maybeSingle()
+      const st = (sub?.status as string | undefined) ?? null
+      if (st === 'past_due' || st === 'canceled') {
+        const qs = new URLSearchParams({ from: 'lapsed_driver', slug: d.slug })
+        redirect(`/cari?${qs.toString()}`)
+      }
+    }
+  }
+
   // Alternatives — only when the page driver is NOT online. Saves a
   // round-trip when the booking widget will render anyway.
   const isOffline = d.availability === 'busy' || d.availability === 'offline'
@@ -595,6 +619,9 @@ export default async function CarDriverProfilePage({
   return (
     <>
       <JsonLd data={jsonLd} />
+      {d.source === 'real' && (
+        <ProfileViewBeacon providerType="driver" providerId={d.id} />
+      )}
       <DriverProfileShell
         driver={carDriverToDriverPublic(d, tours)}
         alternatives={alternatives.map((alt) => carDriverToDriverPublic(alt))}

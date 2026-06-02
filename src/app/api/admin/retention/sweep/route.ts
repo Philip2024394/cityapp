@@ -25,6 +25,10 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 
 const DRIVER_RETENTION_DAYS = 30
 const AUDIT_LOG_RETENTION_DAYS = 90
+const WA_CLICK_RETENTION_DAYS = 90        // commitment in mig 0041
+const SHARE_CLICK_RETENTION_DAYS = 90     // commitment in mig 0177
+const ROUTE_HEALTH_RETENTION_DAYS = 30    // commitment in mig 0178
+const OPS_ALERTS_RETENTION_DAYS = 365     // DR runbook §0 + audit M7
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -45,8 +49,13 @@ async function runSweep() {
   if (!admin) return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
 
   const now = new Date()
-  const driverCutoff = new Date(now.getTime() - DRIVER_RETENTION_DAYS * 86_400_000).toISOString()
-  const auditCutoff  = new Date(now.getTime() - AUDIT_LOG_RETENTION_DAYS * 86_400_000).toISOString()
+  const cutoff = (days: number) => new Date(now.getTime() - days * 86_400_000).toISOString()
+  const driverCutoff      = cutoff(DRIVER_RETENTION_DAYS)
+  const auditCutoff       = cutoff(AUDIT_LOG_RETENTION_DAYS)
+  const waClickCutoff     = cutoff(WA_CLICK_RETENTION_DAYS)
+  const shareClickCutoff  = cutoff(SHARE_CLICK_RETENTION_DAYS)
+  const routeHealthCutoff = cutoff(ROUTE_HEALTH_RETENTION_DAYS)
+  const opsAlertsCutoff   = cutoff(OPS_ALERTS_RETENTION_DAYS)
 
   // ────────────────────────────────────────────────────────────────
   // Pass 1 — cancelled drivers past the grace window
@@ -88,14 +97,65 @@ async function runSweep() {
     .select('id')
   if (e3) return NextResponse.json({ error: e3.message, step: 'delete-audit-log' }, { status: 500 })
 
+  // ────────────────────────────────────────────────────────────────
+  // Pass 3 — telemetry retention (anonymous click + share + uptime probes)
+  // ────────────────────────────────────────────────────────────────
+  // wa_click_events (PDP — hashed IP only, but still anonymous-cohort
+  // worth keeping cardinality low): 90d.
+  // profile_share_events (same posture): 90d.
+  // route_health (operational): 30d — we don't need history beyond that.
+  //
+  // Each delete swallows its own error to a per-pass field so a single
+  // failure (e.g. table doesn't exist yet on a fresh DB) doesn't abort
+  // the whole sweep. The sweep still returns 200 so the cron logs
+  // success — but the response payload tells the operator what happened.
+  // Capture the narrowed admin client so the closure below doesn't trip
+  // the strictNullChecks narrowing rule (the outer guard at line 45 is
+  // not preserved across closure boundaries by the inference).
+  const adminClient = admin
+  async function deleteBy(table: string, column: string, before: string): Promise<{ purged: number; error: string | null }> {
+    try {
+      const { data, error } = await adminClient
+        .from(table)
+        .delete()
+        .lt(column, before)
+        .select('id')
+      if (error) return { purged: 0, error: error.message }
+      return { purged: (data ?? []).length, error: null }
+    } catch (e) {
+      return { purged: 0, error: e instanceof Error ? e.message : 'unknown' }
+    }
+  }
+
+  const [waClickRes, shareClickRes, routeHealthRes, opsAlertsRes] = await Promise.all([
+    deleteBy('wa_click_events',      'occurred_at', waClickCutoff),
+    deleteBy('profile_share_events', 'occurred_at', shareClickCutoff),
+    deleteBy('route_health',         'checked_at',  routeHealthCutoff),
+    deleteBy('ops_alerts',           'created_at',  opsAlertsCutoff),
+  ])
+
   return NextResponse.json({
     ok: true,
     ran_at: now.toISOString(),
     cancelled_drivers_purged: driversDeleted,
     audit_log_rows_purged: (auditDeleted ?? []).length,
+    wa_click_events_purged: waClickRes.purged,
+    profile_share_events_purged: shareClickRes.purged,
+    route_health_purged: routeHealthRes.purged,
+    ops_alerts_purged: opsAlertsRes.purged,
+    pass3_errors: {
+      wa_click_events: waClickRes.error,
+      profile_share_events: shareClickRes.error,
+      route_health: routeHealthRes.error,
+      ops_alerts: opsAlertsRes.error,
+    },
     cutoffs: {
       drivers_before: driverCutoff,
       audit_log_before: auditCutoff,
+      wa_click_events_before: waClickCutoff,
+      profile_share_events_before: shareClickCutoff,
+      route_health_before: routeHealthCutoff,
+      ops_alerts_before: opsAlertsCutoff,
     },
   })
 }

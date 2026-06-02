@@ -788,7 +788,7 @@ function OnboardingInner() {
                   className="btn-primary flex-1"
                   disabled={!stepValid || submitting}
                 >
-                  {submitting ? 'Menyiapkan…' : 'Selesai & mulai 7 hari gratis'}
+                  {submitting ? 'Menyiapkan…' : 'Selesai & mulai 30 hari gratis'}
                   <Check className="w-4 h-4" />
                 </button>
               )}

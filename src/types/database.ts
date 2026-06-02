@@ -8,7 +8,7 @@
 
 export type Role = 'customer' | 'driver' | 'admin'
 export type AvailabilityState = 'online' | 'busy' | 'offline'
-export type DriverAccountStatus = 'active' | 'suspended'
+export type DriverAccountStatus = 'active' | 'suspended' | 'deactivated'
 export type SubscriptionStatus = 'trial' | 'active' | 'past_due' | 'canceled'
 export type PaymentMethod = 'cash' | 'qr' | 'transfer'
 export type ServiceType = 'person' | 'parcel' | 'food'

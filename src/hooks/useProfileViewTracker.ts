@@ -32,6 +32,7 @@ export function useProfileViewTracker(args: {
 
     const source = args.source ?? inferSource()
     const anon = readOrMakeAnonId()
+    const utm = readUtm()
 
     fetch('/api/profile-view', {
       method: 'POST',
@@ -42,9 +43,44 @@ export function useProfileViewTracker(args: {
         provider_id:   args.providerId,
         source,
         anon_session_id: anon,
+        ...utm,
       }),
     }).catch(() => { /* best-effort, never throw */ })
   }, [args.providerType, args.providerId, args.source])
+}
+
+// Read utm_* params from the visitor URL. Captured at view time so a deep
+// link like /r/budi?utm_source=instagram&utm_campaign=lebaran-2026 lands
+// attributed correctly. Values capped at 100 chars to defend against
+// pathological URLs.
+function readUtm(): {
+  utm_source:   string | null
+  utm_medium:   string | null
+  utm_campaign: string | null
+  utm_content:  string | null
+  utm_term:     string | null
+} {
+  const out = {
+    utm_source:   null as string | null,
+    utm_medium:   null as string | null,
+    utm_campaign: null as string | null,
+    utm_content:  null as string | null,
+    utm_term:     null as string | null,
+  }
+  if (typeof window === 'undefined') return out
+  try {
+    const p = new URLSearchParams(window.location.search)
+    const grab = (k: string) => {
+      const v = p.get(k)
+      return v ? v.slice(0, 100) : null
+    }
+    out.utm_source   = grab('utm_source')
+    out.utm_medium   = grab('utm_medium')
+    out.utm_campaign = grab('utm_campaign')
+    out.utm_content  = grab('utm_content')
+    out.utm_term     = grab('utm_term')
+  } catch { /* swallow */ }
+  return out
 }
 
 function inferSource(): Source {

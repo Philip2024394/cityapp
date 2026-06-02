@@ -3,6 +3,7 @@ import { getServerSupabase } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { isValidSlug } from '@/lib/slug'
 import { SUBSCRIPTION_MONTHLY_IDR, TRIAL_DAYS } from '@/lib/pricing/constants'
+import { antiSpamPerKm, ANTI_SPAM_MIN_FEE } from '@/lib/pricing/zones'
 import type { ServiceType, BikeType } from '@/types/database'
 
 // ============================================================================
@@ -101,11 +102,15 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json({ error: 'Pick at least one service' }, { status: 400 })
   }
-  if (!Number.isFinite(body.price_per_km) || body.price_per_km < 1000 || body.price_per_km > 50000) {
-    return NextResponse.json({ error: 'Price per km out of range' }, { status: 400 })
+  // Anti-spam floor (Option B): reject values below the platform's
+  // anti-abuse threshold (Rp 1,000/km for bikes). NOT regulatory
+  // enforcement — the warn for "below KP 667 batas bawah" lives in the
+  // dashboard UI. This catches typos / test data / accidental zeros.
+  if (!Number.isFinite(body.price_per_km) || body.price_per_km < antiSpamPerKm('bike') || body.price_per_km > 50000) {
+    return NextResponse.json({ error: `Price per km must be Rp ${antiSpamPerKm('bike').toLocaleString('id-ID')}–50.000 (driver-self-published)` }, { status: 400 })
   }
-  if (!Number.isFinite(body.min_fee) || body.min_fee < 0 || body.min_fee > 500000) {
-    return NextResponse.json({ error: 'Minimum fee out of range' }, { status: 400 })
+  if (!Number.isFinite(body.min_fee) || body.min_fee < ANTI_SPAM_MIN_FEE || body.min_fee > 500000) {
+    return NextResponse.json({ error: `Minimum fee must be at least Rp ${ANTI_SPAM_MIN_FEE.toLocaleString('id-ID')}` }, { status: 400 })
   }
   if (body.bike_type && !ALLOWED_BIKE_TYPES.includes(body.bike_type)) {
     return NextResponse.json({ error: 'Invalid bike type' }, { status: 400 })
@@ -193,7 +198,7 @@ export async function POST(req: Request) {
     user_id: user.id,
     slug: body.slug,
     business_name: body.business_name.trim(),
-    bio: body.bio?.trim() || null,
+    bio: body.bio?.trim().slice(0, 280) || null,
     whatsapp_e164: body.whatsapp_e164,
     city: body.city?.trim() || null,
     area: body.area?.trim() || null,

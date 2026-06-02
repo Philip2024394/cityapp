@@ -174,7 +174,10 @@ export async function fetchActiveDriversBrowser(
     .order('availability', { ascending: true })
     .order('last_active_at', { ascending: false, nullsFirst: false })
     .order('rating', { ascending: false, nullsFirst: false })
-    .limit(50)
+    .limit(80)
+    // We over-fetch (80 vs 50) so the JS-side weighted-random shuffle
+    // below has a pool to mix from. The final slice is still capped to
+    // 50 after the shuffle.
   // ALWAYS attempt the mock fetch in parallel — even on drivers_public
   // RLS errors, the public mock pool is the marketplace's fallback so
   // /cari never renders an empty grid for unauthenticated visitors.
@@ -197,11 +200,101 @@ export async function fetchActiveDriversBrowser(
     .map((row) => driverRowToRider(row, pickSub(row)))
     .filter((r) => r.subscriptionStatus !== 'past_due' && r.subscriptionStatus !== 'canceled')
 
+  // ── Directory-safe weighted-random ordering ─────────────────────────
+  // The DB query gave us a deterministic order (availability bucket,
+  // freshness, rating). For the marketplace display we want some
+  // variety between page loads so the same drivers don't always sit at
+  // the top, but we still want to bias toward fresh + price-attractive
+  // drivers. Drivers who self-snoozed (drivers.snoozed_until > now)
+  // always sink to the bottom of the visible list — never hidden.
+  //
+  // LEGAL POSTURE: This is a directory ranking signal, not a dispatch
+  // reaction. Snooze is driver-initiated (mig 0181 + /api/drivers/me/snooze);
+  // the platform never sets it based on customer behaviour. See
+  // feedback_cityriders_no_dispatch_ever.
+  const orderedReals = rankRidersWeightedRandom(reals, data as DriverRowWithSub[])
+
   // Reals first, then mocks (seeded marketplace pool from migration
   // 0050). One mock is hidden automatically each time a real driver
   // is inserted (DB AFTER-INSERT trigger), so the mock pool naturally
   // shrinks as supply grows.
-  return [...reals, ...mocks]
+  return [...orderedReals.slice(0, 50), ...mocks]
+}
+
+// ============================================================================
+// rankRidersWeightedRandom — directory-safe weighted-random ordering
+// ----------------------------------------------------------------------------
+// Two-pass:
+//   1. Partition into snoozed vs visible.
+//   2. For each partition, compute a per-driver weight from:
+//        - freshness   (last_active_at within 5 min: +0.5)
+//        - attractive  (price_per_km below pool median: +0.5)
+//        - availability bonus (online: +0.5, busy: +0.25, offline: 0)
+//      Then assign sortKey = Math.random() * weight and sort DESC.
+//      Higher weight → higher probability of leading the list, but no
+//      single driver is guaranteed the top spot. Refresh = reshuffle.
+//
+// Snoozed drivers are concatenated AFTER visible. Within snoozed, plain
+// random — they're at the bottom regardless.
+// ============================================================================
+function rankRidersWeightedRandom(riders: Rider[], rawRows: DriverRowWithSub[]): Rider[] {
+  if (riders.length <= 1) return riders
+
+  // Build a quick lookup of snoozed state by user_id from the raw rows
+  // (Rider type doesn't carry snoozed_until). Past timestamps treated
+  // as not-snoozed so an expired snooze never penalises the driver.
+  const nowMs = Date.now()
+  const fiveMinAgo = nowMs - 5 * 60_000
+  const snoozedSet = new Set<string>()
+  for (const row of rawRows) {
+    const s = (row as { snoozed_until?: string | null }).snoozed_until
+    if (!s) continue
+    const t = Date.parse(s)
+    if (Number.isFinite(t) && t > nowMs) snoozedSet.add(row.user_id)
+  }
+
+  // Pool median price for attractiveness bonus. Drivers with no price
+  // set (price_per_km null/0) don't get the bonus.
+  const prices = riders
+    .map((r) => r.pricePerKm ?? 0)
+    .filter((n) => n > 0)
+    .sort((a, b) => a - b)
+  const medianPrice = prices.length
+    ? prices[Math.floor(prices.length / 2)] ?? 0
+    : 0
+
+  function weightOf(r: Rider): number {
+    let w = 1
+    // Freshness — Rider.lastSeenAt is the field name on the public type
+    if (r.lastSeenAt) {
+      const t = Date.parse(r.lastSeenAt)
+      if (Number.isFinite(t) && t >= fiveMinAgo) w += 0.5
+    }
+    // Price attractiveness
+    if (medianPrice > 0 && r.pricePerKm > 0 && r.pricePerKm <= medianPrice) {
+      w += 0.5
+    }
+    // Availability tilt
+    if (r.availability === 'online') w += 0.5
+    else if (r.availability === 'busy') w += 0.25
+    return w
+  }
+
+  const visible: Rider[] = []
+  const snoozed: Rider[] = []
+  for (const r of riders) {
+    if (snoozedSet.has(r.id)) snoozed.push(r)
+    else visible.push(r)
+  }
+
+  function weightedShuffle(list: Rider[]): Rider[] {
+    return list
+      .map((r) => ({ r, key: Math.random() * weightOf(r) }))
+      .sort((a, b) => b.key - a.key)
+      .map((x) => x.r)
+  }
+
+  return [...weightedShuffle(visible), ...weightedShuffle(snoozed)]
 }
 
 // Pull the visible-mock pool, scoped to the requested vehicle_type. Failures

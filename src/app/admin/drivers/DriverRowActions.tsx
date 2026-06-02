@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Ban, CheckCircle2, BadgeCheck, X as XIcon } from 'lucide-react'
+import { Ban, CheckCircle2, BadgeCheck, EyeOff, X as XIcon } from 'lucide-react'
 import type { DriverAccountStatus, SubscriptionStatus } from '@/types/database'
 
 // ============================================================================
@@ -10,9 +10,17 @@ import type { DriverAccountStatus, SubscriptionStatus } from '@/types/database'
 // dialogs per action — ugly on mobile, easy to misclick) with a single
 // inline sheet that shows the driver name, current period_end, payment plan,
 // and a reference field, before committing.
+//
+// Status semantics:
+//   - Suspend     → policy violation. Driver knows why; appears in audit
+//                   under driver.suspend.
+//   - Deactivate  → admin-hidden for non-disciplinary reasons (paused,
+//                   awaiting manual review, retired). Same visibility
+//                   effect; different audit reason. Both reverse via
+//                   Reactivate.
 // ============================================================================
 
-type Action = 'suspend' | 'mark_paid' | 'mark_paid_yearly'
+type Action = 'suspend' | 'deactivate' | 'mark_paid' | 'mark_paid_yearly'
 
 export default function DriverRowActions({
   driverId, driverStatus, subStatus,
@@ -54,10 +62,16 @@ export default function DriverRowActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {driverStatus === 'active' ? (
-        <button onClick={() => setSheet({ action: 'suspend' })} disabled={pending} className="action-btn action-btn-danger disabled:opacity-60">
-          <Ban className="w-3.5 h-3.5" />
-          Suspend
-        </button>
+        <>
+          <button onClick={() => setSheet({ action: 'suspend' })} disabled={pending} className="action-btn action-btn-danger disabled:opacity-60">
+            <Ban className="w-3.5 h-3.5" />
+            Suspend
+          </button>
+          <button onClick={() => setSheet({ action: 'deactivate' })} disabled={pending} className="action-btn action-btn-muted disabled:opacity-60">
+            <EyeOff className="w-3.5 h-3.5" />
+            Deactivate
+          </button>
+        </>
       ) : (
         <button onClick={reactivate} disabled={pending} className="action-btn action-btn-success disabled:opacity-60">
           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -83,12 +97,12 @@ export default function DriverRowActions({
           action={sheet.action}
           driverId={driverId}
           onConfirm={async (refValue) => {
-            const ok = await (sheet.action === 'suspend'
-              ? callAdmin(`/api/admin/drivers/${driverId}`, { action: 'suspend' })
-              : callAdmin(`/api/admin/subscriptions/${driverId}`, {
+            const ok = sheet.action === 'suspend' || sheet.action === 'deactivate'
+              ? await callAdmin(`/api/admin/drivers/${driverId}`, { action: sheet.action })
+              : await callAdmin(`/api/admin/subscriptions/${driverId}`, {
                   action: sheet.action,
                   payment_reference: refValue || undefined,
-                }))
+                })
             if (ok) setSheet(null)
           }}
           onDismiss={() => setSheet(null)}
@@ -113,6 +127,8 @@ export default function DriverRowActions({
         .action-btn-success:hover { background: rgba(34,197,94,0.10); }
         .action-btn-primary { color: #FACC15; border-color: rgba(250,204,21,0.35); }
         .action-btn-primary:hover { background: rgba(250,204,21,0.10); }
+        .action-btn-muted { color: #94A3B8; border-color: rgba(148,163,184,0.30); }
+        .action-btn-muted:hover { background: rgba(148,163,184,0.10); }
       `}</style>
     </div>
   )
@@ -144,10 +160,19 @@ function ConfirmActionSheet({
       case 'suspend':
         return {
           title: 'Suspend driver',
-          headline: 'Hide from discovery',
-          body: 'Driver will be removed from the marketplace until you Reactivate them. Their public profile redirects to alternatives.',
+          headline: 'Hide for policy violation',
+          body: 'Driver will be removed from the marketplace until you Reactivate them. Use this for policy violations — the action is logged under driver.suspend.',
           confirmLabel: 'Suspend driver',
           tone: 'danger' as const,
+          showRef: false,
+        }
+      case 'deactivate':
+        return {
+          title: 'Deactivate driver',
+          headline: 'Admin-pause (non-disciplinary)',
+          body: 'Driver will be removed from discovery without the policy-violation connotation. Use for retirement, manual review, or temporary pause. Reverse with Reactivate.',
+          confirmLabel: 'Deactivate driver',
+          tone: 'muted' as const,
           showRef: false,
         }
       case 'mark_paid':
@@ -171,7 +196,10 @@ function ConfirmActionSheet({
     }
   })()
 
-  const accent = config.tone === 'danger' ? '#EF4444' : '#FACC15'
+  const accent =
+    config.tone === 'danger' ? '#EF4444'
+    : config.tone === 'muted' ? '#94A3B8'
+    : '#FACC15'
 
   return (
     <>
@@ -249,10 +277,13 @@ function ConfirmActionSheet({
               disabled={busy}
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-extrabold text-[14px] uppercase tracking-wider border border-black/85 active:scale-[0.99] disabled:opacity-60"
               style={{
-                background: config.tone === 'danger'
-                  ? 'linear-gradient(135deg, #EF4444, #B91C1C)'
-                  : 'linear-gradient(135deg, #FACC15, #EAB308)',
-                color: config.tone === 'danger' ? '#FFFFFF' : '#0A0A0A',
+                background:
+                  config.tone === 'danger'
+                    ? 'linear-gradient(135deg, #EF4444, #B91C1C)'
+                    : config.tone === 'muted'
+                      ? 'linear-gradient(135deg, #94A3B8, #475569)'
+                      : 'linear-gradient(135deg, #FACC15, #EAB308)',
+                color: config.tone === 'primary' ? '#0A0A0A' : '#FFFFFF',
                 minHeight: 52,
               }}
             >

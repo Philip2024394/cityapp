@@ -1,5 +1,6 @@
 [
   {
+    "_comment_DO_NOT_SHIP_WITH_PLACEHOLDER": "Replace the sha256 below with the release-keystore fingerprint before Play Store submission. See PLAYSTORE_CHECKLIST.md §1. Until then, Android App Links verification fails and shared URLs open in browser instead of the app — functional but loses the deep-link UX.",
     "relation": [
       "delegate_permission/common.handle_all_urls"
     ],

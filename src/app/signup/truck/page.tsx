@@ -24,10 +24,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Phone, KeyRound, Check, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Phone, KeyRound, Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import CityDriversBrandStrip from '@/components/dashboard/CityDriversBrandStrip'
 import { getBrowserSupabase } from '@/lib/supabase/client'
+import { INDONESIAN_CITIES } from '@/data/indonesianCities'
+import { ANTI_SPAM_MIN_FEE } from '@/lib/pricing/zones'
+import { loadDraft, saveDraft, clearDraft, SIGNUP_DRAFT_KEYS } from '@/lib/signup/drafts'
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -51,10 +54,11 @@ const TRUCK_CLASS_OPTIONS = [
   'Engkel Box',
 ] as const
 
-const CITY_OPTIONS = [
-  'Yogyakarta', 'Bali', 'Jakarta', 'Bandung', 'Surabaya', 'Semarang',
-  'Solo', 'Malang', 'Medan', 'Makassar', 'Lombok', 'Other',
-] as const
+// 2026-06 audit fix: dropped the hardcoded 12-city list (which excluded
+// Papua, Kalimantan, most Sulawesi, most Sumatra, Maluku) in favour of
+// the shared INDONESIAN_CITIES typeahead. Driver can pick a suggestion
+// OR free-text any city in Indonesia — no province goes unreachable.
+const CITY_DATALIST_ID = 'signup-truck-cities'
 
 // Rental type dropdown values — mirror migration 0097 schema check constraint.
 const RENTAL_TYPE_OPTIONS = [
@@ -83,13 +87,11 @@ export default function SignupTruckPage() {
   const [step, setStep] = useState<number>(1)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Step 1: Phone OTP ───────────────────────────────────────────────────
+  // ── Step 1: Phone + password (no OTP, 2026-06 simplified) ──────────────
   const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
-  const [otpPending, setOtpPending] = useState(false)
-  const [resendSecondsLeft, setResendSecondsLeft] = useState(0)
-  const [resending, setResending] = useState(false)
+  const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [authPending, setAuthPending] = useState(false)
 
   // ── Step 2: Basic profile ───────────────────────────────────────────────
   const [businessName, setBusinessName] = useState('')
@@ -113,6 +115,11 @@ export default function SignupTruckPage() {
 
   // ── Step 4: Pricing ─────────────────────────────────────────────────────
   // Truck defaults: Rp 6,000/km + Rp 60,000 min fee (one-way pickup norm).
+  // NOTE: Trucks are CHARTER vehicles, not ride-hailing. KP 564/2022
+  // (ojek) and PM 118/2018 (taxi) do not set per-zone minimums for
+  // trucks/jeeps/minibuses. The hardcoded defaults below are charter-
+  // market sampling, NOT zone-aware. Drivers self-publish on the
+  // dashboard editor (where the placeholder shows "Charter ref").
   const [pricePerKm, setPricePerKm] = useState<number>(6000)
   const [minFee, setMinFee] = useState<number>(60000)
   const [pitstopFee, setPitstopFee] = useState<number>(0)
@@ -137,30 +144,81 @@ export default function SignupTruckPage() {
   const [agree, setAgree] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  // ── Resend cooldown timer (mirrors /signup) ─────────────────────────────
-  useEffect(() => {
-    if (resendSecondsLeft <= 0) return
-    const t = setTimeout(() => setResendSecondsLeft((s) => Math.max(0, s - 1)), 1000)
-    return () => clearTimeout(t)
-  }, [resendSecondsLeft])
+  // ── Draft persistence (audit M2) — Step 1 NEVER persisted ─────────────
+  type TruckSignupDraft = {
+    step?: number
+    businessName?: string; fullName?: string; whatsapp?: string
+    city?: string; area?: string; bio?: string; radius?: number
+    vTruckClass?: typeof TRUCK_CLASS_OPTIONS[number]
+    vMake?: string; vModel?: string; vYear?: string; vColor?: string
+    vPlate?: string; vSeats?: number; vPhotos?: string[]
+    pricePerKm?: number; minFee?: number; pitstopFee?: number
+    offersRental?: boolean; rentalType?: RentalType
+    rentalDaily?: number; rentalWeekly?: number; rentalMinDays?: number
+    acceptsCash?: boolean; acceptsQr?: boolean; acceptsTransfer?: boolean
+    qrUrl?: string; transferDetails?: string; agree?: boolean
+  }
+  const [draftHydrated, setDraftHydrated] = useState(false)
 
-  // ── Auto-advance once 6 digits typed ────────────────────────────────────
   useEffect(() => {
-    if (!otpSent) return
-    if (otp.length !== 6 || otpPending) return
-    void verifyOtp()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otp, otpSent])
+    if (draftHydrated) return
+    const d = loadDraft<TruckSignupDraft>(SIGNUP_DRAFT_KEYS.truck)
+    if (d) {
+      if (typeof d.step === 'number' && d.step >= 2 && d.step <= 6) setStep(d.step)
+      if (typeof d.businessName === 'string') setBusinessName(d.businessName)
+      if (typeof d.fullName === 'string') setFullName(d.fullName)
+      if (typeof d.whatsapp === 'string') setWhatsapp(d.whatsapp)
+      if (typeof d.city === 'string') setCity(d.city)
+      if (typeof d.area === 'string') setArea(d.area)
+      if (typeof d.bio === 'string') setBio(d.bio)
+      if (typeof d.radius === 'number') setRadius(d.radius)
+      if (typeof d.vTruckClass === 'string') setVTruckClass(d.vTruckClass)
+      if (typeof d.vMake === 'string') setVMake(d.vMake)
+      if (typeof d.vModel === 'string') setVModel(d.vModel)
+      if (typeof d.vYear === 'string') setVYear(d.vYear)
+      if (typeof d.vColor === 'string') setVColor(d.vColor)
+      if (typeof d.vPlate === 'string') setVPlate(d.vPlate)
+      if (typeof d.vSeats === 'number') setVSeats(d.vSeats)
+      if (Array.isArray(d.vPhotos)) setVPhotos(d.vPhotos)
+      if (typeof d.pricePerKm === 'number') setPricePerKm(d.pricePerKm)
+      if (typeof d.minFee === 'number') setMinFee(d.minFee)
+      if (typeof d.pitstopFee === 'number') setPitstopFee(d.pitstopFee)
+      if (typeof d.offersRental === 'boolean') setOffersRental(d.offersRental)
+      if (typeof d.rentalType === 'string') setRentalType(d.rentalType)
+      if (typeof d.rentalDaily === 'number') setRentalDaily(d.rentalDaily)
+      if (typeof d.rentalWeekly === 'number') setRentalWeekly(d.rentalWeekly)
+      if (typeof d.rentalMinDays === 'number') setRentalMinDays(d.rentalMinDays)
+      if (typeof d.acceptsCash === 'boolean') setAcceptsCash(d.acceptsCash)
+      if (typeof d.acceptsQr === 'boolean') setAcceptsQr(d.acceptsQr)
+      if (typeof d.acceptsTransfer === 'boolean') setAcceptsTransfer(d.acceptsTransfer)
+      if (typeof d.qrUrl === 'string') setQrUrl(d.qrUrl)
+      if (typeof d.transferDetails === 'string') setTransferDetails(d.transferDetails)
+      if (typeof d.agree === 'boolean') setAgree(d.agree)
+    }
+    setDraftHydrated(true)
+  }, [draftHydrated])
 
-  // ── Default whatsapp from verified phone after step 1 ───────────────────
+  useEffect(() => {
+    if (!draftHydrated) return
+    saveDraft<TruckSignupDraft>(SIGNUP_DRAFT_KEYS.truck, {
+      step,
+      businessName, fullName, whatsapp, city, area, bio, radius,
+      vTruckClass, vMake, vModel, vYear, vColor, vPlate, vSeats, vPhotos,
+      pricePerKm, minFee, pitstopFee,
+      offersRental, rentalType, rentalDaily, rentalWeekly, rentalMinDays,
+      acceptsCash, acceptsQr, acceptsTransfer, qrUrl, transferDetails, agree,
+    })
+  })
+
+  // ── Default whatsapp from the auth phone after step 1 ──────────────────
   useEffect(() => {
     if (step === 2 && !whatsapp && phone) setWhatsapp(phone)
   }, [step, whatsapp, phone])
 
   // ──────────────────────────────────────────────────────────────────────
-  // Step 1 — OTP
+  // Step 1 — phone + password (no OTP, 2026-06)
   // ──────────────────────────────────────────────────────────────────────
-  async function sendOtp(e?: React.FormEvent) {
+  async function signupWithPassword(e?: React.FormEvent) {
     e?.preventDefault()
     setError(null)
     const cleaned = normalizePhone(phone)
@@ -168,51 +226,24 @@ export default function SignupTruckPage() {
       setError('Please enter a valid Indonesian mobile number (e.g. 6281234567890)')
       return
     }
+    if (!password || password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
     const supabase = getBrowserSupabase()
     if (!supabase) {
       setError('Auth not configured. Add Supabase keys to .env.local.')
       return
     }
-    setOtpPending(true)
-    const { error: err } = await supabase.auth.signInWithOtp({
+    setAuthPending(true)
+    const { error: err } = await supabase.auth.signUp({
       phone: cleaned,
-      options: { shouldCreateUser: true, data: { role: 'driver' } },
+      password,
+      options: { data: { role: 'driver', vehicle_type: 'truck' } },
     })
-    setOtpPending(false)
-    if (err) { setError(err.message); return }
+    setAuthPending(false)
+    if (err) { setError(humanAuthError(err.message)); return }
     setPhone(cleaned)
-    setOtpSent(true)
-    setResendSecondsLeft(30)
-  }
-
-  async function resendOtp() {
-    if (resendSecondsLeft > 0 || resending) return
-    setError(null)
-    const supabase = getBrowserSupabase()
-    if (!supabase) { setError('Auth not configured.'); return }
-    setResending(true)
-    const { error: err } = await supabase.auth.signInWithOtp({
-      phone,
-      options: { shouldCreateUser: true, data: { role: 'driver' } },
-    })
-    setResending(false)
-    if (err) { setError(err.message); return }
-    setResendSecondsLeft(30)
-  }
-
-  async function verifyOtp(e?: React.FormEvent) {
-    e?.preventDefault()
-    setError(null)
-    const supabase = getBrowserSupabase()
-    if (!supabase) { setError('Auth not configured.'); return }
-    setOtpPending(true)
-    const { error: err } = await supabase.auth.verifyOtp({
-      phone,
-      token: otp.trim(),
-      type: 'sms',
-    })
-    setOtpPending(false)
-    if (err) { setError(err.message); return }
     setStep(2)
   }
 
@@ -221,7 +252,7 @@ export default function SignupTruckPage() {
   // ──────────────────────────────────────────────────────────────────────
   const stepValid = useMemo(() => {
     switch (step) {
-      case 1: return false // step 1 advances via verifyOtp side effect
+      case 1: return normalizePhone(phone) !== null && password.length >= 6
       case 2:
         return (
           businessName.trim().length >= 2 &&
@@ -245,7 +276,7 @@ export default function SignupTruckPage() {
       case 4: {
         const baseOk = (
           Number.isFinite(pricePerKm) && pricePerKm >= 1000 &&
-          Number.isFinite(minFee) && minFee > 0 &&
+          Number.isFinite(minFee) && minFee >= ANTI_SPAM_MIN_FEE &&
           Number.isFinite(pitstopFee) && pitstopFee >= 0
         )
         if (!baseOk) return false
@@ -324,6 +355,7 @@ export default function SignupTruckPage() {
         setSubmitting(false)
         return
       }
+      clearDraft(SIGNUP_DRAFT_KEYS.truck)
       router.push(json.redirectTo || '/dashboard/truck')
       router.refresh()
     } catch (e) {
@@ -357,13 +389,13 @@ export default function SignupTruckPage() {
 
         <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 space-y-4">
           {/* ── Step 1: Phone OTP ─────────────────────────────────────── */}
-          {step === 1 && !otpSent && (
+          {step === 1 && (
             <>
               <Header
                 title="Sign up as a Truck Driver"
                 sub="List your truck. Customers find you. You agree the fare and trip directly."
               />
-              <form className="space-y-3" onSubmit={sendOtp}>
+              <form className="space-y-3" onSubmit={signupWithPassword}>
                 <Field label="Indonesian mobile number" hint="Start with 62, e.g. 6281234567890" icon={<Phone className="w-4 h-4 text-black/40" />}>
                   <input
                     className={inputCls + ' pl-11 font-mono'}
@@ -375,60 +407,31 @@ export default function SignupTruckPage() {
                     autoComplete="tel"
                   />
                 </Field>
+                <Field label="Password" hint="At least 6 characters. Write it down — no SMS code is sent." icon={<KeyRound className="w-4 h-4 text-black/40" />}>
+                  <input
+                    className={inputCls + ' pl-11 pr-11'}
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 inline-flex items-center justify-center text-black/40 hover:text-black"
+                  >
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </Field>
                 <Compliance />
                 {error && <ErrorBanner>{error}</ErrorBanner>}
-                <PrimaryButton disabled={otpPending}>
-                  {otpPending ? 'Sending code…' : 'Send verification code'}
+                <PrimaryButton disabled={authPending}>
+                  {authPending ? 'Creating account…' : 'Create account & continue'}
                   <ArrowRight className="w-4 h-4" />
                 </PrimaryButton>
-              </form>
-            </>
-          )}
-
-          {step === 1 && otpSent && (
-            <>
-              <Header
-                title="Verify your phone"
-                sub={`We sent a 6-digit code to +${phone}`}
-              />
-              <form className="space-y-3" onSubmit={verifyOtp}>
-                <Field label="6-digit code" icon={<KeyRound className="w-4 h-4 text-black/40" />}>
-                  <input
-                    className={inputCls + ' pl-11 font-mono tracking-[0.4em] text-center text-[18px]'}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="123456"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    autoComplete="one-time-code"
-                    autoFocus
-                  />
-                </Field>
-                {error && <ErrorBanner>{error}</ErrorBanner>}
-                <PrimaryButton disabled={otpPending || otp.length !== 6}>
-                  {otpPending ? 'Verifying…' : 'Verify & continue'}
-                  <ArrowRight className="w-4 h-4" />
-                </PrimaryButton>
-                <button
-                  type="button"
-                  onClick={resendOtp}
-                  disabled={resendSecondsLeft > 0 || resending}
-                  className="w-full text-[13px] text-yellow-600 font-bold inline-flex items-center justify-center gap-1.5 disabled:text-black/40 disabled:font-normal min-h-[44px]"
-                >
-                  {resending
-                    ? 'Resending…'
-                    : resendSecondsLeft > 0
-                      ? `Resend code in ${resendSecondsLeft}s`
-                      : 'Resend code'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setOtp(''); setOtpSent(false); setError(null) }}
-                  className="w-full text-[13px] text-black/60 hover:text-black inline-flex items-center justify-center gap-1.5 min-h-[44px]"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Use a different number
-                </button>
               </form>
             </>
           )}
@@ -468,14 +471,18 @@ export default function SignupTruckPage() {
                 />
               </Field>
               <div className="grid grid-cols-2 gap-2">
-                <Field label="City">
-                  <select
-                    className={inputCls + ' appearance-none'}
+                <Field label="City" hint="Pick from the list or type any Indonesian city.">
+                  <input
+                    className={inputCls}
+                    list={CITY_DATALIST_ID}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                  >
-                    {CITY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    placeholder="e.g. Pontianak, Sorong, Jayapura"
+                    autoComplete="address-level2"
+                  />
+                  <datalist id={CITY_DATALIST_ID}>
+                    {INDONESIAN_CITIES.map((c) => <option key={c} value={c} />)}
+                  </datalist>
                 </Field>
                 <Field label="Area">
                   <input
@@ -1000,3 +1007,19 @@ function ReviewLine({ label, value }: { label: string; value: string }) {
 // ----------------------------------------------------------------------------
 const inputCls =
   'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-yellow-400 min-h-[44px]'
+
+// Map Supabase auth errors to driver-friendly copy. Mirrors the helper in
+// /login + /signup root so wording is consistent across surfaces.
+function humanAuthError(msg: string): string {
+  const m = msg.toLowerCase()
+  if (m.includes('user already registered') || m.includes('already_exists') || m.includes('duplicate key')) {
+    return 'A driver with this WhatsApp number already exists. Sign in instead, or contact support to reset your password.'
+  }
+  if (m.includes('phone not confirmed') || m.includes('phone_not_confirmed')) {
+    return 'Sign-up needs Supabase phone-confirm OFF (Auth → Providers → Phone). Ask your admin.'
+  }
+  if (m.includes('rate limit') || m.includes('too many requests')) {
+    return 'Too many attempts. Wait a minute and try again.'
+  }
+  return msg
+}

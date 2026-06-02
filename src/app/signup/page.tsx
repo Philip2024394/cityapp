@@ -1,26 +1,41 @@
 'use client'
 export const dynamic = 'force-dynamic'
 // ============================================================================
-// /signup — 3-step account creation (light-theme redesign, 2026-05)
+// /signup — 2-step account creation (phone + password, 2026-06 simplified)
 // ----------------------------------------------------------------------------
-// Wrapped in <AuthShell> for the brand header + footer chrome.
-// Inputs/buttons match the /dashboard/rider/info form pattern.
+// Founder decision 2026-06: drivers complained that Indonesian SMS OTP
+// flows drop constantly. Replaced phone-OTP signup with phone + password.
+// Trade-off + mitigation analysis kept in
+// feedback_cityriders_no_dispatch_ever and the signup squatting brief.
 //
-// Behaviour preserved 1:1 from the dark-theme version:
-//   • 3-step flow: role → phone → otp
-//   • Role picker (customer / driver — driver covers all vehicle types,
-//     vehicle sub-pick is URL-param driven from upstream landing pages)
-//   • Full-name + WhatsApp capture + Terms/age-18 consent
-//   • OTP send/verify + 30s resend cooldown + auto-advance on 6 digits
-//   • URL-param role detection (?role=driver&vehicle=car|bike|truck)
-//     skips the role step and lands directly on phone entry
-//   • Post-verify routing honours ?next= / ?intent=partner / role-default
+// Steps:
+//   1. role     — Customer / Driver pick (skipped when ?role= URL param)
+//   2. register — Full name + WhatsApp + password + Terms/age-18 consent
+//
+// Submit calls supabase.auth.signUp({ phone, password, options.data }) so
+// Supabase creates the auth.users row + applies our metadata in one round
+// trip. We DO NOT use signInWithOtp — that path is reserved for the
+// admin-driven password-reset flow that will land later.
+//
+// Prerequisite (Supabase config, NOT code):
+//   Supabase Dashboard → Authentication → Providers → Phone →
+//   "Confirm phone number" = OFF
+// With that toggle ON, signUp() returns 'phone not confirmed' and the
+// driver cannot sign in until SMS OTP succeeds — which is the exact
+// failure mode we're removing.
+//
+// Post-signup routing preserved 1:1 from the OTP-era flow:
+//   • ?next= URL param wins (used by /partners/signup gate)
+//   • ?intent=partner → /partners/signup
+//   • ?vertical=… → /dashboard/<mapped-route>
+//   • Drivers → /onboarding (subscription + bike profile)
+//   • Customers → /cari (discovery)
 // ============================================================================
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Phone, User, KeyRound, Sparkles, ArrowRight, ArrowLeft,
+  Phone, User, KeyRound, Eye, EyeOff, Sparkles, ArrowRight, ArrowLeft,
   Briefcase, MapPin,
 } from 'lucide-react'
 import AuthShell from '@/components/auth/AuthShell'
@@ -29,6 +44,7 @@ import { getBrowserSupabase } from '@/lib/supabase/client'
 import { MONTHLY_PRICE_LABEL, YEARLY_PRICE_LABEL, TRIAL_LABEL_EN } from '@/lib/pricing/constants'
 
 type Role = 'customer' | 'driver'
+type Step = 'role' | 'register'
 
 // Maps the canonical vertical id passed via ?vertical= to the actual
 // /dashboard route. Driver verticals split off into rider/car/truck
@@ -44,78 +60,58 @@ function dashboardPathFor(vertical: string): string {
 
 export default function SignupPage() {
   const router = useRouter()
-  const [step, setStep] = useState<'role' | 'phone' | 'otp'>('role')
+  const [step, setStep] = useState<Step>('role')
   const [role, setRole] = useState<Role>('driver')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [agree, setAgree] = useState(false)
   const [age18, setAge18] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Handle + vertical from ?handle=&vertical= — populated when the user
-  // arrives from the KitaSignupPopup. We display the handle inline so the
-  // user knows what they're claiming and use the vertical to land them on
-  // the matching dashboard after OTP verify.
+  // arrives from the KitaSignupPopup. Display the handle inline so the
+  // user knows what they're claiming + use the vertical to land them on
+  // the matching dashboard after signup.
   const [claimedHandle,   setClaimedHandle]   = useState<string | null>(null)
   const [claimedVertical, setClaimedVertical] = useState<string | null>(null)
 
-  // OTP resend cooldown — Indonesian SMS routes drop OTPs constantly,
-  // so we surface a clear countdown + Resend button (audit 2026-05).
-  const [resendSecondsLeft, setResendSecondsLeft] = useState(0)
-  const [resending, setResending] = useState(false)
-  useEffect(() => {
-    if (resendSecondsLeft <= 0) return
-    const t = setTimeout(() => setResendSecondsLeft((s) => Math.max(0, s - 1)), 1000)
-    return () => clearTimeout(t)
-  }, [resendSecondsLeft])
-
-  // Auto-advance once 6 digits typed — saves the "Verify & continue"
-  // tap (activation audit cut D). Guarded by !pending so we don't fire twice.
-  useEffect(() => {
-    if (step !== 'otp') return
-    if (otp.length !== 6 || pending) return
-    void verifyOtp()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otp, step])
-
   // URL-param role pre-selection — when the user lands here from a
-  // dedicated landing page (e.g. /drivers → /signup?role=driver,
-  // /drivers/car → /signup?role=driver&vehicle=car), skip the role
-  // picker entirely and drop them straight on the phone-entry step.
-  // Reads window.location.search directly so no Suspense boundary is
-  // required.
+  // dedicated landing page (e.g. /drivers → /signup?role=driver), skip
+  // the role picker entirely and drop them straight on the register step.
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const urlRole = params.get('role')
     if (urlRole === 'driver' || urlRole === 'customer') {
       setRole(urlRole)
-      setStep('phone')
+      setStep('register')
     }
-    // Kita2u handle-claim flow — when present, jump past the role picker
-    // and lock the role to 'driver' (creators only). Customers never have
-    // a handle/profile so the claim doesn't apply to them.
+    // Kita2u handle-claim flow — jump past the role picker and lock the
+    // role to 'driver' (creators only). Customers never have a handle so
+    // the claim doesn't apply to them.
     const urlHandle   = (params.get('handle')   || '').trim().toLowerCase()
     const urlVertical = (params.get('vertical') || '').trim().toLowerCase()
     if (urlHandle) {
       setClaimedHandle(urlHandle)
       setRole('driver')
-      setStep('phone')
+      setStep('register')
     }
     if (urlVertical) setClaimedVertical(urlVertical)
-  }, []) // mount only — URL param shouldn't change after navigation
+  }, [])
 
   function continueFromRole(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setStep('phone')
+    setStep('register')
   }
 
-  async function sendOtp(e: React.FormEvent) {
+  async function submitRegister(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
     if (!fullName.trim()) {
       setError('Please enter your full name')
       return
@@ -123,6 +119,10 @@ export default function SignupPage() {
     const cleaned = normalizePhone(phone)
     if (!cleaned) {
       setError('Please enter a valid Indonesian mobile number (e.g. 6281234567890)')
+      return
+    }
+    if (!password || password.length < 6) {
+      setError('Password must be at least 6 characters')
       return
     }
     if (role === 'driver' && !agree) {
@@ -133,76 +133,39 @@ export default function SignupPage() {
       setError('You must confirm you are 18 years or older to use Kita2u')
       return
     }
+
     const supabase = getBrowserSupabase()
     if (!supabase) {
       setError('Auth not configured. Add Supabase keys to .env.local.')
       return
     }
+
     setPending(true)
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error: signUpErr } = await supabase.auth.signUp({
       phone: cleaned,
+      password,
       options: {
         data: {
           full_name: fullName.trim(),
           role,
+          claimed_handle: claimedHandle ?? undefined,
+          claimed_vertical: claimedVertical ?? undefined,
         },
-        shouldCreateUser: true,
       },
     })
     setPending(false)
-    if (error) {
-      setError(error.message)
-      return
-    }
-    setPhone(cleaned)
-    setStep('otp')
-    setResendSecondsLeft(30)
-  }
 
-  async function resendOtp() {
-    if (resendSecondsLeft > 0 || resending) return
-    setError(null)
-    const supabase = getBrowserSupabase()
-    if (!supabase) { setError('Auth not configured.'); return }
-    setResending(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      phone,
-      options: {
-        data: { full_name: fullName.trim(), role },
-        shouldCreateUser: true,
-      },
-    })
-    setResending(false)
-    if (error) { setError(error.message); return }
-    setResendSecondsLeft(30)
-  }
+    if (signUpErr) {
+      setError(humanError(signUpErr.message))
+      return
+    }
 
-  async function verifyOtp(e?: React.FormEvent) {
-    e?.preventDefault()
-    setError(null)
-    const supabase = getBrowserSupabase()
-    if (!supabase) {
-      setError('Auth not configured.')
-      return
-    }
-    setPending(true)
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token: otp.trim(),
-      type: 'sms',
-    })
-    setPending(false)
-    if (error) {
-      setError(error.message)
-      return
-    }
-    // Post-verify routing:
-    //   • ?next= URL param wins (used by /partners/signup gate to bring
-    //     hotel/villa signups back into the partner form)
-    //   • ?intent=partner → /partners/signup (canonical partner entry)
-    //   • ?vertical=… (KitaSignupPopup flow) → /dashboard/<mapped-route>
-    //   • Drivers → onboarding (subscription + bike profile)
-    //   • Customers → /cari (discovery)
+    // Post-signup routing matches the legacy OTP flow exactly:
+    //   • ?next= URL param wins
+    //   • ?intent=partner → /partners/signup
+    //   • ?vertical=… → /dashboard/<mapped-route>
+    //   • Drivers → /onboarding
+    //   • Customers → /cari
     let dest: string
     try {
       const params = new URLSearchParams(window.location.search)
@@ -223,20 +186,16 @@ export default function SignupPage() {
   // Hero per step — yellow icon chip + title + subtitle.
   const heroIcon =
     step === 'role' ? <User className="w-6 h-6" /> :
-    step === 'phone' ? <Phone className="w-6 h-6" /> :
-                       <KeyRound className="w-6 h-6" />
+                      <Phone className="w-6 h-6" />
   const heroTitle =
     step === 'role' ? 'Create your account' :
-    step === 'phone' ? (role === 'driver' ? 'Set up your account' : 'Tell us about you') :
-                       'Verify your phone'
+                      (role === 'driver' ? 'Set up your account' : 'Tell us about you')
   const heroSub =
     step === 'role' ? 'Pick what you want to do on CityDrivers.' :
-    step === 'phone' ? 'We will send a 6-digit code to verify your number.' :
-                       `We sent a 6-digit code to +${phone}`
+                      'Use your WhatsApp number and a password. No SMS code needed.'
 
   return (
     <AuthShell>
-      {/* Step indicator — 3 dots, current in yellow, rest in gray. */}
       <StepDots active={step} />
 
       {/* Hero */}
@@ -315,8 +274,8 @@ export default function SignupPage() {
         </>
       )}
 
-      {step === 'phone' && (
-        <form className="space-y-4" onSubmit={sendOtp}>
+      {step === 'register' && (
+        <form className="space-y-4" onSubmit={submitRegister}>
           <Field label="Full name" icon={<User className="w-4 h-4 text-[#71717A]" />}>
             <input
               className={inputCls + ' pl-11'}
@@ -340,6 +299,29 @@ export default function SignupPage() {
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
             />
+          </Field>
+          <Field
+            label="Password"
+            icon={<KeyRound className="w-4 h-4 text-[#71717A]" />}
+            hint="At least 6 characters. Write it down — we don't send codes."
+          >
+            <input
+              className={inputCls + ' pl-11 pr-11'}
+              type={showPw ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={6}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 inline-flex items-center justify-center text-[#71717A] hover:text-[#0A0A0A]"
+            >
+              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </Field>
 
           {role === 'driver' && (
@@ -385,7 +367,7 @@ export default function SignupPage() {
           {error && <p className="text-[13px] text-red-600 font-semibold">{error}</p>}
 
           <button type="submit" className={primaryBtnCls + ' mt-2'} disabled={pending}>
-            {pending ? 'Sending code…' : 'Send verification code'}
+            {pending ? 'Creating account…' : 'Create account'}
             <ArrowRight className="w-4 h-4" />
           </button>
           <button
@@ -394,53 +376,6 @@ export default function SignupPage() {
             className="w-full min-h-[44px] text-[13px] text-[#71717A] hover:text-[#0A0A0A] inline-flex items-center justify-center gap-1.5"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back
-          </button>
-        </form>
-      )}
-
-      {step === 'otp' && (
-        <form className="space-y-4" onSubmit={verifyOtp}>
-          <Field label="6-digit code" icon={<KeyRound className="w-4 h-4 text-[#71717A]" />}>
-            <input
-              className={inputCls + ' pl-11 tabular-nums font-mono tracking-[0.4em] text-center text-[18px]'}
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="123456"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-              autoComplete="one-time-code"
-              autoFocus
-            />
-          </Field>
-          {error && <p className="text-[13px] text-red-600 font-semibold">{error}</p>}
-
-          <button type="submit" className={primaryBtnCls} disabled={pending || otp.length !== 6}>
-            {pending ? 'Verifying…' : 'Verify & continue'}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-
-          {/* Resend button — Indonesian SMS drops happen often. 30s
-              cooldown so we don't DoS the SMS gateway. */}
-          <button
-            type="button"
-            onClick={resendOtp}
-            disabled={resendSecondsLeft > 0 || resending}
-            className="w-full min-h-[44px] text-[13px] font-bold text-[#EAB308] inline-flex items-center justify-center gap-1.5 disabled:text-[#A1A1AA] disabled:font-normal"
-          >
-            {resending
-              ? 'Mengirim ulang…'
-              : resendSecondsLeft > 0
-                ? `Kirim ulang kode dalam ${resendSecondsLeft}s`
-                : 'Kirim ulang kode'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setStep('phone'); setOtp(''); setError(null) }}
-            className="w-full min-h-[44px] text-[13px] text-[#71717A] hover:text-[#0A0A0A] inline-flex items-center justify-center gap-1.5"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Use a different number
           </button>
         </form>
       )}
@@ -458,14 +393,13 @@ export default function SignupPage() {
 }
 
 // ----------------------------------------------------------------------------
-// StepDots — 3-dot stepper. Active dot is yellow + slightly wider for that
-// "you-are-here" emphasis; inactive dots stay neutral gray.
+// StepDots — 2-dot stepper now (role → register). Active dot is yellow and
+// slightly wider for "you-are-here" emphasis; inactive dots stay neutral.
 // ----------------------------------------------------------------------------
-function StepDots({ active }: { active: 'role' | 'phone' | 'otp' }) {
-  const steps: Array<{ id: 'role' | 'phone' | 'otp'; label: string }> = [
-    { id: 'role',  label: 'Role' },
-    { id: 'phone', label: 'Phone' },
-    { id: 'otp',   label: 'Verify' },
+function StepDots({ active }: { active: Step }) {
+  const steps: Array<{ id: Step; label: string }> = [
+    { id: 'role',     label: 'Role' },
+    { id: 'register', label: 'Account' },
   ]
   return (
     <div className="flex items-center justify-center gap-2 mb-5" aria-label="Sign-up progress">
@@ -572,4 +506,22 @@ function normalizePhone(raw: string): string | null {
   if (digits.startsWith('0')) return '62' + digits.slice(1)
   if (digits.startsWith('62')) return digits
   return null
+}
+
+// Convert Supabase's auth error messages into something a driver can act
+// on. Mostly we surface the raw message; the targeted overrides cover the
+// two friction modes drivers hit on signup: a duplicate WA number and the
+// "phone confirmation required" state when Supabase is still misconfigured.
+function humanError(msg: string): string {
+  const m = msg.toLowerCase()
+  if (m.includes('user already registered') || m.includes('already_exists') || m.includes('duplicate key')) {
+    return 'A driver with this WhatsApp number already exists. Sign in instead, or contact support to reset your password.'
+  }
+  if (m.includes('phone not confirmed') || m.includes('phone_not_confirmed')) {
+    return 'Sign-up needs Supabase phone-confirm OFF (Auth → Providers → Phone). Ask your admin.'
+  }
+  if (m.includes('rate limit') || m.includes('too many requests')) {
+    return 'Too many attempts. Wait a minute and try again.'
+  }
+  return msg
 }
