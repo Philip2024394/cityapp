@@ -1698,18 +1698,60 @@ function ServiceRatePanel({
   return (
     <section className="space-y-2" style={{ marginTop: 12 }}>
       <div
-        className="rounded-2xl border border-gray-200 bg-white p-4"
+        className="rounded-2xl border border-gray-200 bg-white overflow-hidden"
         style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
       >
-        {/* Header */}
-        <div className="mb-1.5">
-          <h3 className="text-[14px] font-black text-black leading-tight">
-            {service.header}
-          </h3>
-          <p className="text-[12px] text-gray-600 leading-snug mt-0.5">
+        {/* Jeep-only — founder-uploaded hero image for the active service.
+            Truck's catalog uses a single shared placeholder which also
+            populates the photo carousel below, so we keep that branch
+            text-only to avoid the duplicate. 4:3 object-cover matches the
+            tour-card aspect for visual consistency across the surface. */}
+        {vehicleType === 'jeep' && service.imageUrl && (
+          <div className="relative w-full aspect-[4/3] overflow-hidden bg-zinc-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={service.imageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              loading="lazy"
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%)',
+              }}
+            />
+            <div className="absolute left-3 right-3 bottom-2.5">
+              <h3
+                className="text-[16px] sm:text-[17px] font-black leading-tight text-white"
+                style={{ textShadow: '0 1px 3px rgba(0,0,0,0.65)' }}
+              >
+                {service.header}
+              </h3>
+            </div>
+          </div>
+        )}
+
+        <div className="p-4">
+        {/* Header — suppressed for jeep since the banner already shows it. */}
+        {!(vehicleType === 'jeep' && service.imageUrl) && (
+          <div className="mb-1.5">
+            <h3 className="text-[14px] font-black text-black leading-tight">
+              {service.header}
+            </h3>
+            <p className="text-[12px] text-gray-600 leading-snug mt-0.5">
+              {service.subtext}
+            </p>
+          </div>
+        )}
+        {/* Jeep — subtext sits under the banner so the image carries the title. */}
+        {vehicleType === 'jeep' && service.imageUrl && (
+          <p className="text-[12px] text-gray-600 leading-snug mb-1.5">
             {service.subtext}
           </p>
-        </div>
+        )}
 
         {/* Rate chart — 2-column list (label · idr + optional per-unit). */}
         <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/60 divide-y divide-gray-100">
@@ -1801,6 +1843,7 @@ function ServiceRatePanel({
           <span className="font-bold" style={{ color: theme }}>{driverName}</span>.{' '}
           {t('ratesPublishedBySuffix')}
         </p>
+        </div>
       </div>
     </section>
   )

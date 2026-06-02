@@ -367,6 +367,7 @@ export const JEEP_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
     ],
     includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff'],
     excludes: ['temple entrance tickets', 'tolls + bridge fees', 'parking', 'food (guests + driver)'],
+    imageUrl: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2007_26_45%20PM.png',
   },
   {
     id:          'city',
@@ -385,6 +386,7 @@ export const JEEP_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
     ],
     includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff'],
     excludes: ['food + drinks', 'shopping', 'tolls + bridge fees', 'parking', 'driver meals'],
+    imageUrl: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2007_28_01%20PM.png',
   },
   {
     id:          'offroad',
@@ -403,6 +405,7 @@ export const JEEP_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
     ],
     includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff', 'helmet (sunrise)'],
     excludes: ['bunker entrance + spot tickets', 'tolls + bridge fees', 'parking', 'food (guests + driver)'],
+    imageUrl: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2007_29_41%20PM.png',
   },
   {
     id:          'beach',
@@ -421,6 +424,7 @@ export const JEEP_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
     ],
     includes: ['jeep + driver', 'fuel', 'hotel/villa pickup + dropoff'],
     excludes: ['beach entry + gondola tickets', 'tolls + bridge fees', 'parking', 'food (guests + driver)'],
+    imageUrl: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2007_32_17%20PM.png',
   },
   {
     id:          'daily_8h',
@@ -437,6 +441,7 @@ export const JEEP_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
     ],
     includes: ['jeep + driver', 'fuel (in-city)', 'hotel/villa pickup + dropoff', '8 hours of driving'],
     excludes: ['fuel surcharge (out-of-town)', 'tolls + bridge fees', 'parking', 'attraction tickets', 'food (guests + driver)'],
+    imageUrl: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2007_34_54%20PM.png',
   },
   {
     id:          'daily_4h',
@@ -453,6 +458,7 @@ export const JEEP_SERVICE_OFFERINGS: readonly ServiceCatalogEntry[] = [
     ],
     includes: ['jeep + driver', 'fuel (in-city)', 'hotel/villa pickup + dropoff', '4 hours of driving'],
     excludes: ['fuel surcharge (out-of-town)', 'tolls + bridge fees', 'parking', 'attraction tickets', 'food (guests + driver)'],
+    imageUrl: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2007_36_45%20PM.png',
   },
 ]
 
