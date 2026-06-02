@@ -16,7 +16,7 @@
 // ============================================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock, Languages as LanguagesIcon, Image as ImageIcon, Link2 } from 'lucide-react'
+import { ArrowLeft, Loader2, User, Phone, MapPin, Radio, CheckCircle2, Clock, Languages as LanguagesIcon, Image as ImageIcon, Link2, Mail, Home } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { tryLoadDevDriver } from '@/lib/dev/loadDriverSelf'
@@ -46,6 +46,10 @@ type JeepDriverInfoRow = {
   instagram_url: string | null
   tiktok_url: string | null
   facebook_url: string | null
+  // mig 0170 — Contact Us panel inputs (originally bus-only; opened up
+  // for jeep when the Contact Us pill + inline form shipped Jun 2026).
+  contact_email: string | null
+  company_address: string | null
   service_zone_radius_km: number | null
 }
 
@@ -78,7 +82,8 @@ export default function JeepDriverInfoPage() {
         'user_id, vehicle_type, business_name, bio, whatsapp_e164, city, area, availability, ' +
         'working_hours_start, working_hours_end, ' +
         'available_sunrise, available_daytime, available_evening, available_nightlife, languages, ' +
-        'brand_logo_url, instagram_url, tiktok_url, facebook_url, service_zone_radius_km',
+        'brand_logo_url, instagram_url, tiktok_url, facebook_url, ' +
+        'contact_email, company_address, service_zone_radius_km',
       )
       .eq('user_id', user.id)
       .maybeSingle()
@@ -124,6 +129,12 @@ function InfoEditor({ row, onReload }: { row: JeepDriverInfoRow; onReload: () =>
   const [instagramUrl, setInstagramUrl] = useState(row.instagram_url ?? '')
   const [tiktokUrl,    setTiktokUrl]    = useState(row.tiktok_url ?? '')
   const [facebookUrl,  setFacebookUrl]  = useState(row.facebook_url ?? '')
+  // mig 0170 — Contact Us panel inputs. contact_email turns on the
+  // inline contact form on the public jeep profile (drivers who leave
+  // it null get the form hidden — only WhatsApp button shows). Address
+  // surfaces inside the panel's left column.
+  const [contactEmail,   setContactEmail]   = useState(row.contact_email ?? '')
+  const [companyAddress, setCompanyAddress] = useState(row.company_address ?? '')
   const [serviceZoneKm, setServiceZoneKm] = useState<string>(
     row.service_zone_radius_km != null && row.service_zone_radius_km > 0 ? String(row.service_zone_radius_km) : '',
   )
@@ -244,6 +255,25 @@ function InfoEditor({ row, onReload }: { row: JeepDriverInfoRow; onReload: () =>
     const next = facebookUrl.trim() || null
     if (next === (row.facebook_url ?? null)) return
     void save('facebook_url', { facebook_url: next }, 'Facebook saved')
+  }
+  // mig 0170 — Contact Us panel inputs (mirrors the bus pattern in
+  // src/app/dashboard/bus/info/page.tsx). Email-shape guard reverts
+  // local state to the persisted value on invalid input so the field
+  // doesn't get stuck.
+  function commitContactEmail() {
+    const next = contactEmail.trim() || null
+    if (next === (row.contact_email ?? null)) return
+    if (next && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) {
+      showError('Email format looks off — example: name@example.com')
+      setContactEmail(row.contact_email ?? '')
+      return
+    }
+    void save('contact_email', { contact_email: next }, 'Contact email saved')
+  }
+  function commitCompanyAddress() {
+    const next = companyAddress.trim().slice(0, 200) || null
+    if (next === (row.company_address ?? null)) return
+    void save('company_address', { company_address: next }, 'Company address saved')
   }
   function commitServiceZoneKm() {
     const digits = serviceZoneKm.replace(/\D/g, '')
@@ -518,6 +548,53 @@ function InfoEditor({ row, onReload }: { row: JeepDriverInfoRow; onReload: () =>
         <p className="text-[13px] text-black/55 leading-snug mt-2">
           Tip → drivers speaking 3+ languages land more tourist bookings.
         </p>
+      </Card>
+
+      {/* Contact email (mig 0170) — turns ON the inline contact form on
+          the public jeep profile. With email set, customers see a 4-field
+          form (Name + Country + WhatsApp + Comments) under the Contact Us
+          pill; the form posts to /api/drivers/contact which Resend-emails
+          this address. Leave blank to hide the form (WhatsApp button still
+          renders). */}
+      <Card
+        title="Customer contact email"
+        hint="Turns on the contact form on your jeep profile. Customer messages arrive in this inbox; leave blank to hide the form."
+        icon={<Mail size={18} />}
+      >
+        <Field label="Contact email" saving={savingField === 'contact_email'}>
+          <input
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            onBlur={commitContactEmail}
+            placeholder="you@example.com"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </Field>
+      </Card>
+
+      {/* Company / yard address (mig 0170) — surfaces inside the
+          Contact Us panel's left column on the public profile. Optional. */}
+      <Card
+        title="Company / yard address"
+        hint="Physical address shown inside the Contact Us panel on your profile."
+        icon={<Home size={18} />}
+      >
+        <Field label="Address" hint={`${companyAddress.length}/200`} saving={savingField === 'company_address'}>
+          <textarea
+            value={companyAddress}
+            onChange={(e) => setCompanyAddress(e.target.value.slice(0, 200))}
+            onBlur={commitCompanyAddress}
+            maxLength={200}
+            rows={3}
+            placeholder="Jl. Kaliurang KM 8.5, Sleman, Yogyakarta 55581"
+            className={inputCls + ' resize-y leading-relaxed'}
+          />
+        </Field>
       </Card>
 
       {/* Profile photo URL (mig 0172 — single text input, paste pattern) */}
