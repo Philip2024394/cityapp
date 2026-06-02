@@ -67,16 +67,18 @@ export default function ToursTabContent({
                 boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
               }}
             >
-              {/* Full-bleed cover image (16:9) sits at the top of the card.
-                  Title overlays the bottom of the image with a dark scrim
-                  so it always reads, regardless of photo brightness. */}
+              {/* Full image displays at its natural aspect ratio — width
+                  fills the card, height grows to match so nothing is
+                  cropped. Founder spec ("full image height and width
+                  displaying"). The title scrim still sits absolutely at
+                  the bottom so legibility holds for any image proportion. */}
               {thumb && (
-                <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+                <div className="relative w-full">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={thumb}
                     alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="block w-full h-auto"
                     loading="lazy"
                   />
                   <div
