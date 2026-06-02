@@ -982,14 +982,23 @@ function PlanTripPageInner() {
                   (compass / star icon taps) when that flow is wired. */}
             </div>
 
-            {/* ROW 3 — Vehicle picker (5 image buttons). Drives the inline
-                driver list. Preserves the current `mode` so flipping
-                between vehicle types doesn't reset Ride↔Parcel. */}
-            <div className="mt-3 shrink-0 grid grid-cols-5 gap-2">
+            {/* ROW 3 — Vehicle picker. Drives the inline driver list.
+                Preserves the current `mode` so flipping vehicle types
+                doesn't reset Ride↔Parcel.
+
+                Parcel mode hides Bus + Jeep — those aren't parcel-
+                delivery vehicles. Customers booking a parcel choose
+                between Bike (city courier), Car (medium load), and
+                Truck (bulk move). 3-col grid when filtered. */}
+            <div className={`mt-3 shrink-0 grid gap-2 ${mode === 'parcel' ? 'grid-cols-3' : 'grid-cols-5'}`}>
               <VehicleImageButton href={`/cari?service=person&mode=${mode}`} active={vehicleType === 'bike'}    label="Bike"  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasad.png?tr=e-bgremove" />
               <VehicleImageButton href={`/cari?service=car&mode=${mode}`}    active={vehicleType === 'car'}     label="Car"   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsa.png?tr=e-bgremove" />
-              <VehicleImageButton href={`/cari?service=bus&mode=${mode}`}    active={vehicleType === 'minibus'} label="Bus"   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasd.png?tr=e-bgremove" />
-              <VehicleImageButton href={`/cari?service=jeep&mode=${mode}`}   active={vehicleType === 'jeep'}    label="Jeep"  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasadasda.png?tr=e-bgremove" sizeBoost={1.15} />
+              {mode !== 'parcel' && (
+                <VehicleImageButton href={`/cari?service=bus&mode=${mode}`}    active={vehicleType === 'minibus'} label="Bus"   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasd.png?tr=e-bgremove" />
+              )}
+              {mode !== 'parcel' && (
+                <VehicleImageButton href={`/cari?service=jeep&mode=${mode}`}   active={vehicleType === 'jeep'}    label="Jeep"  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasadasda.png?tr=e-bgremove" sizeBoost={1.15} />
+              )}
               <VehicleImageButton href={`/cari?service=truck&mode=${mode}`}  active={vehicleType === 'truck'}   label="Truck" imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasda.png?tr=e-bgremove" />
             </div>
 

@@ -107,18 +107,12 @@ export default async function CityDriversParcelHubPage() {
 
   let bikes:  ParcelHubBikeCarRow[] = []
   let cars:   ParcelHubBikeCarRow[] = []
-  let buses:  ParcelHubBikeCarRow[] = []
-  let jeeps:  ParcelHubBikeCarRow[] = []
   let trucks: ParcelHubTruckRow[]   = []
 
   if (admin) {
-    // Bus rides on vehicle_type='minibus' in the schema (the marketplace
-    // label is Bus). Jeep is vehicle_type='jeep'. Both use the same
-    // parcel_rate_tiers shape as bike/car, so DRIVER_COLS / MOCK_DRIVER_COLS
-    // are reused unchanged.
     const [
-      bikeRes, carRes, busRes, jeepRes, truckRes,
-      mockBikeRes, mockCarRes, mockBusRes, mockJeepRes, mockTruckRes,
+      bikeRes, carRes, truckRes,
+      mockBikeRes, mockCarRes, mockTruckRes,
     ] = await Promise.all([
       admin
         .from('drivers')
@@ -134,22 +128,6 @@ export default async function CityDriversParcelHubPage() {
         .eq('status', 'active')
         .eq('parcel_b2b_enabled', true)
         .eq('vehicle_type', 'car')
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(12),
-      admin
-        .from('drivers')
-        .select(DRIVER_COLS)
-        .eq('status', 'active')
-        .eq('parcel_b2b_enabled', true)
-        .eq('vehicle_type', 'minibus')
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(12),
-      admin
-        .from('drivers')
-        .select(DRIVER_COLS)
-        .eq('status', 'active')
-        .eq('parcel_b2b_enabled', true)
-        .eq('vehicle_type', 'jeep')
         .order('rating', { ascending: false, nullsFirst: false })
         .limit(12),
       admin
@@ -171,20 +149,6 @@ export default async function CityDriversParcelHubPage() {
         .from('mock_drivers')
         .select(MOCK_DRIVER_COLS)
         .eq('vehicle_type', 'car')
-        .is('mock_hidden_at', null)
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(12),
-      admin
-        .from('mock_drivers')
-        .select(MOCK_DRIVER_COLS)
-        .eq('vehicle_type', 'minibus')
-        .is('mock_hidden_at', null)
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(12),
-      admin
-        .from('mock_drivers')
-        .select(MOCK_DRIVER_COLS)
-        .eq('vehicle_type', 'jeep')
         .is('mock_hidden_at', null)
         .order('rating', { ascending: false, nullsFirst: false })
         .limit(12),
@@ -305,13 +269,9 @@ export default async function CityDriversParcelHubPage() {
 
     const realBikes  = ((bikeRes.data  ?? []) as unknown as RealBikeCarRow[]).map(enrichRealBike)
     const realCars   = ((carRes.data   ?? []) as unknown as RealBikeCarRow[]).map(enrichRealCar)
-    const realBuses  = ((busRes.data   ?? []) as unknown as RealBikeCarRow[]).map(enrichRealCar)
-    const realJeeps  = ((jeepRes.data  ?? []) as unknown as RealBikeCarRow[]).map(enrichRealCar)
     const realTrucks = ((truckRes.data ?? []) as unknown as RealTruckRow[]).map(enrichRealTruck)
     const mBikes     = ((mockBikeRes.data  ?? []) as unknown as MockBikeCarRow[]).map(projectMockToDriverBike)
     const mCars      = ((mockCarRes.data   ?? []) as unknown as MockBikeCarRow[]).map(projectMockToDriverCar)
-    const mBuses     = ((mockBusRes.data   ?? []) as unknown as MockBikeCarRow[]).map(projectMockToDriverCar)
-    const mJeeps     = ((mockJeepRes.data  ?? []) as unknown as MockBikeCarRow[]).map(projectMockToDriverCar)
     const mTrucks    = ((mockTruckRes.data ?? []) as unknown as MockTruckRow[]).map(projectMockToTruck)
 
     // Dedupe by slug — a real driver with the same slug as a mock wins.
@@ -321,8 +281,6 @@ export default async function CityDriversParcelHubPage() {
     }
     bikes  = dedupe(realBikes,  mBikes)
     cars   = dedupe(realCars,   mCars)
-    buses  = dedupe(realBuses,  mBuses)
-    jeeps  = dedupe(realJeeps,  mJeeps)
     trucks = dedupe(realTrucks, mTrucks)
   }
 
@@ -396,8 +354,6 @@ export default async function CityDriversParcelHubPage() {
           <ParcelHubBrowser
             bikes={bikes}
             cars={cars}
-            buses={buses}
-            jeeps={jeeps}
             trucks={trucks}
             bikeDefaultLowest={PARCEL_RATE_TIER_DEFAULTS_BIKE.tier_51_100}
             carDefaultLowest={PARCEL_RATE_TIER_DEFAULTS_CAR.tier_51_100}
