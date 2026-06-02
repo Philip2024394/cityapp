@@ -1698,7 +1698,14 @@ function ServiceRatePanel({
   return (
     <section className="space-y-2" style={{ marginTop: 12 }}>
       <div
-        className="rounded-2xl border border-gray-200 bg-white overflow-hidden"
+        className={
+          // Jeep banner is edge-to-edge inside the card. Drop the 1px
+          // border on jeep so the image runs flush to the rounded corners
+          // (no thin gray gutter between image and card edge).
+          vehicleType === 'jeep' && service.imageUrl
+            ? 'rounded-2xl bg-white overflow-hidden'
+            : 'rounded-2xl border border-gray-200 bg-white overflow-hidden'
+        }
         style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
       >
         {/* Jeep-only — founder-uploaded hero image for the active service.
@@ -1706,16 +1713,17 @@ function ServiceRatePanel({
             populates the photo carousel below, so we keep that branch
             text-only to avoid the duplicate. Natural aspect (w-full +
             h-auto) — image displays at its full source proportions per
-            founder direction ("fit length and height"). Scrim + title
-            overlay still anchor at the bottom regardless of image
-            height. */}
+            founder direction ("fit length and height"). Inline width/
+            display style hardens against any cascade conflict so the
+            image always fills 100% of the card width. */}
         {vehicleType === 'jeep' && service.imageUrl && (
-          <div className="relative w-full">
+          <div className="relative w-full" style={{ width: '100%' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={service.imageUrl}
               alt=""
               className="block w-full h-auto"
+              style={{ display: 'block', width: '100%', height: 'auto', maxWidth: '100%' }}
               loading="lazy"
             />
             <div
