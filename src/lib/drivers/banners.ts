@@ -53,9 +53,11 @@ export const BIKE_BANNERS: ReadonlyArray<DriverBanner> = [
 ]
 
 // Truck-specific banners — moving / hauling / utility-rental vibes.
-// Founder-supplied 2026-05-31.
+// Founder-supplied. The May-31 generic image (looked like a car to the
+// founder) was replaced 2026-06-02 with two purpose-shot truck renders.
 export const TRUCK_BANNERS: ReadonlyArray<DriverBanner> = [
-  { id: 'truck-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2004_39_58%20PM.png', label: 'Banner 1' },
+  { id: 'truck-01', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2001_14_19%20PM.png?updatedAt=1780380874855', label: 'Banner 1' },
+  { id: 'truck-02', url: 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2001_19_08%20PM.png?updatedAt=1780381180108', label: 'Banner 2' },
 ]
 
 // Bus / minibus-specific banners — charter, airport-transfer, tour-bus

@@ -93,8 +93,12 @@ export type ServiceCatalogEntry = {
 // portfolio carousel (VehicleProfileShell → buildPortfolioPhotos). Keep the
 // pointer alive so swapping the catalog doesn't blank out the carousel.
 // -----------------------------------------------------------------------------
+// Founder-supplied truck render (Jun 2 2026). Replaces the May-31 generic
+// silhouette that read as a car. Used by every TRUCK_SERVICE_OFFERINGS row
+// via the `imageUrl` field so the catalog fallback in the truck profile
+// carousel now shows an actual truck instead of a car-looking placeholder.
 const CAROUSEL_IMG =
-  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2004_39_58%20PM.png'
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2001_14_19%20PM.png?updatedAt=1780380874855'
 
 // =============================================================================
 // TRUCK_SERVICE_OFFERINGS — Yogyakarta small-truck (L300 / Pickup) catalog.

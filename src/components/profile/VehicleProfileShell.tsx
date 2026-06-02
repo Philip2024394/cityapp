@@ -29,6 +29,7 @@ import {
   Star, Award, MessageCircle, Share2, Link2, X, ChevronLeft, BadgeCheck,
   MapPin, Truck as TruckIcon, Bus as BusIcon, Mountain as JeepIcon,
   Sparkles, Menu as MenuIcon, ChevronDown, Mail, Phone, Send,
+  Check, Loader2, AlertCircle,
 } from 'lucide-react'
 import { PlaneTakeoff, MapPinned, Landmark } from 'lucide-react'
 import HeroServiceIcon from './shell/HeroServiceIcon'
@@ -2111,14 +2112,14 @@ function BusContactUsPanel({
         </div>
 
         {/* ---- Inline contact form (jeep only) -------------------------
-            Name + Country + WhatsApp + Comments → mailto handoff. The
-            customer's email client opens with everything pre-filled;
-            they review and tap Send to deliver to v.contact_email. MVP
-            transport — no server round-trip, no DB write, works on
-            every device that has a default mail handler (every phone). */}
+            Name + Country + WhatsApp + Comments → server POST to
+            /api/drivers/contact which writes contact_messages and fires
+            a Resend notification to v.contact_email. No customer email
+            collected (founder spec) — the driver follows up out-of-band
+            on the WhatsApp number the customer provided. */}
         {showContactForm && v.contact_email && (
           <ContactFormBlock
-            recipientEmail={v.contact_email}
+            slug={v.slug}
             recipientName={v.display_name}
             theme={theme}
           />
@@ -2164,22 +2165,29 @@ function BusContactUsPanel({
 
 // -----------------------------------------------------------------------------
 // ContactFormBlock — inline form for the jeep Contact Us panel.
-// 4 fields: Name + Country + WhatsApp + Comments. On submit the form
-// builds a mailto: URL with every field encoded into the email body and
-// opens the customer's email client. No backend, no rate-limiting needed
-// because the customer's own email client is the transport.
+// 4 fields: Name + Country + WhatsApp + Comments. Posts to
+// /api/drivers/contact which inserts a contact_messages row (mig 0187)
+// and fires a Resend notification to driver.contact_email. The customer's
+// email is NOT collected — driver follows up on the WhatsApp number
+// the customer provided.
 // -----------------------------------------------------------------------------
 function ContactFormBlock({
-  recipientEmail, recipientName, theme,
+  slug, recipientName, theme,
 }: {
-  recipientEmail: string
-  recipientName:  string
-  theme:          string
+  slug:          string
+  recipientName: string
+  theme:         string
 }) {
   const [name,     setName]     = useState('')
   const [country,  setCountry]  = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [comments, setComments] = useState('')
+  const [state,    setState]    = useState<
+    | { kind: 'idle' }
+    | { kind: 'sending' }
+    | { kind: 'sent' }
+    | { kind: 'error'; message: string }
+  >({ kind: 'idle' })
 
   const valid =
     name.trim().length >= 1 &&
@@ -2187,27 +2195,69 @@ function ContactFormBlock({
     whatsapp.trim().length >= 5 &&
     comments.trim().length >= 1
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!valid) return
-    const subject = `Enquiry from ${name.trim()} (CityDrivers)`
-    const body = [
-      `Name: ${name.trim()}`,
-      `Country: ${country.trim()}`,
-      `WhatsApp: ${whatsapp.trim()}`,
-      '',
-      'Comments:',
-      comments.trim(),
-      '',
-      '---',
-      `Sent from your CityDrivers profile contact form.`,
-    ].join('\n')
-    const href = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    window.location.href = href
+    if (!valid || state.kind === 'sending') return
+    setState({ kind: 'sending' })
+    try {
+      const r = await fetch('/api/drivers/contact', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          slug,
+          sender_name:    name.trim(),
+          sender_country: country.trim(),
+          sender_phone:   whatsapp.trim(),
+          message:        comments.trim(),
+        }),
+      })
+      const j = await r.json().catch(() => ({})) as { ok?: boolean; error?: string }
+      if (!r.ok || !j?.ok) {
+        const err = j?.error === 'rate_limited'
+          ? 'Too many messages from your network — try again in an hour.'
+          : j?.error === 'contact_form_disabled'
+            ? `${recipientName} hasn’t enabled email contact. Use WhatsApp instead.`
+            : 'Could not send your message. Please try again or contact via WhatsApp.'
+        setState({ kind: 'error', message: err })
+        return
+      }
+      setState({ kind: 'sent' })
+      setName('')
+      setCountry('')
+      setWhatsapp('')
+      setComments('')
+    } catch {
+      setState({ kind: 'error', message: 'Network error. Please try again or contact via WhatsApp.' })
+    }
   }
 
   const inputCls =
     'w-full rounded-xl bg-white border border-gray-200 px-3 py-2.5 text-[13px] text-black placeholder:text-black/35 focus:outline-none focus:border-[#FACC15] focus:ring-2 focus:ring-yellow-100 min-h-[44px]'
+
+  if (state.kind === 'sent') {
+    return (
+      <section className="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+            <Check className="w-4 h-4" strokeWidth={3} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[14px] font-extrabold text-emerald-800">Message sent</div>
+            <p className="text-[12px] text-emerald-700 leading-snug mt-0.5">
+              {recipientName} usually replies on WhatsApp within a day.
+            </p>
+            <button
+              type="button"
+              onClick={() => setState({ kind: 'idle' })}
+              className="text-[12px] font-bold text-emerald-700 underline mt-2"
+            >
+              Send another message
+            </button>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-3">
@@ -2216,7 +2266,7 @@ function ContactFormBlock({
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-extrabold text-black">Send a message</div>
           <p className="text-[12px] text-gray-600 leading-snug">
-            Goes straight to {recipientName} — no platform middleman.
+            Goes straight to {recipientName} by email — they reply on WhatsApp.
           </p>
         </div>
       </div>
@@ -2246,7 +2296,7 @@ function ContactFormBlock({
           value={whatsapp}
           onChange={(e) => setWhatsapp(e.target.value)}
           maxLength={32}
-          placeholder="Your WhatsApp number"
+          placeholder="Your WhatsApp number (e.g. +44 7…)"
           inputMode="tel"
           autoComplete="tel"
           className={inputCls}
@@ -2267,14 +2317,22 @@ function ContactFormBlock({
           </span>
           <button
             type="submit"
-            disabled={!valid}
+            disabled={!valid || state.kind === 'sending'}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-black text-[13px] font-extrabold uppercase tracking-wider shadow-sm shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] transition min-h-[44px]"
             style={{ background: theme }}
           >
-            <Send className="w-4 h-4" strokeWidth={2.5} />
-            Send via email
+            {state.kind === 'sending'
+              ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.5} />
+              : <Send className="w-4 h-4" strokeWidth={2.5} />}
+            {state.kind === 'sending' ? 'Sending…' : 'Send email'}
           </button>
         </div>
+        {state.kind === 'error' && (
+          <div className="flex items-start gap-2 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 text-[12px] text-rose-700 leading-snug">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2.5} />
+            <span>{state.message}</span>
+          </div>
+        )}
       </form>
     </section>
   )
