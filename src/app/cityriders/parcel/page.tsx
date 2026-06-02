@@ -212,42 +212,63 @@ export default async function CityDriversParcelHubPage() {
     const resolveMockTruckPhoto = (m: MockTruckRow): string =>
       m.profile_image_url ?? m.cover_image_url ?? ''
 
-    const projectMockToDriverBike = (m: MockBikeCarRow): ParcelHubBikeCarRow => ({
-      slug:                  m.slug,
-      business_name:         m.business_name,
-      brand_logo_url:        m.profile_image_url ?? m.cover_image_url ?? null,
-      vehicle_photos:        [resolveMockBikePhoto(m)].filter(Boolean),
-      availability:          m.availability,
-      parcel_rate_tiers:     null,
-      parcel_daily_capacity: null,
-      parcel_service_zone:
-        m.area && m.city ? `${m.area}, ${m.city}` : (m.city ?? m.area ?? null),
-      rating:                m.rating,
-    })
-    const projectMockToDriverCar = (m: MockBikeCarRow): ParcelHubBikeCarRow => ({
-      slug:                  m.slug,
-      business_name:         m.business_name,
-      brand_logo_url:        m.profile_image_url ?? m.cover_image_url ?? null,
-      vehicle_photos:        [resolveMockCarPhoto(m)].filter(Boolean),
-      availability:          m.availability,
-      parcel_rate_tiers:     null,
-      parcel_daily_capacity: null,
-      parcel_service_zone:
-        m.area && m.city ? `${m.area}, ${m.city}` : (m.city ?? m.area ?? null),
-      rating:                m.rating,
-    })
-    const projectMockToTruck = (m: MockTruckRow): ParcelHubTruckRow => ({
-      slug:                  m.slug,
-      business_name:         m.business_name,
-      brand_logo_url:        m.profile_image_url ?? m.cover_image_url ?? null,
-      vehicle_photos:        [resolveMockTruckPhoto(m)].filter(Boolean),
-      availability:          m.availability,
-      rental_daily_rate_idr: m.rental_daily_rate_idr,
-      rental_min_days:       m.rental_min_days,
-      area:                  m.area,
-      city:                  m.city,
-      rating:                m.rating,
-    })
+    // Photo precedence (highest → lowest):
+    //   1. m.vehicle_photos — explicit URLs the admin set on the mock row
+    //      ("here's the exact card image for this driver")
+    //   2. catalog lookup (bike/car only) — generic make+model silhouette
+    //   3. profile_image_url / cover_image_url — legacy placeholder fields
+    // Trucks have no catalog yet so step 2 is skipped — handled inside
+    // resolveMockTruckPhoto via the same profile/cover fallback chain.
+    const pickCustom = (m: { vehicle_photos: unknown }): string[] =>
+      Array.isArray(m.vehicle_photos)
+        ? (m.vehicle_photos as unknown[]).filter((u): u is string => typeof u === 'string' && u.trim() !== '')
+        : []
+
+    const projectMockToDriverBike = (m: MockBikeCarRow): ParcelHubBikeCarRow => {
+      const custom = pickCustom(m)
+      return {
+        slug:                  m.slug,
+        business_name:         m.business_name,
+        brand_logo_url:        m.profile_image_url ?? m.cover_image_url ?? null,
+        vehicle_photos:        custom.length > 0 ? custom : [resolveMockBikePhoto(m)].filter(Boolean),
+        availability:          m.availability,
+        parcel_rate_tiers:     null,
+        parcel_daily_capacity: null,
+        parcel_service_zone:
+          m.area && m.city ? `${m.area}, ${m.city}` : (m.city ?? m.area ?? null),
+        rating:                m.rating,
+      }
+    }
+    const projectMockToDriverCar = (m: MockBikeCarRow): ParcelHubBikeCarRow => {
+      const custom = pickCustom(m)
+      return {
+        slug:                  m.slug,
+        business_name:         m.business_name,
+        brand_logo_url:        m.profile_image_url ?? m.cover_image_url ?? null,
+        vehicle_photos:        custom.length > 0 ? custom : [resolveMockCarPhoto(m)].filter(Boolean),
+        availability:          m.availability,
+        parcel_rate_tiers:     null,
+        parcel_daily_capacity: null,
+        parcel_service_zone:
+          m.area && m.city ? `${m.area}, ${m.city}` : (m.city ?? m.area ?? null),
+        rating:                m.rating,
+      }
+    }
+    const projectMockToTruck = (m: MockTruckRow): ParcelHubTruckRow => {
+      const custom = pickCustom(m)
+      return {
+        slug:                  m.slug,
+        business_name:         m.business_name,
+        brand_logo_url:        m.profile_image_url ?? m.cover_image_url ?? null,
+        vehicle_photos:        custom.length > 0 ? custom : [resolveMockTruckPhoto(m)].filter(Boolean),
+        availability:          m.availability,
+        rental_daily_rate_idr: m.rental_daily_rate_idr,
+        rental_min_days:       m.rental_min_days,
+        area:                  m.area,
+        city:                  m.city,
+        rating:                m.rating,
+      }
+    }
 
     // Real-row shape — wider than what the client component consumes
     // because we use bike_make/model to resolve the photo here. Narrowed
