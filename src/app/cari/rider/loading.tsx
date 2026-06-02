@@ -5,13 +5,13 @@ export default function Loading() {
   return (
     <main
       className="min-h-[100dvh] flex items-center justify-center"
-      style={{ background: '#0A0A0A' }}
+      style={{ background: '#FFFFFF' }}
       aria-label="Redirecting"
     >
       <div
         className="w-8 h-8 rounded-full animate-spin"
         style={{
-          border: '3px solid rgba(250,204,21,0.25)',
+          border: '3px solid rgba(250,204,21,0.35)',
           borderTopColor: '#FACC15',
         }}
       />
