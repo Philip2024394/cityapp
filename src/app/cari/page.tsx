@@ -791,7 +791,7 @@ function PlanTripPageInner() {
                     ? <Package className="w-4 h-4" strokeWidth={2.75} />
                     : <UserRound className="w-4 h-4" strokeWidth={2.75} />}
                 </span>
-                Where to?
+                {mode === 'parcel' ? 'Parcel Pick Up' : 'Where to?'}
               </h1>
               <button
                 type="button"
@@ -862,45 +862,34 @@ function PlanTripPageInner() {
                     dropdownDirection="down"
                     maxResults={3}
                     rightSlot={
-                      geo.status === 'granted' ? (
-                        // Static compass — GPS already granted, no action needed.
-                        <span
-                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center"
-                          aria-hidden
-                          title="Location active"
-                        >
-                          <Compass className="w-[18px] h-[18px] text-[#16A34A]" strokeWidth={2.4} />
-                        </span>
-                      ) : (
-                        // Active "Use my GPS" button — fixes the audit gap where
-                        // customers landing directly on /cari (deep links, ads,
-                        // shared URLs) had NO way to trigger geolocation. The
-                        // landing-page warm-up modal is the only other entry
-                        // point and direct-landed customers never see it.
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            haptic.tap()
-                            void geo.request()
-                          }}
-                          disabled={geo.status === 'requesting'}
-                          aria-label="Use my current location"
-                          title="Tap to use your current location"
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-lg active:scale-[0.95] transition disabled:opacity-60"
-                          style={{
-                            minHeight: 36,
-                            minWidth: 36,
-                            background: geo.status === 'requesting' ? 'rgba(250,204,21,0.08)' : '#FACC15',
-                            color: '#0A0A0A',
-                          }}
-                        >
-                          <Compass
-                            className={`w-[16px] h-[16px] ${geo.status === 'requesting' ? 'animate-spin' : ''}`}
-                            strokeWidth={2.6}
-                          />
-                        </button>
-                      )
+                      // Always render the yellow "Set location" button —
+                      // even when GPS is already granted, the customer
+                      // may want to refresh to their current spot (they
+                      // could have moved since the page loaded). Re-tap
+                      // calls geo.request() which is idempotent.
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          haptic.tap()
+                          void geo.request()
+                        }}
+                        disabled={geo.status === 'requesting'}
+                        aria-label={geo.status === 'granted' ? 'Refresh my location' : 'Use my current location'}
+                        title={geo.status === 'granted' ? 'Tap to refresh your location' : 'Tap to use your current location'}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-lg active:scale-[0.95] transition disabled:opacity-60"
+                        style={{
+                          minHeight: 36,
+                          minWidth: 36,
+                          background: geo.status === 'requesting' ? 'rgba(250,204,21,0.08)' : '#FACC15',
+                          color: '#0A0A0A',
+                        }}
+                      >
+                        <Compass
+                          className={`w-[16px] h-[16px] ${geo.status === 'requesting' ? 'animate-spin' : ''}`}
+                          strokeWidth={2.6}
+                        />
+                      </button>
                     }
                   />
                   <PlaceAutocomplete
