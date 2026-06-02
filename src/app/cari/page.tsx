@@ -1273,6 +1273,11 @@ function DriverCard({
   isCheapest: boolean
   onSelect:   () => void
 }) {
+  // useRouter for the Profile pill's programmatic navigation. We can't
+  // use a <Link> here because the parent div's onClick race-conditions
+  // away the navigation on mobile (see Profile pill comment below).
+  const router = useRouter()
+
   // Title: vehicle make + model when set, otherwise business name. The
   // Rider shape stores the vehicle on `bike` (legacy name — table covers
   // car + bike via the vehicle_type discriminator).
@@ -1517,22 +1522,37 @@ function DriverCard({
             Stops propagation so tapping the pill does NOT also fire the
             parent button's onSelect (otherwise the card would briefly
             flip selected on the way out). */}
-        <Link
-          href={profileHref}
-          prefetch
-          onClick={(e) => { e.stopPropagation() }}
+        {/*
+          Profile pill — secondary action. Programmatic router.push
+          rather than <Link> because the previous <Link> + the parent
+          div's onClick={onSelect} race-condition meant the navigation
+          was getting swallowed on touch devices (the parent's select
+          re-render fired before Link's click handler could push).
+
+          Size: 32px tall (visually subtle — primary CTA is BOOK NOW
+          at the sticky bottom; Profile is a vet-before-booking escape
+          hatch), but the inner padding gives a ~40px hit area which
+          is reliably tappable.
+         */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            router.push(profileHref)
+          }}
           aria-label={`View ${driver.name}'s full profile`}
-          className="inline-flex items-center justify-center gap-1 rounded-full px-4 text-[13px] font-extrabold uppercase tracking-wider shadow-sm active:scale-[0.97] transition"
+          className="inline-flex items-center justify-center rounded-full px-3.5 text-[12px] font-extrabold uppercase tracking-wider shadow-sm active:scale-[0.97] transition"
           style={{
             background: '#FACC15',
             color: '#0A0A0A',
-            minHeight: 44,
-            minWidth: 44,
+            minHeight: 32,
+            minWidth: 64,
             lineHeight: 1,
           }}
         >
           Profile
-        </Link>
+        </button>
       </div>
     </div>
   )
