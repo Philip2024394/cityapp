@@ -1496,13 +1496,13 @@ function JeepHourlyAndRentalSection({ v, theme }: { v: VehiclePublic; theme: str
                   <div className="p-4 flex flex-col gap-3 flex-1">
                     <div>
                       <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-800">
-                        {t.label}
+                        {tier.label}
                       </div>
                       <div className="text-[28px] font-black leading-none mt-0.5 text-black">
-                        {t.idr != null ? formatBigIdr(t.idr) : '—'}
+                        {tier.idr != null ? formatBigIdr(tier.idr) : '—'}
                       </div>
                       <div className="text-[11.5px] text-gray-500 leading-tight mt-1">
-                        {t.sub}
+                        {tier.sub}
                       </div>
                     </div>
                     <a
@@ -1522,7 +1522,7 @@ function JeepHourlyAndRentalSection({ v, theme }: { v: VehiclePublic; theme: str
                       }}
                     >
                       <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      Enquire
+                      {t('enquireBtn')}
                     </a>
                   </div>
                 </div>
@@ -1536,19 +1536,19 @@ function JeepHourlyAndRentalSection({ v, theme }: { v: VehiclePublic; theme: str
         <section className="space-y-2" style={{ marginTop: 18 }}>
           <div>
             <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-              Rental Contracts
+              {t('rentalContractsHeading')}
             </h2>
             <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-              Long-term jeep rental — multi-day tours, expedition trips, company hire.
+              {t('rentalContractsSubtitleJeep')}
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {rentalTiers.filter((t) => (t.idr ?? 0) > 0).map((t) => {
-              const isPopular = t.id === 'weekly'
-              const waLink = buildWaLink(t.label, t.idr ?? 0)
+            {rentalTiers.filter((tier) => (tier.idr ?? 0) > 0).map((tier) => {
+              const isPopular = tier.id === 'weekly'
+              const waLink = buildWaLink(tier.label, tier.idr ?? 0)
               return (
                 <div
-                  key={t.id}
+                  key={tier.id}
                   className="relative rounded-2xl overflow-hidden flex flex-col"
                   style={{
                     background: 'linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%)',
@@ -1567,19 +1567,19 @@ function JeepHourlyAndRentalSection({ v, theme }: { v: VehiclePublic; theme: str
                       }}
                     >
                       <Sparkles className="w-3 h-3" strokeWidth={0} fill="#0A0A0A" />
-                      Popular
+                      {t('popularRibbon')}
                     </div>
                   )}
                   <div className="p-4 flex flex-col gap-3 flex-1">
                     <div>
                       <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-800">
-                        {t.label}
+                        {tier.label}
                       </div>
                       <div className="text-[28px] font-black leading-none mt-0.5 text-black">
-                        {t.idr != null ? formatBigIdr(t.idr) : '—'}
+                        {tier.idr != null ? formatBigIdr(tier.idr) : '—'}
                       </div>
                       <div className="text-[11.5px] text-gray-500 leading-tight mt-1">
-                        {t.sub}
+                        {tier.sub}
                       </div>
                     </div>
                     <a
@@ -1599,7 +1599,7 @@ function JeepHourlyAndRentalSection({ v, theme }: { v: VehiclePublic; theme: str
                       }}
                     >
                       <MessageCircle className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      Enquire
+                      {t('enquireBtn')}
                     </a>
                   </div>
                 </div>
@@ -1683,6 +1683,7 @@ function ServiceRatePanel({
    *  the hardcoded English default below. */
   passengerCostRule?: string | null
 }) {
+  const t = useTranslations('vehicleProfile')
   return (
     <section className="space-y-2" style={{ marginTop: 12 }}>
       <div
@@ -1703,7 +1704,7 @@ function ServiceRatePanel({
         <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/60 divide-y divide-gray-100">
           {rates.length === 0 ? (
             <div className="px-3 py-2.5 text-[12px] text-gray-500 italic">
-              Belum ada tarif dipublikasikan untuk layanan ini.
+              {t('ratesEmpty')}
             </div>
           ) : (
             rates.map((row, i) => (
@@ -1735,10 +1736,10 @@ function ServiceRatePanel({
               color: '#854D0E',
             }}
           >
-            <span className="font-extrabold">Passenger-cost extras:</span>{' '}
+            <span className="font-extrabold">{t('passengerCostExtras')}</span>{' '}
             {passengerCostRule?.trim()
               ? passengerCostRule.trim()
-              : 'toll bridges, parking fees, and meals for the driver are payable by the passenger.'}
+              : t('passengerCostDefault')}
           </div>
         ) : (
           (service.includes.length > 0 || service.excludes.length > 0) && (
@@ -1746,7 +1747,7 @@ function ServiceRatePanel({
               {service.includes.length > 0 && (
                 <div className="flex items-start gap-2">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 shrink-0 mt-1">
-                    Inc
+                    {t('rateChipInc')}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {service.includes.map((chip) => (
@@ -1764,7 +1765,7 @@ function ServiceRatePanel({
               {service.excludes.length > 0 && (
                 <div className="flex items-start gap-2">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 shrink-0 mt-1">
-                    Exc
+                    {t('rateChipExc')}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {service.excludes.map((chip) => (
@@ -1785,8 +1786,9 @@ function ServiceRatePanel({
 
         {/* Driver-published footer */}
         <p className="text-[11px] text-gray-500 italic mt-3 leading-snug">
-          Rates published by <span className="font-bold" style={{ color: theme }}>{driverName}</span>.
-          Discuss final terms on WhatsApp.
+          {t('ratesPublishedByPrefix')}{' '}
+          <span className="font-bold" style={{ color: theme }}>{driverName}</span>.{' '}
+          {t('ratesPublishedBySuffix')}
         </p>
       </div>
     </section>
@@ -1816,6 +1818,7 @@ function BusContactUsPanel({
   setOpenFaqIdx: (n: number | null) => void
   onClose:       () => void
 }) {
+  const t = useTranslations('vehicleProfile')
   const faqs    = v.faqs ?? []
   const where   = [v.area, v.city].filter(Boolean).join(', ')
   const address = v.company_address?.trim() || null
@@ -1836,14 +1839,8 @@ function BusContactUsPanel({
   // Email handoff — pre-fills a polite Indonesian booking enquiry.
   const emailHref = v.contact_email
     ? (() => {
-        const subject = `Booking enquiry - ${v.display_name}`
-        const body    = [
-          `Halo ${v.display_name},`,
-          '',
-          'Saya tertarik menyewa layanan Anda. Mohon info tarif dan ketersediaan.',
-          '',
-          'Terima kasih.',
-        ].join('\n')
+        const subject = t('busEmailSubject', { name: v.display_name })
+        const body    = t('busEmailBody', { name: v.display_name })
         return `mailto:${v.contact_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
       })()
     : null
@@ -1854,9 +1851,9 @@ function BusContactUsPanel({
   const waLink   = waDigits
     ? (() => {
         const msg = [
-          `Halo ${v.display_name}, saya menemukan profil Anda di CityDrivers.`,
-          'Saya tertarik mencharter minibus Anda.',
-          'Apakah Anda available?',
+          t('waSalutation', { name: v.display_name }),
+          t('waIntroBus'),
+          t('waAvailable'),
         ].join('\n')
         return `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}`
       })()
@@ -1882,10 +1879,10 @@ function BusContactUsPanel({
       <button
         type="button"
         onClick={onClose}
-        aria-label="Close contact panel"
+        aria-label={t('busContactCloseAria')}
         className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-gray-500 hover:text-black active:scale-[0.97] transition px-2 py-1"
       >
-        Close
+        {t('busContactClose')}
         <X className="w-3 h-3" strokeWidth={2.5} />
       </button>
 
@@ -1894,7 +1891,7 @@ function BusContactUsPanel({
         {faqs.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-black">
-              Frequently asked
+              {t('busFaqHeading')}
             </h3>
             <div className="rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
               {faqs.map((row, i) => {
@@ -1938,7 +1935,7 @@ function BusContactUsPanel({
           <div className="space-y-2">
             <div>
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-gray-500">
-                Company
+                {t('busCompanyHeading')}
               </div>
               <div className="text-[14px] font-black text-black leading-tight mt-0.5">
                 {v.display_name}
@@ -1952,7 +1949,7 @@ function BusContactUsPanel({
             </div>
             <div>
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-gray-500">
-                Address
+                {t('busAddressHeading')}
               </div>
               {address ? (
                 <div className="text-[13px] text-black leading-snug mt-0.5">
@@ -1960,7 +1957,7 @@ function BusContactUsPanel({
                 </div>
               ) : (
                 <div className="text-[12px] text-gray-400 italic mt-0.5">
-                  Address not published
+                  {t('busAddressEmpty')}
                 </div>
               )}
             </div>
@@ -2012,17 +2009,17 @@ function BusContactUsPanel({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={mapImgUrl}
-                alt="Map location"
+                alt={t('busMapAlt')}
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3 text-center">
                 <MapPin className="w-6 h-6" strokeWidth={2} style={{ color: theme }} />
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-gray-600">
-                  Map preview
+                  {t('busMapPreview')}
                 </div>
                 <div className="text-[10.5px] text-gray-400 leading-snug">
-                  Coordinates not yet shared
+                  {t('busMapNoCoords')}
                 </div>
               </div>
             )}
@@ -2032,19 +2029,19 @@ function BusContactUsPanel({
         {/* ---- Contact buttons ---------------------------------------- */}
         {!hasEither ? (
           <p className="text-[12px] text-gray-500 italic leading-snug">
-            Contact details not published — try other channels via the share button at the top of the page.
+            {t('busContactNone')}
           </p>
         ) : (
           <div className={emailHref && waLink ? 'grid grid-cols-2 gap-2' : ''}>
             {emailHref && (
               <a
                 href={emailHref}
-                aria-label="Email the driver"
+                aria-label={t('busEmailAria')}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-[13px] font-extrabold text-white bg-black active:scale-[0.97] transition shadow-sm"
                 style={{ minHeight: 44 }}
               >
                 <Mail className="w-4 h-4" strokeWidth={2.5} />
-                Email
+                {t('busEmailButton')}
               </a>
             )}
             {waLink && (
@@ -2052,12 +2049,12 @@ function BusContactUsPanel({
                 href={waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="WhatsApp the driver"
+                aria-label={t('busWaAria')}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-[13px] font-extrabold active:scale-[0.97] transition shadow-sm"
                 style={{ background: theme, color: '#0A0A0A', minHeight: 44 }}
               >
                 <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-                WhatsApp
+                {t('busWaButton')}
               </a>
             )}
           </div>
@@ -2112,6 +2109,7 @@ function BusBookingWidget({
   intentVertical: ConnectIntentVertical
   intentSource:   ConnectIntentSource
 }) {
+  const t = useTranslations('vehicleProfile')
   const [tab, setTab] = useState<BusBookingTab>('address')
 
   // Tab A — type-address state.
@@ -2157,8 +2155,8 @@ function BusBookingWidget({
   // Which big number drives the headline (depends on active tab).
   const totalIdr  = tab === 'address' ? addressTotal     : destinationTotal
   const smallLine = tab === 'address'
-    ? (distanceKm != null ? `${distanceKm.toFixed(1)} km` : 'Pickup and drop-off to see total')
-    : (destRow    ? `Flat package — ${destRow.label}`    : 'Pick a destination')
+    ? (distanceKm != null ? t('busBookKmFormat', { km: distanceKm.toFixed(1) }) : t('busBookKmPrompt'))
+    : (destRow    ? t('busBookFlatPackage', { label: destRow.label })           : t('busBookPickPrompt'))
 
   // BOOK enabled state.
   const addressReady     = pickup.trim().length > 0 && dropoff.trim().length > 0 && totalIdr != null && totalIdr > 0
@@ -2170,18 +2168,18 @@ function BusBookingWidget({
   const waLink   = (() => {
     if (!waDigits || !canBook) return null
     const lines: string[] = [
-      `Halo ${v.display_name}, saya menemukan profil Anda di CityDrivers.`,
-      'Saya tertarik mencharter minibus Anda.',
+      t('waSalutation', { name: v.display_name }),
+      t('waIntroBus'),
     ]
     if (tab === 'address') {
-      lines.push(`Pickup: ${pickup}`)
-      lines.push(`Drop-off: ${dropoff}`)
-      if (totalIdr != null) lines.push(`Total estimasi: ${idrFormat(totalIdr)}`)
+      lines.push(t('waBookPickup', { pickup }))
+      lines.push(t('waBookDropoff', { dropoff }))
+      if (totalIdr != null) lines.push(t('waBookTotalEst', { price: idrFormat(totalIdr) }))
     } else if (destRow) {
-      lines.push(`Destinasi: ${destRow.label}`)
-      lines.push(`Harga paket: ${idrFormat(destRow.idr)}${destRow.per ?? ''}`)
+      lines.push(t('waBookDestination', { label: destRow.label }))
+      lines.push(t('waBookPackagePrice', { price: `${idrFormat(destRow.idr)}${destRow.per ?? ''}` }))
     }
-    lines.push('Apakah Anda available?')
+    lines.push(t('waAvailable'))
     return `https://wa.me/${waDigits}?text=${encodeURIComponent(lines.join('\n'))}`
   })()
 
@@ -2214,7 +2212,7 @@ function BusBookingWidget({
           }}
         >
           <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-          Type address
+          {t('busBookTabAddress')}
         </button>
         <button
           type="button"
@@ -2230,7 +2228,7 @@ function BusBookingWidget({
           }}
         >
           <MapPinned className="w-3.5 h-3.5" strokeWidth={2.5} />
-          Pick destination
+          {t('busBookTabDestination')}
         </button>
       </div>
 
@@ -2239,17 +2237,17 @@ function BusBookingWidget({
         <div className="space-y-2">
           <div>
             <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1" style={{ color: MUTED }}>
-              Pickup
+              {t('busBookPickup')}
             </label>
             <PlaceAutocomplete
               value={pickup}
               onChange={(val) => { setPickup(val); setPickupCoords(null) }}
               onSelect={(s) => { setPickup(s.label); setPickupCoords({ lat: s.lat, lng: s.lng }) }}
-              placeholder="Where do you want to be picked up?"
+              placeholder={t('busBookPickupPlaceholder')}
               className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-[#0A0A0A] placeholder:text-[#71717A] rounded-xl pl-3 pr-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
               near={geo.coords ?? null}
               countryCodes={countryCodes}
-              ariaLabel="Pickup location"
+              ariaLabel={t('busBookPickupAria')}
               clearOnFocus
               dropdownDirection="down"
               maxResults={3}
@@ -2257,17 +2255,17 @@ function BusBookingWidget({
           </div>
           <div>
             <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1" style={{ color: MUTED }}>
-              Drop-off
+              {t('busBookDropoff')}
             </label>
             <PlaceAutocomplete
               value={dropoff}
               onChange={(val) => { setDropoff(val); setDropoffCoords(null) }}
               onSelect={(s) => { setDropoff(s.label); setDropoffCoords({ lat: s.lat, lng: s.lng }) }}
-              placeholder="Where do you want to go?"
+              placeholder={t('busBookDropoffPlaceholder')}
               className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-[#0A0A0A] placeholder:text-[#71717A] rounded-xl pl-3 pr-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
               near={geo.coords ?? null}
               countryCodes={countryCodes}
-              ariaLabel="Drop-off location"
+              ariaLabel={t('busBookDropoffAria')}
               clearOnFocus
               dropdownDirection="down"
               maxResults={3}
@@ -2277,12 +2275,12 @@ function BusBookingWidget({
       ) : (
         <div>
           <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1" style={{ color: MUTED }}>
-            Destination
+            {t('busBookDestination')}
           </label>
           <select
             value={destIdx}
             onChange={(e) => setDestIdx(Number(e.target.value))}
-            aria-label="Pick a destination"
+            aria-label={t('busBookDestinationAria')}
             className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-[#0A0A0A] rounded-xl pl-3 pr-3 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
             style={{ minHeight: 44 }}
           >
@@ -2304,7 +2302,7 @@ function BusBookingWidget({
         }}
       >
         <div className="text-[10.5px] font-extrabold uppercase tracking-wider" style={{ color: '#854D0E' }}>
-          Total
+          {t('busBookTotal')}
         </div>
         <div className="text-[28px] sm:text-[32px] font-black leading-none mt-1 text-black">
           {totalIdr != null && totalIdr > 0 ? idrFormat(totalIdr) : 'Rp 0'}
@@ -2331,7 +2329,7 @@ function BusBookingWidget({
           }}
         >
           <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-          Book on WhatsApp
+          {t('busBookCta')}
         </WaIntentAnchor>
       ) : (
         <button
@@ -2350,7 +2348,7 @@ function BusBookingWidget({
           }}
         >
           <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
-          Book on WhatsApp
+          {t('busBookCta')}
         </button>
       )}
     </section>
@@ -2368,6 +2366,7 @@ function BusBookingWidget({
 //   • the first non-'id' id isn't in the LANGUAGES catalog
 // -----------------------------------------------------------------------------
 function AvatarLanguageBadge({ languages }: { languages: string[] | null }) {
+  const t = useTranslations('vehicleProfile')
   if (!languages || languages.length === 0) return null
   const pickedId = languages.find((id) => id !== 'id')
   if (!pickedId) return null
@@ -2375,7 +2374,7 @@ function AvatarLanguageBadge({ languages }: { languages: string[] | null }) {
   if (!def) return null
   return (
     <span
-      aria-label={`Speaks ${def.label}`}
+      aria-label={t('speaksAria', { label: def.label })}
       className="absolute inline-flex items-center justify-center rounded-full"
       style={{
         bottom: -2,
@@ -2401,11 +2400,12 @@ function AvatarLanguageBadge({ languages }: { languages: string[] | null }) {
 // availability information.
 // -----------------------------------------------------------------------------
 function VehicleAvailabilitySlotChips({ v }: { v: VehiclePublic }) {
+  const t = useTranslations('vehicleProfile')
   const chips: { key: string; emoji: string; label: string }[] = []
-  if (v.available_sunrise)   chips.push({ key: 'sunrise',   emoji: '🌅', label: 'Sunrise'   })
-  if (v.available_daytime)   chips.push({ key: 'daytime',   emoji: '☀️', label: 'Daytime'   })
-  if (v.available_evening)   chips.push({ key: 'evening',   emoji: '🌆', label: 'Evening'   })
-  if (v.available_nightlife) chips.push({ key: 'nightlife', emoji: '🌙', label: 'Nightlife' })
+  if (v.available_sunrise)   chips.push({ key: 'sunrise',   emoji: '🌅', label: t('slotSunrise')   })
+  if (v.available_daytime)   chips.push({ key: 'daytime',   emoji: '☀️', label: t('slotDaytime')   })
+  if (v.available_evening)   chips.push({ key: 'evening',   emoji: '🌆', label: t('slotEvening')   })
+  if (v.available_nightlife) chips.push({ key: 'nightlife', emoji: '🌙', label: t('slotNightlife') })
   if (chips.length === 0) return null
   return (
     <div className="flex flex-wrap items-center gap-1 mt-1">

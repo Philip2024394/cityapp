@@ -642,6 +642,17 @@ export const TOUR_TEMPLATES: ReadonlyArray<TourTemplate> = [
 ] as const
 
 export function tourTemplatesForVehicle(vehicle: TourVehicleKind): readonly TourTemplate[] {
+  // Car drivers can also offer the bike-vertical tour catalogue
+  // (founder ask 2026-06-02). The tour content — Kraton loop,
+  // Mangunan sunrise, Kotagede crafts, etc. — is the same itinerary
+  // whether the customer rides pillion on a motorbike or sits in a
+  // car. Picker just shows more options on the car dashboard; the
+  // resulting driver_tour_packages row carries the chosen template_id
+  // and the public car profile renders it under the Tours tab with
+  // the founder-supplied artwork via TEMPLATE_IMAGES.
+  if (vehicle === 'car') {
+    return TOUR_TEMPLATES.filter((t) => t.vehicle === 'car' || t.vehicle === 'bike')
+  }
   return TOUR_TEMPLATES.filter((t) => t.vehicle === vehicle)
 }
 
