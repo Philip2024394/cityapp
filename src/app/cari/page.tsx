@@ -1219,13 +1219,15 @@ function VehicleImageButton({
       aria-label={label}
       className="flex flex-col items-center gap-1 active:scale-95 transition"
     >
+      {/* All five icons render in their full solid colour at all times
+          (no grayscale + opacity fade on inactive). The selected button
+          is differentiated purely by a 3px yellow ring around the icon
+          + a small scale-up, per founder spec. */}
       <div
-        className="w-14 h-14 flex items-center justify-center transition"
+        className="w-14 h-14 flex items-center justify-center rounded-full transition"
         style={{
-          filter: active
-            ? 'drop-shadow(0 6px 14px rgba(250,204,21,0.55))'
-            : 'grayscale(0.35) opacity(0.7)',
           transform: `scale(${activeScale * sizeBoost})`,
+          boxShadow: active ? '0 0 0 3px #FACC15' : 'none',
         }}
         aria-hidden
       >
