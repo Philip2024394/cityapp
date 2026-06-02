@@ -68,6 +68,7 @@ const TEMPLATE_IMAGES: Record<string, string> = {
   'bike-mangunan-sunrise': 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_42_42%20PM.png',
   'bike-imogiri-hidden':   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_10_11%20PM.png',
   'bike-streetfood-night': 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_10_55%20PM.png',
+  'bike-market-warung':    'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_15_56%20PM.png',
 }
 
 export function templateImageUrl(template: TourTemplate): string {
