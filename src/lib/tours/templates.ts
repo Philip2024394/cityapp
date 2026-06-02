@@ -61,7 +61,7 @@ const DEFAULT_TOUR_IMAGE =
 const TEMPLATE_IMAGES: Record<string, string> = {
   'bike-kraton-tamansari': 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_37_11%20PM.png',
   'bike-umkm-workshop':    'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_43_22%20PM.png',
-  'bike-sunset-loop':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_48_48%20PM.png',
+  'bike-sunset-city':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_48_48%20PM.png',
   'bike-parangtritis':     'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_50_13%20PM.png',
 }
 
