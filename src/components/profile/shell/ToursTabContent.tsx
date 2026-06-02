@@ -4,6 +4,7 @@ import { MessageCircle, Star } from 'lucide-react'
 import { idr } from '@/lib/format/idr'
 import HourlyBookingPopup from '@/components/profile/HourlyBookingPopup'
 import type { TourPackage } from '@/lib/tours/types'
+import { getTemplateImageUrl } from '@/lib/tours/templates'
 import type { DriverPublic } from '../DriverProfileShell'
 
 const BRAND_YELLOW = '#FACC15'
@@ -20,14 +21,19 @@ function formatDurationHours(hours: number): string {
 
 /** Image cascade for a tour card. Order:
  *    1. driver_tour_packages.photo_url (driver upload — wins if set)
- *    2. places[place_slugs[0]].image_url (curated platform thumbnail)
- *    3. null (card renders content-only, no image)
+ *    2. TEMPLATE_IMAGES[template_id] (founder-supplied artwork — auto
+ *       applies to every real-driver tour created from a template,
+ *       even when the driver hasn't uploaded their own photo yet)
+ *    3. places[place_slugs[0]].image_url (curated platform thumbnail)
+ *    4. null (card renders content-only, no image)
  */
 function resolveThumbnail(
   tour: TourPackage,
   placeImages: Record<string, string | null>,
 ): string | null {
   if (tour.photo_url && tour.photo_url.trim().length > 0) return tour.photo_url
+  const templateImg = getTemplateImageUrl(tour.template_id)
+  if (templateImg) return templateImg
   for (const slug of tour.place_slugs) {
     const img = placeImages[slug]
     if (img && img.trim().length > 0) return img

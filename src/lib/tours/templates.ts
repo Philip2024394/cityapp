@@ -63,10 +63,25 @@ const TEMPLATE_IMAGES: Record<string, string> = {
   'bike-umkm-workshop':    'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_43_22%20PM.png',
   'bike-sunset-city':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_48_48%20PM.png',
   'bike-parangtritis':     'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_50_13%20PM.png',
+  'bike-village-coffee':   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2005_57_26%20PM.png',
 }
 
 export function templateImageUrl(template: TourTemplate): string {
   return TEMPLATE_IMAGES[template.id] ?? DEFAULT_TOUR_IMAGE
+}
+
+/** Lookup by template id — returns the founder-supplied artwork or
+ *  null when no override exists. Used by ToursTabContent's thumbnail
+ *  cascade so REAL driver tours (driver_tour_packages rows with
+ *  template_id but no photo_url) automatically inherit the template's
+ *  hero image, instead of falling through to a place_slug image or a
+ *  blank card. Distinct from templateImageUrl() — that one always
+ *  returns a non-null URL (default placeholder fallback) and is for
+ *  the dashboard preview where "show me what this template looks like"
+ *  must always render something. */
+export function getTemplateImageUrl(templateId: string | null | undefined): string | null {
+  if (!templateId) return null
+  return TEMPLATE_IMAGES[templateId] ?? null
 }
 
 export const TOUR_TEMPLATES: ReadonlyArray<TourTemplate> = [
