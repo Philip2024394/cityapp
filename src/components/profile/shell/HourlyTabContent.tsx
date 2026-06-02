@@ -128,7 +128,7 @@ export default function HourlyTabContent({
                         {hours}
                       </span>
                       <span className="text-[13px] font-extrabold uppercase tracking-wider" style={{ color: TEXT_SECOND }}>
-                        hour{hours === 1 ? '' : 's'}
+                        hours
                       </span>
                     </div>
                     <div

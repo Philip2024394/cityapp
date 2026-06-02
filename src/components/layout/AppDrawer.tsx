@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
@@ -435,7 +435,12 @@ const VARIANT_BRAND: Record<Variant, {
   rider:         { from: '#FACC15', to: '#EAB308', shadow: '250,204,21',  ink: '#0A0A0A', onPillText: '#FACC15' },
 }
 
-export default function AppDrawer({
+// useSearchParams() inside the body forces Next.js to require a Suspense
+// boundary at build time. We isolate the hook in an inner component and
+// wrap the export in <Suspense> so every signup / new-listing client page
+// (which mounts AppNav → AppDrawer) can build without a Suspense at the
+// page level.
+function AppDrawerInner({
   open,
   onClose,
   variant = 'driver',
@@ -673,6 +678,18 @@ export default function AppDrawer({
         )}
       </aside>
     </>
+  )
+}
+
+export default function AppDrawer(props: {
+  open: boolean
+  onClose: () => void
+  variant?: Variant
+}) {
+  return (
+    <Suspense fallback={null}>
+      <AppDrawerInner {...props} />
+    </Suspense>
   )
 }
 

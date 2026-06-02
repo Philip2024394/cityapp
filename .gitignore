@@ -19,3 +19,7 @@ supabase/.temp
 
 # Transient typecheck logs from `npx tsc --noEmit > tsc-*.log` debugging runs
 tsc-*.log
+.tsc-errors.log
+
+# Transient Cloudflare deploy log from `npm run cf:deploy > .cf-deploy.log`
+.cf-deploy.log

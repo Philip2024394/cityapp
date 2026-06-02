@@ -1004,8 +1004,8 @@ export default function DriverProfileShell({ driver, alternatives }: DriverProfi
             waLink={waLink}
             mode={mode}
             setMode={setMode}
-            offersRide={offersRide && activeTab !== 'parcel'}
-            offersParcel={offersParcel && activeTab !== 'passenger'}
+            offersRide={offersRide}
+            offersParcel={offersParcel && activeTab === 'all'}
             onBookingSent={() => setBookingSent(true)}
           />
         ) : (
