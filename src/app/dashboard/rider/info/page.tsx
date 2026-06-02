@@ -359,7 +359,7 @@ function InfoEditor({ row, onReload }: { row: RiderInfoRow; onReload: () => void
       </Card>
 
       {/* Name & bio */}
-      <Card title="Your name &mp; bio" hint="Name or company only — don't add vehicle type or city. Those already appear on your profile hero." icon={<User size={18} />}>
+      <Card title="Your name & bio" hint="Name or company only — don't add vehicle type or city. Those already appear on your profile hero." icon={<User size={18} />}>
         <Field
           label="Business / rider name"
           hint={`${businessName.length}/32`}
