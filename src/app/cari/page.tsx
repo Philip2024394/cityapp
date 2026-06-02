@@ -1304,19 +1304,17 @@ function DriverCard({
   // their dashboard /dashboard/jeep/vehicle). Bike uses the bike catalog;
   // everything else (car / bus / truck) falls through to the car catalog
   // silhouette helper.
-  // Driver-supplied image wins over the generic vehicle-catalog
-  // silhouette. Fixes the "founder's Hino / L300 ChatGPT truck images
-  // never reached the booking-page card" bug — the previous chain
-  // always fell back to getCarImageUrl() for trucks because vehicle_photos
-  // / cover_image_url were not threaded through the Rider type. Now the
-  // mocks' cover_image_url (set in mock_drivers) flows through
-  // driver.vehiclePhoto and renders directly on the card.
+  // Trucks are the only vertical where the founder set per-driver photos
+  // (Hino / L300 / Carry ChatGPT renders) — for those, the driver-supplied
+  // image wins. Bikes / cars / jeeps / minibus keep their original
+  // catalog-silhouette behaviour because that's the consistent "small
+  // landscape vehicle shape" the booking cards were designed around.
   const imgSrc =
-    driver.vehiclePhoto ||
-    (vehicleType === 'jeep'    ? getJeepImageUrl(driver.bike?.color)
-     : vehicleType === 'minibus' ? getBusImageUrl(driver.bike?.color)
-     : vehicleType === 'bike'  ? getBikeImageUrl(make, model)
-     : getCarImageUrl(make, model))
+    vehicleType === 'jeep'    ? getJeepImageUrl(driver.bike?.color)
+    : vehicleType === 'minibus' ? getBusImageUrl(driver.bike?.color)
+    : vehicleType === 'bike'  ? getBikeImageUrl(make, model)
+    : vehicleType === 'truck' ? (driver.vehiclePhoto || getCarImageUrl(make, model))
+    : getCarImageUrl(make, model)
 
   // Subtitle: year + color when set, otherwise area/city.
   const year = driver.bike?.year
