@@ -213,7 +213,7 @@ const CHROME_BY_VEHICLE: Record<VehicleType, VehicleChromeConfig> = {
     defaultHeroBg:  `linear-gradient(135deg, ${BRAND_YELLOW} 0%, #EAB308 100%)`,
   },
   jeep: {
-    backHref:       '/jeep',
+    backHref:       '/cari?vehicle=jeep',
     backLabel:      'Jeep',
     heroIcon:       JeepIcon,
     intentVertical: 'car',
