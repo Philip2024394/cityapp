@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import {
   ArrowDown,
@@ -70,16 +71,17 @@ import { getBusImageUrl } from '@/data/busImages'
 // applies ONLY to ride / transport surfaces.
 // ============================================================================
 
-// Per-service placeholder text — same dictionary as before so deep-links
-// from /places and other entry points still read naturally.
-const PLACEHOLDERS: Record<ServiceType, { pickup: string; dropoff: string }> = {
-  person: { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
-  parcel: { pickup: 'Where to pick up the package?', dropoff: 'Destination address' },
-  food: { pickup: 'Restaurant or warung name', dropoff: 'Drop-off address' },
-  car:   { pickup: 'Where do you want to be picked up?', dropoff: 'Where do you want to go?' },
-  bus:   { pickup: 'Group pickup location', dropoff: 'Destination or tour itinerary' },
-  truck: { pickup: 'Pickup address (warehouse / home)', dropoff: 'Drop-off address' },
-  jeep:  { pickup: 'Pickup location (hotel / villa)', dropoff: 'Tour destination (Bromo / Merapi / etc.)' },
+// Per-service placeholder key map — resolves to translated copy via the
+// `cari` namespace at render time so deep-links from /places and other
+// entry points still read naturally in the active locale.
+const PLACEHOLDER_KEYS: Record<ServiceType, { pickup: string; dropoff: string }> = {
+  person: { pickup: 'placeholderPersonPickup', dropoff: 'placeholderPersonDropoff' },
+  parcel: { pickup: 'placeholderParcelPickup', dropoff: 'placeholderParcelDropoff' },
+  food:   { pickup: 'placeholderFoodPickup',   dropoff: 'placeholderFoodDropoff' },
+  car:    { pickup: 'placeholderCarPickup',    dropoff: 'placeholderCarDropoff' },
+  bus:    { pickup: 'placeholderBusPickup',    dropoff: 'placeholderBusDropoff' },
+  truck:  { pickup: 'placeholderTruckPickup',  dropoff: 'placeholderTruckDropoff' },
+  jeep:   { pickup: 'placeholderJeepPickup',   dropoff: 'placeholderJeepDropoff' },
 }
 
 function parseService(raw: string | null): ServiceType {
@@ -169,6 +171,7 @@ export default function PlanTripPage() {
 function PlanTripPageInner() {
   const router = useRouter()
   const params = useSearchParams()
+  const t = useTranslations('cari')
   // autoRequest=false — defer the browser GPS prompt until the user
   // explicitly taps a control. Mirrors the old /cari behaviour.
   const geo = useGeolocation(false)
@@ -220,9 +223,9 @@ function PlanTripPageInner() {
   useEffect(() => {
     if (geo.coords && !pickup) {
       setPickup(geo.coords)
-      if (!pickupLabel) setPickupLabel('My location')
+      if (!pickupLabel) setPickupLabel(t('myLocation'))
     }
-  }, [geo.coords, pickup, pickupLabel])
+  }, [geo.coords, pickup, pickupLabel, t])
 
   // Road-distance preview — still useful for the driver-card ETA line
   // even without a visible polyline. Renders instantly with haversine ×
@@ -511,10 +514,10 @@ function PlanTripPageInner() {
     const sp = new URLSearchParams({
       pLat: pickup!.lat.toString(),
       pLng: pickup!.lng.toString(),
-      pName: pickupLabel || 'My location',
+      pName: pickupLabel || t('myLocation'),
       dLat: dropoff!.lat.toString(),
       dLng: dropoff!.lng.toString(),
-      dName: dropoffLabel || 'Destination',
+      dName: dropoffLabel || t('destinationDefault'),
     })
     if (pitstopOpen && pitstopNote.trim()) sp.set('stop', pitstopNote.trim())
     sp.set('filter', service)
@@ -699,7 +702,7 @@ function PlanTripPageInner() {
           <Link
             href="/cityriders"
             className="inline-flex items-center gap-2 hover:opacity-85 active:scale-[0.97] transition"
-            aria-label="CityDrivers home"
+            aria-label={t('homeAria')}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -749,10 +752,16 @@ function PlanTripPageInner() {
               style={{ color: '#0A0A0A' }}
             >
               {driversLoading && onlineCount === 0
-                ? 'Loading…'
+                ? t('statusLoading')
                 : onlineCount === 0
-                  ? `No ${vehicleType === 'car' ? 'cars' : 'riders'} online`
-                  : `${onlineCount} ${vehicleType === 'car' ? 'car' : 'bike'}${onlineCount === 1 ? '' : 's'} online`}
+                  ? vehicleType === 'car' ? t('statusNoCars') : t('statusNoRiders')
+                  : vehicleType === 'car'
+                    ? (onlineCount === 1
+                        ? t('statusOnlineCar', { count: onlineCount })
+                        : t('statusOnlineCarPlural', { count: onlineCount }))
+                    : (onlineCount === 1
+                        ? t('statusOnlineBike', { count: onlineCount })
+                        : t('statusOnlineBikePlural', { count: onlineCount }))}
             </span>
           </div>
         </div>
@@ -785,18 +794,18 @@ function PlanTripPageInner() {
                   aria-hidden
                   className="inline-flex items-center justify-center w-7 h-7 rounded-full"
                   style={{ background: '#FACC15', color: '#0A0A0A' }}
-                  title={mode === 'parcel' ? 'Parcel mode' : 'Ride mode'}
+                  title={mode === 'parcel' ? t('modeIconParcel') : t('modeIconRide')}
                 >
                   {mode === 'parcel'
                     ? <Package className="w-4 h-4" strokeWidth={2.75} />
                     : <UserRound className="w-4 h-4" strokeWidth={2.75} />}
                 </span>
-                {mode === 'parcel' ? 'Parcel Pick Up' : 'Where to?'}
+                {mode === 'parcel' ? t('headerParcelPickup') : t('headerWhereTo')}
               </h1>
               <button
                 type="button"
                 onClick={() => { setPitstopOpen((v) => !v); haptic.tap() }}
-                aria-label={pitstopOpen ? 'Remove stop' : 'Add stop'}
+                aria-label={pitstopOpen ? t('removeStopAria') : t('addStopAria')}
                 aria-pressed={pitstopOpen}
                 className="inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full text-bg font-extrabold text-[13px] active:scale-95 transition"
                 style={{
@@ -811,7 +820,7 @@ function PlanTripPageInner() {
                 >
                   <Plus className="w-3.5 h-3.5" strokeWidth={3} />
                 </span>
-                <span>{pitstopOpen ? 'Stop' : 'Add Stop'}</span>
+                <span>{pitstopOpen ? t('stopLabel') : t('addStopLabel')}</span>
               </button>
             </div>
 
@@ -853,11 +862,11 @@ function PlanTripPageInner() {
                       addRecent({ lat: s.lat, lng: s.lng, label: s.label })
                       haptic.tap()
                     }}
-                    placeholder={pickup ? 'Pick-up name (optional)' : PLACEHOLDERS[service].pickup}
+                    placeholder={pickup ? t('pickupOptional') : t(PLACEHOLDER_KEYS[service].pickup)}
                     className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
                     near={geo.coords ?? null}
                     countryCodes={countryCodes}
-                    ariaLabel="Pick up location"
+                    ariaLabel={t('pickupAria')}
                     clearOnFocus
                     dropdownDirection="down"
                     maxResults={3}
@@ -884,13 +893,13 @@ function PlanTripPageInner() {
                             const point = await geo.request()
                             if (point) {
                               setPickup(point)
-                              setPickupLabel('My location')
+                              setPickupLabel(t('myLocation'))
                             }
                           })()
                         }}
                         disabled={geo.status === 'requesting'}
-                        aria-label={geo.status === 'granted' ? 'Refresh my location' : 'Use my current location'}
-                        title={geo.status === 'granted' ? 'Tap to refresh your location' : 'Tap to use your current location'}
+                        aria-label={geo.status === 'granted' ? t('refreshLocationAria') : t('useLocationAria')}
+                        title={geo.status === 'granted' ? t('refreshLocationTitle') : t('useLocationTitle')}
                         className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-lg active:scale-[0.95] transition disabled:opacity-60"
                         style={{
                           minHeight: 36,
@@ -915,11 +924,11 @@ function PlanTripPageInner() {
                       addRecent({ lat: s.lat, lng: s.lng, label: s.label })
                       haptic.tap()
                     }}
-                    placeholder={PLACEHOLDERS[service].dropoff}
+                    placeholder={t(PLACEHOLDER_KEYS[service].dropoff)}
                     className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
                     near={pickup ?? geo.coords ?? null}
                     countryCodes={countryCodes}
-                    ariaLabel="Drop off location"
+                    ariaLabel={t('dropoffAria')}
                     clearOnFocus
                     dropdownDirection="down"
                     maxResults={3}
@@ -940,7 +949,7 @@ function PlanTripPageInner() {
                 <button
                   type="button"
                   onClick={handleSwap}
-                  aria-label="Swap pickup and dropoff"
+                  aria-label={t('swapAria')}
                   className="shrink-0 flex flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 active:scale-95 transition"
                   style={{
                     background: '#0A0A0A',
@@ -962,7 +971,7 @@ function PlanTripPageInner() {
                   <textarea
                     rows={2}
                     maxLength={140}
-                    placeholder='Add a pit stop (e.g. "Stop at warung")'
+                    placeholder={t('pitstopPlaceholder')}
                     value={pitstopNote}
                     onChange={(e) => setPitstopNote(e.target.value)}
                     className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl px-3 py-2 text-[13px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition resize-none"
@@ -971,7 +980,7 @@ function PlanTripPageInner() {
                     <button
                       type="button"
                       onClick={() => { setPitstopNote(''); haptic.tap() }}
-                      aria-label="Clear pit stop"
+                      aria-label={t('pitstopClearAria')}
                       className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full inline-flex items-center justify-center text-[#71717A] hover:text-bg transition"
                     >
                       <X className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -995,15 +1004,15 @@ function PlanTripPageInner() {
                 between Bike (city courier), Car (medium load), and
                 Truck (bulk move). 3-col grid when filtered. */}
             <div className={`mt-3 shrink-0 grid gap-2 ${mode === 'parcel' ? 'grid-cols-3' : 'grid-cols-5'}`}>
-              <VehicleImageButton href={`/cari?service=person&mode=${mode}`} active={vehicleType === 'bike'}    label="Bike"  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasad.png?tr=e-bgremove" />
-              <VehicleImageButton href={`/cari?service=car&mode=${mode}`}    active={vehicleType === 'car'}     label="Car"   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsa.png?tr=e-bgremove" />
+              <VehicleImageButton href={`/cari?service=person&mode=${mode}`} active={vehicleType === 'bike'}    label={t('vehicleBike')}  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasad.png?tr=e-bgremove" />
+              <VehicleImageButton href={`/cari?service=car&mode=${mode}`}    active={vehicleType === 'car'}     label={t('vehicleCar')}   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsa.png?tr=e-bgremove" />
               {mode !== 'parcel' && (
-                <VehicleImageButton href={`/cari?service=bus&mode=${mode}`}    active={vehicleType === 'minibus'} label="Bus"   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasd.png?tr=e-bgremove" />
+                <VehicleImageButton href={`/cari?service=bus&mode=${mode}`}    active={vehicleType === 'minibus'} label={t('vehicleBus')}   imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasd.png?tr=e-bgremove" />
               )}
               {mode !== 'parcel' && (
-                <VehicleImageButton href={`/cari?service=jeep&mode=${mode}`}   active={vehicleType === 'jeep'}    label="Jeep"  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasadasda.png?tr=e-bgremove" sizeBoost={1.15} />
+                <VehicleImageButton href={`/cari?service=jeep&mode=${mode}`}   active={vehicleType === 'jeep'}    label={t('vehicleJeep')}  imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasdasadasda.png?tr=e-bgremove" sizeBoost={1.15} />
               )}
-              <VehicleImageButton href={`/cari?service=truck&mode=${mode}`}  active={vehicleType === 'truck'}   label="Truck" imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasda.png?tr=e-bgremove" />
+              <VehicleImageButton href={`/cari?service=truck&mode=${mode}`}  active={vehicleType === 'truck'}   label={t('vehicleTruck')} imageUrl="https://ik.imagekit.io/nepgaxllc/Untitledadsaasdasdasda.png?tr=e-bgremove" />
             </div>
 
             {/* Hourly-filter banner — surfaces when the customer arrived
@@ -1017,12 +1026,14 @@ function PlanTripPageInner() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] font-extrabold uppercase tracking-wider">
-                    Hourly hire · available drivers
+                    {t('hourlyBannerLabel')}
                   </div>
                   <div className="text-[12px] font-bold leading-snug mt-0.5">
-                    Showing {vehicleType === 'car' ? 'cars' : 'bikes'} available for the{' '}
-                    {HOURLY_TIERS.find((t) => t.id === hourlyFilter.tier)?.label ?? hourlyFilter.tier} on{' '}
-                    {hourlyFilter.date} starting {hourlyFilter.time}.
+                    {t(vehicleType === 'car' ? 'hourlyBannerBodyCar' : 'hourlyBannerBodyBike', {
+                      tier: HOURLY_TIERS.find((x) => x.id === hourlyFilter.tier)?.label ?? hourlyFilter.tier,
+                      date: hourlyFilter.date,
+                      time: hourlyFilter.time,
+                    })}
                   </div>
                 </div>
                 <button
@@ -1032,11 +1043,11 @@ function PlanTripPageInner() {
                     sp.delete('hourlyTier'); sp.delete('hourlyDate'); sp.delete('hourlyTime')
                     router.replace(`/cari${sp.toString() ? `?${sp.toString()}` : ''}`)
                   }}
-                  aria-label="Clear hourly filter"
+                  aria-label={t('hourlyBannerClearAria')}
                   className="shrink-0 inline-flex items-center justify-center rounded-full text-[11px] font-extrabold px-2 py-1"
                   style={{ background: '#0A0A0A', color: '#FACC15' }}
                 >
-                  Clear
+                  {t('hourlyBannerClear')}
                 </button>
               </div>
             )}
@@ -1052,14 +1063,14 @@ function PlanTripPageInner() {
             >
               {driversLoading && visibleDrivers.length === 0 && (
                 <div className="py-6 text-center text-[13px] font-bold text-[#71717A]">
-                  Loading drivers…
+                  {t('listLoading')}
                 </div>
               )}
               {!driversLoading && visibleDrivers.length === 0 && (
                 <div className="py-6 text-center text-[13px] font-bold text-[#71717A]">
                   {mode === 'parcel' && vehicleType === 'bike'
-                    ? 'No bike drivers accepting parcels right now — try Car.'
-                    : `No ${vehicleType === 'car' ? 'car' : 'bike'} drivers online right now.`}
+                    ? t('listEmptyParcelBike')
+                    : vehicleType === 'car' ? t('listEmptyCar') : t('listEmptyBike')}
                 </div>
               )}
               {sortedDrivers.map((d) => (
@@ -1104,16 +1115,16 @@ function PlanTripPageInner() {
               }}
             >
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-black text-bg leading-tight">Citypass</div>
+                <div className="text-[14px] font-black text-bg leading-tight">{t('citypassTitle')}</div>
                 <div className="text-[11px] font-bold text-bg/65 leading-tight mt-0.5">
-                  Browse places worth visiting in your city
+                  {t('citypassSubtitle')}
                 </div>
               </div>
               <span
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-bg font-extrabold text-[12px]"
                 style={{ background: '#FACC15', minHeight: 32 }}
               >
-                Explore
+                {t('citypassCta')}
                 <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
               </span>
             </Link>
@@ -1163,7 +1174,7 @@ function PlanTripPageInner() {
                   }}
                 >
                   <span className="truncate">
-                    BOOK NOW · {label}
+                    {t('bookNowPrefix')} · {label}
                   </span>
                 </a>
               )
@@ -1295,6 +1306,7 @@ function DriverCard({
   // use a <Link> here because the parent div's onClick race-conditions
   // away the navigation on mobile (see Profile pill comment below).
   const router = useRouter()
+  const t = useTranslations('cari')
 
   // Title: vehicle make + model when set, otherwise business name. The
   // Rider shape stores the vehicle on `bike` (legacy name — table covers
@@ -1344,13 +1356,13 @@ function DriverCard({
   let etaLabel: string | null = null
   let basedInLabel: string | null = null
   if (driver.locationFresh === false) {
-    if (driver.area) basedInLabel = `Based in ${driver.area}`
-    else if (driver.city) basedInLabel = `Based in ${driver.city}`
+    if (driver.area) basedInLabel = t('basedInArea', { area: driver.area })
+    else if (driver.city) basedInLabel = t('basedInArea', { area: driver.city })
   } else if (pickup && driver.lat && driver.lng) {
     const km = haversineKm({ lat: pickup.lat, lng: pickup.lng }, { lat: driver.lat, lng: driver.lng })
     if (Number.isFinite(km)) {
       const minutes = Math.max(2, Math.round((km / 25) * 60))
-      etaLabel = `${minutes} min away`
+      etaLabel = t('minAway', { minutes })
     }
   }
 
@@ -1367,7 +1379,7 @@ function DriverCard({
   const fee = tierFee ?? driver.minFee ?? driver.pricePerKm ?? null
   const priceLabel = fee != null
     ? (tierFee
-        ? `From Rp ${tierFee.toLocaleString('id-ID')}/3h`
+        ? t('fromPriceTier3h', { price: tierFee.toLocaleString('id-ID') })
         : `Rp ${fee.toLocaleString('en-US')}`)
     : null
 
@@ -1409,7 +1421,7 @@ function DriverCard({
         }
       }}
       aria-pressed={selected}
-      aria-label={`Select ${driver.name}`}
+      aria-label={t('selectAria', { name: driver.name })}
       className={`${cardClass} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]`}
       style={{ minHeight: 72 }}
     >
@@ -1433,7 +1445,7 @@ function DriverCard({
                 minHeight:  18,
               }}
             >
-              Cheapest
+              {t('badgeCheapest')}
             </span>
           ) : (
             <span
@@ -1447,7 +1459,7 @@ function DriverCard({
               }}
             >
               <Zap className="w-2.5 h-2.5" strokeWidth={3} fill="#FACC15" />
-              Fastest
+              {t('badgeFastest')}
             </span>
           )}
         </div>
@@ -1518,7 +1530,7 @@ function DriverCard({
           {basedInLabel && (
             <>
               {priceLabel && <span aria-hidden className="text-[11px] text-[#A1A1AA]">·</span>}
-              <span className="text-[11px] font-bold text-[#71717A]" title="Driver's GPS hasn't pinged recently — showing their service-zone area instead of an estimated distance.">
+              <span className="text-[11px] font-bold text-[#71717A]" title={t('staleGpsTitle')}>
                 {basedInLabel}
               </span>
             </>
@@ -1567,7 +1579,7 @@ function DriverCard({
             e.stopPropagation()
             router.push(profileHref)
           }}
-          aria-label={`View ${driver.name}'s full profile`}
+          aria-label={t('profilePillAria', { name: driver.name })}
           className="inline-flex items-center justify-center rounded-full px-3.5 text-[12px] font-extrabold uppercase tracking-wider shadow-sm active:scale-[0.97] transition"
           style={{
             background: '#FACC15',
@@ -1577,7 +1589,7 @@ function DriverCard({
             lineHeight: 1,
           }}
         >
-          Profile
+          {t('profilePill')}
         </button>
       </div>
     </div>
