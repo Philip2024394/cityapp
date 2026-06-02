@@ -28,7 +28,7 @@ import { useTranslations } from 'next-intl'
 import {
   Star, Award, MessageCircle, Share2, Link2, X, ChevronLeft, BadgeCheck,
   MapPin, Truck as TruckIcon, Bus as BusIcon, Mountain as JeepIcon,
-  Sparkles, Menu as MenuIcon, ChevronDown, Mail, Phone,
+  Sparkles, Menu as MenuIcon, ChevronDown, Mail, Phone, Send,
 } from 'lucide-react'
 import { PlaneTakeoff, MapPinned, Landmark } from 'lucide-react'
 import HeroServiceIcon from './shell/HeroServiceIcon'
@@ -704,10 +704,13 @@ export default function VehicleProfileShell({
             </div>
 
             {/* Top-right of the info card — Verified Driver badge for
-                truck + jeep. Bus profiles swap this slot for a clickable
-                "Contact Us" pill (mig 0170) so passengers can reach the
-                operator by email or WhatsApp without scrolling. */}
-            {vehicleType === 'bus' ? (
+                truck. Bus + jeep profiles swap this slot for a clickable
+                "Contact Us" pill (mig 0170 added the columns shared by
+                drivers + mock_drivers) so passengers can reach the
+                operator by email, WhatsApp, or the inline contact
+                form (jeep, founder direction Jun 2026) without
+                scrolling. */}
+            {(vehicleType === 'bus' || vehicleType === 'jeep') ? (
               <button
                 type="button"
                 onClick={() => {
@@ -855,12 +858,13 @@ export default function VehicleProfileShell({
               </section>
             )}
 
-            {/* Bus-only — "Contact Us" panel renders here when the pill
+            {/* Bus + Jeep — "Contact Us" panel renders here when the pill
                 that replaces the Verified Driver badge is tapped. Shows
                 FAQ accordion + company details + map + Email / WhatsApp
-                buttons. Hidden again the moment the close link or the
-                pill is tapped a second time. */}
-            {vehicleType === 'bus' && showContactUs && (
+                buttons + (jeep) inline contact form. Hidden again the
+                moment the close link or the pill is tapped a second
+                time. */}
+            {(vehicleType === 'bus' || vehicleType === 'jeep') && showContactUs && (
               <section className="mt-3">
                 <BusContactUsPanel
                   v={v}
@@ -868,6 +872,7 @@ export default function VehicleProfileShell({
                   openFaqIdx={openFaqIdx}
                   setOpenFaqIdx={setOpenFaqIdx}
                   onClose={() => setShowContactUs(false)}
+                  showContactForm={vehicleType === 'jeep'}
                 />
               </section>
             )}
@@ -876,7 +881,7 @@ export default function VehicleProfileShell({
                 hide everything below so only that container shares the
                 viewport with the profile card + About. Reverts the moment
                 the container is closed (or after a card is selected). */}
-            {!(vehicleType === 'bus' && (showPlacesPicker || showContactUs || showReviews)) && (<>
+            {!((vehicleType === 'bus' || vehicleType === 'jeep') && (showPlacesPicker || showContactUs || showReviews)) && (<>
             {/* Services Provided — header + as many badges as fit on a
                 single line; if more exist a small round burger button on
                 the right toggles the rest into a second row below.
@@ -1885,13 +1890,17 @@ function ServiceRatePanel({
 // get geocoded.
 // -----------------------------------------------------------------------------
 function BusContactUsPanel({
-  v, theme, openFaqIdx, setOpenFaqIdx, onClose,
+  v, theme, openFaqIdx, setOpenFaqIdx, onClose, showContactForm,
 }: {
   v:             VehiclePublic
   theme:         string
   openFaqIdx:    number | null
   setOpenFaqIdx: (n: number | null) => void
   onClose:       () => void
+  /** Jeep adds an inline contact form (name + country + WhatsApp +
+   *  comments → mailto handoff). Bus keeps the original email + WhatsApp
+   *  button layout only. */
+  showContactForm?: boolean
 }) {
   const t = useTranslations('vehicleProfile')
   const faqs    = v.faqs ?? []
@@ -2101,6 +2110,20 @@ function BusContactUsPanel({
           </div>
         </div>
 
+        {/* ---- Inline contact form (jeep only) -------------------------
+            Name + Country + WhatsApp + Comments → mailto handoff. The
+            customer's email client opens with everything pre-filled;
+            they review and tap Send to deliver to v.contact_email. MVP
+            transport — no server round-trip, no DB write, works on
+            every device that has a default mail handler (every phone). */}
+        {showContactForm && v.contact_email && (
+          <ContactFormBlock
+            recipientEmail={v.contact_email}
+            recipientName={v.display_name}
+            theme={theme}
+          />
+        )}
+
         {/* ---- Contact buttons ---------------------------------------- */}
         {!hasEither ? (
           <p className="text-[12px] text-gray-500 italic leading-snug">
@@ -2136,6 +2159,124 @@ function BusContactUsPanel({
         )}
       </div>
     </div>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// ContactFormBlock — inline form for the jeep Contact Us panel.
+// 4 fields: Name + Country + WhatsApp + Comments. On submit the form
+// builds a mailto: URL with every field encoded into the email body and
+// opens the customer's email client. No backend, no rate-limiting needed
+// because the customer's own email client is the transport.
+// -----------------------------------------------------------------------------
+function ContactFormBlock({
+  recipientEmail, recipientName, theme,
+}: {
+  recipientEmail: string
+  recipientName:  string
+  theme:          string
+}) {
+  const [name,     setName]     = useState('')
+  const [country,  setCountry]  = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [comments, setComments] = useState('')
+
+  const valid =
+    name.trim().length >= 1 &&
+    country.trim().length >= 1 &&
+    whatsapp.trim().length >= 5 &&
+    comments.trim().length >= 1
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!valid) return
+    const subject = `Enquiry from ${name.trim()} (CityDrivers)`
+    const body = [
+      `Name: ${name.trim()}`,
+      `Country: ${country.trim()}`,
+      `WhatsApp: ${whatsapp.trim()}`,
+      '',
+      'Comments:',
+      comments.trim(),
+      '',
+      '---',
+      `Sent from your CityDrivers profile contact form.`,
+    ].join('\n')
+    const href = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    window.location.href = href
+  }
+
+  const inputCls =
+    'w-full rounded-xl bg-white border border-gray-200 px-3 py-2.5 text-[13px] text-black placeholder:text-black/35 focus:outline-none focus:border-[#FACC15] focus:ring-2 focus:ring-yellow-100 min-h-[44px]'
+
+  return (
+    <section className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-3">
+      <div className="flex items-center gap-2">
+        <Mail className="w-4 h-4 shrink-0" strokeWidth={2.5} style={{ color: theme }} />
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-extrabold text-black">Send a message</div>
+          <p className="text-[12px] text-gray-600 leading-snug">
+            Goes straight to {recipientName} — no platform middleman.
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={submit} className="space-y-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={80}
+          placeholder="Your name"
+          className={inputCls}
+          required
+        />
+        <input
+          type="text"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          maxLength={64}
+          placeholder="Your country"
+          autoCapitalize="words"
+          className={inputCls}
+          required
+        />
+        <input
+          type="tel"
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value)}
+          maxLength={32}
+          placeholder="Your WhatsApp number"
+          inputMode="tel"
+          autoComplete="tel"
+          className={inputCls}
+          required
+        />
+        <textarea
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+          maxLength={2000}
+          rows={4}
+          placeholder="Comments / questions / dates of travel…"
+          className={inputCls + ' resize-y leading-relaxed min-h-[96px]'}
+          required
+        />
+        <div className="flex items-center justify-between gap-2">
+          <span className={`text-[12px] tabular-nums ${comments.length >= 1900 ? 'text-amber-600' : 'text-gray-500'}`}>
+            {comments.length} / 2000
+          </span>
+          <button
+            type="submit"
+            disabled={!valid}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-black text-[13px] font-extrabold uppercase tracking-wider shadow-sm shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] transition min-h-[44px]"
+            style={{ background: theme }}
+          >
+            <Send className="w-4 h-4" strokeWidth={2.5} />
+            Send via email
+          </button>
+        </div>
+      </form>
+    </section>
   )
 }
 

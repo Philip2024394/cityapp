@@ -31,7 +31,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, Layers, DollarSign, Car, Check, Loader2, Package, Clock, Lock, MapPin,
-  Tag, ChevronRight,
+  Tag, ChevronRight, HelpCircle,
 } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import { getBrowserSupabase } from '@/lib/supabase/client'
@@ -217,6 +217,7 @@ function ServicesEditor({ row, onReload }: { row: ServicesRow; onReload: () => v
 
         <OfferingsCard offerings={offerings} onSave={save} />
         <TourPackageRatesLinkCard />
+        <FaqLinkCard />
         <PricingCard row={row} onSave={save} />
         <PitstopFeeCard row={row} onSave={save} />
         {rentalEnabled && <RentalCard row={row} onSave={save} />}
@@ -264,6 +265,46 @@ function TourPackageRatesLinkCard() {
           </p>
           <span className="inline-flex items-center gap-1 text-[11.5px] font-extrabold uppercase tracking-wider mt-2 text-[#854D0E]">
             Manage prices
+          </span>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+// ============================================================================
+// FAQ link — entry point to /dashboard/jeep/faq for the Contact Us panel
+// ----------------------------------------------------------------------------
+// FAQs render at the top of the Contact Us panel on the public jeep
+// profile (the panel that opens when a customer taps the "Contact Us" pill
+// where "Verified Driver" used to sit). Writes to drivers.faqs (mig 0170).
+// ============================================================================
+function FaqLinkCard() {
+  return (
+    <Link
+      href="/dashboard/jeep/faq"
+      className="block group rounded-3xl bg-white border border-gray-200 p-5 shadow-sm mb-4 hover:border-[#FACC15] hover:shadow transition active:scale-[0.995]"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center"
+          style={{ background: '#FEF9C3', color: '#854D0E' }}
+        >
+          <HelpCircle size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[15px] font-black text-[#0A0A0A] leading-tight">
+              Customer FAQ
+            </h2>
+            <ChevronRight size={18} className="shrink-0 text-black/40 group-hover:text-[#854D0E] transition" />
+          </div>
+          <p className="text-[12px] text-black/65 leading-snug mt-1">
+            Add common questions + answers. Renders at the top of the
+            <strong> Contact Us</strong> panel on your jeep profile.
+          </p>
+          <span className="inline-flex items-center gap-1 text-[11.5px] font-extrabold uppercase tracking-wider mt-2 text-[#854D0E]">
+            Manage FAQ
           </span>
         </div>
       </div>

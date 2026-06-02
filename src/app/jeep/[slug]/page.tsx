@@ -82,6 +82,25 @@ type JeepDriver = {
   rental_daily_rate_idr:   number | null
   rental_weekly_rate_idr:  number | null
   rental_monthly_rate_idr: number | null
+  // Contact Us panel data (mig 0170, originally added for bus + now wired
+  // to jeep). contact_email drives the inline mailto form; company_address
+  // shows in the panel's left column; faqs render the accordion at the top.
+  contact_email:           string | null
+  company_address:         string | null
+  faqs:                    { q: string; a: string }[]
+}
+
+function parseFaqs(raw: unknown): { q: string; a: string }[] {
+  if (!Array.isArray(raw)) return []
+  const out: { q: string; a: string }[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const row = item as { q?: unknown; a?: unknown }
+    const q = typeof row.q === 'string' ? row.q.trim() : ''
+    const a = typeof row.a === 'string' ? row.a.trim() : ''
+    if (q && a) out.push({ q, a })
+  }
+  return out
 }
 
 function parseVehiclePhotos(raw: unknown): string[] {
@@ -113,6 +132,7 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       available_sunrise, available_daytime, available_evening, available_nightlife,
       hourly_enabled, hourly_3h_rate_idr, hourly_6h_rate_idr, hourly_8h_rate_idr,
       rental_daily_rate_idr, rental_weekly_rate_idr, rental_monthly_rate_idr,
+      contact_email, company_address, faqs,
       status
     `)
     .eq('slug', slug)
@@ -161,6 +181,9 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       rental_daily_rate_idr:   (r.rental_daily_rate_idr   as number | null) ?? null,
       rental_weekly_rate_idr:  (r.rental_weekly_rate_idr  as number | null) ?? null,
       rental_monthly_rate_idr: (r.rental_monthly_rate_idr as number | null) ?? null,
+      contact_email:           (r.contact_email   as string | null) ?? null,
+      company_address:         (r.company_address as string | null) ?? null,
+      faqs:                    parseFaqs(r.faqs),
     }
   }
 
@@ -173,7 +196,8 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       min_fee, price_per_km,
       vehicle_type, vehicle_make, vehicle_model, vehicle_year,
       vehicle_color, vehicle_plate, vehicle_seats, vehicle_photos,
-      service_offerings
+      service_offerings,
+      contact_email, company_address, faqs
     `)
     .eq('slug', slug)
     .eq('vehicle_type', 'jeep')
@@ -224,6 +248,9 @@ async function loadJeepDriver(slug: string): Promise<JeepDriver | null> {
       rental_daily_rate_idr:   null,
       rental_weekly_rate_idr:  null,
       rental_monthly_rate_idr: null,
+      contact_email:           (r.contact_email   as string | null) ?? null,
+      company_address:         (r.company_address as string | null) ?? null,
+      faqs:                    parseFaqs(r.faqs),
     }
   }
 
@@ -301,6 +328,9 @@ function jeepDriverToVehiclePublic(d: JeepDriver): VehiclePublic {
     rental_daily_rate_idr:  d.rental_daily_rate_idr,
     rental_weekly_rate_idr: d.rental_weekly_rate_idr,
     rental_monthly_rate_idr:d.rental_monthly_rate_idr,
+    contact_email:          d.contact_email,
+    company_address:        d.company_address,
+    faqs:                   d.faqs,
   }
 }
 
