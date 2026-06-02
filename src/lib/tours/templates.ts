@@ -73,6 +73,7 @@ const TEMPLATE_IMAGES: Record<string, string> = {
   'bike-ricefield-restaurant': 'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_21_02%20PM.png',
   'bike-souvenir-market':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_10_11%20PM.png',
   'bike-leather-craft':        'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_24_07%20PM.png',
+  'bike-cupping-massage':      'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20Jun%202,%202026,%2006_30_15%20PM.png',
 }
 
 export function templateImageUrl(template: TourTemplate): string {
@@ -588,6 +589,18 @@ export const TOUR_TEMPLATES: ReadonlyArray<TourTemplate> = [
     excludes: ['purchases', 'optional custom-order deposit'],
     place_slugs: ['manding', 'bantul'],
     tags: ['craft', 'leather', 'umkm', 'shopping'],
+  },
+  {
+    id: 'bike-cupping-massage',
+    vehicle: 'bike',
+    title: 'Cupping + Hot Stone Massage Visit',
+    description: 'Ride to a traditional bekam (cupping with heated cups) and hot-stone massage studio. Driver waits outside or returns to pick you up — your call. Helmet provided.',
+    duration_hours: 3, max_pax: 1,
+    suggested_price: 200_000, market_floor: 280_000,
+    includes: ['rider', 'fuel', 'helmet'],
+    excludes: ['massage fee', 'tips'],
+    place_slugs: ['sleman', 'bantul'],
+    tags: ['wellness', 'massage', 'traditional', 'healing'],
   },
 
   // ── Jeep tours · Adventure charter ──────────────────────────────────────
