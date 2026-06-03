@@ -2,7 +2,10 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Star, ChevronDown, Briefcase, Store, Wrench } from 'lucide-react'
+import {
+  Star, ChevronDown, Briefcase, Store, Wrench,
+  Scissors, Shirt, Sparkles as Spark, UtensilsCrossed, MapPin, Bike, Car, Hammer, Hand, Stethoscope, Check, X,
+} from 'lucide-react'
 import LocationPermissionPrompt from '@/components/onboarding/LocationPermissionPrompt'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { logNav } from '@/lib/perf/navTiming'
@@ -279,6 +282,183 @@ export default function LandingPage() {
               <div className="font-extrabold text-[15px] text-[#0A0A0A] leading-tight">Local &amp; Global</div>
               <div className="text-[12px] text-gray-600 leading-snug">Sell products worldwide or offer local delivery &amp; bookings</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* APPS WE BUILD — 10-card grid showing every vertical Kita2u
+          spins up for owners. Each card is a real shipping vertical
+          backed by its own provider table + public page template +
+          dashboard editor. */}
+      <section className="reveal-on-scroll relative z-10 px-6 py-12 bg-white">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
+              Apps we build for you
+            </h2>
+            <p className="text-[14px] text-gray-600 leading-relaxed max-w-xl mx-auto">
+              Each vertical is a complete app — menu / portfolio / pricing / WhatsApp bookings — already shipping on Kita2u.
+              Pick yours and your page is live the same day.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {[
+              { icon: Scissors,         label: 'Salon / beautician',   sub: 'Cuts, colour, makeup' },
+              { icon: Hand,             label: 'Massage / spa',         sub: 'Therapy bookings' },
+              { icon: Spark,            label: 'Facial & skincare',     sub: 'Clinics & studios' },
+              { icon: UtensilsCrossed,  label: 'Restaurant / café',     sub: 'Menu + delivery handoff' },
+              { icon: Shirt,            label: 'Laundry',               sub: 'Pickup + drop-off' },
+              { icon: Hammer,           label: 'Handyman',              sub: 'Per-job tukang' },
+              { icon: Stethoscope,      label: 'Home cleaning',          sub: 'House + office' },
+              { icon: MapPin,           label: 'Tour guides',           sub: 'Day trips, packages' },
+              { icon: Bike,             label: 'Bike rentals',          sub: 'Scooters, mountain' },
+              { icon: Car,              label: 'Drivers (Bike → Jeep)', sub: 'Self-published rates' },
+            ].map((v) => {
+              const Icon = v.icon
+              return (
+                <div
+                  key={v.label}
+                  className="rounded-2xl bg-white border border-gray-100 p-3.5 flex flex-col items-start gap-2"
+                  style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(250,204,21,0.18)', border: '1px solid rgba(250,204,21,0.45)' }}
+                  >
+                    <Icon className="w-4.5 h-4.5" strokeWidth={2.25} style={{ color: '#0A0A0A' }} />
+                  </div>
+                  <div className="font-extrabold text-[12.5px] text-[#0A0A0A] leading-tight">{v.label}</div>
+                  <div className="text-[11px] text-gray-500 leading-snug">{v.sub}</div>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-center text-[12px] text-gray-500 italic">
+            Don&apos;t see your category? Tell us — most verticals can be cloned from an existing template in 24 hours.
+          </p>
+        </div>
+      </section>
+
+      {/* STOP BUILDING SOMEONE ELSE'S BUSINESS — the anti-marketplace
+          punch. Side-by-side comparison: high-fee marketplace model vs
+          Kita2u's own-the-link / own-the-customer model. Numbers are
+          published commission ranges from Tokopedia / Shopee / Lazada /
+          Gojek-Food — defensible without specific citation. */}
+      <section className="reveal-on-scroll relative z-10 px-6 py-14" style={{ background: 'linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%)' }}>
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="font-black text-[26px] sm:text-[32px] tracking-tight leading-[1.1] text-[#0A0A0A]">
+              Stop building someone else&apos;s business.
+            </h2>
+            <p className="text-[14px] sm:text-[15px] text-gray-700 leading-relaxed max-w-2xl mx-auto">
+              The age of paying 20% commission, fighting algorithm changes, and feeding a marketplace&apos;s customer database is over.
+              Your customers should belong to <strong className="text-[#0A0A0A]">you</strong>.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            {/* Marketplace column */}
+            <div
+              className="rounded-2xl bg-white border p-5 space-y-3"
+              style={{ borderColor: '#E4E4E7', boxShadow: '0 2px 14px rgba(0,0,0,0.05)' }}
+            >
+              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-rose-700">
+                Marketplaces / food platforms
+              </div>
+              <div className="text-[18px] sm:text-[20px] font-black text-[#0A0A0A] leading-tight">
+                Pay 5 – 30 % every sale.<br />Never see the customer again.
+              </div>
+              <ul className="space-y-1.5 pt-1">
+                {[
+                  '5–13% commission on Tokopedia / Shopee / Lazada (by category)',
+                  '18–30% commission on Gojek-Food / GrabFood',
+                  'Pay-to-be-found ads on top — featured listing fees',
+                  'Customer contact details kept by the platform',
+                  'Algorithm changes overnight — your rank can vanish',
+                  'You compete on price with thousands of identical listings',
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2 text-[12.5px] leading-snug text-gray-700">
+                    <X className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={3} style={{ color: '#DC2626' }} />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Kita2u column — highlighted */}
+            <div
+              className="rounded-2xl p-5 space-y-3"
+              style={{
+                background:  'linear-gradient(135deg, #FEF9C3 0%, #FFFFFF 100%)',
+                border:      '2px solid #FACC15',
+                boxShadow:   '0 6px 22px rgba(250,204,21,0.30)',
+              }}
+            >
+              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#854D0E]">
+                Kita2u
+              </div>
+              <div className="text-[18px] sm:text-[20px] font-black text-[#0A0A0A] leading-tight">
+                0 % commission.<br />Own the customer.
+              </div>
+              <ul className="space-y-1.5 pt-1">
+                {[
+                  '0% on every transaction — you keep 100% of what customers pay',
+                  'Direct WhatsApp bookings — no platform middleman',
+                  'Customer phone numbers are yours, in your inbox, forever',
+                  'Your shareable link works on TikTok / Instagram / Status / SMS',
+                  'No algorithm — your audience is the audience YOU built',
+                  'Custom domain available so it reads as your own site',
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2 text-[12.5px] leading-snug text-[#0A0A0A]">
+                    <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={3} style={{ color: '#0A0A0A' }} />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <p className="text-center text-[11px] text-gray-500 italic pt-1">
+            Commission ranges are published rates from Tokopedia, Shopee, Lazada, Gojek-Food, and GrabFood seller documentation.
+            Specific rate per merchant depends on category, tier, and promotional opt-ins.
+          </p>
+        </div>
+      </section>
+
+      {/* OWN YOUR CUSTOMER BASE — the building-an-audience-not-someone-
+          else's punch. Short section, three concrete advantages. */}
+      <section className="reveal-on-scroll relative z-10 px-6 py-12 bg-white">
+        <div className="max-w-2xl mx-auto space-y-5">
+          <div className="text-center space-y-2">
+            <h2 className="font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
+              Build YOUR customer base.<br />Not theirs.
+            </h2>
+            <p className="text-[14px] text-gray-600 leading-relaxed max-w-xl mx-auto">
+              Every booking, every order, every contact — yours from day one.
+              The link you share grows YOUR audience.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {[
+              { headline: 'Your link, your funnel',
+                body: 'Every TikTok bio, Instagram link-tree, WhatsApp Status, printed flyer — they all feed your Kita2u page, not a marketplace.' },
+              { headline: 'Your customer, your inbox',
+                body: 'Direct WhatsApp from the moment they tap. Build a contact list you actually own and can message again.' },
+              { headline: 'Your brand, your rules',
+                body: 'Your logo, your photos, your prices, your hours. Optional custom domain so the URL reads as yours, not ours.' },
+            ].map((b) => (
+              <div
+                key={b.headline}
+                className="rounded-2xl bg-gray-50 border border-gray-100 p-4"
+              >
+                <div className="font-extrabold text-[13.5px] text-[#0A0A0A] leading-tight">
+                  {b.headline}
+                </div>
+                <p className="text-[12.5px] text-gray-600 leading-snug mt-1.5">
+                  {b.body}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
