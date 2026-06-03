@@ -29,6 +29,19 @@ const CITYRIDERS_HOSTS = new Set([
   'citydrivers.id',
   'www.citydrivers.id',
 ])
+const KITA2U_HOSTS = new Set([
+  'kita2u.com',
+  'www.kita2u.com',
+])
+
+// Host-specific OG / social-preview hero images. Each domain gets its own
+// branded card so a WhatsApp / Twitter / Facebook share of kita2u.com looks
+// visually distinct from a share of citydrivers.id, even though both
+// serve from the same Vercel deploy.
+const CITYDRIVERS_OG_IMAGE =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_30_50%20PM.png'
+const KITA2U_OG_IMAGE =
+  'https://ik.imagekit.io/9mrgsv2rp/ChatGPT%20Image%20May%2028,%202026,%2012_03_21%20PM.png'
 
 // Host-aware metadata. Install prompts, OG previews, and the apple-web-app
 // title all read these — must match the host the user is actually on.
@@ -36,16 +49,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const h = await headers()
   const host = (h.get('host') || '').toLowerCase().split(':')[0]
   const isCityriders = CITYRIDERS_HOSTS.has(host)
+  const isKita2u     = KITA2U_HOSTS.has(host)
 
   if (isCityriders) {
     const SITE = 'https://citydrivers.id'
     return {
       metadataBase: new URL(SITE),
       title: {
-        default: 'CityDrivers — indoriders, indonesia local driver community',
+        default: 'CityDrivers — Local drivers. Direct WhatsApp. No app needed.',
         template: '%s · CityDrivers',
       },
-      description: 'indoriders — indonesia local driver community',
+      description:
+        'Find local Indonesian drivers in Yogyakarta, Bali, and Jogja. Tap WhatsApp, agree the fare, get a ride. No app install, no surge pricing.',
       // Cache-bust the manifest URL so phones that previously cached the
       // old (CityDrivers) manifest fetch the new CityDrivers one on next visit.
       manifest: '/manifest.webmanifest?v=2026-05-31-cr',
@@ -65,13 +80,18 @@ export async function generateMetadata(): Promise<Metadata> {
         siteName: 'CityDrivers',
         locale: 'id_ID',
         url: SITE,
-        title: 'CityDrivers — indoriders, indonesia local driver community',
-        description: 'indoriders — indonesia local driver community',
+        title: 'CityDrivers — Local drivers. Direct WhatsApp. No app needed.',
+        description:
+          'Find local Indonesian drivers in Yogyakarta, Bali, and Jogja. Tap WhatsApp, agree the fare, get a ride.',
+        images: [
+          { url: CITYDRIVERS_OG_IMAGE, width: 1200, height: 630, alt: 'CityDrivers' },
+        ],
       },
       twitter: {
         card: 'summary_large_image',
         title: 'CityDrivers',
-        description: 'indoriders — indonesia local driver community',
+        description: 'Local Indonesian drivers, direct WhatsApp booking, no app install.',
+        images: [CITYDRIVERS_OG_IMAGE],
       },
       appleWebApp: {
         capable: true,
@@ -83,8 +103,14 @@ export async function generateMetadata(): Promise<Metadata> {
     }
   }
 
+  // Kita2u branch — serves the multi-vertical marketplace on kita2u.com
+  // and on dev / preview hosts. The canonical SITE prefers the live
+  // Kita2u apex when the request actually arrived on kita2u.com, so
+  // og:url and the canonical link no longer leak a citydrivers.id URL
+  // (which is what the previous SITE_URL fallback was doing).
+  const SITE = isKita2u ? 'https://kita2u.com' : SITE_URL
   return {
-    metadataBase: new URL(SITE_URL),
+    metadataBase: new URL(SITE),
     title: {
       default: 'Kita2u — Marketplace kurir motor Indonesia',
       template: '%s · Kita2u',
@@ -98,24 +124,19 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       siteName: 'Kita2u',
       locale: 'id_ID',
-      url: SITE_URL,
+      url: SITE,
       title: 'Kita2u — Marketplace kurir motor Indonesia',
       description:
         'Cari rider motor independen di kota kamu. Bayar langsung, kontak via WhatsApp, tanpa komisi.',
       images: [
-        {
-          url: '/og-default.png',
-          width: 1200,
-          height: 630,
-          alt: 'Kita2u',
-        },
+        { url: KITA2U_OG_IMAGE, width: 1200, height: 630, alt: 'Kita2u' },
       ],
     },
     twitter: {
       card: 'summary_large_image',
       title: 'Kita2u',
       description: 'Marketplace kurir motor Indonesia — tanpa komisi.',
-      images: ['/og-default.png'],
+      images: [KITA2U_OG_IMAGE],
     },
     appleWebApp: {
       capable: true,
