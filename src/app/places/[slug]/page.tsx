@@ -42,8 +42,9 @@ type Row = {
   rating:          number | null
   review_count:    number | null
   contact_enabled: boolean | null
-  cuisine_types:   string[] | null
-  free_delivery:   boolean | null
+  cuisine_types:    string[] | null
+  free_delivery:    boolean | null
+  delivery_enabled: boolean | null
 }
 
 type OfferRow = {
@@ -60,7 +61,7 @@ async function loadPlace(slug: string): Promise<Row | null> {
   if (!supabase) return null
   const { data } = await supabase
     .from('places')
-    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count, contact_enabled, cuisine_types, free_delivery')
+    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count, contact_enabled, cuisine_types, free_delivery, delivery_enabled')
     .eq('slug', slug)
     .eq('status', 'approved')
     .maybeSingle()
@@ -237,6 +238,7 @@ export default async function PlaceDetailPage(
         }}
         contactEnabled={place.contact_enabled !== false}
         freeDelivery={place.free_delivery === true}
+        deliveryEnabled={place.delivery_enabled === true}
       />
 
       {/* Drivers offering tours that visit here — only renders when at

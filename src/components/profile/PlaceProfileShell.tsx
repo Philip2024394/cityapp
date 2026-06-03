@@ -22,6 +22,7 @@ import type { PlaceCategory } from '@/lib/places/types'
 import { useVendorCart } from '@/components/cart/useVendorCart'
 import VendorCartButton from '@/components/cart/VendorCartButton'
 import VendorCartSheet from '@/components/cart/VendorCartSheet'
+import DeliveryViaCityDriversCard from '@/components/places/DeliveryViaCityDriversCard'
 
 // =============================================================================
 // PlaceProfileShell — 1:1 visual + functional mirror of
@@ -106,6 +107,18 @@ export type PlaceProfileShellProps = {
    * — this is purely a hint to the customer that the venue arranges it.
    */
   freeDelivery?: boolean
+  /**
+   * Owner-controlled flag (places.delivery_enabled). When true, the page
+   * surfaces a "Need delivery?" CTA card that deep-links to /cari with
+   * the venue address pre-filled as pickup. Gated in the dashboard UI to
+   * product-seller categories (restaurant / cafe / bar / club) so it can
+   * only end up true on rows where pickup-delivery makes sense.
+   *
+   * See memory `project_kita2u_to_citydrivers_handoff.md` for the 3-rule
+   * pattern (per-driver estimates, WhatsApp handoff, no DB booking row)
+   * that keeps this surface inside PM 12/2019 directory posture.
+   */
+  deliveryEnabled?: boolean
 }
 
 // =============================================================================
@@ -160,7 +173,7 @@ function coerceHoursForPanel(raw: Record<string, unknown> | null): Record<string
 }
 
 export default function PlaceProfileShell({
-  place, contactEnabled = true, freeDelivery = false,
+  place, contactEnabled = true, freeDelivery = false, deliveryEnabled = false,
 }: PlaceProfileShellProps) {
   // Beautician uses a per-profile theme_color; places share the brand
   // yellow until per-venue theming ships, so the accent stays consistent.
@@ -656,6 +669,18 @@ export default function PlaceProfileShell({
                   view={portfolioView}
                 />
               </section>
+            )}
+
+            {/* Delivery via CityDrivers — owner-toggled in /dashboard/place.
+                Sits below the menu so customers see it after browsing the
+                offerings. Deep-links to /cari with pickup pre-filled. */}
+            {deliveryEnabled && (
+              <DeliveryViaCityDriversCard
+                venueName={place.name}
+                venueAddress={place.address}
+                venueLat={place.lat}
+                venueLng={place.lng}
+              />
             )}
 
             {/* Running marquee — tags as the scrolling ribbon copy. */}

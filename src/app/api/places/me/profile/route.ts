@@ -53,6 +53,7 @@ type Body = {
   price_tier?:    string | null
   tags?:          string[]
   free_delivery?: boolean
+  delivery_enabled?: boolean
 }
 
 const CATEGORY_ALLOWLIST = new Set(['restaurant','cafe','bar','club'])
@@ -250,6 +251,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'invalid_free_delivery' }, { status: 400 })
     }
     update.free_delivery = body.free_delivery
+  }
+
+  if (body.delivery_enabled !== undefined) {
+    if (typeof body.delivery_enabled !== 'boolean') {
+      return NextResponse.json({ error: 'invalid_delivery_enabled' }, { status: 400 })
+    }
+    // Cast through Record<string, unknown> because the generated Database
+    // types haven't been refreshed with the post-0189 column. Runtime
+    // payload is a plain boolean write.
+    ;(update as Record<string, unknown>).delivery_enabled = body.delivery_enabled
   }
 
   if (body.service_photos !== undefined) {

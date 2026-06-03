@@ -64,7 +64,18 @@ type PlaceRow = {
   created_at: string | null
   contact_enabled: boolean | null
   free_delivery: boolean | null
+  delivery_enabled: boolean | null
 }
+
+// Categories where a CityDrivers pickup option makes sense — restaurants,
+// cafés, bars, clubs (product-sellers). Service / utility categories
+// (hospital, attraction, mall, hotel, etc.) don't get the toggle.
+const DELIVERY_TOGGLE_CATEGORIES: ReadonlySet<PlaceCategory> = new Set([
+  'restaurant',
+  'cafe',
+  'bar',
+  'club',
+])
 
 // Row shape for place_offers — owner-managed menu/ticket/highlight items.
 // price_idr is nullable so image-only entries (e.g. temple highlights,
@@ -136,7 +147,7 @@ export default function PlaceOwnerDashboardPage() {
       .select(
         'id, slug, name, category, description, image_urls, city, address, lat, lng, ' +
         'whatsapp_e164, hours_json, status, paid_until, verified, owner_user_id, ' +
-        'tags, cuisine_types, rating, review_count, created_at, contact_enabled, free_delivery',
+        'tags, cuisine_types, rating, review_count, created_at, contact_enabled, free_delivery, delivery_enabled',
       )
       .eq('owner_user_id', user.id)
       .order('created_at', { ascending: false })
@@ -300,6 +311,9 @@ function Dashboard({
         <OffersSection      row={row} />
         <ContactToggleSection      row={row} onSaved={onReload} />
         <FreeDeliveryToggleSection row={row} onSaved={onReload} />
+        {DELIVERY_TOGGLE_CATEGORIES.has(row.category) && (
+          <DeliveryViaCityDriversToggleSection row={row} onSaved={onReload} />
+        )}
         <HoursSection       row={row} onSaved={onReload} />
       </div>
 
@@ -1427,6 +1441,102 @@ function FreeDeliveryToggleSection({ row, onSaved }: { row: PlaceRow; onSaved: (
           role="switch"
           aria-checked={enabled}
           aria-label="Offer free delivery for this venue"
+          onClick={() => flip(!enabled)}
+          disabled={saving}
+          className={`shrink-0 relative inline-flex items-center rounded-full transition-colors disabled:opacity-60 ${
+            enabled ? 'bg-yellow-400' : 'bg-gray-300'
+          }`}
+          style={{ width: 56, height: 32 }}
+        >
+          <span
+            aria-hidden
+            className="inline-block bg-white rounded-full shadow transition-transform"
+            style={{
+              width: 24,
+              height: 24,
+              transform: `translateX(${enabled ? 28 : 4}px)`,
+            }}
+          />
+        </button>
+      </div>
+      {toast && (
+        <div className="pt-1">
+          <Toast kind={toast.kind}>{toast.msg}</Toast>
+        </div>
+      )}
+    </SectionCard>
+  )
+}
+
+// ============================================================================
+// CityDrivers delivery-pickup toggle — controls places.delivery_enabled.
+// ----------------------------------------------------------------------------
+// When ON the public /places/[slug] page surfaces a "Need delivery?" CTA
+// section that deep-links to /cari with this venue's address pre-filled
+// as pickup. Customer types their own dropoff, picks a specific driver
+// from the list, opens WhatsApp with the driver — order context is
+// pre-typed in the chat. Driver and customer agree fare on WhatsApp;
+// customer pays direct on delivery.
+//
+// PM 12/2019 directory posture stays intact: no platform-set fare, no
+// trip appointment, no DB booking record, no fund custody. See memory
+// `project_kita2u_to_citydrivers_handoff.md` for the 3-rule pattern.
+//
+// Gated in render to DELIVERY_TOGGLE_CATEGORIES (restaurant, cafe, bar,
+// club) so a hospital / temple / mall owner can't accidentally enable it.
+// ============================================================================
+function DeliveryViaCityDriversToggleSection({ row, onSaved }: { row: PlaceRow; onSaved: () => void }) {
+  const initial = row.delivery_enabled === true
+  const [enabled, setEnabled] = useState(initial)
+  const [saving,  setSaving]  = useState(false)
+  const [toast,   setToast]   = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+
+  useEffect(() => { setEnabled(row.delivery_enabled === true) }, [row.id, row.delivery_enabled])
+
+  async function flip(next: boolean) {
+    setToast(null)
+    const supabase = getBrowserSupabase()
+    if (!supabase) { setToast({ kind: 'err', msg: 'Supabase not configured.' }); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setToast({ kind: 'err', msg: 'Not signed in.' }); return }
+    setEnabled(next)
+    setSaving(true)
+    const { error } = await supabase
+      .from('places')
+      .update({ delivery_enabled: next })
+      .eq('id', row.id)
+      .eq('owner_user_id', user.id)
+    setSaving(false)
+    if (error) {
+      setEnabled(!next)
+      setToast({ kind: 'err', msg: error.message })
+      return
+    }
+    setToast({ kind: 'ok', msg: 'Saved.' })
+    setTimeout(() => setToast(null), 2200)
+    onSaved()
+  }
+
+  return (
+    <SectionCard title="Delivery via CityDrivers">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[14px] font-extrabold text-black leading-snug">
+            Accept CityDrivers pickups
+          </div>
+          <p className="text-[13px] text-black/65 leading-relaxed mt-1">
+            When on, your public page shows a <strong>Need delivery?</strong> button.
+            Customers tap it, type their dropoff address, then pick a CityDrivers
+            driver to collect the order. Driver and customer agree the fare on
+            WhatsApp; you&rsquo;re paid direct on pickup. Kita2u never sets the
+            delivery fee or processes the payment.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label="Accept CityDrivers pickups"
           onClick={() => flip(!enabled)}
           disabled={saving}
           className={`shrink-0 relative inline-flex items-center rounded-full transition-colors disabled:opacity-60 ${
