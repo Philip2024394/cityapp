@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { haversineKm } from '@/lib/geo/haversine'
 
 export type PlaceSuggestion = {
   id: string
@@ -10,10 +9,14 @@ export type PlaceSuggestion = {
   lng: number
 }
 
-// Free OSM-based geocoder. Works worldwide, no API key, no billing.
-// Rate-limited to ~1 req/sec per IP — we debounce 350ms so casual typing
-// stays well within bounds. countrycodes can be empty for global search.
-const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/search'
+// Server-side proxy that routes through Nominatim with a 24h in-memory
+// cache + a Mapbox fallback when Nominatim errors / 429s / returns zero.
+// Founder direction 2026-06-03 fix #4 — direct browser → Nominatim calls
+// were getting silently rate-limited (1 req/sec per IP) on busy office
+// networks, leaving customers with empty dropdowns. The proxy moves the
+// rate-limit surface to our function's outbound IP and caches popular
+// queries so the same place lookup doesn't hit Nominatim twice in a day.
+const PROXY_ENDPOINT = '/api/geo/search'
 
 type Options = {
   /** Debounce delay in ms before firing a request after typing stops. */
@@ -59,70 +62,19 @@ export function usePlaceSearch(query: string, opts: Options = {}) {
       abortRef.current = ctrl
       setLoading(true)
       try {
-        const url = new URL(NOMINATIM_ENDPOINT)
+        const url = new URL(PROXY_ENDPOINT, window.location.origin)
         url.searchParams.set('q', query.trim())
-        url.searchParams.set('format', 'json')
-        url.searchParams.set('limit', '6')
-        url.searchParams.set('addressdetails', '1')
-        if (countryCodes.length) url.searchParams.set('countrycodes', countryCodes.join(','))
-        if (near) {
-          // Tight viewbox when we'll enforce a hard 50km radius client-side.
-          // 0.5 deg ≈ 55km — slightly wider than the radius to give the
-          // haversine filter a small margin against the rectangle vs
-          // circle mismatch.
-          const wide = maxDistanceKm > 0 ? 0.5 : 0.3
-          url.searchParams.set(
-            'viewbox',
-            `${near.lng - wide},${near.lat + wide},${near.lng + wide},${near.lat - wide}`,
-          )
-          // bounded=1 strict-clips Nominatim to the viewbox so it doesn't
-          // surface Jakarta when the user is in Bantul. bounded=0 (soft
-          // bias) was the old behaviour.
-          url.searchParams.set('bounded', maxDistanceKm > 0 ? '1' : '0')
-        }
+        if (countryCodes.length) url.searchParams.set('countries', countryCodes.join(','))
+        if (near) url.searchParams.set('near', `${near.lat},${near.lng}`)
+        url.searchParams.set('maxDistanceKm', String(maxDistanceKm))
 
-        const res = await fetch(url.toString(), {
-          signal: ctrl.signal,
-          // Nominatim asks for a descriptive UA / referer per their policy.
-          // Browser ones are sent automatically; no special headers needed.
-        })
-        if (!res.ok) throw new Error(`Nominatim ${res.status}`)
-        let data: NominatimItem[] = await res.json()
-
-        // Bounded-viewbox fallback. When near + maxDistanceKm produces an
-        // empty result set (the user typed a real POI just outside the
-        // strict viewbox — for example Ambarrukmo Plaza when GPS
-        // triangulated to a neighbouring suburb), retry once WITHOUT the
-        // bounded clip so the country-code bias is all that filters.
-        // The haversine radius post-filter below still applies — this
-        // only widens the LOOKUP, not the displayed result.
-        if (data.length === 0 && near) {
-          const fallback = new URL(NOMINATIM_ENDPOINT)
-          fallback.searchParams.set('q', query.trim())
-          fallback.searchParams.set('format', 'json')
-          fallback.searchParams.set('limit', '6')
-          fallback.searchParams.set('addressdetails', '1')
-          if (countryCodes.length) fallback.searchParams.set('countrycodes', countryCodes.join(','))
-          const fbRes = await fetch(fallback.toString(), { signal: ctrl.signal })
-          if (fbRes.ok) data = await fbRes.json()
-        }
-        const mapped = data.map((d): PlaceSuggestion => ({
-          id: String(d.place_id),
-          label: pickShortLabel(d),
-          detail: d.display_name,
-          lat: parseFloat(d.lat),
-          lng: parseFloat(d.lon),
-        }))
-        // Hard radius cull — CityDrivers is a city service. A user in
-        // Bantul typing "Ja" should not see Jakarta (575km) or Jambi
-        // (1200km) suggested. Without `near` we have no reference
-        // point, so the filter no-ops and the country-code bias is all
-        // that remains.
-        const filtered =
-          near && maxDistanceKm > 0
-            ? mapped.filter((s) => haversineKm(near, { lat: s.lat, lng: s.lng }) <= maxDistanceKm)
-            : mapped
-        setSuggestions(filtered)
+        const res = await fetch(url.toString(), { signal: ctrl.signal })
+        if (!res.ok) throw new Error(`geo/search ${res.status}`)
+        const j = (await res.json()) as { suggestions?: PlaceSuggestion[] }
+        const list = Array.isArray(j.suggestions) ? j.suggestions : []
+        // The server already applies the haversine radius cull — no need
+        // to re-run it client-side.
+        setSuggestions(list)
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           setSuggestions([])
@@ -138,63 +90,8 @@ export function usePlaceSearch(query: string, opts: Options = {}) {
   return { suggestions, loading, clear: () => setSuggestions([]) }
 }
 
-// Nominatim returns display_name as a verbose comma-separated string.
-// We prefer the POI / venue name (e.g. "Ambarrukmo Plaza", "KFC
-// Malioboro", "Gembira Loka Zoo") OVER the surrounding administrative
-// area. Founder report 2026-06-03: customer typed "Ambarrukmo Plaza"
-// and the old fallback chain (suburb → village → city → name) labelled
-// the suggestion "Caturtunggal" (the suburb), making the customer
-// think the autosuggest didn't find their mall.
-//
-// The display_name verbose string still lives in `detail` (rendered as
-// the address line below the label), so the customer still sees the
-// neighbourhood for context — but the headline now reads the way they
-// typed it.
-function pickShortLabel(d: NominatimItem): string {
-  const addr = d.address ?? {}
-  return (
-    // Real POIs / amenities (malls, restaurants, hotels, etc.) carry
-    // a top-level `name`. Honour that first.
-    d.name ||
-    // Amenity / shop / tourism tag descriptors when name is missing.
-    addr.amenity ||
-    addr.shop ||
-    addr.tourism ||
-    addr.building ||
-    // Streets next — when the user typed a road name.
-    addr.road ||
-    // Administrative areas only when nothing more specific exists.
-    addr.suburb ||
-    addr.village ||
-    addr.town ||
-    addr.city_district ||
-    addr.city ||
-    addr.county ||
-    addr.state ||
-    d.display_name.split(',')[0] ||
-    'Place'
-  )
-}
-
-type NominatimItem = {
-  place_id: number
-  lat: string
-  lon: string
-  display_name: string
-  name?: string
-  address?: {
-    amenity?:       string
-    shop?:          string
-    tourism?:       string
-    building?:      string
-    road?:          string
-    suburb?:        string
-    village?:       string
-    town?:          string
-    city_district?: string
-    city?:          string
-    county?:        string
-    state?:         string
-    country?:       string
-  }
-}
+// Note: pickShortLabel + the NominatimItem shape used to live here when
+// the hook called Nominatim directly. Both moved server-side into
+// src/app/api/geo/search/route.ts when the proxy shipped (fix #4 of 4,
+// 2026-06-03). The client now consumes the already-shaped PlaceSuggestion
+// rows the proxy returns.
