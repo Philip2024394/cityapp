@@ -91,7 +91,20 @@ function isCityridersPath(pathname: string): boolean {
 
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl
-  const reqHost = (req.headers.get('host') || '').toLowerCase().split(':')[0]
+  // Dev-only host override — set DEV_HOST_OVERRIDE in .env.local to test
+  // either app locally without /etc/hosts hacks. Values:
+  //   DEV_HOST_OVERRIDE=citydrivers.id   → middleware acts as if you're
+  //                                        on citydrivers.id (cityriders
+  //                                        host-scope rewrite kicks in)
+  //   DEV_HOST_OVERRIDE=kita2u.com       → full Kita2u marketplace path
+  // Production builds ignore this entirely (NODE_ENV check + localhost
+  // gate), so it can never leak into a live request.
+  const rawHost = (req.headers.get('host') || '').toLowerCase().split(':')[0]
+  const isDev   = process.env.NODE_ENV !== 'production'
+  const isLocal = rawHost === 'localhost' || rawHost === '127.0.0.1'
+  const reqHost = (isDev && isLocal && process.env.DEV_HOST_OVERRIDE)
+    ? process.env.DEV_HOST_OVERRIDE.toLowerCase()
+    : rawHost
 
   // Retired-domain redirect: any request to citydrivers.id (apex or www) is
   // 301-redirected to the equivalent path on citydrivers.id. Preserves any
