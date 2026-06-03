@@ -65,7 +65,10 @@ export default function MapPinPicker({
       if (!alive || !containerRef.current) return
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style,
+        // Cast through unknown — getResilientStyle returns the looser
+        // protomaps-themes StyleSpec while MapLibre wants its own internal
+        // StyleSpecification. Same cast pattern RiderMap.tsx uses.
+        style: style as unknown as maplibregl.StyleSpecification,
         center:    [initialCenter.lng, initialCenter.lat],
         zoom:      15,
         attributionControl: false,
