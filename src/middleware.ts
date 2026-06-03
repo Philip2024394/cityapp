@@ -32,6 +32,16 @@ const CITYRIDERS_HOSTS = new Set([
   'citydrivers.id',
   'www.citydrivers.id',
 ])
+// Kita2u marketplace hosts — when the founder buys kita2u.com and points
+// it at this Vercel project, these are the only production hostnames
+// that should serve the multi-vertical (beautician/handyman/laundry/
+// etc.) marketplace. Any other production host that isn't citydrivers.id,
+// kita2u.com, localhost, or *.vercel.app returns 404 from the gate
+// below — protects against random DNS pointed at this deploy.
+const KITA2U_HOSTS = new Set([
+  'kita2u.com',
+  'www.kita2u.com',
+])
 const CITYRIDERS_PAGE_PREFIXES = [
   '/cityriders',
   '/cari',
@@ -92,6 +102,31 @@ export async function middleware(req: NextRequest) {
     dest.host = CANONICAL_HOST
     dest.port = ''
     return NextResponse.redirect(dest, 301)
+  }
+
+  // Production-host allow-list gate. Three live hostnames serve content:
+  //
+  //   citydrivers.id  → cityriders driver-directory (host-scoped paths
+  //                     below; everything else rewrites to /cityriders).
+  //   kita2u.com      → full multi-vertical marketplace + Kita2u landing
+  //                     on `/`. No host-scope rewrite — every route is
+  //                     reachable.
+  //   localhost / *.vercel.app → dev + preview deploys. Same behaviour
+  //                     as kita2u.com (full marketplace) so previews
+  //                     stay testable end-to-end.
+  //
+  // Anything else (random preview URLs from forked clones, attempted
+  // subdomain takeovers, stale DNS from a project move) returns a 404
+  // page. Founder direction 2026-06-03 after kita2u.com purchase.
+  const isLocalDev =
+    reqHost === 'localhost' || reqHost === '127.0.0.1' || reqHost.endsWith('.vercel.app')
+  const isProductionAllowed =
+    CITYRIDERS_HOSTS.has(reqHost) || KITA2U_HOSTS.has(reqHost) || isLocalDev
+  if (!isProductionAllowed) {
+    return new NextResponse('Not Found', {
+      status:  404,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
   }
 
   // Host-scope gate: on citydrivers.id, only the cityriders-app surfaces are
