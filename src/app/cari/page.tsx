@@ -25,6 +25,7 @@ import { useHaptic } from '@/hooks/useHaptic'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { haversineKm } from '@/lib/geo/haversine'
 import { useVisualViewportHeight } from '@/hooks/useVisualViewportHeight'
+import MapPinPicker from '@/components/cari/MapPinPicker'
 import { logNav } from '@/lib/perf/navTiming'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { isHourlyTimeAvailable, HOURLY_TIERS } from '@/lib/pricing/hourlyHire'
@@ -179,6 +180,13 @@ function PlanTripPageInner() {
   // above the keyboard. Without this the customer can't tap an
   // autocomplete result that's sitting behind the keyboard.
   useVisualViewportHeight()
+
+  // Pin-on-map fallback — when autocomplete fails on the customer's
+  // address (rare POI, weird spelling, Nominatim hiccup), they tap the
+  // small map icon next to the field which opens MapPinPicker. They
+  // drag the map under the pin, hit Confirm, coords + label flow back
+  // into the input.
+  const [mapPickerFor, setMapPickerFor] = useState<'pickup' | 'dropoff' | null>(null)
 
   // autoRequest=false — defer the browser GPS prompt until the user
   // explicitly taps a control. Mirrors the old /cari behaviour.
@@ -968,6 +976,30 @@ function PlanTripPageInner() {
                       </span>
                     }
                   />
+
+                  {/* Pin-on-map fallback — for any address the autocomplete
+                      can't find. Two tiny links sit under the inputs;
+                      tapping opens MapPinPicker, customer drags the map
+                      under the pin, hits Confirm, coords + label flow
+                      back in. Gojek / Grab-equivalent UX. */}
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setMapPickerFor('pickup')}
+                      className="text-[11px] font-extrabold text-[#854D0E] hover:text-black active:scale-[0.97] transition inline-flex items-center gap-1"
+                    >
+                      <MapPin className="w-3 h-3" strokeWidth={2.5} />
+                      Set pickup on map
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMapPickerFor('dropoff')}
+                      className="text-[11px] font-extrabold text-[#854D0E] hover:text-black active:scale-[0.97] transition inline-flex items-center gap-1"
+                    >
+                      <MapPin className="w-3 h-3" strokeWidth={2.5} />
+                      Set drop-off on map
+                    </button>
+                  </div>
                 </div>
 
                 {/* Swap arrows column — black button with stacked yellow
@@ -1211,6 +1243,34 @@ function PlanTripPageInner() {
         </div>
       </div>
       </div>{/* /cari-frame phone-frame wrapper */}
+
+      {/* Pin-on-map overlay — opens when customer taps "Set on map" under
+          either input. Center pin tracks the map center; on confirm we
+          reverse-geocode the coord and inject coord + label back into
+          pickup or dropoff state. Renders ABOVE everything (z-100). */}
+      {mapPickerFor && (
+        <MapPinPicker
+          initialCenter={
+            (mapPickerFor === 'pickup' ? pickup : dropoff) ??
+            geo.coords ??
+            { lat: -7.7956, lng: 110.3695 }  /* Yogyakarta apex fallback */
+          }
+          title={mapPickerFor === 'pickup' ? 'Set pickup location' : 'Set drop-off location'}
+          onClose={() => setMapPickerFor(null)}
+          onConfirm={(pick) => {
+            if (mapPickerFor === 'pickup') {
+              setPickup({ lat: pick.lat, lng: pick.lng, accuracyM: 0 })
+              setPickupLabel(pick.label)
+              addRecent({ lat: pick.lat, lng: pick.lng, label: pick.label })
+            } else {
+              setDropoff({ lat: pick.lat, lng: pick.lng, accuracyM: 0 })
+              setDropoffLabel(pick.label)
+              addRecent({ lat: pick.lat, lng: pick.lng, label: pick.label })
+            }
+            setMapPickerFor(null)
+          }}
+        />
+      )}
     </main>
   )
 }
