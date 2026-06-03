@@ -396,14 +396,23 @@ export default function SignupTruckPage() {
                 sub="List your truck. Customers find you. You agree the fare and trip directly."
               />
               <form className="space-y-3" onSubmit={signupWithPassword}>
-                <Field label="Indonesian mobile number" hint="Start with 62, e.g. 6281234567890" icon={<Phone className="w-4 h-4 text-black/40" />}>
+                <Field label="Indonesian mobile number" hint="Type the digits after +62 — we add the prefix.">
+                  <span
+                    aria-hidden
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-extrabold text-black/55 pointer-events-none select-none tabular-nums"
+                  >
+                    +62
+                  </span>
                   <input
-                    className={inputCls + ' pl-11 font-mono'}
+                    className={inputCls + ' pl-14 font-mono'}
                     type="tel"
                     inputMode="numeric"
-                    placeholder="6281234567890"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="81234567890"
+                    value={phone.startsWith('62') ? phone.slice(2) : phone}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').replace(/^62/, '').replace(/^0/, '')
+                      setPhone('62' + digits)
+                    }}
                     autoComplete="tel"
                   />
                 </Field>

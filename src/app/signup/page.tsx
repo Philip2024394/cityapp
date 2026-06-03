@@ -287,16 +287,24 @@ export default function SignupPage() {
           </Field>
           <Field
             label="WhatsApp number"
-            icon={<Phone className="w-4 h-4 text-[#71717A]" />}
-            hint="Start with 62, e.g. 6281234567890"
+            hint="Type the digits after +62 — we add the prefix."
           >
+            <span
+              aria-hidden
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-extrabold text-[#71717A] pointer-events-none select-none tabular-nums"
+            >
+              +62
+            </span>
             <input
-              className={inputCls + ' pl-11 tabular-nums font-mono'}
+              className={inputCls + ' pl-14 tabular-nums font-mono'}
               type="tel"
               inputMode="numeric"
-              placeholder="6281234567890"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              placeholder="81234567890"
+              value={phone.startsWith('62') ? phone.slice(2) : phone}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').replace(/^62/, '').replace(/^0/, '')
+                setPhone('62' + digits)
+              }}
               autoComplete="tel"
             />
           </Field>
