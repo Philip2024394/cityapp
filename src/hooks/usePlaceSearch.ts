@@ -87,7 +87,25 @@ export function usePlaceSearch(query: string, opts: Options = {}) {
           // Browser ones are sent automatically; no special headers needed.
         })
         if (!res.ok) throw new Error(`Nominatim ${res.status}`)
-        const data: NominatimItem[] = await res.json()
+        let data: NominatimItem[] = await res.json()
+
+        // Bounded-viewbox fallback. When near + maxDistanceKm produces an
+        // empty result set (the user typed a real POI just outside the
+        // strict viewbox — for example Ambarrukmo Plaza when GPS
+        // triangulated to a neighbouring suburb), retry once WITHOUT the
+        // bounded clip so the country-code bias is all that filters.
+        // The haversine radius post-filter below still applies — this
+        // only widens the LOOKUP, not the displayed result.
+        if (data.length === 0 && near) {
+          const fallback = new URL(NOMINATIM_ENDPOINT)
+          fallback.searchParams.set('q', query.trim())
+          fallback.searchParams.set('format', 'json')
+          fallback.searchParams.set('limit', '6')
+          fallback.searchParams.set('addressdetails', '1')
+          if (countryCodes.length) fallback.searchParams.set('countrycodes', countryCodes.join(','))
+          const fbRes = await fetch(fallback.toString(), { signal: ctrl.signal })
+          if (fbRes.ok) data = await fbRes.json()
+        }
         const mapped = data.map((d): PlaceSuggestion => ({
           id: String(d.place_id),
           label: pickShortLabel(d),
@@ -121,11 +139,31 @@ export function usePlaceSearch(query: string, opts: Options = {}) {
 }
 
 // Nominatim returns display_name as a verbose comma-separated string.
-// For the short label we prefer the name field (e.g. "Bantul") and
-// fall back to the first piece of display_name.
+// We prefer the POI / venue name (e.g. "Ambarrukmo Plaza", "KFC
+// Malioboro", "Gembira Loka Zoo") OVER the surrounding administrative
+// area. Founder report 2026-06-03: customer typed "Ambarrukmo Plaza"
+// and the old fallback chain (suburb → village → city → name) labelled
+// the suggestion "Caturtunggal" (the suburb), making the customer
+// think the autosuggest didn't find their mall.
+//
+// The display_name verbose string still lives in `detail` (rendered as
+// the address line below the label), so the customer still sees the
+// neighbourhood for context — but the headline now reads the way they
+// typed it.
 function pickShortLabel(d: NominatimItem): string {
   const addr = d.address ?? {}
   return (
+    // Real POIs / amenities (malls, restaurants, hotels, etc.) carry
+    // a top-level `name`. Honour that first.
+    d.name ||
+    // Amenity / shop / tourism tag descriptors when name is missing.
+    addr.amenity ||
+    addr.shop ||
+    addr.tourism ||
+    addr.building ||
+    // Streets next — when the user typed a road name.
+    addr.road ||
+    // Administrative areas only when nothing more specific exists.
     addr.suburb ||
     addr.village ||
     addr.town ||
@@ -133,7 +171,6 @@ function pickShortLabel(d: NominatimItem): string {
     addr.city ||
     addr.county ||
     addr.state ||
-    d.name ||
     d.display_name.split(',')[0] ||
     'Place'
   )
@@ -146,13 +183,18 @@ type NominatimItem = {
   display_name: string
   name?: string
   address?: {
-    suburb?: string
-    village?: string
-    town?: string
+    amenity?:       string
+    shop?:          string
+    tourism?:       string
+    building?:      string
+    road?:          string
+    suburb?:        string
+    village?:       string
+    town?:          string
     city_district?: string
-    city?: string
-    county?: string
-    state?: string
-    country?: string
+    city?:          string
+    county?:        string
+    state?:         string
+    country?:       string
   }
 }
