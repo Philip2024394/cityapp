@@ -49,10 +49,15 @@ const CITYRIDERS_PAGE_PREFIXES = [
   '/dashboard/bus',
   '/dashboard/jeep',
   '/dashboard/partner',
-  '/signup/car',
-  '/signup/truck',
-  '/signup/bus',
-  '/signup/jeep',
+  // /signup covers BOTH the bare path (bike uses /signup?role=driver — no
+  // dedicated bike page) and every per-vehicle sub-route (/signup/car,
+  // /signup/truck, /signup/bus, /signup/jeep) via the prefix match in
+  // isCityridersPath. The four explicit sub-entries this replaced were
+  // missing the bare /signup, so the bike "Sign up" CTA on /drivers
+  // was silently rewritten to /cityriders — same class of bug as the
+  // /r whitelist miss fixed on 2026-06-02. One bare prefix covers
+  // every current AND future signup sub-route.
+  '/signup',
   '/partners',
   '/p',
   '/login',
