@@ -965,7 +965,18 @@ function PlanTripPageInner() {
                     countryCodes={countryCodes}
                     ariaLabel={t('dropoffAria')}
                     clearOnFocus
-                    dropdownDirection="down"
+                    // Founder report 2026-06-03: typing "Prawirotaman" in
+                    // the dropoff returned nothing visible. The proxy was
+                    // actually returning 6+ matches — but with
+                    // dropdownDirection="down" the menu opened INTO the
+                    // bottom edge of the booking container which has
+                    // overflow-hidden, silently clipping it. Opening UP
+                    // (over the pickup input above) keeps the dropdown
+                    // inside the container and visible the moment the
+                    // customer focuses the dropoff field. Pickup stays
+                    // "down" because it sits at the top of the inputs
+                    // stack with plenty of room below.
+                    dropdownDirection="up"
                     maxResults={3}
                     rightSlot={
                       <span
