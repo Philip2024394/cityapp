@@ -252,7 +252,19 @@ function PlanTripPageInner() {
     return () => { cancelled = true }
   }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng])
   const tripKm = tripRoute?.km ?? null
-  const canSearch = !!pickup && !!dropoff
+  // Plain-text passthrough: when the customer types pickup + dropoff
+  // but couldn't pick from autocomplete (rare POI, weird spelling,
+  // Nominatim hiccup), we still let them book. The WA message body
+  // ships the typed labels; the driver reads + agrees fare in chat.
+  // Founder direction 2026-06-03 — was a hard `pickup && dropoff` gate
+  // that dead-ended any customer whose address didn't resolve.
+  const hasPickupText  = pickupLabel.trim().length  > 0
+  const hasDropoffText = dropoffLabel.trim().length > 0
+  const canSearch      = (!!pickup || hasPickupText) && (!!dropoff || hasDropoffText)
+  /** True when at least one endpoint is text-only (no coord). Drives the
+   *  "Driver will quote on WhatsApp" hint shown in place of a fare
+   *  estimate, since we can't haversine without both coords. */
+  const isTextOnlyMode = (!pickup && hasPickupText) || (!dropoff && hasDropoffText)
 
   // Lowest published driver fare in the area + count (same /api/drivers/
   // lowest-fare endpoint we used before — refetches on pickup change).
