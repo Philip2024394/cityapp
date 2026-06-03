@@ -16,6 +16,7 @@ import VisitUsPanel, {
   SocialTikTokIcon,
   SocialFacebookIcon,
 } from '@/components/profile/VisitUsPanel'
+import VisitUsViaCityDriversCard from '@/components/providers/VisitUsViaCityDriversCard'
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { bannerSrc } from '@/lib/banners/transform'
@@ -406,6 +407,19 @@ export default function MassageProviderPage() {
       </div>
 
       <div className="px-4 pb-6 max-w-2xl mx-auto space-y-3 pt-3">
+        {/* Visit Us via CityDrivers — owner-toggled (mig 0191). Gated on
+            visit_us_enabled AND a pinned location. See memory file
+            project_kita2u_to_citydrivers_handoff.md for the 3-rule pattern. */}
+        {((p as unknown as { visit_us_enabled?: boolean }).visit_us_enabled === true
+          && typeof p.latitude === 'number'
+          && typeof p.longitude === 'number') && (
+          <VisitUsViaCityDriversCard
+            salonName={p.display_name}
+            salonLat={p.latitude}
+            salonLng={p.longitude}
+            themeColor={theme}
+          />
+        )}
         {showVisitUs ? (
           <>
             {p.has_physical_location && (

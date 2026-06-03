@@ -17,6 +17,7 @@ import VisitUsPanel, {
   SocialTikTokIcon,
   SocialFacebookIcon,
 } from '@/components/profile/VisitUsPanel'
+import VisitUsViaCityDriversCard from '@/components/providers/VisitUsViaCityDriversCard'
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
 import AvatarFrame from '@/components/profile/AvatarFrame'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
@@ -443,6 +444,18 @@ export default function SkincareProviderPage() {
       </div>
 
       <div className="px-4 pb-6 max-w-2xl mx-auto space-y-3 pt-3">
+        {/* Visit Us via CityDrivers — owner-toggled (mig 0191). See
+            memory file project_kita2u_to_citydrivers_handoff.md. */}
+        {((p as unknown as { visit_us_enabled?: boolean }).visit_us_enabled === true
+          && typeof p.latitude === 'number'
+          && typeof p.longitude === 'number') && (
+          <VisitUsViaCityDriversCard
+            salonName={p.display_name}
+            salonLat={p.latitude}
+            salonLng={p.longitude}
+            themeColor={theme}
+          />
+        )}
         {showVisitUs ? (
           <VisitUsPanel
             displayName={p.display_name}

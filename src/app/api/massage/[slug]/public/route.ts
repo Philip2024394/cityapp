@@ -34,6 +34,8 @@ const PUBLIC_COLS = [
   'theme_color',
   // mig 0088 service locations + optional physical studio coordinates
   'service_locations',
+  // mig 0191 Visit Us → CityDrivers ride card opt-in
+  'visit_us_enabled',
   'has_physical_location','latitude','longitude',
   // mig 0104 — beautician-parity feature columns
   'hero_text','promo_text','busy_dates','service_photos','marketplace_categories',

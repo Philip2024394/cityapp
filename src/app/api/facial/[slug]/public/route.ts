@@ -44,6 +44,8 @@ const PUBLIC_COLS = [
   'busy_dates',
   // mig 0086 service locations (home / hotel / villa subset)
   'service_locations',
+  // mig 0191 Visit Us → CityDrivers ride card opt-in
+  'visit_us_enabled',
   // mig 0140 primary CTA button animation
   'cta_button_effect',
   // mig 0141 animated avatar frame style

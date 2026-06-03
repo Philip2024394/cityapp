@@ -33,7 +33,7 @@ import {
 import { useVendorCart } from '@/components/cart/useVendorCart'
 import VendorCartButton from '@/components/cart/VendorCartButton'
 import VendorCartSheet from '@/components/cart/VendorCartSheet'
-import VisitUsViaCityDriversCard from '@/components/beautician/VisitUsViaCityDriversCard'
+import VisitUsViaCityDriversCard from '@/components/providers/VisitUsViaCityDriversCard'
 import { bannerSrc } from '@/lib/banners/transform'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
