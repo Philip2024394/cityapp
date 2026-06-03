@@ -24,6 +24,7 @@ import { useCountryFromCoords } from '@/hooks/useCountryFromCoords'
 import { useHaptic } from '@/hooks/useHaptic'
 import { fetchRoadDistanceKm, instantRoadDistance, type RoadDistance } from '@/lib/geo/route-distance'
 import { haversineKm } from '@/lib/geo/haversine'
+import { useVisualViewportHeight } from '@/hooks/useVisualViewportHeight'
 import { logNav } from '@/lib/perf/navTiming'
 import { fetchActiveDriversBrowser } from '@/lib/drivers/queries'
 import { isHourlyTimeAvailable, HOURLY_TIERS } from '@/lib/pricing/hourlyHire'
@@ -172,6 +173,13 @@ function PlanTripPageInner() {
   const router = useRouter()
   const params = useSearchParams()
   const t = useTranslations('cari')
+  // Keyboard-aware viewport sizing — writes visual-viewport height to a
+  // CSS variable `--vvh` so the bottom booking container can shrink when
+  // the mobile keyboard opens, keeping the suggestion dropdown visible
+  // above the keyboard. Without this the customer can't tap an
+  // autocomplete result that's sitting behind the keyboard.
+  useVisualViewportHeight()
+
   // autoRequest=false — defer the browser GPS prompt until the user
   // explicitly taps a control. Mirrors the old /cari behaviour.
   const geo = useGeolocation(false)
@@ -780,7 +788,14 @@ function PlanTripPageInner() {
       >
         <div
           className="mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden w-full"
-          style={{ height: '70vh', maxWidth: 640 }}
+          style={{
+            // Shrinks with the visual viewport when the mobile keyboard
+            // opens — useVisualViewportHeight() above writes --vvh on
+            // every visualViewport resize/scroll. Falls back to 100vh
+            // on older browsers via the var() default.
+            height: 'calc(var(--vvh, 100vh) * 0.70)',
+            maxWidth: 640,
+          }}
         >
           <div className="flex flex-col h-full p-4 sm:p-5 pb-safe">
             {/* ROW 1 — Header bar: mode icon + "Where to?" + Add Stop.
