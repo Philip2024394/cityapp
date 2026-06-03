@@ -195,7 +195,7 @@ export default function SignupPage() {
                       'Use your WhatsApp number and a password. No SMS code needed.'
 
   return (
-    <AuthShell>
+    <AuthShell backgroundImage="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_30_50%20PM.png">
       <StepDots active={step} />
 
       {/* Hero */}

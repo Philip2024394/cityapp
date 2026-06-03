@@ -19,44 +19,77 @@
 // ============================================================================
 import Link from 'next/link'
 
-export default function AuthShell({ children }: { children: React.ReactNode }) {
+export default function AuthShell({
+  children,
+  backgroundImage,
+}: {
+  children:        React.ReactNode
+  /** Optional full-bleed hero image rendered fixed behind the form. The
+   *  /signup root uses the bike landing hero; per-vehicle signup flows
+   *  set their own. Falls back to the soft radial gradient when null. */
+  backgroundImage?: string
+}) {
   return (
     <main
       className="relative min-h-[100dvh] flex flex-col"
       style={{
-        background:
-          'radial-gradient(circle at top, #FFFBEA 0%, #FFFFFF 50%, #F5F5F4 100%)',
+        background: backgroundImage
+          ? undefined
+          : 'radial-gradient(circle at top, #FFFBEA 0%, #FFFFFF 50%, #F5F5F4 100%)',
         color: '#0A0A0A',
       }}
     >
-      <AuthHeader />
-
-      {/* Centred content slot — vertically centres the card when the
-          viewport has room, but allows scroll on short screens. */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full" style={{ maxWidth: 420 }}>
+      {backgroundImage && (
+        <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={backgroundImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="eager"
+          />
           <div
-            className="rounded-3xl bg-white border p-6 sm:p-7"
+            className="absolute inset-0"
             style={{
-              borderColor: '#E4E4E7',
-              boxShadow: '0 12px 32px rgba(15,23,42,0.08)',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.88) 38%, rgba(255,255,255,0.98) 65%)',
             }}
-          >
-            {children}
+          />
+        </div>
+      )}
+
+      <div className="relative z-10 flex flex-col flex-1">
+        <AuthHeader />
+
+        {/* Centred content slot — vertically centres the card when the
+            viewport has room, but allows scroll on short screens. */}
+        <div className="flex-1 flex items-center justify-center px-4 py-8">
+          <div className="w-full" style={{ maxWidth: 420 }}>
+            <div
+              className="rounded-3xl bg-white border p-6 sm:p-7"
+              style={{
+                borderColor: '#E4E4E7',
+                boxShadow: '0 12px 32px rgba(15,23,42,0.08)',
+              }}
+            >
+              {children}
+            </div>
           </div>
         </div>
-      </div>
 
-      <AuthFooter />
+        <AuthFooter />
+      </div>
     </main>
   )
 }
 
 // ----------------------------------------------------------------------------
-// Brand header — CityDrivers wordmark on the left ("Ind" + yellow pin SVG +
-// "City"). Inline SVG copied from /places/page.tsx so the mark matches
-// across the app pixel-for-pixel. Right side intentionally empty: auth
-// pages keep the focus on the form, no nav distractions.
+// Brand header — "CityDrivers" wordmark with a yellow pin separating the
+// two halves. Founder feedback 2026-06-03: previous mark rendered as
+// "Ind" + pin + "City" — visually read as "Indocity" / "IndCity" (legacy
+// pre-rename brand). Replaced with the canonical CityDrivers wordmark.
+// Right side intentionally empty: auth pages keep the focus on the
+// form, no nav distractions.
 // ----------------------------------------------------------------------------
 function AuthHeader() {
   return (
@@ -79,7 +112,7 @@ function AuthHeader() {
             className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
             style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
           >
-            Ind
+            City
           </span>
           <svg
             aria-hidden
@@ -97,7 +130,7 @@ function AuthHeader() {
             className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
             style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
           >
-            City
+            Drivers
           </span>
         </Link>
         <div aria-hidden />

@@ -33,6 +33,13 @@ import { loadDraft, saveDraft, clearDraft, SIGNUP_DRAFT_KEYS } from '@/lib/signu
 // ----------------------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------------------
+// Hero backdrop — same image rendered as the /drivers/jeep landing-page
+// hero so the visual identity carries from the recruitment surface into
+// the sign-up flow. Pinned full-bleed behind the form with a white
+// gradient overlay so the form content stays readable.
+const HERO_URL =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2031,%202026,%2008_56_50%20AM.png?updatedAt=1780192628743'
+
 const TOTAL_STEPS = 6
 const STEP_LABELS = ['Phone', 'Profile', 'Vehicle', 'Rates', 'Payment', 'Review'] as const
 
@@ -304,7 +311,27 @@ export default function SignupJeepPage() {
   // Render
   // ──────────────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-[100dvh] bg-white text-black">
+    <main className="relative min-h-[100dvh] text-black">
+      {/* Hero backdrop — fixed full-bleed jeep image with a white gradient
+          fade so the form sits on a calm, readable surface while the
+          vehicle vibe carries through from /drivers/jeep. */}
+      <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={HERO_URL}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          loading="eager"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.88) 38%, rgba(255,255,255,0.98) 65%)',
+          }}
+        />
+      </div>
+      <div className="relative z-10">
       <CityDriversBrandStrip subtitle="Sign up — Jeep driver" />
       <AppNav />
       <div className="max-w-md mx-auto px-4 pt-6 pb-24">
@@ -705,6 +732,7 @@ export default function SignupJeepPage() {
           Already have an account?{' '}
           <Link href="/login" className="text-yellow-600 font-bold">Sign in</Link>
         </div>
+      </div>
       </div>
     </main>
   )

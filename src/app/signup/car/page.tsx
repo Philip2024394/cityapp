@@ -33,6 +33,12 @@ import { loadDraft, saveDraft, clearDraft, SIGNUP_DRAFT_KEYS } from '@/lib/signu
 // ----------------------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------------------
+// Hero backdrop — same image rendered as the /drivers/car landing-page
+// hero so the visual identity carries from the recruitment surface into
+// the sign-up flow.
+const HERO_URL =
+  'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_53_26%20PM.png'
+
 const TOTAL_STEPS = 6
 const STEP_LABELS = ['Phone', 'Profile', 'Vehicle', 'Rates', 'Payment', 'Review'] as const
 
@@ -329,7 +335,24 @@ export default function SignupCarPage() {
   // Render
   // ──────────────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-[100dvh] bg-white text-black">
+    <main className="relative min-h-[100dvh] text-black">
+      <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={HERO_URL}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          loading="eager"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.88) 38%, rgba(255,255,255,0.98) 65%)',
+          }}
+        />
+      </div>
+      <div className="relative z-10">
       <CityDriversBrandStrip subtitle="Sign up — Car driver" />
       <AppNav />
       <div className="max-w-md mx-auto px-4 pt-6 pb-24">
@@ -730,6 +753,7 @@ export default function SignupCarPage() {
           Already have an account?{' '}
           <Link href="/login" className="text-yellow-600 font-bold">Sign in</Link>
         </div>
+      </div>
       </div>
     </main>
   )
