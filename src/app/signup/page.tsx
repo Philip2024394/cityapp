@@ -195,7 +195,31 @@ export default function SignupPage() {
                       'Use your WhatsApp number and a password. No SMS code needed.'
 
   return (
-    <AuthShell backgroundImage="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_30_50%20PM.png">
+    <AuthShell
+      backgroundImage="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_30_50%20PM.png"
+      hideHeader
+    >
+      {/* Landing-style brand — logo + "CityDrivers" wordmark — pinned
+          above the form card, matching the brand block on the public
+          /drivers landing pages. */}
+      <Link
+        href="/cityriders"
+        className="flex items-center justify-center gap-2 mb-4 active:scale-[0.97] transition"
+        aria-label="CityDrivers home"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
+          alt=""
+          className="h-11 w-auto rounded-xl object-contain"
+        />
+        <span
+          className="font-black text-[20px] tracking-tight leading-none"
+          style={{ color: '#0A0A0A' }}
+        >
+          CityDrivers
+        </span>
+      </Link>
       <StepDots active={step} />
 
       {/* Hero */}
@@ -319,7 +343,7 @@ export default function SignupPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
+              autoComplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"
               minLength={6}
             />
             <button

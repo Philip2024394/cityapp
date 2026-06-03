@@ -23,8 +23,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Phone, KeyRound, Check, Eye, EyeOff, Loader2 } from 'lucide-react'
-import AppNav from '@/components/layout/AppNav'
-import CityDriversBrandStrip from '@/components/dashboard/CityDriversBrandStrip'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { INDONESIAN_CITIES } from '@/data/indonesianCities'
 import { ANTI_SPAM_MIN_FEE } from '@/lib/pricing/zones'
@@ -332,9 +330,30 @@ export default function SignupJeepPage() {
         />
       </div>
       <div className="relative z-10">
-      <CityDriversBrandStrip subtitle="Sign up — Jeep driver" />
-      <AppNav />
-      <div className="max-w-md mx-auto px-4 pt-6 pb-24">
+      <div className="max-w-md mx-auto px-4 pt-8 pb-24">
+        {/* Landing-style brand — same logo + "CityDrivers" wordmark used
+            on the public /drivers landing pages. Replaces the white
+            sticky CityDriversBrandStrip + AppNav header container
+            (founder direction Jun 2026 — keep the surface clean so the
+            hero backdrop + form card carry the whole top of the page). */}
+        <Link
+          href="/cityriders"
+          className="flex items-center justify-center gap-2 mb-5 active:scale-[0.97] transition"
+          aria-label="CityDrivers home"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
+            alt=""
+            className="h-11 w-auto rounded-xl object-contain"
+          />
+          <span
+            className="font-black text-[20px] tracking-tight leading-none"
+            style={{ color: '#0A0A0A' }}
+          >
+            CityDrivers
+          </span>
+        </Link>
         <ProgressBar step={step} total={TOTAL_STEPS} />
         <div className="text-[13px] font-extrabold uppercase tracking-wider text-black/50 mt-3 mb-2">
           Step {step} of {TOTAL_STEPS} · {STEP_LABELS[step - 1]}
@@ -386,7 +405,7 @@ export default function SignupJeepPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
+                    autoComplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"
                     minLength={6}
                   />
                   <button

@@ -22,12 +22,17 @@ import Link from 'next/link'
 export default function AuthShell({
   children,
   backgroundImage,
+  hideHeader,
 }: {
   children:        React.ReactNode
   /** Optional full-bleed hero image rendered fixed behind the form. The
    *  /signup root uses the bike landing hero; per-vehicle signup flows
    *  set their own. Falls back to the soft radial gradient when null. */
   backgroundImage?: string
+  /** Suppresses the white sticky CityDrivers wordmark header. Signup
+   *  flows set this so they can paint the landing-style logo + brand
+   *  inline over the hero backdrop instead. */
+  hideHeader?:      boolean
 }) {
   return (
     <main
@@ -59,7 +64,7 @@ export default function AuthShell({
       )}
 
       <div className="relative z-10 flex flex-col flex-1">
-        <AuthHeader />
+        {!hideHeader && <AuthHeader />}
 
         {/* Centred content slot — vertically centres the card when the
             viewport has room, but allows scroll on short screens. */}
