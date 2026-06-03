@@ -33,6 +33,7 @@ import {
 import { useVendorCart } from '@/components/cart/useVendorCart'
 import VendorCartButton from '@/components/cart/VendorCartButton'
 import VendorCartSheet from '@/components/cart/VendorCartSheet'
+import VisitUsViaCityDriversCard from '@/components/beautician/VisitUsViaCityDriversCard'
 import { bannerSrc } from '@/lib/banners/transform'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 
@@ -440,6 +441,20 @@ export default function BeauticianProviderPage() {
       </div>
 
       <div className="px-4 pb-6 max-w-2xl mx-auto space-y-3 pt-3">
+        {/* Visit Us via CityDrivers — owner-toggled in /dashboard/beautician/info
+            (mig 0190 / visit_us_enabled). Renders ABOVE the modal Visit Us
+            panel so customers see the Bike/Car CTAs without having to tap
+            into a modal first. Gated on the toggle AND a pinned location. */}
+        {((p as unknown as { visit_us_enabled?: boolean }).visit_us_enabled === true
+          && typeof p.latitude === 'number'
+          && typeof p.longitude === 'number') && (
+          <VisitUsViaCityDriversCard
+            salonName={p.display_name}
+            salonLat={p.latitude}
+            salonLng={p.longitude}
+            themeColor={theme}
+          />
+        )}
         {showVisitUs ? (
           <VisitUsPanel
             displayName={p.display_name}

@@ -155,6 +155,16 @@ export async function POST(req: Request) {
     }
   }
 
+  // mig 0190 — Visit Us → CityDrivers ride card opt-in. Boolean only.
+  // Cast through Record<string, unknown> until Database types refresh.
+  if ((body as { visit_us_enabled?: unknown }).visit_us_enabled !== undefined) {
+    const raw = (body as { visit_us_enabled?: unknown }).visit_us_enabled
+    if (typeof raw !== 'boolean') {
+      return NextResponse.json({ error: 'invalid_visit_us_enabled' }, { status: 400 })
+    }
+    ;(update as Record<string, unknown>).visit_us_enabled = raw
+  }
+
   if (body.service_photos !== undefined) {
     const sp = body.service_photos
     if (sp === null || typeof sp !== 'object' || Array.isArray(sp)) {

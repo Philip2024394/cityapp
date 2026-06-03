@@ -38,6 +38,11 @@ type Extras = {
   contact_form_enabled?: boolean | null
   contact_email?:        string | null
   service_locations?: Array<'home' | 'hotel' | 'villa'> | null
+  // mig 0190 — Visit Us → CityDrivers handoff opt-in (founder direction
+  // 2026-06-03). When true, the public page renders a "Visit Us / Get a
+  // ride" card with Bike + Car CTAs that deep-link to /cari with the
+  // salon address pre-filled as dropoff.
+  visit_us_enabled?: boolean | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -131,6 +136,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     contact_form_enabled: boolean
     contact_email:        string
     service_locations: Array<'home' | 'hotel' | 'villa'>
+    visit_us_enabled:  boolean
   }
   const [f, setF] = useState<FormState>({
     display_name:        provider.display_name,
@@ -156,6 +162,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
     contact_form_enabled: Boolean((provider as Extras).contact_form_enabled),
     contact_email:       (provider as Extras).contact_email   ?? '',
     service_locations:   provider.service_locations ?? ['home','hotel','villa'],
+    visit_us_enabled:    Boolean((provider as Extras).visit_us_enabled),
   })
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
@@ -237,6 +244,7 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
           contact_form_enabled:  f.contact_form_enabled,
           contact_email:         f.contact_email.trim()   || null,
           service_locations:     f.service_locations,
+          visit_us_enabled:      f.visit_us_enabled,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -453,6 +461,34 @@ function InfoForm({ provider, onSaved }: { provider: FullProvider; onSaved: () =
         </label>
         {f.contact_form_enabled && !f.contact_email.trim() && (
           <p className="text-[12px] text-amber-700 leading-snug">⚠ Set an email above before enabling.</p>
+        )}
+
+        {/* Visit Us → CityDrivers ride card (mig 0190). Lets a customer
+            on your public page tap "Visit us" and find a Bike or Car
+            driver to bring them to your salon — the salon address is
+            pre-filled as dropoff; the customer types their pickup in
+            /cari and picks a specific driver. Toggle is disabled until
+            the salon has a pinned location (latitude + longitude),
+            otherwise the deep link has nothing to fill in. */}
+        <label className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 border border-gray-200 p-3 cursor-pointer mt-3">
+          <div className="min-w-0">
+            <div className="text-[13px] font-extrabold text-black">Offer ride to my location (CityDrivers)</div>
+            <div className="text-[12px] text-black/55 leading-snug">
+              When on, your public page shows a <strong>Visit us</strong> card with Bike + Car buttons.
+              Customer picks a CityDrivers driver, agrees the fare on WhatsApp. We never set the fare or take a cut.
+              Requires a pinned location above.
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            checked={f.visit_us_enabled}
+            onChange={(e) => upd('visit_us_enabled', e.target.checked)}
+            disabled={!f.has_physical_location || f.latitude == null || f.longitude == null}
+            className="w-5 h-5 accent-pink-500"
+          />
+        </label>
+        {f.visit_us_enabled && (!f.has_physical_location || f.latitude == null || f.longitude == null) && (
+          <p className="text-[12px] text-amber-700 leading-snug">⚠ Pin your salon location above before enabling.</p>
         )}
       </Card>
 
