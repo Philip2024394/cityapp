@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import PlacesBrowser from '@/components/places/PlacesBrowser'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { haversineKm } from '@/lib/geo/haversine'
@@ -18,12 +19,17 @@ import type { Place, PlaceCategory, CityZone } from '@/lib/places/types'
 // partner" badges — only data the row actually carries is surfaced.
 // ============================================================================
 
-export const metadata = {
-  title: 'Food · CityDrivers',
-  description:
-    'Browse self-listed eateries — restaurants, cafés, bars, clubs — ' +
-    'near you in Indonesia. CityDrivers is a software directory.',
-  alternates: { canonical: 'https://citydrivers.id/food' },
+// Per-locale metadata. Bahasa text comes from messages/id.json; English
+// text from messages/en.json. The catalog is looked up by locale at
+// request time so the page title + description always match what
+// the visitor sees on screen.
+export async function generateMetadata() {
+  const t = await getTranslations('verticals.food')
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    alternates: { canonical: 'https://kita2u.com/food' },
+  }
 }
 
 // Force fresh data on every request so newly-approved places land without a
@@ -42,14 +48,17 @@ const FOOD_CATEGORIES: ReadonlyArray<PlaceCategory> = [
   'club',
 ]
 
-// Chip rail for /food — mirrors FOOD_CATEGORIES with Bahasa labels.
-const FOOD_CHIPS = [
-  { id: 'all',        label: 'All' },
-  { id: 'restaurant', label: 'Resto' },
-  { id: 'cafe',       label: 'Kafe' },
-  { id: 'bar',        label: 'Bar' },
-  { id: 'club',       label: 'Klub' },
-] as const
+// Chip rail labels are now built per-request from the catalog so the
+// "All" / "Resto" / "Café" labels reflect the active locale.
+function buildChips(t: (k: string) => string, common: (k: string) => string) {
+  return [
+    { id: 'all',        label: common('chipAll')       },
+    { id: 'restaurant', label: t('chipRestaurant')     },
+    { id: 'cafe',       label: t('chipCafe')           },
+    { id: 'bar',        label: t('chipBar')            },
+    { id: 'club',       label: t('chipClub')           },
+  ] as const
+}
 
 type PlaceRow = {
   id: string
@@ -159,6 +168,11 @@ export default async function FoodPage({
   const currentCity = (params.city || DEFAULT_CITY).toLowerCase()
   const { places } = await loadPlaces(currentCity)
   const currentCityLabel = capitalise(currentCity)
+  // Load translation catalog for this locale (resolved by next-intl from
+  // the NEXT_LOCALE cookie set by middleware).
+  const t       = await getTranslations('verticals.food')
+  const tCommon = await getTranslations('verticals.common')
+  const chips   = buildChips(t, tCommon)
 
   return (
     <main
@@ -168,38 +182,27 @@ export default async function FoodPage({
         color: '#0A0A0A',
       }}
     >
-      {/* HEADER — CityDrivers wordmark on the left (Ind + pin + City), nothing
-          on the right. Mirrors the /places header pattern verbatim. */}
+      {/* HEADER — Kita2u wordmark. Was CityDrivers ("Ind[pin]City") which is
+          the wrong brand on the Kita2u marketplace. Per founder direction,
+          category pages live under Kita2u, not CityDrivers. */}
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/"
             className="inline-flex items-center hover:opacity-85 transition"
-            aria-label="CityDrivers home"
+            aria-label="Kita2u home"
           >
             <span
               className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
               style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
             >
-              Ind
+              Kita
             </span>
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              fill="none"
-              className="w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] mx-[1px] translate-y-[3px]"
-            >
-              <path
-                d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
-                fill="#FACC15"
-              />
-              <circle cx="12" cy="10" r="3" fill="#FFFFFF" />
-            </svg>
             <span
               className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
-              style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
+              style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
             >
-              City
+              2u
             </span>
           </Link>
         </div>
@@ -212,9 +215,10 @@ export default async function FoodPage({
         <PlacesBrowser
           places={places}
           currentCityLabel={currentCityLabel}
-          chips={FOOD_CHIPS}
-          title={`Food in ${currentCityLabel}`}
-          subtitle={`Best restaurants, cafés, bars across ${currentCityLabel}`}
+          chips={chips}
+          title={t('title',    { city: currentCityLabel })}
+          subtitle={t('subtitle', { city: currentCityLabel })}
+          profileBasePath="/food"
         />
       </div>
     </main>

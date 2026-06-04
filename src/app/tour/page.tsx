@@ -514,13 +514,23 @@ function Shell({ children }: { children: React.ReactNode }) {
     >
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" aria-label="Kita2u home" className="inline-block hover:opacity-85 transition">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
-              alt="Kita2u"
-              className="h-8 sm:h-10 w-auto"
-            />
+          <Link
+            href="/"
+            aria-label="Kita2u home"
+            className="inline-flex items-center hover:opacity-85 transition"
+          >
+            <span
+              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
+              style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
+            >
+              Kita
+            </span>
+            <span
+              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
+              style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
+            >
+              2u
+            </span>
           </Link>
         </div>
       </header>

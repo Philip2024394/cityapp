@@ -540,3 +540,42 @@
    without the visual gutter. */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Signup-page checkbox — white default, yellow when checked. Bigger
+   24×24 hit area (founder direction 2026-06-03: existing 16×16 native
+   checkbox felt cramped on mobile and the gray default never read as
+   "white"). Used by the agree-to-terms + 18-plus toggles on every
+   /signup/* page. */
+.signup-check {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid #D4D4D8;
+  background: #FFFFFF;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.signup-check:hover { border-color: #A1A1AA; }
+.signup-check:focus-visible {
+  outline: 2px solid #FACC15;
+  outline-offset: 2px;
+}
+.signup-check:checked {
+  background: #FACC15;
+  border-color: #EAB308;
+}
+.signup-check:checked::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 2px;
+  width: 7px;
+  height: 13px;
+  border: solid #0A0A0A;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}

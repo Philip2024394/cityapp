@@ -362,7 +362,7 @@ export default function SignupPage() {
                 type="checkbox"
                 checked={agree}
                 onChange={(e) => setAgree(e.target.checked)}
-                className="mt-0.5 w-4 h-4 accent-[#FACC15] shrink-0 cursor-pointer"
+                className="signup-check"
               />
               <span className="text-[13px] text-[#52525B] leading-relaxed">
                 I confirm I am an{' '}
@@ -386,7 +386,7 @@ export default function SignupPage() {
               type="checkbox"
               checked={age18}
               onChange={(e) => setAge18(e.target.checked)}
-              className="mt-0.5 w-4 h-4 accent-[#FACC15] shrink-0 cursor-pointer"
+              className="signup-check"
             />
             <span className="text-[13px] text-[#52525B] leading-relaxed">
               I confirm I am <strong className="text-[#0A0A0A]">18 years of age or older</strong>.

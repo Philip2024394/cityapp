@@ -108,6 +108,7 @@ export default function PlacesBrowser({
   chips,
   title,
   subtitle,
+  profileBasePath,
 }: {
   places: Place[]
   currentCityLabel: string
@@ -118,7 +119,15 @@ export default function PlacesBrowser({
   // we render the legacy "Places near you" copy.
   title?: string
   subtitle?: string
+  // Profile route prefix for card taps. Defaults to '/places' (current
+  // behavior). Set to '/food' from /food so profile clicks stay inside
+  // the food URL namespace — needed for the per-vertical error boundary
+  // in /food/error.tsx to actually catch errors. Without this, food
+  // clicks routed to /places/[slug] which is governed by the /places
+  // error boundary, defeating the isolation.
+  profileBasePath?: string
 }) {
+  const PROFILE_BASE = (profileBasePath ?? '/places').replace(/\/+$/, '')
   const CHIP_DEFS = chips ?? DEFAULT_CHIP_DEFS
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -207,7 +216,7 @@ export default function PlacesBrowser({
     // `return_driver` is absent we route bare — preserving the existing
     // /places/[slug] behavior for customers who arrived organically.
     if (!returnDriver) {
-      router.push(`/places/${place.slug}`)
+      router.push(`${PROFILE_BASE}/${place.slug}`)
       return
     }
     const sp = new URLSearchParams()
@@ -215,7 +224,7 @@ export default function PlacesBrowser({
     if (pName) sp.set('pName', pName)
     if (pLat)  sp.set('pLat',  pLat)
     if (pLng)  sp.set('pLng',  pLng)
-    router.push(`/places/${place.slug}?${sp.toString()}`)
+    router.push(`${PROFILE_BASE}/${place.slug}?${sp.toString()}`)
   }
 
   return (

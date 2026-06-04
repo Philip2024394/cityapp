@@ -759,5 +759,78 @@
     "driverCtaBody": "List your bike, car, or truck on the parcel program. We never take commission · you keep every rupiah the customer pays.",
     "driverCtaButton": "List your vehicle",
     "footerDisclaimer": "CityDrivers is a software directory under PM 12/2019. Drivers self-publish rates. The platform takes 0% commission."
+  },
+  "verticals": {
+    "common": {
+      "chipAll": "All",
+      "listCta": "List",
+      "openNow": "Open now",
+      "closed": "Closed",
+      "outOfCity": "Out of city"
+    },
+    "food": {
+      "metaTitle": "Food · Kita2u",
+      "metaDescription": "Browse self-listed eateries near you — restaurants, cafés, bars, clubs. Kita2u is a software directory.",
+      "title": "Food in {city}",
+      "subtitle": "Best restaurants, cafés, and bars in {city}",
+      "chipRestaurant": "Resto",
+      "chipCafe": "Café",
+      "chipBar": "Bar",
+      "chipClub": "Club"
+    },
+    "beautician": {
+      "metaTitle": "Beauticians · Kita2u",
+      "metaDescription": "Beauty pros near you — makeup, nails, hair, spa.",
+      "title": "Beauticians in {city}",
+      "subtitle": "Beauty pros in {city} · Makeup · Nails · Hair · Spa",
+      "listAria": "List your beautician business",
+      "searchPlaceholder": "Search beauticians — name, salon, area…",
+      "searchAria": "Search beauticians"
+    },
+    "handyman": {
+      "metaTitle": "Handymen · Kita2u",
+      "metaDescription": "Skilled handymen near you — electrical, AC, plumbing, carpentry.",
+      "title": "Handymen in {city}",
+      "subtitle": "Skilled tukang in {city} · Electrical · AC · Plumbing · Carpentry",
+      "listAria": "List your handyman business",
+      "searchPlaceholder": "Search handymen — name, area…",
+      "searchAria": "Search handymen"
+    },
+    "laundry": {
+      "metaTitle": "Laundry · Kita2u",
+      "metaDescription": "Laundry shops near you — pickup, drop-off, per-kg pricing.",
+      "title": "Laundry in {city}",
+      "subtitle": "Laundry shops in {city} · Pickup · Drop-off · Per-kg pricing",
+      "listAria": "List your laundry shop",
+      "searchPlaceholder": "Search laundry — name, shop, area…",
+      "searchAria": "Search laundry shops"
+    },
+    "massage": {
+      "metaTitle": "Massage Therapists · Kita2u",
+      "metaDescription": "Professional massage therapists near you — home, hotel, villa.",
+      "title": "Therapists in {city}",
+      "subtitle": "Massage pros in {city} · Home · Hotel · Villa",
+      "listAria": "List your massage therapist profile",
+      "searchPlaceholder": "Search therapists — name, modality, area…",
+      "searchAria": "Search therapists"
+    },
+    "homeClean": {
+      "metaTitle": "Home Cleaners · Kita2u",
+      "metaDescription": "Home cleaners near you — hourly, daily, deep clean.",
+      "title": "Cleaners in {city}",
+      "subtitle": "Home cleaners in {city} · Hourly · Daily · Deep clean",
+      "listAria": "List your cleaning service",
+      "searchPlaceholder": "Search cleaners — name, area, service…",
+      "searchAria": "Search cleaners"
+    },
+    "facial": {
+      "metaTitle": "Facial · Kita2u",
+      "metaDescription": "Facial pros near you — classic, hydra, anti-aging, brightening.",
+      "title": "Facial in {city}",
+      "subtitle": "Facial pros in {city} · Classic · Hydra · Anti-Aging · Brightening",
+      "listAria": "List your facial business",
+      "searchPlaceholder": "Search facial pros — name, salon, area…",
+      "searchAria": "Search facial providers"
+    }
   }
 }

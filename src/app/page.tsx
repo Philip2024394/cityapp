@@ -60,12 +60,33 @@ function getStoredLocale(): Locale {
   return 'id'
 }
 
+// Read the `kita-country` cookie set by middleware (from
+// x-vercel-ip-country / cf-ipcountry). Returns 'ID' when the visitor is
+// in Indonesia, otherwise the foreign country code. Empty string when
+// the cookie isn't present (first request before middleware ran, edge
+// case during SSR hand-off).
+function getCountryFromCookie(): string {
+  if (typeof document === 'undefined') return ''
+  const m = document.cookie.match(/(?:^|;\s*)kita-country=([A-Z]{2})/)
+  return m?.[1] ?? ''
+}
+
 export default function LandingPage() {
   const router = useRouter()
   const [locale, setLocale] = useState<Locale>('id')
   const [promptOpen, setPromptOpen] = useState(false)
+  // Country code from the middleware-issued `kita-country` cookie. Used to
+  // hide the ID flag for non-Indonesian IPs per founder direction. Empty
+  // until we hydrate, at which point we trust the value.
+  const [country, setCountry] = useState<string>('')
 
   useEffect(() => { setLocale(getStoredLocale()) }, [])
+  useEffect(() => { setCountry(getCountryFromCookie()) }, [])
+
+  // Show ID button only when the visitor is in Indonesia (or when we
+  // don't yet know — first paint, dev without geo headers). Foreign IPs
+  // see EN-only.
+  const showIdButton = !country || country === 'ID'
 
   // Capture ?ref=AGENTCODE / ?b=BANNERID on first paint — same affiliate
   // hook the old landing had. Customers who arrive via an affiliate link
@@ -101,8 +122,25 @@ export default function LandingPage() {
   const t = STRINGS[locale]
 
   function setLocaleAndStore(lang: Locale) {
+    // Keep the landing's own state in sync (this page reads STRINGS[locale]
+    // directly rather than next-intl, since it lives outside the message
+    // catalog system).
     try { localStorage.setItem('cr_locale', lang) } catch { /* ignore */ }
     setLocale(lang)
+    // Mirror to the NEXT_LOCALE cookie so every other page (which DOES
+    // use next-intl via getTranslations / useTranslations) picks up the
+    // same language on the next navigation. Without this, picking EN on
+    // the landing only swapped the landing's hardcoded strings — every
+    // downstream profile / dashboard / category page stayed in ID.
+    try {
+      document.cookie =
+        `NEXT_LOCALE=${lang}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`
+    } catch { /* ignore */ }
+    // Refresh server components so currently-mounted next-intl content
+    // (header copy, etc.) re-renders against the new catalog. We DON'T
+    // need to wait — the user's next tap into the app gets the fresh
+    // language regardless.
+    try { router.refresh() } catch { /* ignore */ }
   }
 
   // On-scroll fade-up reveal — every element tagged `reveal-on-scroll`
@@ -204,6 +242,42 @@ export default function LandingPage() {
           >
             {t.enter}
           </button>
+
+          {/* Language picker — directly under the hero Enter button so
+              the choice is visible before the user taps in. ID button
+              hidden for non-Indonesian IPs (showIdButton). */}
+          <div
+            role="group"
+            aria-label="Language"
+            className="flex items-center justify-center gap-2 pt-2"
+          >
+            <button
+              type="button"
+              onClick={() => setLocaleAndStore('en')}
+              aria-pressed={locale === 'en'}
+              className={`min-h-[36px] min-w-[64px] px-3 rounded-full text-[12px] font-extrabold uppercase tracking-wider transition active:scale-95 ${
+                locale === 'en'
+                  ? 'bg-brand text-[#0A0A0A] border border-[#EAB308] shadow-[0_4px_10px_rgba(250,204,21,0.45)]'
+                  : 'bg-white text-[#0A0A0A] border border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              <span aria-hidden className="mr-1">🇬🇧</span>EN
+            </button>
+            {showIdButton && (
+              <button
+                type="button"
+                onClick={() => setLocaleAndStore('id')}
+                aria-pressed={locale === 'id'}
+                className={`min-h-[36px] min-w-[64px] px-3 rounded-full text-[12px] font-extrabold uppercase tracking-wider transition active:scale-95 ${
+                  locale === 'id'
+                    ? 'bg-brand text-[#0A0A0A] border border-[#EAB308] shadow-[0_4px_10px_rgba(250,204,21,0.45)]'
+                    : 'bg-white text-[#0A0A0A] border border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <span aria-hidden className="mr-1">🇮🇩</span>ID
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
@@ -604,6 +678,44 @@ export default function LandingPage() {
           >
             {t.enter}
           </button>
+
+          {/* Language picker — directly under the Enter button so the
+              choice is visible BEFORE the user taps in. Writes both the
+              landing's own state (localStorage) and the NEXT_LOCALE
+              cookie so every downstream next-intl page picks up the
+              chosen language without a second tap. */}
+          <div
+            role="group"
+            aria-label="Language"
+            className="flex items-center justify-center gap-2 pt-1"
+          >
+            <button
+              type="button"
+              onClick={() => setLocaleAndStore('en')}
+              aria-pressed={locale === 'en'}
+              className={`min-h-[36px] min-w-[64px] px-3 rounded-full text-[12px] font-extrabold uppercase tracking-wider transition active:scale-95 ${
+                locale === 'en'
+                  ? 'bg-brand text-[#0A0A0A] border border-[#EAB308] shadow-[0_4px_10px_rgba(250,204,21,0.45)]'
+                  : 'bg-white text-[#0A0A0A] border border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              <span aria-hidden className="mr-1">🇬🇧</span>EN
+            </button>
+            {showIdButton && (
+              <button
+                type="button"
+                onClick={() => setLocaleAndStore('id')}
+                aria-pressed={locale === 'id'}
+                className={`min-h-[36px] min-w-[64px] px-3 rounded-full text-[12px] font-extrabold uppercase tracking-wider transition active:scale-95 ${
+                  locale === 'id'
+                    ? 'bg-brand text-[#0A0A0A] border border-[#EAB308] shadow-[0_4px_10px_rgba(250,204,21,0.45)]'
+                    : 'bg-white text-[#0A0A0A] border border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <span aria-hidden className="mr-1">🇮🇩</span>ID
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
@@ -630,15 +742,20 @@ export default function LandingPage() {
             <Link href="/contact"  className="hover:text-[#0A0A0A] transition">Contact</Link>
           </nav>
 
-          {/* Row 3 — language picker only (sign in moved to header) */}
+          {/* Row 3 — language picker only (sign in moved to header).
+              ID hidden for non-Indonesian IPs per founder direction. */}
           <div className="flex items-center justify-center pt-1">
             <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setLocaleAndStore('id')}
-                className={`px-2.5 py-1 rounded-full transition ${locale === 'id' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
-                aria-pressed={locale === 'id'}
-              >ID</button>
-              <span className="text-line">·</span>
+              {showIdButton && (
+                <>
+                  <button
+                    onClick={() => setLocaleAndStore('id')}
+                    className={`px-2.5 py-1 rounded-full transition ${locale === 'id' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}
+                    aria-pressed={locale === 'id'}
+                  >ID</button>
+                  <span className="text-line">·</span>
+                </>
+              )}
               <button
                 onClick={() => setLocaleAndStore('en')}
                 className={`px-2.5 py-1 rounded-full transition ${locale === 'en' ? 'bg-brand/15 text-brand' : 'text-dim hover:text-muted'}`}

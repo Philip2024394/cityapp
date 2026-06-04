@@ -64,12 +64,15 @@ const FRAME_ANCESTORS = [
 // in a comment so it can be removed for good when that lib is replaced.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com https://static.cloudflareinsights.com",
+  // vercel.live = Vercel Live feedback widget injected on preview
+  // deployments. Without it whitelisted on script-src / connect-src /
+  // frame-src every preview page logged a CSP violation on load.
+  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com https://static.cloudflareinsights.com https://vercel.live",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com https://tiles.openfreemap.org https://*.r2.dev https://protomaps.github.io https://demotiles.maplibre.org https://nominatim.openstreetmap.org https://ik.imagekit.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://fcm.googleapis.com https://oauth2.googleapis.com",
-  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com https://tiles.openfreemap.org https://*.r2.dev https://protomaps.github.io https://demotiles.maplibre.org https://nominatim.openstreetmap.org https://ik.imagekit.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://fcm.googleapis.com https://oauth2.googleapis.com https://vercel.live wss://vercel.live",
+  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://vercel.live",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "base-uri 'self'",

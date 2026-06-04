@@ -861,7 +861,7 @@ export default function SignupTruckPage() {
                   type="checkbox"
                   checked={agree}
                   onChange={(e) => setAgree(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 accent-[#FACC15] shrink-0 cursor-pointer"
+                  className="signup-check"
                 />
                 <span className="text-[13px] text-black/75 leading-relaxed">
                   By creating my listing, I confirm I have a valid <strong className="text-black">SIM B1 / B1 Umum</strong> and <strong className="text-black">STNK</strong> for the vehicle above.

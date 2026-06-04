@@ -3,6 +3,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronRight, Plus, Search, Star, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useHaptic } from '@/hooks/useHaptic'
 import {
   SPECIALTY_LABELS, SPECIALTY_SHORT, ALL_SPECIALTIES,
@@ -91,6 +92,8 @@ export default function HandymanMarketplacePage() {
 
 function MarketplaceInner() {
   const router    = useRouter()
+  const t       = useTranslations('verticals.handyman')
+  const tCommon = useTranslations('verticals.common')
   const haptic    = useHaptic()
   const search    = useSearchParams()
   const cityLabel = search?.get('city')?.trim() || 'Yogyakarta'
@@ -148,16 +151,16 @@ function MarketplaceInner() {
             <div className="flex items-center justify-between gap-2 shrink-0">
               <div className="min-w-0">
                 <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg leading-tight">
-                  Tukang in {cityLabel}
+                  {t('title', { city: cityLabel })}
                 </h1>
                 <p className="text-[12px] font-bold text-[#71717A] leading-tight mt-0.5 truncate">
-                  Skilled tukang in {cityLabel} · Listrik · AC · Pipa · Kayu
+                  {t('subtitle', { city: cityLabel })}
                 </p>
               </div>
               <Link
                 href="/handyman/signup"
                 onClick={() => haptic.tap()}
-                aria-label="List your tukang business"
+                aria-label={t('listAria')}
                 className="shrink-0 inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full text-bg font-extrabold text-[13px] active:scale-95 transition"
                 style={{
                   background: '#FACC15',
@@ -171,7 +174,7 @@ function MarketplaceInner() {
                 >
                   <Plus className="w-3.5 h-3.5" strokeWidth={3} />
                 </span>
-                <span>List</span>
+                <span>{tCommon('listCta')}</span>
               </Link>
             </div>
 
@@ -182,7 +185,7 @@ function MarketplaceInner() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Cari tukang — nama, area, jenis layanan…"
-                aria-label="Search tukang"
+                aria-label={t('searchAria')}
                 className="w-full bg-[#F4F4F5] border border-[#E4E4E7] text-bg placeholder:text-[#71717A] rounded-xl pl-3 pr-11 py-2.5 text-[14px] font-bold focus:outline-none focus:bg-white focus:border-[#FACC15] transition"
                 style={{ minHeight: 44 }}
               />
@@ -439,12 +442,23 @@ function Shell({ children }: { children: React.ReactNode }) {
     >
       <header className="relative z-30 pt-safe">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" aria-label="CityDrivers home" className="inline-block hover:opacity-85 transition">
-            <img
-              src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
-              alt="CityDrivers"
-              className="h-8 sm:h-10 w-auto"
-            />
+          <Link
+            href="/"
+            aria-label="Kita2u home"
+            className="inline-flex items-center hover:opacity-85 transition"
+          >
+            <span
+              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
+              style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
+            >
+              Kita
+            </span>
+            <span
+              className="font-black tracking-tight text-[24px] sm:text-[28px] leading-none"
+              style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
+            >
+              2u
+            </span>
           </Link>
         </div>
       </header>

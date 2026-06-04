@@ -162,6 +162,48 @@ export async function middleware(req: NextRequest) {
 
   const res = NextResponse.next()
 
+  // ─── IP-based locale + country detection ───────────────────────────────
+  // Read the country from whatever CDN is in front of us. Vercel sets
+  // `x-vercel-ip-country`; Cloudflare sets `cf-ipcountry`. Both are upper-
+  // case ISO-3166 alpha-2 codes ("ID", "GB", "US", ...).
+  //
+  // Behavior:
+  //   1. If the visitor doesn't yet have a NEXT_LOCALE cookie, we set one
+  //      based on country:  ID → 'id', any other country → 'en'.
+  //   2. We also write a non-sensitive `kita-country` cookie so client
+  //      components can read it (without an API hop) and conditionally
+  //      hide the ID flag button for non-Indonesian visitors.
+  //
+  // Dev / localhost: no geo header, so we default to 'id' AND expose
+  // country='ID' to keep both flags visible for testing.
+  const geoCountry =
+    req.headers.get('x-vercel-ip-country') ||
+    req.headers.get('cf-ipcountry') ||
+    (isLocalDev ? 'ID' : '')
+  const country = geoCountry.trim().toUpperCase() || 'ID'
+
+  // 1-year persistence; SameSite=Lax for first-tap deep links to keep the cookie.
+  const cookieTail = `; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`
+
+  // Set NEXT_LOCALE only if the visitor hasn't already chosen one.
+  const existingLocale = req.cookies.get('NEXT_LOCALE')?.value
+  if (!existingLocale || (existingLocale !== 'id' && existingLocale !== 'en')) {
+    const inferredLocale = country === 'ID' ? 'id' : 'en'
+    res.cookies.set('NEXT_LOCALE', inferredLocale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    })
+  }
+
+  // Mirror country for client-side LocaleSwitcher visibility logic. Cheap
+  // to read; not auth-sensitive.
+  res.cookies.set('kita-country', country, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+  })
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
