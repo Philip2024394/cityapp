@@ -14,9 +14,14 @@
 //   actually search for.
 // ============================================================================
 
+// CityDrivers-side intents (rental, ride, parcel) are intentionally NOT in
+// this union — Kita2u search must never route into the driver app per the
+// 2026-06-06 brand-split direction. If a customer types "sewa motor" or
+// "ojek", the intent ranker returns 0 hits and /explore offers the
+// cross-vertical /search fallback inside Kita2u.
 export type IntentId =
   | 'food' | 'beautician' | 'handyman' | 'laundry' | 'massage'
-  | 'home-clean' | 'facial' | 'rental' | 'tour' | 'ride' | 'parcel'
+  | 'home-clean' | 'facial' | 'tour'
 
 export type IntentTarget = {
   id:    IntentId
@@ -106,16 +111,6 @@ export const INTENTS: ReadonlyArray<IntentTarget> = [
     ],
   },
   {
-    id: 'rental',
-    href: '/rent',
-    label: { id: 'Sewa', en: 'Rentals' },
-    keywords: [
-      'rental','sewa','rent','sewa motor','sewa mobil','car rental',
-      'motor rental','bike rental','rent a car','sewa harian',
-      'sewa bulanan','daily rental','monthly rental',
-    ],
-  },
-  {
     id: 'tour',
     href: '/tour',
     label: { id: 'Tour & Wisata', en: 'Tour & Guide' },
@@ -123,24 +118,6 @@ export const INTENTS: ReadonlyArray<IntentTarget> = [
       'tour','wisata','guide','tour guide','tourism','tourist',
       'jalan-jalan','liburan','holiday','vacation','trip','sightseeing',
       'paket wisata','pemandu',
-    ],
-  },
-  {
-    id: 'ride',
-    href: '/cari?service=person',
-    label: { id: 'Pesan Antar', en: 'Book a Ride' },
-    keywords: [
-      'ride','ojek','antar','ojol','gojek','grab','transport',
-      'penumpang','passenger','bike taxi','motor antar','antar saya',
-    ],
-  },
-  {
-    id: 'parcel',
-    href: '/cari?service=parcel',
-    label: { id: 'Kirim Paket', en: 'Send a Parcel' },
-    keywords: [
-      'parcel','paket','kurir','delivery','antar barang','kurir motor',
-      'kirim barang','send package','courier','same day','express',
     ],
   },
 ]

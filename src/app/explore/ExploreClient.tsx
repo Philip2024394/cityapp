@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight, Bus, Briefcase, ChevronLeft, Search as SearchIcon, Truck,
-  User, Package, UtensilsCrossed, KeyRound, MapPinned,
-  Flower2, Scissors, Shirt, Wrench, SprayCan, Home, X,
+  Briefcase, ChevronLeft, Search as SearchIcon,
+  UtensilsCrossed, MapPinned,
+  Flower2, Scissors, Shirt, Sparkles, Wrench, SprayCan, Home, X,
   type LucideIcon,
 } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
@@ -26,25 +26,26 @@ const CARD_SHADOW = '0 2px 14px rgba(0,0,0,0.06)'
 const GOLD_TINT   = 'rgba(250,204,21,0.15)'
 const GOLD_LINE   = 'rgba(250,204,21,0.35)'
 
-type TransportTile = { id: 'person' | 'parcel'; label: string; Icon: LucideIcon; href: string }
-const TRANSPORT_TILES: ReadonlyArray<TransportTile> = [
-  { id: 'person', label: 'Ride',   Icon: User,    href: '/cari?service=person' },
-  { id: 'parcel', label: 'Parcel', Icon: Package, href: '/cari?service=parcel' },
-]
-
+// Kita2u marketplace categories. CityDrivers-side categories (Rental,
+// Ride, Parcel, Bus charter, Car rental, Truck rental) are intentionally
+// NOT in this list — they're driver-app surfaces. The user said clearly
+// 2026-06-06: "cityriders citydrivers is not in the kita2u project when
+// I discussing the different category". When a CityDrivers offering
+// needs to be reachable from Kita2u, build a Kita2u-branded entry point
+// instead of routing here.
 type LifestyleId =
-  | 'food' | 'rental' | 'tour' | 'massage'
+  | 'food' | 'tour' | 'massage' | 'facial'
   | 'beautician' | 'laundry' | 'handyman' | 'home-clean'
 type LifestyleTile = { id: LifestyleId; label: string; Icon: LucideIcon; href: string }
 const LIFESTYLE_TILES: ReadonlyArray<LifestyleTile> = [
   { id: 'food',       label: 'Food',    Icon: UtensilsCrossed, href: '/food' },
-  { id: 'rental',     label: 'Rental',  Icon: KeyRound,        href: '/rent' },
-  { id: 'tour',       label: 'Tour',    Icon: MapPinned,       href: '/tour' },
-  { id: 'massage',    label: 'Massage', Icon: Flower2,         href: '/massage' },
   { id: 'beautician', label: 'Beauty',  Icon: Scissors,        href: '/beautician' },
-  { id: 'laundry',    label: 'Laundry', Icon: Shirt,           href: '/laundry' },
   { id: 'handyman',   label: 'Tukang',  Icon: Wrench,          href: '/handyman' },
+  { id: 'massage',    label: 'Massage', Icon: Flower2,         href: '/massage' },
+  { id: 'laundry',    label: 'Laundry', Icon: Shirt,           href: '/laundry' },
   { id: 'home-clean', label: 'Clean',   Icon: SprayCan,        href: '/home-clean' },
+  { id: 'facial',     label: 'Facial',  Icon: Sparkles,        href: '/facial' },
+  { id: 'tour',       label: 'Tour',    Icon: MapPinned,       href: '/tour' },
 ]
 
 type Locale = 'id' | 'en'
@@ -267,56 +268,12 @@ export default function ExploreClient() {
           )}
         </div>
 
-        {/* TIER 1 — Two big transport cards (white pattern, solid-yellow
-            icon badges). Image removed from Book Ride per latest spec —
-            both tiles now share the same centered layout; only the label
-            of the Ride tile gets the brand split-colour treatment. */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {TRANSPORT_TILES.map((tile, i) => {
-            const Icon = tile.Icon
-            const sub = tile.id === 'person' ? t.rideSub : t.parcelSub
-            return (
-              <Link
-                key={tile.id}
-                href={tile.href}
-                prefetch
-                onClick={() => logNav(`explore-tile:${tile.id}`)}
-                aria-label={`${tile.label} — ${sub}`}
-                className="group relative aspect-square rounded-3xl overflow-hidden transition-all active:scale-[0.98] flex flex-col items-center justify-center gap-2 p-4"
-                style={{
-                  background: '#FFFFFF',
-                  border: '1px solid #F1F1F1',
-                  boxShadow: CARD_SHADOW,
-                  animation: `fadeUp 0.55s ease-out ${i * 0.08}s both`,
-                }}
-              >
-                <span
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: GOLD, border: `1px solid ${GOLD}` }}
-                  aria-hidden
-                >
-                  <Icon className="w-9 h-9" strokeWidth={2} style={{ color: INK }} />
-                </span>
-                <span className="font-extrabold text-[20px] leading-tight tracking-wide uppercase">
-                  <span style={{ color: INK }}>Book </span>
-                  <span style={{ color: GOLD }}>{tile.label}</span>
-                </span>
-                <span className="text-[12px] font-bold text-gray-600 leading-tight">
-                  {sub}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-
-        {/* TIER 2 — Lifestyle 4×2 (white tiles) */}
+        {/* Tile grid — the 8 Kita2u marketplace categories. The old
+            TIER 1 "Book Ride" / "Book Parcel" transport pair has been
+            removed because those routes (/cari?service=…) are
+            CityDrivers driver-app surfaces, not Kita2u marketplace.
+            See LIFESTYLE_TILES comment above. */}
         <div className="mb-6">
-          <p
-            className="text-[12px] font-extrabold uppercase tracking-[0.18em] mb-2.5 pl-1"
-            style={{ color: INK }}
-          >
-            {t.lifestyleLabel}
-          </p>
           <div className="grid grid-cols-4 gap-2">
             {LIFESTYLE_TILES.map((tile, i) => {
               const Icon = tile.Icon
@@ -351,28 +308,19 @@ export default function ExploreClient() {
           </div>
         </div>
 
-        {/* Browse-flow CTAs — Rentals / Minibus / B2B */}
+        {/* Kita2u browse-flow CTAs. CityDrivers-side rows (Rentals,
+            Minibus charter — both drive into /rentals and /bus driver
+            surfaces) have been removed per the 2026-06-06 brand split:
+            CityDrivers content is not surfaced from Kita2u. The two
+            rows that remain (Business contracts and Property) cover
+            Kita2u-owned merchant verticals. */}
         <div className="space-y-2.5">
-          <BrowseRow
-            href="/rentals"
-            telemetry="explore-cta:rentals"
-            Icon={Truck}
-            title="Rentals · Bike, Car, Bus, Truck by-day"
-            sub="Browse driver-published listings — from Rp 250K/day"
-          />
-          <BrowseRow
-            href="/bus"
-            telemetry="explore-cta:bus"
-            Icon={Bus}
-            title="Minibus charter · Hiace, Innova, Avanza"
-            sub="Group transport · tourism · airport — with driver"
-          />
           <BrowseRow
             href="/business"
             telemetry="explore-cta:business"
             Icon={Briefcase}
-            title="Business contracts · Regular delivery drivers"
-            sub="Shopee / TikTok / restaurants — recurring courier hire"
+            title="Business contracts · Recurring partnerships"
+            sub="Shopee / TikTok / restaurants — long-term agreements"
           />
           <BrowseRow
             href="/property"
