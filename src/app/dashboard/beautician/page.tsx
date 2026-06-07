@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Camera, Sparkles, Palette, Link2, CheckCircle2, Clock, Copy } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
@@ -7,6 +7,7 @@ import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import StatusPulse from '@/components/dashboard/StatusPulse'
 import WeeklyHoursEditor from '@/components/dashboard/WeeklyHoursEditor'
+import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import {
   type BeauticianProvider,
   type BeauticianAvailability,
@@ -250,8 +251,96 @@ export default function BeauticianDashboardPage() {
           />
           <ProviderRenewBanner provider={provider} upgradeHref="/beautician/upgrade" />
         </section>
+
+        {/* Universal profile extras — cover, gallery, socials, chat
+            handles, contact form, certifications, languages. Mirrors
+            the consolidated block shipped to handyman / laundry /
+            massage / home-clean dashboards (mig 0072). Optimistic
+            local state + debounced POST so each chip / toggle saves
+            without a full form submit. */}
+        {provider.user_id && (
+          <section className="rounded-3xl bg-white border border-gray-200 p-4">
+            <UniversalExtrasBlock
+              userId={provider.user_id}
+              provider={provider}
+              onLocal={(patch) => setProvider((cur) => cur ? { ...cur, ...patch } : cur)}
+            />
+          </section>
+        )}
       </div>
     </Shell>
+  )
+}
+
+// Local state + debounced save wrapper for the shared editor. Keeps
+// page.tsx readable while still mirroring the laundry/handyman pattern
+// of saving each change as the user types.
+function UniversalExtrasBlock({
+  userId, provider, onLocal,
+}: {
+  userId: string
+  provider: FullProvider
+  onLocal: (patch: Partial<FullProvider>) => void
+}) {
+  const [f, setF] = useState({
+    cover_image_url:      provider.cover_image_url      ?? null,
+    gallery_image_urls:   provider.gallery_image_urls   ?? [],
+    instagram_url:        provider.instagram_url        ?? null,
+    tiktok_url:           provider.tiktok_url           ?? null,
+    facebook_url:         provider.facebook_url         ?? null,
+    x_url:                provider.x_url                ?? null,
+    snapchat_url:         provider.snapchat_url         ?? null,
+    website_url:          provider.website_url          ?? null,
+    operating_hours:      provider.operating_hours      ?? null,
+    certifications:       provider.certifications       ?? [],
+    languages:            provider.languages            ?? [],
+    contact_form_enabled: Boolean(provider.contact_form_enabled),
+    contact_email:        provider.contact_email        ?? null,
+  })
+  // Debounced commit — same 500ms pattern the /edit page uses for
+  // hero_text. Each patch overlays local state, mirrors into the parent
+  // provider, then fires once after the user stops typing. Pending
+  // changes accumulate in a ref so multiple chip-toggles inside the
+  // 500ms window collapse into a single PATCH body.
+  const pendingRef = useRef<Record<string, unknown>>({})
+  const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function applyPatch(patch: Partial<typeof f>) {
+    setF((prev) => ({ ...prev, ...patch }))
+    onLocal(patch as Partial<FullProvider>)
+    Object.assign(pendingRef.current, patch)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(async () => {
+      const body = pendingRef.current
+      pendingRef.current = {}
+      try {
+        await fetch('/api/beautician/me/profile', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body),
+        })
+      } catch { /* optimistic; reload will reconcile */ }
+    }, 500)
+  }
+  return (
+    <UniversalProfileExtrasEditor
+      userId={userId}
+      value={{
+        cover_image_url:    f.cover_image_url,
+        gallery_image_urls: f.gallery_image_urls,
+        instagram_url:      f.instagram_url,
+        tiktok_url:         f.tiktok_url,
+        facebook_url:       f.facebook_url,
+        x_url:              f.x_url,
+        snapchat_url:       f.snapchat_url,
+        website_url:        f.website_url,
+        operating_hours:    f.operating_hours,
+        certifications:     f.certifications,
+        languages:          f.languages,
+        contact_form_enabled: f.contact_form_enabled,
+        contact_email:        f.contact_email,
+      }}
+      onChange={(patch) => applyPatch(patch as Partial<typeof f>)}
+    />
   )
 }
 

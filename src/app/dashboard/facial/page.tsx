@@ -7,6 +7,7 @@ import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import StatusPulse from '@/components/dashboard/StatusPulse'
 import WeeklyHoursEditor from '@/components/dashboard/WeeklyHoursEditor'
+import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
 import type { BeauticianHeroText, BeauticianServicePhoto } from '@/lib/beautician/types'
 import {
   type FacialProvider,
@@ -252,6 +253,50 @@ export default function FacialDashboardPage() {
           />
           <ProviderRenewBanner provider={provider} upgradeHref="/facial/upgrade" />
         </section>
+
+        {/* Universal profile extras (mig 0072) — brings facial into line
+            with handyman / laundry / massage / home-clean: cover, gallery,
+            socials, chat handles, hours, certifications, languages,
+            contact form. Posts every change to /api/facial/me/profile so
+            the public profile picks them up without a separate save
+            button. NOTE: operating_hours is also wired to
+            WeeklyHoursEditor above — both surfaces write the same column,
+            which is intentional (week-grid for power users, day chips
+            inside this editor for parity). */}
+        {provider.user_id && (
+          <section className="rounded-3xl bg-white border border-gray-200 p-4">
+            <UniversalProfileExtrasEditor
+              userId={provider.user_id}
+              value={{
+                cover_image_url:    provider.cover_image_url    ?? null,
+                gallery_image_urls: provider.gallery_image_urls ?? [],
+                instagram_url:      provider.instagram_url      ?? null,
+                tiktok_url:         provider.tiktok_url         ?? null,
+                facebook_url:       provider.facebook_url       ?? null,
+                x_url:              provider.x_url              ?? null,
+                snapchat_url:       provider.snapchat_url       ?? null,
+                website_url:        provider.website_url        ?? null,
+                telegram_handle:    provider.telegram_handle    ?? null,
+                wechat_id:          provider.wechat_id          ?? null,
+                line_id:            provider.line_id            ?? null,
+                kakaotalk_id:       provider.kakaotalk_id       ?? null,
+                operating_hours:    provider.operating_hours    ?? null,
+                certifications:     provider.certifications     ?? [],
+                languages:          provider.languages          ?? [],
+                contact_form_enabled: Boolean(provider.contact_form_enabled),
+                contact_email:        provider.contact_email   ?? null,
+              }}
+              onChange={(patch) => {
+                setProvider((cur) => cur ? { ...cur, ...patch } : cur)
+                void fetch('/api/facial/me/profile', {
+                  method:  'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body:    JSON.stringify(patch),
+                }).catch(() => { /* optimistic; next reload reconciles */ })
+              }}
+            />
+          </section>
+        )}
       </div>
     </Shell>
   )

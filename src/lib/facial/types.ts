@@ -73,6 +73,30 @@ export interface FacialProvider {
 
   created_at: string
   updated_at: string
+
+  // mig 0072 — universal extras (cover, gallery, socials, hours,
+  // certifications, languages). Surfaced via UniversalProfileExtrasEditor
+  // on the dashboard. Read by the public profile.
+  cover_image_url?:    string | null
+  gallery_image_urls?: string[] | null
+  instagram_url?:      string | null
+  tiktok_url?:         string | null
+  facebook_url?:       string | null
+  // mig 0130 — extra socials
+  x_url?:              string | null
+  snapchat_url?:       string | null
+  website_url?:        string | null
+  operating_hours?:    Record<string, string> | null
+  certifications?:     string[] | null
+  languages?:          string[] | null
+  // mig 0137 — public-page contact form opt-in
+  contact_form_enabled?: boolean | null
+  contact_email?:        string | null
+  // mig 0132 — chat handles (also part of universal extras)
+  telegram_handle?:    string | null
+  wechat_id?:          string | null
+  line_id?:            string | null
+  kakaotalk_id?:       string | null
 }
 
 export type FacialProviderPublic = Pick<

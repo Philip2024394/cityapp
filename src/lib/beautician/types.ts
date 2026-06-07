@@ -42,6 +42,23 @@ export interface BeauticianProvider {
 
   created_at: string
   updated_at: string
+
+  // mig 0072 — universal extras (read/write via /api/beautician/me/profile)
+  cover_image_url?:      string | null
+  gallery_image_urls?:   string[] | null
+  instagram_url?:        string | null
+  tiktok_url?:           string | null
+  facebook_url?:         string | null
+  // mig 0130 — extra socials
+  x_url?:                string | null
+  snapchat_url?:         string | null
+  website_url?:          string | null
+  operating_hours?:      Record<string, string> | null
+  certifications?:       string[] | null
+  languages?:            string[] | null
+  // mig 0137 — universal extras: contact-form opt-in
+  contact_form_enabled?: boolean | null
+  contact_email?:        string | null
 }
 
 // Marketplace-safe subset — no KTP, no internal verifier ids.
