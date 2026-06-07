@@ -225,7 +225,11 @@ function SignupInner() {
           : 'Use your WhatsApp number and a password. No SMS code needed.')
 
   return (
-    <AuthShell solidWhite hideHeader>
+    <AuthShell
+      solidWhite
+      hideHeader
+      brand={isKita2uFlow ? 'kita2u' : 'citydrivers'}
+    >
       {/* Brand block — host/vertical-aware. Kita2u marketplace verticals
           (beautician, handyman, food, etc.) get the Kita2u wordmark and
           a back-link to the marketplace home. Driver verticals keep the
