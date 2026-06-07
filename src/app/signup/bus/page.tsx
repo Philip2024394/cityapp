@@ -24,7 +24,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Phone, KeyRound, Check, Eye, EyeOff, Loader2 } from 'lucide-react'
-import { getBrowserSupabase } from '@/lib/supabase/client'
 import { INDONESIAN_CITIES } from '@/data/indonesianCities'
 import { ANTI_SPAM_MIN_FEE } from '@/lib/pricing/zones'
 import { loadDraft, saveDraft, clearDraft, SIGNUP_DRAFT_KEYS } from '@/lib/signup/drafts'
@@ -187,19 +186,22 @@ export default function SignupBusPage() {
       setError('Password must be at least 6 characters')
       return
     }
-    const supabase = getBrowserSupabase()
-    if (!supabase) {
-      setError('Auth not configured. Add Supabase keys to .env.local.')
+    setAuthPending(true)
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: cleaned,
+        password,
+        metadata: { role: 'driver', vehicle_type: 'minibus' },
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setAuthPending(false)
+    if (!res.ok) {
+      setError(humanAuthError(typeof data?.error === 'string' ? data.error : 'Could not create account'))
       return
     }
-    setAuthPending(true)
-    const { error: err } = await supabase.auth.signUp({
-      phone: cleaned,
-      password,
-      options: { data: { role: 'driver', vehicle_type: 'minibus' } },
-    })
-    setAuthPending(false)
-    if (err) { setError(humanAuthError(err.message)); return }
     setPhone(cleaned)
     setStep(2)
   }
@@ -906,16 +908,11 @@ function ReviewLine({ label, value }: { label: string; value: string }) {
 const inputCls =
   'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-yellow-400 min-h-[44px]'
 
-// Map Supabase auth errors to driver-friendly copy. Mirrors the helper in
-// /login + /signup root so wording is consistent across surfaces.
+// /api/auth/signup returns driver-friendly copy already (including the same
+// phone + same password collision). Only soften Supabase's rate-limit phrase
+// if it ever leaks through.
 function humanAuthError(msg: string): string {
   const m = msg.toLowerCase()
-  if (m.includes('user already registered') || m.includes('already_exists') || m.includes('duplicate key')) {
-    return 'A driver with this WhatsApp number already exists. Sign in instead, or contact support to reset your password.'
-  }
-  if (m.includes('phone not confirmed') || m.includes('phone_not_confirmed')) {
-    return 'Sign-up needs Supabase phone-confirm OFF (Auth → Providers → Phone). Ask your admin.'
-  }
   if (m.includes('rate limit') || m.includes('too many requests')) {
     return 'Too many attempts. Wait a minute and try again.'
   }

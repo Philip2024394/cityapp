@@ -24,7 +24,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { KeyRound, LogIn, Eye, EyeOff } from 'lucide-react'
 import AuthShell from '@/components/auth/AuthShell'
 import PhoneInput, { normalizeE164 } from '@/components/auth/PhoneInput'
-import { getBrowserSupabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   return (
@@ -71,24 +70,17 @@ function LoginInner() {
       return
     }
 
-    const supabase = getBrowserSupabase()
-    if (!supabase) {
-      setError('Auth not configured. Add Supabase keys to .env.local.')
-      return
-    }
-
     setPending(true)
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      phone: cleaned,
-      password,
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: cleaned, password }),
     })
+    const data = await res.json().catch(() => ({}))
     setPending(false)
 
-    if (signInErr) {
-      // Common cases:
-      //   - "Invalid login credentials" → wrong password OR account doesn't exist
-      //   - "Phone not confirmed" → Supabase phone-confirm setting still ON
-      setError(humanError(signInErr.message))
+    if (!res.ok) {
+      setError(humanError(typeof data?.error === 'string' ? data.error : 'Wrong number or password.'))
       return
     }
     router.push(next)
@@ -189,15 +181,10 @@ const inputCls =
 const primaryBtnCls =
   'w-full min-h-[48px] rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(250,204,21,0.35)] hover:bg-[#EAB308] active:scale-[0.98] transition disabled:opacity-60 disabled:cursor-not-allowed'
 
-// Convert Supabase's auth error messages into something a driver can act on.
+// /api/auth/login returns a single user-facing string already. Only soften
+// Supabase's rate-limit phrasing if it leaks through.
 function humanError(msg: string): string {
   const m = msg.toLowerCase()
-  if (m.includes('invalid login credentials')) {
-    return 'Wrong number or password. Check both and try again.'
-  }
-  if (m.includes('phone not confirmed') || m.includes('phone_not_confirmed')) {
-    return 'Your number is not confirmed. Contact support to reset.'
-  }
   if (m.includes('rate limit') || m.includes('too many requests')) {
     return 'Too many attempts. Wait a minute and try again.'
   }

@@ -44,7 +44,6 @@ import {
 } from 'lucide-react'
 import AuthShell from '@/components/auth/AuthShell'
 import PhoneInput, { normalizeE164 } from '@/components/auth/PhoneInput'
-import { getBrowserSupabase } from '@/lib/supabase/client'
 import { MONTHLY_PRICE_LABEL, YEARLY_PRICE_LABEL, TRIAL_LABEL_EN } from '@/lib/pricing/constants'
 
 type Role = 'customer' | 'driver'
@@ -169,29 +168,26 @@ function SignupInner({ defaultBrand }: { defaultBrand: 'kita2u' | 'citydrivers' 
       return
     }
 
-    const supabase = getBrowserSupabase()
-    if (!supabase) {
-      setError('Auth not configured. Add Supabase keys to .env.local.')
-      return
-    }
-
     setPending(true)
-    const { error: signUpErr } = await supabase.auth.signUp({
-      phone: cleaned,
-      password,
-      options: {
-        data: {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: cleaned,
+        password,
+        metadata: {
           full_name: fullName.trim(),
           role,
           claimed_handle: claimedHandle ?? undefined,
           claimed_vertical: claimedVertical ?? undefined,
         },
-      },
+      }),
     })
+    const data = await res.json().catch(() => ({}))
     setPending(false)
 
-    if (signUpErr) {
-      setError(humanError(signUpErr.message))
+    if (!res.ok) {
+      setError(humanError(typeof data?.error === 'string' ? data.error : 'Could not create account'))
       return
     }
 
@@ -592,18 +588,11 @@ const inputCls =
 const primaryBtnCls =
   'w-full min-h-[48px] rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(250,204,21,0.35)] hover:bg-[#EAB308] active:scale-[0.98] transition disabled:opacity-60 disabled:cursor-not-allowed'
 
-// Convert Supabase's auth error messages into something a driver can act
-// on. Mostly we surface the raw message; the targeted overrides cover the
-// two friction modes drivers hit on signup: a duplicate WA number and the
-// "phone confirmation required" state when Supabase is still misconfigured.
+// Server-side /api/auth/signup returns user-actionable copy already
+// (including the same-phone+same-password collision). We only need to
+// soften Supabase's rate-limit phrasing if it leaks through.
 function humanError(msg: string): string {
   const m = msg.toLowerCase()
-  if (m.includes('user already registered') || m.includes('already_exists') || m.includes('duplicate key')) {
-    return 'An account with this WhatsApp number already exists. Sign in instead, or contact support to reset your password.'
-  }
-  if (m.includes('phone not confirmed') || m.includes('phone_not_confirmed')) {
-    return 'Sign-up needs Supabase phone-confirm OFF (Auth → Providers → Phone). Ask your admin.'
-  }
   if (m.includes('rate limit') || m.includes('too many requests')) {
     return 'Too many attempts. Wait a minute and try again.'
   }
