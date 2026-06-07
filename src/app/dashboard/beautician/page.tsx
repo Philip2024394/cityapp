@@ -116,6 +116,21 @@ export default function BeauticianDashboardPage() {
   const pct          = Math.round((doneSteps / totalSteps) * 100)
   const firstName    = provider.display_name.split(' ')[0] || 'there'
 
+  // Accent palette derived from the creator's chosen public-profile
+  // theme_color. The dashboard adopts the same hex on every CTA, icon
+  // chip, progress bar, and hover state so the editor reads as "your
+  // workspace, in your brand". Fallback #EC4899 (Dewi pink) when no
+  // theme_color is set yet — keeps freshly-signed-up creators on a
+  // sensible default until they open /dashboard/beautician/edit.
+  //
+  // Soft / softer variants are inlined as hex+alpha (no color-mix in
+  // tailwind arbitrary values yet). Hover state piggybacks on
+  // brightness-95 since it doesn't need a separate hex.
+  const accent       = provider.theme_color || '#EC4899'
+  const accentSoft   = accent + '40'  // ~25% — ring + icon chip bg
+  const accentSofter = accent + '1F'  // ~12% — task-card icon background fill
+  const accentFaint  = accent + '0F'  // ~6%  — hover row tint
+
   const publicUrl    = typeof window !== 'undefined'
     ? `${window.location.origin}/beautician/${provider.slug}`
     : `/beautician/${provider.slug}`
@@ -130,14 +145,27 @@ export default function BeauticianDashboardPage() {
 
   return (
     <Shell>
-      <div className="px-4 pt-4 pb-32 max-w-lg mx-auto space-y-4">
+      <div
+        className="px-4 pt-4 pb-32 max-w-lg mx-auto space-y-4"
+        style={{
+          // Drive every accent surface in this subtree from the creator's
+          // chosen theme_color via CSS variables. See palette derivation
+          // above. Reading these via Tailwind arbitrary values keeps the
+          // styling source-of-truth in className while still tracking the
+          // user's selection at runtime.
+          ['--accent' as string]: accent,
+          ['--accent-soft' as string]: accentSoft,
+          ['--accent-softer' as string]: accentSofter,
+          ['--accent-faint' as string]: accentFaint,
+        }}
+      >
         <PWAInstallCard />
         {/* Greeting + progress */}
         <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             {provider.profile_image_url
-              ? <img src={provider.profile_image_url} alt={provider.display_name} className="w-14 h-14 rounded-full object-cover bg-pink-500/20 ring-2 ring-pink-400/40" />
-              : <div className="w-14 h-14 rounded-full bg-pink-500/25 flex items-center justify-center text-pink-200 text-[20px] font-black ring-2 ring-pink-400/40">{provider.display_name[0]?.toUpperCase()}</div>}
+              ? <img src={provider.profile_image_url} alt={provider.display_name} className="w-14 h-14 rounded-full object-cover bg-[color:var(--accent-softer)] ring-2 ring-[color:var(--accent-soft)]" />
+              : <div className="w-14 h-14 rounded-full bg-[color:var(--accent-softer)] flex items-center justify-center text-[color:var(--accent)] text-[20px] font-black ring-2 ring-[color:var(--accent-soft)]">{provider.display_name[0]?.toUpperCase()}</div>}
             <div className="min-w-0 flex-1">
               <h1 className="text-[20px] font-black text-black truncate leading-tight">Hi, {firstName}! <span aria-hidden>👋</span></h1>
               <p className="text-[13px] text-black/75 mt-0.5">
@@ -147,10 +175,10 @@ export default function BeauticianDashboardPage() {
               </p>
             </div>
           </div>
-          <div className="relative h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className="relative h-2 rounded-full bg-gray-100 overflow-hidden">
             <div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 transition-all duration-500"
-              style={{ width: `${pct}%` }}
+              className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+              style={{ width: `${pct}%`, background: accent }}
             />
           </div>
           <div className="flex items-center justify-between mt-1.5">
@@ -166,7 +194,7 @@ export default function BeauticianDashboardPage() {
           <TaskCard
             href="/dashboard/beautician/info"
             icon={<Camera size={22} />}
-            iconBg="bg-pink-500/25 text-pink-200"
+            iconBg="bg-[color:var(--accent-softer)] text-[color:var(--accent)]"
             title="Photo & basic info"
             description="Name, photo, bio, WhatsApp, service area"
             status={infoDone ? 'done' : 'pending'}
@@ -174,7 +202,7 @@ export default function BeauticianDashboardPage() {
           <TaskCard
             href="/dashboard/beautician/services"
             icon={<Sparkles size={22} />}
-            iconBg="bg-rose-500/25 text-rose-200"
+            iconBg="bg-[color:var(--accent-softer)] text-[color:var(--accent)]"
             title="Services & prices"
             description="Makeup, nail, hair, and more — add photos and set prices"
             status={servicesDone ? 'done' : 'pending'}
@@ -182,7 +210,7 @@ export default function BeauticianDashboardPage() {
           <TaskCard
             href="/dashboard/beautician/edit"
             icon={<Palette size={22} />}
-            iconBg="bg-amber-500/25 text-amber-200"
+            iconBg="bg-[color:var(--accent-softer)] text-[color:var(--accent)]"
             title="Public page design"
             description="Theme color, banner, title text, and scrolling promo"
             status={designDone ? 'done' : 'pending'}
@@ -192,7 +220,7 @@ export default function BeauticianDashboardPage() {
         {/* Share link */}
         <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-pink-500/25 text-pink-200 flex items-center justify-center"><Link2 size={18} /></div>
+            <div className="w-9 h-9 rounded-xl bg-[color:var(--accent-softer)] text-[color:var(--accent)] flex items-center justify-center"><Link2 size={18} /></div>
             <h2 className="text-[15px] font-black text-black">Share your profile</h2>
           </div>
           <div className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2.5">
@@ -203,7 +231,7 @@ export default function BeauticianDashboardPage() {
             <button
               type="button"
               onClick={copyLink}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[color:var(--accent)] hover:brightness-95 text-white px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
             >
               <Copy size={16} /> {copied ? 'Copied!' : 'Copy link'}
             </button>
@@ -237,7 +265,7 @@ export default function BeauticianDashboardPage() {
           </div>
           <WeeklyHoursEditor
             value={(provider as FullProvider & { operating_hours?: Record<string, string> | null }).operating_hours ?? null}
-            accentColor="#EC4899"
+            accentColor={accent}
             onChange={async (next) => {
               setProvider((cur) => cur ? { ...cur, operating_hours: next } : cur)
               try {
@@ -357,7 +385,7 @@ function TaskCard({
   return (
     <Link
       href={href}
-      className="block rounded-3xl bg-white border border-gray-200 p-4 shadow-sm hover:border-pink-400/60 hover:bg-gray-50 transition group"
+      className="block rounded-3xl bg-white border border-gray-200 p-4 shadow-sm hover:border-[color:var(--accent-soft)] hover:bg-gray-50 transition group"
     >
       <div className="flex items-center gap-3">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
@@ -370,7 +398,7 @@ function TaskCard({
           </div>
           <p className="text-[12.5px] text-black/70 leading-snug line-clamp-2">{description}</p>
         </div>
-        <ChevronRight size={20} className="text-black/40 group-hover:text-pink-500 transition flex-shrink-0" />
+        <ChevronRight size={20} className="text-black/40 group-hover:text-[color:var(--accent)] transition flex-shrink-0" />
       </div>
     </Link>
   )
