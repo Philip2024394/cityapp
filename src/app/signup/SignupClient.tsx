@@ -365,6 +365,27 @@ function SignupInner({ defaultBrand }: { defaultBrand: 'kita2u' | 'citydrivers' 
 
       {step === 'register' && (
         <form className="space-y-4" onSubmit={submitRegister}>
+          <div
+            className="rounded-2xl p-3.5 flex items-start gap-2.5"
+            style={{ background: '#FFFBEA', border: '1px solid rgba(250,204,21,0.55)' }}
+          >
+            <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-[#EAB308]" />
+            <div className="text-[12px] leading-snug text-[#0A0A0A]">
+              {isKita2uFlow ? (
+                <>
+                  <strong>Satu nomor WhatsApp, banyak app.</strong>{' '}
+                  Mau buka usaha kedua? Pakai nomor yang sama dengan{' '}
+                  <strong>password berbeda</strong> — tiap password = app terpisah.
+                </>
+              ) : (
+                <>
+                  <strong>One number, many apps.</strong>{' '}
+                  Adding another business? Re-use this WhatsApp number with a{' '}
+                  <strong>different password</strong> — each password is a separate account.
+                </>
+              )}
+            </div>
+          </div>
           <Field label="Full name" icon={<User className="w-4 h-4 text-[#71717A]" />}>
             <input
               className={inputCls + ' pl-11'}
@@ -387,7 +408,11 @@ function SignupInner({ defaultBrand }: { defaultBrand: 'kita2u' | 'citydrivers' 
           <Field
             label="Password"
             icon={<KeyRound className="w-4 h-4 text-[#71717A]" />}
-            hint="At least 6 characters. Write it down — we don't send codes."
+            hint={
+              isKita2uFlow
+                ? "Minimal 6 karakter. Catat ya — kami tidak kirim kode. Sudah punya akun di nomor ini? Pakai password berbeda untuk buka app baru."
+                : "At least 6 characters. Write it down — we don't send codes. Already have an account on this number? Use a different password to open a new app."
+            }
           >
             <input
               className={inputCls + ' pl-11 pr-11'}

@@ -13,8 +13,13 @@ import { createServerClient } from '@supabase/ssr'
 // Authenticated routes — require a logged-in user
 const PROTECTED_PREFIXES = ['/dashboard', '/admin', '/onboarding', '/profile']
 
-// Auth pages — redirect logged-in users away
-const AUTH_PAGES = ['/login', '/signup', '/forgot']
+// Auth pages — redirect logged-in users away.
+// /signup is intentionally NOT in this list: with the 2026-06 multi-app
+// flow (same phone, different password = new account), a signed-in
+// creator must be able to re-enter signup to add a second business.
+// Bouncing them to /dashboard breaks the category-card "Create" CTA
+// (mobile only, where the session cookie reliably persists).
+const AUTH_PAGES = ['/login', '/forgot']
 
 // citydrivers.id host scope. Requests to the citydrivers.id apex or www get
 // the cityriders main app + drivers + ride/truck/car/bus marketing only.
