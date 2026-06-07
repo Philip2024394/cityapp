@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 
 type AuthState =
@@ -89,7 +88,6 @@ function Form({ userId }: { userId: string }) {
     city: '',
     service_area_notes: '',
     profile_image_url: '',
-    ktp_image_url: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -122,7 +120,6 @@ function Form({ userId }: { userId: string }) {
           city: f.city,
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
-          ktp_image_url: f.ktp_image_url,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -183,7 +180,6 @@ function Form({ userId }: { userId: string }) {
         <Field label="City"><input value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="Denpasar" className={inputCls} /></Field>
         <Field label="Service area"><input value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Kuta · Seminyak · Canggu" className={inputCls} /></Field>
         <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={userId} />
-        <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={userId} />
 
         {err && <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[13px] px-3 py-2">{err}</div>}
 

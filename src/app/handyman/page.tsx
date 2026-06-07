@@ -107,12 +107,11 @@ function MarketplaceInner() {
     setLoading(true)
     const qs = new URLSearchParams()
     if (specialty)         qs.set('specialty', specialty)
-    if (cityLabel.trim())  qs.set('city', cityLabel.trim())
     const r = await fetch(`/api/handyman/marketplace${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' })
     const j = await r.json() as { providers: HandymanProviderPublic[] }
     setProviders(j.providers || [])
     setLoading(false)
-  }, [specialty, cityLabel])
+  }, [specialty])
 
   useEffect(() => { load() }, [load])
 

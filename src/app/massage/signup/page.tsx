@@ -7,15 +7,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import { MASSAGE_TYPE_GROUPS, type MassageType } from '@/lib/massage/types'
 
 // Massage provider signup. Auth-gated like /partners/signup — must be
 // signed in (or create an account) before claiming a provider row.
-// On submit: row created with status='pending'; admin verifies the KTP
-// image, then flips status to 'active' which unlocks marketplace listing
-// + the "Go online" toggle on the dashboard.
 
 type AuthState =
   | { status: 'loading' }
@@ -125,7 +121,6 @@ function Form({ userId }: { userId: string }) {
     city: '',
     service_area_notes: '',
     profile_image_url: '',
-    ktp_image_url: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -161,7 +156,7 @@ function Form({ userId }: { userId: string }) {
           </svg>
         </div>
         <h1 className="text-[22px] font-black mb-2">Profile created</h1>
-        <p className="text-[13px] text-ink/70">Awaiting KTP verification — opening dashboard…</p>
+        <p className="text-[13px] text-ink/70">Opening dashboard…</p>
       </div>
     )
   }
@@ -171,8 +166,7 @@ function Form({ userId }: { userId: string }) {
       <Link href="/" className="text-[12px] text-ink/70 hover:text-ink inline-block mb-4">← Back</Link>
       <h1 className="text-[26px] font-black leading-tight mb-2">Therapist signup</h1>
       <p className="text-[13px] text-ink/70 mb-6">
-        Set your prices, profile and KTP. Profile activates after admin verifies your KTP.
-        Subscription Rp 38.000/month, 7-day free trial.
+        Set your prices and profile. Subscription Rp 38.000/month, 7-day free trial.
       </p>
 
       <form onSubmit={submit} className="space-y-4">
@@ -248,8 +242,6 @@ function Form({ userId }: { userId: string }) {
         </Field>
 
         <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={userId} />
-
-        <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={userId} />
 
         {err && (
           <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[13px] px-3 py-2">{err}</div>

@@ -7,10 +7,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import {
-  User, BookOpen, MapPin, Banknote, MessageCircle, Compass, Camera, IdCard,
+  User, BookOpen, MapPin, Banknote, MessageCircle, Compass, Camera,
   Scissors, Palette, Sun, Hand, Waves, Eye, Crown, Droplet,
   Check, AlertCircle, Briefcase,
   type LucideIcon,
@@ -135,7 +134,6 @@ function Form({ userId }: { userId: string }) {
     city: '',
     service_area_notes: '',
     profile_image_url: '',
-    ktp_image_url: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -156,7 +154,6 @@ function Form({ userId }: { userId: string }) {
     whatsapp_e164:    useRef<HTMLDivElement | null>(null),
     city:             useRef<HTMLDivElement | null>(null),
     profile_image_url:useRef<HTMLDivElement | null>(null),
-    ktp_image_url:    useRef<HTMLDivElement | null>(null),
   }
 
   function upd<K extends keyof typeof f>(k: K, v: typeof f[K]) {
@@ -195,15 +192,14 @@ function Form({ userId }: { userId: string }) {
     if (waDigits.length < 8 || waDigits.length > 15)                miss.add('whatsapp_e164')
     if (!f.city.trim())                                             miss.add('city')
     if (!f.profile_image_url)                                       miss.add('profile_image_url')
-    if (!f.ktp_image_url)                                           miss.add('ktp_image_url')
 
     if (miss.size > 0) {
       setMissing(miss)
       setErr(null)
       // Scroll to the first missing field. Sections render top-to-bottom,
       // so iterate the form order: name → business → bio → services →
-      // whatsapp → city → profile → ktp.
-      const order = ['display_name','business_name','bio','main_services','whatsapp_e164','city','profile_image_url','ktp_image_url']
+      // whatsapp → city → profile.
+      const order = ['display_name','business_name','bio','main_services','whatsapp_e164','city','profile_image_url']
       const first = order.find((k) => miss.has(k))
       if (first) refs[first]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
@@ -255,7 +251,6 @@ function Form({ userId }: { userId: string }) {
           city: f.city,
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
-          ktp_image_url: f.ktp_image_url,
           // Service type → has_physical_location: business + both opt in.
           has_physical_location: f.service_type !== 'mobile',
           // Main-services picker → services_offered + marketplace_categories
@@ -277,7 +272,7 @@ function Form({ userId }: { userId: string }) {
   if (done) return (
     <div className="px-4 pt-20 max-w-md mx-auto text-center">
       <h1 className="text-[22px] font-black mb-2">Profile created</h1>
-      <p className="text-[13px] text-ink/70">Awaiting KTP verification — opening dashboard…</p>
+      <p className="text-[13px] text-ink/70">Opening dashboard…</p>
     </div>
   )
 
@@ -287,7 +282,7 @@ function Form({ userId }: { userId: string }) {
 
       <h1 className="text-[26px] font-black leading-tight mb-2">Beautician signup</h1>
       <p className="text-[13px] text-ink/70 mb-6">
-        Set your services + package prices. Profile activates after admin verifies your KTP.
+        Set your services + package prices.
         Rp 38.000/month, 7-day free trial.
       </p>
 
@@ -552,19 +547,6 @@ function Form({ userId }: { userId: string }) {
             userId={userId}
             previewShape="circle"
           />
-        </div>
-
-        <div
-          ref={refs.ktp_image_url}
-          className={`space-y-1 ${missing.has('ktp_image_url') ? 'rounded-xl p-3 -m-3 bg-red-500/10 border border-red-500/50' : ''}`}
-        >
-          <span className={`text-[13px] font-bold inline-flex items-center gap-1.5 ${missing.has('ktp_image_url') ? 'text-red-300' : 'text-ink/85'}`}>
-            <IdCard className={`w-4 h-4 ${missing.has('ktp_image_url') ? 'text-red-400' : 'text-brand'}`} strokeWidth={2.5} />
-            KTP photo *
-            {missing.has('ktp_image_url') && <span className="text-[11px] font-extrabold text-red-300 ml-1">required</span>}
-          </span>
-          <p className="text-[11px] text-ink/55 leading-snug">Untuk verifikasi admin. KTP TIDAK ditampilkan publik — hanya admin yang lihat. Profil aktif setelah KTP diverifikasi (≤ 24 jam).</p>
-          <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={userId} />
         </div>
 
         {err && <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[13px] px-3 py-2">{err}</div>}

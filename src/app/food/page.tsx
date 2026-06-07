@@ -111,7 +111,6 @@ async function loadPlaces(city: string): Promise<{ places: Place[]; zone: CityZo
     admin
       .from('places')
       .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng')
-      .eq('city', city)
       .eq('status', 'approved')
       .is('mock_hidden_at', null)
       .in('category', FOOD_CATEGORIES as unknown as string[])

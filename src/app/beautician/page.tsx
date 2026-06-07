@@ -119,12 +119,11 @@ function MarketplaceInner() {
     const qs = new URLSearchParams()
     if (gender !== 'all')  qs.set('gender', gender)
     if (category)          qs.set('category', category)
-    if (cityLabel.trim())  qs.set('city', cityLabel.trim())
     const r = await fetch(`/api/beautician/marketplace${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' })
     const j = await r.json() as { providers: BeauticianProviderPublic[] }
     setProviders(j.providers || [])
     setLoading(false)
-  }, [gender, category, cityLabel])
+  }, [gender, category])
 
   useEffect(() => { load() }, [load])
 

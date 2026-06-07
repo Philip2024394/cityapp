@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
-import KtpUploader from '@/components/kyc/KtpUploader'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import { ALL_SPECIALTIES, SPECIALTY_LABELS, MAX_HANDYMAN_SPECIALTIES, type HandymanSpecialty } from '@/lib/handyman/types'
 
@@ -86,7 +85,6 @@ function Form({ userId }: { userId: string }) {
     city: '',
     service_area_notes: '',
     profile_image_url: '',
-    ktp_image_url: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -125,7 +123,6 @@ function Form({ userId }: { userId: string }) {
           city: f.city,
           service_area_notes: f.service_area_notes,
           profile_image_url: f.profile_image_url,
-          ktp_image_url: f.ktp_image_url,
         }),
       })
       const j = await r.json() as { ok?: boolean; error?: string }
@@ -138,7 +135,7 @@ function Form({ userId }: { userId: string }) {
   if (done) return (
     <div className="px-4 pt-20 max-w-md mx-auto text-center">
       <h1 className="text-[22px] font-black mb-2">Profile created</h1>
-      <p className="text-[13px] text-ink/70">Menunggu verifikasi KTP — buka dashboard…</p>
+      <p className="text-[13px] text-ink/70">Membuka dashboard…</p>
     </div>
   )
 
@@ -205,7 +202,6 @@ function Form({ userId }: { userId: string }) {
         <Field label="Kota"><input value={f.city} onChange={(e) => upd('city', e.target.value)} placeholder="Yogyakarta" className={inputCls} /></Field>
         <Field label="Area kerja"><input value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Yogya · Sleman · Bantul" className={inputCls} /></Field>
         <ProfileImageUploader value={f.profile_image_url || null} onChange={(v) => upd('profile_image_url', v ?? '')} userId={userId} />
-        <KtpUploader value={f.ktp_image_url || null} onChange={(v) => upd('ktp_image_url', v ?? '')} userId={userId} />
 
         {err && <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[13px] px-3 py-2">{err}</div>}
 

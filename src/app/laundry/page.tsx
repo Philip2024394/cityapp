@@ -103,12 +103,11 @@ function MarketplaceInner() {
     setLoading(true)
     const qs = new URLSearchParams()
     if (pkg !== 'all')    qs.set('package', pkg)
-    if (cityLabel.trim()) qs.set('city', cityLabel.trim())
     const r = await fetch(`/api/laundry/marketplace${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' })
     const j = await r.json() as { providers: LaundryProviderPublic[] }
     setProviders(j.providers || [])
     setLoading(false)
-  }, [pkg, cityLabel])
+  }, [pkg])
 
   useEffect(() => { load() }, [load])
 

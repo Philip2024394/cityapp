@@ -119,12 +119,11 @@ function MarketplaceInner() {
   const load = useCallback(async () => {
     setLoading(true)
     const qs = new URLSearchParams()
-    if (cityLabel.trim()) qs.set('city', cityLabel.trim())
     const r = await fetch(`/api/home-clean/marketplace${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' })
     const j = await r.json() as { providers: HomeCleanProviderPublic[] }
     setProviders(j.providers || [])
     setLoading(false)
-  }, [cityLabel])
+  }, [])
 
   useEffect(() => { load() }, [load])
 
