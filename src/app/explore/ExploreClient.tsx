@@ -60,6 +60,7 @@ const STRINGS: Record<Locale, {
   searchSuggestionsLabel: string
   searchNoMatch: string
   searchTryAnyway: string
+  addonsLink: string
 }> = {
   id: {
     back: 'Kembali',
@@ -72,6 +73,7 @@ const STRINGS: Record<Locale, {
     searchSuggestionsLabel: 'Saran',
     searchNoMatch: 'Tidak ada yang persis cocok.',
     searchTryAnyway: 'Cari lintas kategori →',
+    addonsLink: 'Tambahan untuk profilmu →',
   },
   en: {
     back: 'Back',
@@ -84,6 +86,7 @@ const STRINGS: Record<Locale, {
     searchSuggestionsLabel: 'Suggestions',
     searchNoMatch: 'No exact match.',
     searchTryAnyway: 'Search across all categories →',
+    addonsLink: 'Add-ons for your profile →',
   },
 }
 
@@ -329,6 +332,21 @@ export default function ExploreClient() {
             title="Property · Sales · Rentals · Builders"
             sub="Houses, villas, apartments, land — for sale, rent, or pre-launch"
           />
+        </div>
+
+        {/* Inline discovery link to /add-ons — text-only, low visual weight */}
+        <div className="mt-4 text-center">
+          <Link
+            href="/add-ons"
+            prefetch={false}
+            onClick={() => logNav('explore-link:add-ons')}
+            className="text-[12px] font-bold transition-colors"
+            style={{ color: '#52525B' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = INK }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#52525B' }}
+          >
+            {t.addonsLink}
+          </Link>
         </div>
 
         {/* Footer — locale + sign in */}

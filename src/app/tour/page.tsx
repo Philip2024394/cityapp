@@ -219,7 +219,7 @@ export default async function TourGuideFeedPage({
               </div>
               <Link
                 href="/tour/list/auth"
-                aria-label="List as tour guide"
+                aria-label="Buat profil tour guide kamu"
                 className="shrink-0 inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full text-bg font-extrabold text-[13px] active:scale-95 transition"
                 style={{
                   background: '#FACC15',
@@ -233,7 +233,7 @@ export default async function TourGuideFeedPage({
                 >
                   <Plus className="w-3.5 h-3.5" strokeWidth={3} />
                 </span>
-                <span>List</span>
+                <span>Create or Join</span>
               </Link>
             </div>
 

@@ -6,7 +6,6 @@ import {
   Star, ChevronDown, Briefcase, Store, Wrench,
   Scissors, Shirt, Sparkles as Spark, UtensilsCrossed, MapPin, Bike, Car, Hammer, Hand, Stethoscope, Check, X,
 } from 'lucide-react'
-import LocationPermissionPrompt from '@/components/onboarding/LocationPermissionPrompt'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
 import { logNav } from '@/lib/perf/navTiming'
 
@@ -74,7 +73,6 @@ function getCountryFromCookie(): string {
 export default function LandingPage() {
   const router = useRouter()
   const [locale, setLocale] = useState<Locale>('id')
-  const [promptOpen, setPromptOpen] = useState(false)
   // Country code from the middleware-issued `kita-country` cookie. Used to
   // hide the ID flag for non-Indonesian IPs per founder direction. Empty
   // until we hydrate, at which point we trust the value.
@@ -171,11 +169,6 @@ export default function LandingPage() {
 
   function handleEnterApp() {
     logNav('landing:enter-app')
-    setPromptOpen(true)
-  }
-
-  function handlePromptComplete() {
-    setPromptOpen(false)
     router.push('/explore')
   }
 
@@ -767,8 +760,6 @@ export default function LandingPage() {
       </div>
 
       <PlatformDisclaimer variant="links" />
-
-      <LocationPermissionPrompt open={promptOpen} onComplete={handlePromptComplete} />
 
       {/* Reveal-on-scroll animations — applied to every section tagged
           `reveal-on-scroll`. The class is added by the IntersectionObserver

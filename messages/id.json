@@ -763,7 +763,7 @@
   "verticals": {
     "common": {
       "chipAll": "Semua",
-      "listCta": "Daftar",
+      "listCta": "Buat atau Gabung",
       "openNow": "Buka sekarang",
       "closed": "Tutup",
       "outOfCity": "Luar kota"
@@ -783,7 +783,7 @@
       "metaDescription": "Profesional kecantikan di sekitarmu — makeup, kuku, rambut, spa.",
       "title": "Beautician di {city}",
       "subtitle": "Profesional kecantikan di {city} · Makeup · Kuku · Rambut · Spa",
-      "listAria": "Daftarkan usaha beautician kamu",
+      "listAria": "Buat profil beautician kamu",
       "searchPlaceholder": "Cari beautician — nama, salon, area…",
       "searchAria": "Cari beautician"
     },
@@ -792,7 +792,7 @@
       "metaDescription": "Tukang ahli di sekitarmu — listrik, AC, pipa, kayu.",
       "title": "Tukang di {city}",
       "subtitle": "Tukang ahli di {city} · Listrik · AC · Pipa · Kayu",
-      "listAria": "Daftarkan usaha tukang kamu",
+      "listAria": "Buat profil tukang kamu",
       "searchPlaceholder": "Cari tukang — nama, area…",
       "searchAria": "Cari tukang"
     },
@@ -801,7 +801,7 @@
       "metaDescription": "Laundry di sekitarmu — antar-jemput, drop-off, harga per-kg.",
       "title": "Laundry di {city}",
       "subtitle": "Laundry di {city} · Antar-jemput · Drop-off · Harga per-kg",
-      "listAria": "Daftarkan laundry kamu",
+      "listAria": "Buat profil laundry kamu",
       "searchPlaceholder": "Cari laundry — nama, toko, area…",
       "searchAria": "Cari laundry"
     },
@@ -810,7 +810,7 @@
       "metaDescription": "Terapis pijat profesional di sekitarmu — rumah, hotel, villa.",
       "title": "Terapis Pijat di {city}",
       "subtitle": "Terapis pijat profesional di {city} · Rumah · Hotel · Villa",
-      "listAria": "Daftarkan profil terapis pijat kamu",
+      "listAria": "Buat profil terapis pijat kamu",
       "searchPlaceholder": "Cari terapis — nama, jenis, area…",
       "searchAria": "Cari terapis"
     },
@@ -819,7 +819,7 @@
       "metaDescription": "Jasa bersih rumah di sekitarmu — per-jam, per-hari, deep clean.",
       "title": "Jasa Bersih-Bersih di {city}",
       "subtitle": "Jasa bersih rumah di {city} · Per-jam · Per-hari · Deep clean",
-      "listAria": "Daftarkan jasa bersih kamu",
+      "listAria": "Buat profil jasa bersih kamu",
       "searchPlaceholder": "Cari jasa bersih — nama, area, layanan…",
       "searchAria": "Cari jasa bersih"
     },
@@ -828,7 +828,7 @@
       "metaDescription": "Profesional facial di sekitarmu — classic, hydra, anti-aging, brightening.",
       "title": "Facial di {city}",
       "subtitle": "Profesional facial di {city} · Classic · Hydra · Anti-Aging · Brightening",
-      "listAria": "Daftarkan usaha facial kamu",
+      "listAria": "Buat profil facial kamu",
       "searchPlaceholder": "Cari facial — nama, salon, area…",
       "searchAria": "Cari penyedia facial"
     }

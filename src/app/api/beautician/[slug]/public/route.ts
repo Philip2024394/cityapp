@@ -8,7 +8,7 @@ const PUBLIC_COLS = [
   // owner_user_id is the auth.users.id of whoever owns this profile.
   // Exposed publicly (read-only) so the addon panels (e.g. /add-ons Q&A
   // public render) can scope their query to "this provider's items".
-  'owner_user_id',
+  'owner_user_id:user_id',
   'gender','years_experience','bio',
   'price_makeup_idr','price_nail_idr','price_hair_idr',
   'city','service_area_notes',
