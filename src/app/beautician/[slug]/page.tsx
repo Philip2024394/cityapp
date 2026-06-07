@@ -36,6 +36,7 @@ import VendorCartSheet from '@/components/cart/VendorCartSheet'
 import VisitUsViaCityDriversCard from '@/components/providers/VisitUsViaCityDriversCard'
 import { bannerSrc } from '@/lib/banners/transform'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
+import ProfileQaPanel from '@/components/addons/ProfileQaPanel'
 
 // Default theme accent — used when the beautician hasn't picked their
 // own theme_color (mig 0078). Beauticians choose their accent from the
@@ -1084,6 +1085,11 @@ export default function BeauticianProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      {/* Q&A add-on panel — only renders when the owner has the 'qa'
+          add-on enabled AND has at least one Q&A item. Otherwise null. */}
+      <div className="max-w-2xl mx-auto px-4">
+        <ProfileQaPanel ownerUserId={p.owner_user_id ?? null} />
+      </div>
       <PoweredByKita2u defaultVertical="beautician" />
     </Shell>
   )
