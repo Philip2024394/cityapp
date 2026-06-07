@@ -211,10 +211,10 @@ export default async function TourGuideFeedPage({
             <div className="flex items-center justify-between gap-2 shrink-0">
               <div className="min-w-0">
                 <h1 className="text-[18px] sm:text-[20px] font-black tracking-tight text-bg leading-tight">
-                  Tour guides in {cityLabel}
+                  Tour guides
                 </h1>
                 <p className="text-[12px] font-bold text-[#71717A] leading-tight mt-0.5 truncate">
-                  Local guides in {cityLabel} · Day trips · Half-day · Custom
+                  Local guides · Day trips · Half-day · Custom
                 </p>
               </div>
               <Link

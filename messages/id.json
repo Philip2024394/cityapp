@@ -771,8 +771,8 @@
     "food": {
       "metaTitle": "Makanan · Kita2u",
       "metaDescription": "Telusuri tempat makan & minum di sekitarmu — restoran, kafe, bar, klub. Kita2u adalah direktori bisnis self-listed.",
-      "title": "Makanan di {city}",
-      "subtitle": "Restoran, kafe, dan bar terbaik di {city}",
+      "title": "Makanan",
+      "subtitle": "Restoran, kafe, dan bar terbaik",
       "chipRestaurant": "Resto",
       "chipCafe": "Kafe",
       "chipBar": "Bar",
@@ -781,8 +781,8 @@
     "beautician": {
       "metaTitle": "Beautician · Kita2u",
       "metaDescription": "Profesional kecantikan di sekitarmu — makeup, kuku, rambut, spa.",
-      "title": "Beautician di {city}",
-      "subtitle": "Profesional kecantikan di {city} · Makeup · Kuku · Rambut · Spa",
+      "title": "Beautician",
+      "subtitle": "Profesional kecantikan · Makeup · Kuku · Rambut · Spa",
       "listAria": "Buat profil beautician kamu",
       "searchPlaceholder": "Cari beautician — nama, salon, area…",
       "searchAria": "Cari beautician"
@@ -790,8 +790,8 @@
     "handyman": {
       "metaTitle": "Tukang · Kita2u",
       "metaDescription": "Tukang ahli di sekitarmu — listrik, AC, pipa, kayu.",
-      "title": "Tukang di {city}",
-      "subtitle": "Tukang ahli di {city} · Listrik · AC · Pipa · Kayu",
+      "title": "Tukang",
+      "subtitle": "Tukang ahli · Listrik · AC · Pipa · Kayu",
       "listAria": "Buat profil tukang kamu",
       "searchPlaceholder": "Cari tukang — nama, area…",
       "searchAria": "Cari tukang"
@@ -799,8 +799,8 @@
     "laundry": {
       "metaTitle": "Laundry · Kita2u",
       "metaDescription": "Laundry di sekitarmu — antar-jemput, drop-off, harga per-kg.",
-      "title": "Laundry di {city}",
-      "subtitle": "Laundry di {city} · Antar-jemput · Drop-off · Harga per-kg",
+      "title": "Laundry",
+      "subtitle": "Laundry · Antar-jemput · Drop-off · Harga per-kg",
       "listAria": "Buat profil laundry kamu",
       "searchPlaceholder": "Cari laundry — nama, toko, area…",
       "searchAria": "Cari laundry"
@@ -808,8 +808,8 @@
     "massage": {
       "metaTitle": "Terapis Pijat · Kita2u",
       "metaDescription": "Terapis pijat profesional di sekitarmu — rumah, hotel, villa.",
-      "title": "Terapis Pijat di {city}",
-      "subtitle": "Terapis pijat profesional di {city} · Rumah · Hotel · Villa",
+      "title": "Terapis Pijat",
+      "subtitle": "Terapis pijat profesional · Rumah · Hotel · Villa",
       "listAria": "Buat profil terapis pijat kamu",
       "searchPlaceholder": "Cari terapis — nama, jenis, area…",
       "searchAria": "Cari terapis"
@@ -817,8 +817,8 @@
     "homeClean": {
       "metaTitle": "Jasa Bersih · Kita2u",
       "metaDescription": "Jasa bersih rumah di sekitarmu — per-jam, per-hari, deep clean.",
-      "title": "Jasa Bersih-Bersih di {city}",
-      "subtitle": "Jasa bersih rumah di {city} · Per-jam · Per-hari · Deep clean",
+      "title": "Jasa Bersih-Bersih",
+      "subtitle": "Jasa bersih rumah · Per-jam · Per-hari · Deep clean",
       "listAria": "Buat profil jasa bersih kamu",
       "searchPlaceholder": "Cari jasa bersih — nama, area, layanan…",
       "searchAria": "Cari jasa bersih"
@@ -826,8 +826,8 @@
     "facial": {
       "metaTitle": "Facial · Kita2u",
       "metaDescription": "Profesional facial di sekitarmu — classic, hydra, anti-aging, brightening.",
-      "title": "Facial di {city}",
-      "subtitle": "Profesional facial di {city} · Classic · Hydra · Anti-Aging · Brightening",
+      "title": "Facial",
+      "subtitle": "Profesional facial · Classic · Hydra · Anti-Aging · Brightening",
       "listAria": "Buat profil facial kamu",
       "searchPlaceholder": "Cari facial — nama, salon, area…",
       "searchAria": "Cari penyedia facial"

@@ -166,7 +166,7 @@ function MarketplaceInner() {
                 </p>
               </div>
               <Link
-                href="/beautician/signup"
+                href="/signup?vertical=beautician"
                 onClick={() => haptic.tap()}
                 aria-label={t('listAria')}
                 className="shrink-0 inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full text-bg font-extrabold text-[13px] active:scale-95 transition"
