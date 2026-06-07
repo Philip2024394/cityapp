@@ -16,7 +16,7 @@ type Provider = BeauticianProvider & {
   theme_color?: string | null
 }
 
-const DEFAULT_THEME = '#EC4899'
+const DEFAULT_THEME = '#FACC15'
 
 export default function BeauticianQrPage() {
   const [provider, setProvider] = useState<Provider | null>(null)

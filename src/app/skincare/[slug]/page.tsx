@@ -40,7 +40,7 @@ import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
 // their own theme_color (mig 0078). Providers choose their accent from the
 // dashboard color palette; the chosen hex flows through every accent
 // surface on this page via the `theme` constant below.
-const DEFAULT_THEME = '#EC4899'
+const DEFAULT_THEME = '#FACC15'
 
 // Review row as returned by GET /api/reviews. created_at is ISO,
 // formatted to "Xd ago" / absolute date in the UI.

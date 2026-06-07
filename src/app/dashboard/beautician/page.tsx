@@ -119,14 +119,14 @@ export default function BeauticianDashboardPage() {
   // Accent palette derived from the creator's chosen public-profile
   // theme_color. The dashboard adopts the same hex on every CTA, icon
   // chip, progress bar, and hover state so the editor reads as "your
-  // workspace, in your brand". Fallback #EC4899 (Dewi pink) when no
-  // theme_color is set yet — keeps freshly-signed-up creators on a
-  // sensible default until they open /dashboard/beautician/edit.
+  // workspace, in your brand". Fallback #FACC15 (Kita2u yellow) when
+  // no theme_color is set yet — every vertical starts yellow and the
+  // creator picks their own from the dashboard color palette later.
   //
   // Soft / softer variants are inlined as hex+alpha (no color-mix in
   // tailwind arbitrary values yet). Hover state piggybacks on
   // brightness-95 since it doesn't need a separate hex.
-  const accent       = provider.theme_color || '#EC4899'
+  const accent       = provider.theme_color || '#FACC15'
   const accentSoft   = accent + '40'  // ~25% — ring + icon chip bg
   const accentSofter = accent + '1F'  // ~12% — task-card icon background fill
   const accentFaint  = accent + '0F'  // ~6%  — hover row tint

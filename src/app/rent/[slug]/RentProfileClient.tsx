@@ -21,7 +21,7 @@ import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attr
 // the populated HTML.
 // -----------------------------------------------------------------------------
 
-const DEFAULT_THEME = '#EC4899'
+const DEFAULT_THEME = '#FACC15'
 
 // Vertical default for the hero. Matches the beautician fallback so
 // rental rows without a cover_image_url still get a polished hero.

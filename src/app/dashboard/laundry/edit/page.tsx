@@ -18,7 +18,7 @@ import type { LaundryProvider } from '@/lib/laundry/types'
 // here. Other fields continue to be edited from the main dashboard
 // form until they're lifted into this WYSIWYG view in follow-ups.
 
-const DEFAULT_THEME = '#EC4899'
+const DEFAULT_THEME = '#FACC15'
 const DEFAULT_HERO = {
   line1:   'Professional',
   line2:   'Laundry',

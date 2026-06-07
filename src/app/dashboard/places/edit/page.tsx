@@ -14,7 +14,7 @@ import DomainRequestModal from '@/components/dashboard/DomainRequestModal'
 // beautician edit page; the underlying data source/table is `places`
 // instead of `beautician_providers`.
 
-const DEFAULT_THEME = '#EC4899'
+const DEFAULT_THEME = '#FACC15'
 const DEFAULT_HERO = {
   line1:   'Welcome to',
   line2:   'Our Place',
