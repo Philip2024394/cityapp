@@ -32,19 +32,31 @@ export const dynamic = 'force-dynamic'
 //   • Customers → /cari (discovery)
 // ============================================================================
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Phone, User, KeyRound, Eye, EyeOff, Sparkles, ArrowRight, ArrowLeft,
   Briefcase, MapPin,
 } from 'lucide-react'
 import AuthShell from '@/components/auth/AuthShell'
 import DevAccessPanel from '@/components/dev/DevAccessPanel'
+import PhoneInput, { normalizeE164 } from '@/components/auth/PhoneInput'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { MONTHLY_PRICE_LABEL, YEARLY_PRICE_LABEL, TRIAL_LABEL_EN } from '@/lib/pricing/constants'
 
 type Role = 'customer' | 'driver'
 type Step = 'role' | 'register'
+
+// Driver-side verticals — these belong to CityDrivers, NOT Kita2u. When
+// `?vertical=` matches one of these we render the legacy CityDrivers
+// role-picker (driver/customer) signup. Anything else is treated as a
+// Kita2u creator flow and the role picker is skipped entirely (Kita2u
+// has NO driver concept — it's a template marketplace for creators
+// selling their own apps).
+const DRIVER_VERTICALS = new Set(['rider', 'car', 'truck', 'bus', 'jeep', 'driver'])
+function isKita2uVertical(v: string): boolean {
+  return !!v && !DRIVER_VERTICALS.has(v)
+}
 
 // Maps the canonical vertical id passed via ?vertical= to the actual
 // /dashboard route. Driver verticals split off into rider/car/truck
@@ -59,9 +71,50 @@ function dashboardPathFor(vertical: string): string {
 }
 
 export default function SignupPage() {
+  // useSearchParams() requires a Suspense boundary in Next 15 so SSR can
+  // stream the URL-aware shell. Without this wrapper the Kita2u flow
+  // briefly flashes the CityDrivers driver-picker before client JS reads
+  // the vertical and corrects the step.
+  return (
+    <Suspense fallback={null}>
+      <SignupInner />
+    </Suspense>
+  )
+}
+
+function SignupInner() {
   const router = useRouter()
-  const [step, setStep] = useState<Step>('role')
-  const [role, setRole] = useState<Role>('driver')
+  const sp = useSearchParams()
+
+  // URL params parsed synchronously so SSR and the first client render
+  // both see the same Kita2u-or-CityDrivers branching. No useEffect, no
+  // FOUC. claimedHandle / claimedVertical are derived constants rather
+  // than state — they only ever come from the URL anyway.
+  const urlVertical  = (sp?.get('vertical') || '').trim().toLowerCase()
+  const urlHandle    = (sp?.get('handle')   || '').trim().toLowerCase()
+  const urlRoleParam = sp?.get('role') || ''
+  const isKita2uFlow = isKita2uVertical(urlVertical)
+  const claimedVertical = urlVertical || null
+  const claimedHandle   = urlHandle   || null
+
+  // Step initial: Kita2u → straight to register (no role picker, ever).
+  // CityDrivers → role picker unless URL forces otherwise.
+  const [step, setStep] = useState<Step>(() => {
+    if (isKita2uFlow) return 'register'
+    if (urlRoleParam === 'driver' || urlRoleParam === 'customer') return 'register'
+    if (urlHandle) return 'register'
+    return 'role'
+  })
+  // Role initial: Kita2u creators are stored as profile.role='customer'
+  // (the profiles table check constraint only allows customer/driver/admin
+  // — adding 'creator' would need a migration; deferred). The vertical
+  // metadata distinguishes them from actual ride-booking customers.
+  const [role, setRole] = useState<Role>(() => {
+    if (isKita2uFlow) return 'customer'
+    if (urlRoleParam === 'driver')   return 'driver'
+    if (urlRoleParam === 'customer') return 'customer'
+    return 'driver'
+  })
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -70,37 +123,6 @@ export default function SignupPage() {
   const [age18, setAge18] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Handle + vertical from ?handle=&vertical= — populated when the user
-  // arrives from the KitaSignupPopup. Display the handle inline so the
-  // user knows what they're claiming + use the vertical to land them on
-  // the matching dashboard after signup.
-  const [claimedHandle,   setClaimedHandle]   = useState<string | null>(null)
-  const [claimedVertical, setClaimedVertical] = useState<string | null>(null)
-
-  // URL-param role pre-selection — when the user lands here from a
-  // dedicated landing page (e.g. /drivers → /signup?role=driver), skip
-  // the role picker entirely and drop them straight on the register step.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const urlRole = params.get('role')
-    if (urlRole === 'driver' || urlRole === 'customer') {
-      setRole(urlRole)
-      setStep('register')
-    }
-    // Kita2u handle-claim flow — jump past the role picker and lock the
-    // role to 'driver' (creators only). Customers never have a handle so
-    // the claim doesn't apply to them.
-    const urlHandle   = (params.get('handle')   || '').trim().toLowerCase()
-    const urlVertical = (params.get('vertical') || '').trim().toLowerCase()
-    if (urlHandle) {
-      setClaimedHandle(urlHandle)
-      setRole('driver')
-      setStep('register')
-    }
-    if (urlVertical) setClaimedVertical(urlVertical)
-  }, [])
 
   function continueFromRole(e: React.FormEvent) {
     e.preventDefault()
@@ -116,9 +138,9 @@ export default function SignupPage() {
       setError('Please enter your full name')
       return
     }
-    const cleaned = normalizePhone(phone)
+    const cleaned = normalizeE164(phone)
     if (!cleaned) {
-      setError('Please enter a valid Indonesian mobile number (e.g. 6281234567890)')
+      setError('Please enter a valid mobile number with country code')
       return
     }
     if (!password || password.length < 6) {
@@ -183,44 +205,77 @@ export default function SignupPage() {
     router.refresh()
   }
 
+  // (isKita2uFlow is declared once at the top of the component now —
+  // both the URL parser block and the JSX read it from there.)
+
   // Hero per step — yellow icon chip + title + subtitle.
   const heroIcon =
     step === 'role' ? <User className="w-6 h-6" /> :
                       <Phone className="w-6 h-6" />
   const heroTitle =
-    step === 'role' ? 'Create your account' :
-                      (role === 'driver' ? 'Set up your account' : 'Tell us about you')
+    step === 'role'
+      ? 'Create your account'
+      : (isKita2uFlow
+          ? 'Buat akun kamu'
+          : (role === 'driver' ? 'Set up your account' : 'Tell us about you'))
   const heroSub =
-    step === 'role' ? 'Pick what you want to do on CityDrivers.' :
-                      'Use your WhatsApp number and a password. No SMS code needed.'
+    step === 'role'
+      ? 'Pick what you want to do on CityDrivers.'
+      : (isKita2uFlow
+          ? 'Pakai nomor WhatsApp dan password. Tanpa kode SMS.'
+          : 'Use your WhatsApp number and a password. No SMS code needed.')
 
   return (
     <AuthShell
       backgroundImage="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_30_50%20PM.png"
       hideHeader
     >
-      {/* Landing-style brand — logo + "CityDrivers" wordmark — pinned
-          above the form card, matching the brand block on the public
-          /drivers landing pages. */}
-      <Link
-        href="/cityriders"
-        className="flex items-center justify-center gap-2 mb-4 active:scale-[0.97] transition"
-        aria-label="CityDrivers home"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
-          alt=""
-          className="h-11 w-auto rounded-xl object-contain"
-        />
-        <span
-          className="font-black text-[20px] tracking-tight leading-none"
-          style={{ color: '#0A0A0A' }}
+      {/* Brand block — host/vertical-aware. Kita2u marketplace verticals
+          (beautician, handyman, food, etc.) get the Kita2u wordmark and
+          a back-link to the marketplace home. Driver verticals keep the
+          existing CityDrivers logo and /cityriders deep-link. */}
+      {isKita2uFlow ? (
+        <Link
+          href="/explore"
+          className="flex items-center justify-center mb-4 active:scale-[0.97] transition"
+          aria-label="Kita2u home"
         >
-          CityDrivers
-        </span>
-      </Link>
-      <StepDots active={step} />
+          <span
+            className="font-black tracking-tight leading-none text-[26px]"
+            style={{ color: '#0A0A0A', letterSpacing: '-0.02em' }}
+          >
+            Kita
+          </span>
+          <span
+            className="font-black tracking-tight leading-none text-[26px]"
+            style={{ color: '#FACC15', letterSpacing: '-0.02em' }}
+          >
+            2u
+          </span>
+        </Link>
+      ) : (
+        <Link
+          href="/cityriders"
+          className="flex items-center justify-center gap-2 mb-4 active:scale-[0.97] transition"
+          aria-label="CityDrivers home"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://ik.imagekit.io/nepgaxllc/Untitledasdasdaasssdasdasd-removebg-preview.png?updatedAt=1780193517351"
+            alt=""
+            className="h-11 w-auto rounded-xl object-contain"
+          />
+          <span
+            className="font-black text-[20px] tracking-tight leading-none"
+            style={{ color: '#0A0A0A' }}
+          >
+            CityDrivers
+          </span>
+        </Link>
+      )}
+      {/* StepDots only on the 2-step CityDrivers flow. Kita2u creators
+          have a single-step register form so the stepper would be a lie. */}
+      {!isKita2uFlow && <StepDots active={step} />}
 
       {/* Hero */}
       <div className="flex items-center gap-3 mb-5">
@@ -311,25 +366,12 @@ export default function SignupPage() {
           </Field>
           <Field
             label="WhatsApp number"
-            hint="Type the digits after +62 — we add the prefix."
+            hint="Pick your country, then type your mobile number."
           >
-            <span
-              aria-hidden
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-extrabold text-[#71717A] pointer-events-none select-none tabular-nums"
-            >
-              +62
-            </span>
-            <input
-              className={inputCls + ' pl-14 tabular-nums font-mono'}
-              type="tel"
-              inputMode="numeric"
-              placeholder="81234567890"
-              value={phone.startsWith('62') ? phone.slice(2) : phone}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, '').replace(/^62/, '').replace(/^0/, '')
-                setPhone('62' + digits)
-              }}
-              autoComplete="tel"
+            <PhoneInput
+              value={phone}
+              onChange={setPhone}
+              countryAriaLabel="Pick your country code"
             />
           </Field>
           <Field
@@ -402,13 +444,18 @@ export default function SignupPage() {
             {pending ? 'Creating account…' : 'Create account'}
             <ArrowRight className="w-4 h-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => setStep('role')}
-            className="w-full min-h-[44px] text-[13px] text-[#71717A] hover:text-[#0A0A0A] inline-flex items-center justify-center gap-1.5"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back
-          </button>
+          {/* Back returns to the role picker — only meaningful on the
+              CityDrivers 2-step flow. Kita2u creators arrive here
+              directly from /<vertical> with no prior step to return to. */}
+          {!isKita2uFlow && (
+            <button
+              type="button"
+              onClick={() => setStep('role')}
+              className="w-full min-h-[44px] text-[13px] text-[#71717A] hover:text-[#0A0A0A] inline-flex items-center justify-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back
+            </button>
+          )}
         </form>
       )}
 
@@ -532,14 +579,6 @@ const inputCls =
 const primaryBtnCls =
   'w-full min-h-[48px] rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(250,204,21,0.35)] hover:bg-[#EAB308] active:scale-[0.98] transition disabled:opacity-60 disabled:cursor-not-allowed'
 
-function normalizePhone(raw: string): string | null {
-  const digits = raw.replace(/\D/g, '')
-  if (!digits) return null
-  if (digits.startsWith('0')) return '62' + digits.slice(1)
-  if (digits.startsWith('62')) return digits
-  return null
-}
-
 // Convert Supabase's auth error messages into something a driver can act
 // on. Mostly we surface the raw message; the targeted overrides cover the
 // two friction modes drivers hit on signup: a duplicate WA number and the
@@ -547,7 +586,7 @@ function normalizePhone(raw: string): string | null {
 function humanError(msg: string): string {
   const m = msg.toLowerCase()
   if (m.includes('user already registered') || m.includes('already_exists') || m.includes('duplicate key')) {
-    return 'A driver with this WhatsApp number already exists. Sign in instead, or contact support to reset your password.'
+    return 'An account with this WhatsApp number already exists. Sign in instead, or contact support to reset your password.'
   }
   if (m.includes('phone not confirmed') || m.includes('phone_not_confirmed')) {
     return 'Sign-up needs Supabase phone-confirm OFF (Auth → Providers → Phone). Ask your admin.'

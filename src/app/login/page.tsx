@@ -21,9 +21,10 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Phone, KeyRound, LogIn, Eye, EyeOff } from 'lucide-react'
+import { KeyRound, LogIn, Eye, EyeOff } from 'lucide-react'
 import AuthShell from '@/components/auth/AuthShell'
 import DevAccessPanel from '@/components/dev/DevAccessPanel'
+import PhoneInput, { normalizeE164 } from '@/components/auth/PhoneInput'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -61,9 +62,9 @@ function LoginInner() {
     e.preventDefault()
     setError(null)
 
-    const cleaned = normalizePhone(phone)
+    const cleaned = normalizeE164(phone)
     if (!cleaned) {
-      setError('Please enter a valid Indonesian mobile number (e.g. 6281234567890)')
+      setError('Please enter a valid mobile number with country code')
       return
     }
     if (!password || password.length < 6) {
@@ -117,21 +118,14 @@ function LoginInner() {
           <label className="block text-[13px] font-bold text-[#0A0A0A] mb-1.5">
             WhatsApp number
           </label>
-          <div className="relative">
-            <Phone className="w-4 h-4 text-[#71717A] absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              className={inputCls + ' pl-11 tabular-nums font-mono'}
-              type="tel"
-              inputMode="numeric"
-              placeholder="6281234567890"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
-              autoFocus
-            />
-          </div>
+          <PhoneInput
+            value={phone}
+            onChange={setPhone}
+            autoFocus
+            countryAriaLabel="Pick your country code"
+          />
           <p className="text-[12px] text-[#71717A] mt-1.5 leading-snug">
-            Indonesian number, start with 62 (no +)
+            Same number you used to create your account.
           </p>
         </div>
 
@@ -196,16 +190,6 @@ const inputCls =
 
 const primaryBtnCls =
   'w-full min-h-[48px] rounded-2xl bg-[#FACC15] text-[#0A0A0A] text-[14px] font-extrabold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(250,204,21,0.35)] hover:bg-[#EAB308] active:scale-[0.98] transition disabled:opacity-60 disabled:cursor-not-allowed'
-
-// Normalize a user-typed phone number to E.164 without the leading +.
-// Accepts: "081234...", "+6281234...", "6281234..." → returns "6281234..."
-function normalizePhone(raw: string): string | null {
-  const digits = raw.replace(/\D/g, '')
-  if (!digits) return null
-  if (digits.startsWith('0')) return '62' + digits.slice(1)
-  if (digits.startsWith('62')) return digits
-  return null
-}
 
 // Convert Supabase's auth error messages into something a driver can act on.
 function humanError(msg: string): string {

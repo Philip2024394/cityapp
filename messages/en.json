@@ -773,6 +773,7 @@
       "metaDescription": "Browse self-listed eateries near you — restaurants, cafés, bars, clubs. Kita2u is a software directory.",
       "title": "Food",
       "subtitle": "Best restaurants, cafés, and bars",
+      "listAria": "List your food venue",
       "chipRestaurant": "Resto",
       "chipCafe": "Café",
       "chipBar": "Bar",

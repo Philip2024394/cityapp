@@ -218,6 +218,9 @@ export default async function FoodPage({
           title={t('title',    { city: currentCityLabel })}
           subtitle={t('subtitle', { city: currentCityLabel })}
           profileBasePath="/food"
+          listHref="/signup?vertical=food"
+          listLabel={tCommon('listCta')}
+          listAria={t('listAria')}
         />
       </div>
     </main>

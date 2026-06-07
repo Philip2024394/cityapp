@@ -35,16 +35,16 @@ const STRINGS: Record<Locale, {
   signIn: string
 }> = {
   id: {
-    h1Line1: 'Kita2u,',
-    h1Line2: 'Indonesia.',
-    lede: 'Pasar harian Indonesia — pesan kendaraan, sewa jasa, atau daftarkan bisnismu.',
+    h1Line1: 'Dibuat untuk',
+    h1Line2: 'kreator.',
+    lede: 'Pertumbuhan dari media sosial — tanpa platform raksasa mengambil keuntunganmu. Audiens, harga, dan pelanggan tetap milikmu, 24 jam sehari.',
     enter: 'Masuk Aplikasi',
     signIn: 'Masuk',
   },
   en: {
-    h1Line1: 'Kita2u,',
-    h1Line2: 'Indonesia.',
-    lede: "Indonesia's everyday marketplace — find a ride, hire a service, or list your own.",
+    h1Line1: 'Built for',
+    h1Line2: 'creators.',
+    lede: 'Social media growth without the giants taking your profit. Your audience, your prices, your customers — kept forever, growing 24 hours a day.',
     enter: 'Enter App',
     signIn: 'Sign in',
   },
@@ -214,10 +214,12 @@ export default function LandingPage() {
             className="block w-full max-w-2xl mx-auto h-auto"
           />
 
-          {/* Tagline — centered hook under the hero. */}
+          {/* Tagline — centered hook under the hero. Creator-first,
+              world-audience pitch (replaces the previous Indonesia-
+              centric "Everything In One Link" line). */}
           <div className="font-black leading-[1.02] tracking-tight text-[34px] sm:text-[44px] md:text-[52px] text-center">
-            <span style={{ color: '#0A0A0A' }}>Everything In </span>
-            <span style={{ color: '#FACC15' }}>One Link</span>
+            <span style={{ color: '#0A0A0A' }}>{t.h1Line1} </span>
+            <span style={{ color: '#FACC15' }}>{t.h1Line2}</span>
           </div>
 
           {/* Small supporting sentence. */}
@@ -292,10 +294,10 @@ export default function LandingPage() {
             <Star className="w-4 h-4 fill-current" />
           </div>
           <p className="text-[14px] font-extrabold text-[#0A0A0A]">
-            Built for Indonesia&apos;s growing creator economy
+            Traffic isn&apos;t the challenge anymore — the first move is.
           </p>
           <p className="text-[12px] text-gray-600 leading-snug">
-            Early access · Join the first wave of creators &amp; businesses going direct on social.
+            Built for creators worldwide who are done feeding mass-giant platforms and ready to own their own market.
           </p>
         </div>
       </section>
@@ -415,11 +417,12 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="text-center space-y-2">
             <h2 className="font-black text-[26px] sm:text-[32px] tracking-tight leading-[1.1] text-[#0A0A0A]">
-              Stop building someone else&apos;s business.
+              Stop letting mass giants run your business.
             </h2>
             <p className="text-[14px] sm:text-[15px] text-gray-700 leading-relaxed max-w-2xl mx-auto">
-              The age of paying 20% commission, fighting algorithm changes, and feeding a marketplace&apos;s customer database is over.
-              Your customers should belong to <strong className="text-[#0A0A0A]">you</strong>.
+              Selling on someone else&apos;s platform never grows YOUR business —
+              it grows theirs. Their commissions are sometimes higher than the item or service itself.
+              The future is adapting your own market, getting found on your own link, and keeping every cent you earn.
             </p>
           </div>
 
@@ -548,8 +551,8 @@ export default function LandingPage() {
                 <Briefcase className="w-6 h-6" strokeWidth={2.25} style={{ color: '#0A0A0A' }} />
               </div>
               <div className="min-w-0">
-                <div className="font-extrabold text-[15px] text-[#0A0A0A] leading-tight">For creators</div>
-                <div className="text-[13px] text-gray-600 leading-snug mt-1">Turn TikTok &amp; Instagram followers into paying customers without giving 30% to a marketplace.</div>
+                <div className="font-extrabold text-[15px] text-[#0A0A0A] leading-tight">For the creator of social media growth</div>
+                <div className="text-[13px] text-gray-600 leading-snug mt-1">Convert TikTok, Instagram, and YouTube audiences into your own customer base — no algorithm, no commission, no permission needed.</div>
               </div>
             </div>
             <div
@@ -657,12 +660,11 @@ export default function LandingPage() {
       <section className="reveal-on-scroll relative z-10 px-6 py-14">
         <div className="max-w-md mx-auto text-center space-y-4">
           <h2 className="font-black text-[26px] sm:text-[32px] tracking-tight leading-tight">
-            <span style={{ color: '#0A0A0A' }}>Ready to grow with </span>
-            <span style={{ color: '#0A0A0A' }}>Kita</span>
-            <span style={{ color: '#FACC15' }}>2u?</span>
+            <span style={{ color: '#0A0A0A' }}>The first and last step to </span>
+            <span style={{ color: '#FACC15' }}>full profit.</span>
           </h2>
           <p className="text-[14px] text-gray-600 leading-snug">
-            Get your Kita2u page in minutes. No platform fee. No card required.
+            One link. 24-hour storefront. Your customers, your prices, your rules — never the mass giants&apos;.
           </p>
           <button
             type="button"

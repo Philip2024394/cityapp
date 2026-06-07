@@ -109,6 +109,9 @@ export default function PlacesBrowser({
   title,
   subtitle,
   profileBasePath,
+  listHref,
+  listLabel,
+  listAria,
 }: {
   places: Place[]
   currentCityLabel: string
@@ -126,6 +129,13 @@ export default function PlacesBrowser({
   // clicks routed to /places/[slug] which is governed by the /places
   // error boundary, defeating the isolation.
   profileBasePath?: string
+  // Optional override for the small header CTA pill. /places keeps its
+  // legacy "List → /list-place" default; /food passes "Buat atau Gabung"
+  // → /signup?vertical=food so the food header matches the other Kita2u
+  // verticals (handyman, beautician, laundry, …).
+  listHref?: string
+  listLabel?: string
+  listAria?: string
 }) {
   const PROFILE_BASE = (profileBasePath ?? '/places').replace(/\/+$/, '')
   const CHIP_DEFS = chips ?? DEFAULT_CHIP_DEFS
@@ -247,9 +257,9 @@ export default function PlacesBrowser({
             </p>
           </div>
           <Link
-            href="/list-place"
+            href={listHref ?? '/list-place'}
             onClick={() => haptic.tap()}
-            aria-label="List your place"
+            aria-label={listAria ?? 'List your place'}
             className="shrink-0 inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full text-bg font-extrabold text-[13px] active:scale-95 transition"
             style={{
               background: '#FACC15',
@@ -263,7 +273,7 @@ export default function PlacesBrowser({
             >
               <Plus className="w-3.5 h-3.5" strokeWidth={3} />
             </span>
-            <span>List</span>
+            <span>{listLabel ?? 'List'}</span>
           </Link>
         </div>
 
