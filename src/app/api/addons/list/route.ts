@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   const locale: 'id' | 'en' = url.searchParams.get('locale') === 'en' ? 'en' : 'id'
 
   const supabase = await getServerSupabase()
-  let enabledMap: Record<string, { status: string; paid_until: string | null }> = {}
+  const enabledMap: Record<string, { status: string; paid_until: string | null }> = {}
 
   if (supabase) {
     const { data: userData } = await supabase.auth.getUser()
