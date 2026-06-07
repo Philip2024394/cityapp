@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Briefcase, ChevronLeft, Search as SearchIcon,
+  ChevronLeft, Search as SearchIcon,
   UtensilsCrossed, MapPinned,
-  Flower2, Scissors, Shirt, Sparkles, Wrench, SprayCan, Home, X,
+  Flower2, Scissors, Shirt, Sparkles, Wrench, SprayCan, X,
   type LucideIcon,
 } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
@@ -311,28 +311,14 @@ export default function ExploreClient() {
           </div>
         </div>
 
-        {/* Kita2u browse-flow CTAs. CityDrivers-side rows (Rentals,
-            Minibus charter — both drive into /rentals and /bus driver
-            surfaces) have been removed per the 2026-06-06 brand split:
-            CityDrivers content is not surfaced from Kita2u. The two
-            rows that remain (Business contracts and Property) cover
-            Kita2u-owned merchant verticals. */}
-        <div className="space-y-2.5">
-          <BrowseRow
-            href="/business"
-            telemetry="explore-cta:business"
-            Icon={Briefcase}
-            title="Business contracts · Recurring partnerships"
-            sub="Shopee / TikTok / restaurants — long-term agreements"
-          />
-          <BrowseRow
-            href="/property"
-            telemetry="explore-cta:property"
-            Icon={Home}
-            title="Property · Sales · Rentals · Builders"
-            sub="Houses, villas, apartments, land — for sale, rent, or pre-launch"
-          />
-        </div>
+        {/* Browse-row CTAs were removed 2026-06-07 per founder direction
+            "we are selling template apps for users — 1 template for each
+            category. thats it. world market". Kita2u /explore is now
+            strictly the 8 vertical category tiles above.
+            Removed: "Business contracts · Shopee / TikTok / restaurants"
+            (→ /business) and "Property · Sales · Rentals · Builders"
+            (→ /property). The underlying routes still exist but are no
+            longer surfaced from the marketplace home. */}
 
         {/* Inline discovery link to /add-ons — text-only, low visual weight */}
         <div className="mt-4 text-center">
@@ -388,44 +374,6 @@ export default function ExploreClient() {
   )
 }
 
-function BrowseRow({
-  href, telemetry, Icon, title, sub,
-}: {
-  href: string
-  telemetry: string
-  Icon: LucideIcon
-  title: string
-  sub: string
-}) {
-  return (
-    <Link
-      href={href}
-      prefetch
-      onClick={() => logNav(telemetry)}
-      aria-label={title}
-      className="w-full min-h-[52px] flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all active:scale-[0.99] hover:brightness-95"
-      style={{
-        background: '#FFFFFF',
-        border: '1px solid #F1F1F1',
-        boxShadow: CARD_SHADOW,
-      }}
-    >
-      <span
-        className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
-        style={{ background: GOLD, border: `1px solid ${GOLD}` }}
-        aria-hidden
-      >
-        <Icon className="w-5 h-5" strokeWidth={2.5} style={{ color: INK }} />
-      </span>
-      <span className="flex-1 text-left min-w-0">
-        <span className="block font-extrabold text-[13px] leading-tight" style={{ color: INK }}>
-          {title}
-        </span>
-        <span className="block text-[12px] font-bold text-gray-600 leading-tight mt-0.5">
-          {sub}
-        </span>
-      </span>
-      <span className="shrink-0 font-black text-[16px]" aria-hidden style={{ color: GOLD }}>→</span>
-    </Link>
-  )
-}
+// BrowseRow component was removed 2026-06-07 — it only ever powered the
+// Business/Property/Rentals/Minibus CTAs which are no longer surfaced on
+// /explore per the "1 template per category, that's it" direction.
