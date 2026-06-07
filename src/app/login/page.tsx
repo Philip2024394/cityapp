@@ -23,7 +23,6 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { KeyRound, LogIn, Eye, EyeOff } from 'lucide-react'
 import AuthShell from '@/components/auth/AuthShell'
-import DevAccessPanel from '@/components/dev/DevAccessPanel'
 import PhoneInput, { normalizeE164 } from '@/components/auth/PhoneInput'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 
@@ -176,7 +175,6 @@ function LoginInner() {
           Create an account
         </Link>
       </div>
-      <DevAccessPanel />
     </AuthShell>
   )
 }

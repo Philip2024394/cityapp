@@ -23,6 +23,7 @@ export default function AuthShell({
   children,
   backgroundImage,
   hideHeader,
+  solidWhite,
 }: {
   children:        React.ReactNode
   /** Optional full-bleed hero image rendered fixed behind the form. The
@@ -33,6 +34,9 @@ export default function AuthShell({
    *  flows set this so they can paint the landing-style logo + brand
    *  inline over the hero backdrop instead. */
   hideHeader?:      boolean
+  /** Paint the page pure white — no image, no gradient. Kita2u signup
+   *  uses this for a clean creator-first surface. */
+  solidWhite?:      boolean
 }) {
   return (
     <main
@@ -40,7 +44,9 @@ export default function AuthShell({
       style={{
         background: backgroundImage
           ? undefined
-          : 'radial-gradient(circle at top, #FFFBEA 0%, #FFFFFF 50%, #F5F5F4 100%)',
+          : (solidWhite
+              ? '#FFFFFF'
+              : 'radial-gradient(circle at top, #FFFBEA 0%, #FFFFFF 50%, #F5F5F4 100%)'),
         color: '#0A0A0A',
       }}
     >

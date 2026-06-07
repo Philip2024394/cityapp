@@ -39,7 +39,6 @@ import {
   Briefcase, MapPin,
 } from 'lucide-react'
 import AuthShell from '@/components/auth/AuthShell'
-import DevAccessPanel from '@/components/dev/DevAccessPanel'
 import PhoneInput, { normalizeE164 } from '@/components/auth/PhoneInput'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { MONTHLY_PRICE_LABEL, YEARLY_PRICE_LABEL, TRIAL_LABEL_EN } from '@/lib/pricing/constants'
@@ -226,10 +225,7 @@ function SignupInner() {
           : 'Use your WhatsApp number and a password. No SMS code needed.')
 
   return (
-    <AuthShell
-      backgroundImage="https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2029,%202026,%2003_30_50%20PM.png"
-      hideHeader
-    >
+    <AuthShell solidWhite hideHeader>
       {/* Brand block — host/vertical-aware. Kita2u marketplace verticals
           (beautician, handyman, food, etc.) get the Kita2u wordmark and
           a back-link to the marketplace home. Driver verticals keep the
@@ -466,7 +462,6 @@ function SignupInner() {
         Already have an account?{' '}
         <Link href="/login" className="text-[#EAB308] font-bold hover:underline">Sign in</Link>
       </div>
-      <DevAccessPanel />
     </AuthShell>
   )
 }
