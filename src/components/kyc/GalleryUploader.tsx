@@ -84,13 +84,13 @@ export default function GalleryUploader({
   }
 
   return (
-    <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-3">
+    <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">{label}</div>
-          <p className="text-[11px] text-ink/55 mt-0.5 leading-snug">{helpText}</p>
+          <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">{label}</div>
+          <p className="text-[11px] text-black/55 mt-0.5 leading-snug">{helpText}</p>
         </div>
-        <div className="text-[11px] font-extrabold text-ink/60 shrink-0">{photos.length}/{MAX_PHOTOS}</div>
+        <div className="text-[11px] font-extrabold text-black/60 shrink-0">{photos.length}/{MAX_PHOTOS}</div>
       </div>
 
       {photos.length > 0 && (
@@ -98,14 +98,14 @@ export default function GalleryUploader({
           {photos.map((url, i) => (
             <div
               key={url + i}
-              className="relative aspect-square rounded-lg overflow-hidden border border-white/10 group"
+              className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group"
             >
               <img src={url} alt="" className="absolute inset-0 w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => removeAt(i)}
                 aria-label="Hapus foto"
-                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/80 text-white flex items-center justify-center opacity-90 hover:opacity-100"
+                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-90 hover:opacity-100"
               >
                 <X className="w-3.5 h-3.5" strokeWidth={2.5} />
               </button>
@@ -115,7 +115,7 @@ export default function GalleryUploader({
       )}
 
       {remaining > 0 && (
-        <label className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 px-4 py-5 text-[13px] font-bold text-ink/75 cursor-pointer hover:bg-white/5 hover:border-brand/60 transition">
+        <label className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-5 text-[13px] font-bold text-black/75 cursor-pointer hover:bg-white hover:border-[color:var(--accent,#FACC15)] transition">
           {uploading ? <Upload className="w-4 h-4 animate-pulse" /> : <Plus className="w-4 h-4" strokeWidth={2.5} />}
           {uploading ? 'Uploading…' : `Tambah foto (${remaining} sisa)`}
           <input

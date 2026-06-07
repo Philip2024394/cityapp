@@ -352,6 +352,7 @@ function UniversalExtrasBlock({
   return (
     <UniversalProfileExtrasEditor
       userId={userId}
+      hideOperatingHours
       value={{
         cover_image_url:    f.cover_image_url,
         gallery_image_urls: f.gallery_image_urls,

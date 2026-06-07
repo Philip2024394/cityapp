@@ -63,32 +63,32 @@ export default function CoverImageUploader({
   }
 
   return (
-    <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-3">
+    <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-3">
       <div className="flex items-start gap-2">
-        <ImageIcon className="w-4 h-4 mt-0.5 text-brand shrink-0" strokeWidth={2.5} />
+        <ImageIcon className="w-4 h-4 mt-0.5 text-[color:var(--accent,#EAB308)] shrink-0" strokeWidth={2.5} />
         <div className="min-w-0">
-          <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">{label}</div>
-          <p className="text-[11px] text-ink/55 mt-0.5 leading-snug">{helpText}</p>
+          <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">{label}</div>
+          <p className="text-[11px] text-black/55 mt-0.5 leading-snug">{helpText}</p>
         </div>
       </div>
 
       {value ? (
         <div className="space-y-2">
           <div
-            className="relative w-full overflow-hidden rounded-lg border border-green-500/40"
+            className="relative w-full overflow-hidden rounded-lg border border-emerald-300"
             style={{ aspectRatio: '16 / 9' }}
           >
             <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover" />
           </div>
           <div className="flex items-center justify-between gap-2 text-[12px]">
-            <div className="flex items-center gap-1.5 text-green-300 font-bold">
+            <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
               <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
               Cover uploaded
             </div>
             <button
               type="button"
               onClick={clear}
-              className="inline-flex items-center gap-1 text-ink/55 hover:text-ink px-2 py-1"
+              className="inline-flex items-center gap-1 text-black/55 hover:text-black px-2 py-1"
             >
               <X className="w-3.5 h-3.5" /> Replace
             </button>
@@ -96,7 +96,7 @@ export default function CoverImageUploader({
         </div>
       ) : (
         <label
-          className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 text-[13px] font-bold text-ink/75 cursor-pointer hover:bg-white/5 hover:border-brand/60 transition"
+          className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-[13px] font-bold text-black/75 cursor-pointer hover:bg-white hover:border-[color:var(--accent,#FACC15)] transition"
           style={{ aspectRatio: '16 / 9' }}
         >
           <Upload className="w-4 h-4" strokeWidth={2.5} />

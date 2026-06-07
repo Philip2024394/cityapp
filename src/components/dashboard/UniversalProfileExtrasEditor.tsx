@@ -67,7 +67,7 @@ export type UniversalProfileExtras = {
 }
 
 export default function UniversalProfileExtrasEditor({
-  userId, value, onChange, hideGallery = false, hideCover = false,
+  userId, value, onChange, hideGallery = false, hideCover = false, hideOperatingHours = false,
 }: {
   userId: string
   value: UniversalProfileExtras
@@ -81,6 +81,11 @@ export default function UniversalProfileExtrasEditor({
   // this editor doesn't duplicate the control. cover_image_url is still
   // pulled from `value` and saved by the dashboard — only the UI is hidden.
   hideCover?: boolean
+  // Dashboards that render the dedicated WeeklyHoursEditor (beautician,
+  // massage, etc.) set this to suppress the legacy text-input "Jam
+  // operasional" block — otherwise the user sees two hours controls
+  // editing the same operating_hours field.
+  hideOperatingHours?: boolean
 }) {
   // Local-shape projections — store hours as a flat object the UI can mutate.
   const hours = value.operating_hours || {}
@@ -117,7 +122,7 @@ export default function UniversalProfileExtrasEditor({
 
   return (
     <div className="space-y-4">
-      <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink/70">
+      <div className="text-[12px] font-extrabold uppercase tracking-wider text-black/70">
         Universal profile extras
       </div>
 
@@ -138,8 +143,8 @@ export default function UniversalProfileExtrasEditor({
       )}
 
       {/* Socials */}
-      <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-2">
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-2">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">
           Social links (optional)
         </div>
         <input type="url" placeholder="https://instagram.com/yourname" value={value.instagram_url ?? ''}
@@ -163,7 +168,7 @@ export default function UniversalProfileExtrasEditor({
       </div>
 
       <div className="space-y-2">
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">
           Chat handles (optional) — WhatsApp lives in the main contact field
         </div>
         <input type="text" placeholder="Telegram — @handle, t.me URL, or +phone" value={value.telegram_handle ?? ''}
@@ -184,7 +189,7 @@ export default function UniversalProfileExtrasEditor({
           page. Toggle is disabled until contact_email has a value so
           the panel never renders without a destination. */}
       <div className="space-y-2">
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">
           Contact form (optional)
         </div>
         <input
@@ -194,8 +199,8 @@ export default function UniversalProfileExtrasEditor({
           onChange={(e) => onChange({ ...value, contact_email: e.target.value.trim() || null })}
           className={inputCls}
         />
-        <label className="flex items-center justify-between gap-3 rounded-xl bg-white/5 border border-white/10 p-3 cursor-pointer">
-          <span className="text-[13px] text-ink/85">Show contact form on my public page</span>
+        <label className="flex items-center justify-between gap-3 rounded-xl bg-white border border-gray-200 p-3 cursor-pointer">
+          <span className="text-[13px] text-black/85">Show contact form on my public page</span>
           <input
             type="checkbox"
             checked={Boolean(value.contact_form_enabled)}
@@ -206,18 +211,21 @@ export default function UniversalProfileExtrasEditor({
         </label>
       </div>
 
-      {/* Operating hours */}
-      <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-2">
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+      {/* Operating hours — suppressed when the parent dashboard mounts
+          its own WeeklyHoursEditor (avoids two surfaces editing the
+          same operating_hours field). */}
+      {!hideOperatingHours && (
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-2">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">
           Jam operasional (optional)
         </div>
-        <p className="text-[11px] text-ink/55 leading-snug">
+        <p className="text-[11px] text-black/55 leading-snug">
           Format: <span className="font-mono">09:00-18:00</span>. Kosongkan kalau hari libur.
         </p>
         <div className="space-y-1.5">
           {DAYS.map((d) => (
             <div key={d.key} className="flex items-center gap-2">
-              <div className="w-16 text-[12px] font-bold text-ink/70">{d.label}</div>
+              <div className="w-16 text-[12px] font-bold text-black/70">{d.label}</div>
               <input
                 type="text"
                 inputMode="numeric"
@@ -230,10 +238,11 @@ export default function UniversalProfileExtrasEditor({
           ))}
         </div>
       </div>
+      )}
 
       {/* Certifications */}
-      <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-2">
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-2">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">
           Sertifikasi (optional)
         </div>
         <div className="flex gap-2">
@@ -243,16 +252,16 @@ export default function UniversalProfileExtrasEditor({
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCert() } }}
             className={inputCls + ' flex-1'} />
           <button type="button" onClick={addCert}
-            className="rounded-xl bg-brand text-bg px-4 py-3 text-[13px] font-extrabold">
+            className="rounded-xl bg-[color:var(--accent,#FACC15)] text-white px-4 py-3 text-[13px] font-extrabold hover:brightness-95 transition">
             Tambah
           </button>
         </div>
         {certs.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {certs.map((c, i) => (
-              <span key={c + i} className="inline-flex items-center gap-1 text-[12px] font-extrabold text-ink px-2.5 py-1 rounded-full bg-white/5 border border-white/10">
+              <span key={c + i} className="inline-flex items-center gap-1 text-[12px] font-extrabold text-black px-2.5 py-1 rounded-full bg-white border border-gray-200">
                 {c}
-                <button type="button" onClick={() => rmCert(i)} className="text-ink/55 hover:text-ink" aria-label="Hapus">×</button>
+                <button type="button" onClick={() => rmCert(i)} className="text-black/55 hover:text-black" aria-label="Hapus">×</button>
               </span>
             ))}
           </div>
@@ -260,8 +269,8 @@ export default function UniversalProfileExtrasEditor({
       </div>
 
       {/* Languages */}
-      <div className="rounded-xl bg-black/85 border border-white/15 p-4 space-y-2">
-        <div className="text-[12px] font-extrabold uppercase tracking-wider text-ink">
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 space-y-2">
+        <div className="text-[12px] font-extrabold uppercase tracking-wider text-black">
           Bahasa (optional)
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -272,8 +281,8 @@ export default function UniversalProfileExtrasEditor({
                 onClick={() => toggleLang(l.code)}
                 className={`text-[12px] font-extrabold px-3 py-1.5 rounded-full border transition ${
                   on
-                    ? 'bg-brand text-bg border-brand'
-                    : 'bg-black/40 text-ink/80 border-white/15 hover:bg-white/5'
+                    ? 'bg-[color:var(--accent,#FACC15)] text-white border-[color:var(--accent,#FACC15)]'
+                    : 'bg-white text-black/80 border-gray-200 hover:bg-gray-50'
                 }`}>
                 {l.label}
               </button>
@@ -285,4 +294,4 @@ export default function UniversalProfileExtrasEditor({
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-black/85 border border-white/15 px-4 py-3 text-[14px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-200 px-4 py-3 text-[14px] text-black placeholder:text-black/40 focus:outline-none focus:border-[color:var(--accent,#FACC15)] focus:ring-2 focus:ring-[color:var(--accent,#FACC15)]/30 min-h-[44px]'
