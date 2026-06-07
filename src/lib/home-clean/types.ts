@@ -50,6 +50,7 @@ export type HomeCleanProviderPublic = Pick<
   | 'availability'
 > & {
   id?: string
+  owner_user_id?: string  // mig 0193 — for client-side add-on widgets
   cover_image_url?:    string | null
   gallery_image_urls?: string[] | null
   languages?:          string[] | null

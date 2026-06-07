@@ -8,6 +8,10 @@ export const runtime = 'nodejs'
 
 const PUBLIC_COLS = [
   'id','slug','display_name',
+  // owner_user_id is the auth.users.id of whoever owns this profile.
+  // Exposed publicly (read-only) so the addon panels (e.g. /add-ons Q&A
+  // public render) can scope their query to "this provider's items".
+  'owner_user_id:user_id',
   'gender','years_experience','bio',
   'massage_type',
   'price_60min_idr','price_90min_idr','price_120min_idr',

@@ -24,6 +24,7 @@ import { Sparkles } from 'lucide-react'
 import type { LaundryProviderPublic } from '@/lib/laundry/types'
 import { countryByCode } from '@/lib/data/countries'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
+import ProfileQaPanel from '@/components/addons/ProfileQaPanel'
 
 // Synthetic services catalogue for laundry. The DB stores price columns
 // (price_wash_per_kg_idr / price_wash_dry_per_kg_idr /
@@ -955,6 +956,11 @@ export default function LaundryProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      {/* Q&A add-on panel — renders only when owner has the 'qa' addon enabled
+          AND has at least one Q&A item. Otherwise null. */}
+      <div className="max-w-2xl mx-auto px-4">
+        <ProfileQaPanel ownerUserId={p.owner_user_id ?? null} />
+      </div>
       <PoweredByKita2u defaultVertical="laundry" />
     </Shell>
   )

@@ -159,6 +159,7 @@ export type MassageProviderPublic = Pick<
   // mig 0072 — universal profile fields. All nullable; the public page
   // gracefully hides sections when blank.
   id?: string
+  owner_user_id?: string  // mig 0193 — for client-side add-on widgets
   cover_image_url?:    string | null
   gallery_image_urls?: string[] | null
   languages?:          string[] | null

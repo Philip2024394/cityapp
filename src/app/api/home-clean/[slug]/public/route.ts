@@ -4,7 +4,12 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 export const runtime = 'nodejs'
 
 const PUBLIC_COLS = [
-  'id','slug','display_name','years_experience','bio',
+  'id','slug','display_name',
+  // owner_user_id is the auth.users.id of whoever owns this profile.
+  // Exposed publicly (read-only) so the addon panels (e.g. /add-ons Q&A
+  // public render) can scope their query to "this provider's items".
+  'owner_user_id:user_id',
+  'years_experience','bio',
   'hourly_rate_idr','day_rate_idr',
   'city','service_area_notes',
   'whatsapp_e164','profile_image_url','availability','is_mock',

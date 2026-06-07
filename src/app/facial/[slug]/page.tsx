@@ -35,6 +35,7 @@ import { useVendorCart } from '@/components/cart/useVendorCart'
 import VendorCartButton from '@/components/cart/VendorCartButton'
 import VendorCartSheet from '@/components/cart/VendorCartSheet'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
+import ProfileQaPanel from '@/components/addons/ProfileQaPanel'
 
 // Default theme accent — used when the facial provider hasn't picked their
 // own theme_color (mig 0078). Providers choose their accent from the
@@ -1089,6 +1090,11 @@ export default function FacialProviderPage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      {/* Q&A add-on panel — renders only when owner has the 'qa' addon enabled
+          AND has at least one Q&A item. Otherwise null. */}
+      <div className="max-w-2xl mx-auto px-4">
+        <ProfileQaPanel ownerUserId={p.owner_user_id ?? null} />
+      </div>
       <PoweredByKita2u defaultVertical="facial" />
     </Shell>
   )

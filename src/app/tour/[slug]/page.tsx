@@ -27,6 +27,7 @@ import {
 } from '@/data/tourServices'
 import { countryByCode } from '@/lib/data/countries'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
+import ProfileQaPanel from '@/components/addons/ProfileQaPanel'
 
 // Default theme accent — emerald (outdoor / nature tone). Tour guides
 // pick their accent from the dashboard color palette via mig 0087;
@@ -93,6 +94,8 @@ type TourListing = {
   // marketplace portfolio photos column. Treated as gallery here.
   image_urls:            string[] | null
   is_mock:               boolean
+  // Owner of the listing — drives the Q&A addon lookup.
+  owner_user_id?:        string | null
 }
 
 export default function TourGuideProfilePage() {
@@ -863,6 +866,9 @@ export default function TourGuideProfilePage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <div className="max-w-2xl mx-auto px-4">
+        <ProfileQaPanel ownerUserId={p.owner_user_id ?? null} />
+      </div>
       <PoweredByKita2u defaultVertical="tour-guide" />
     </Shell>
   )

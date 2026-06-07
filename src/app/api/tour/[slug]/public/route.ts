@@ -17,7 +17,7 @@ export const runtime = 'nodejs'
 // those columns are intentionally NOT selected.
 const REAL_COLS = [
   // mig 0037 — base identity / location / listing payload
-  'id','slug','name','whatsapp_e164','email',
+  'id','slug','name','whatsapp_e164','email','owner_user_id',
   'city','address','lat','lng',
   'services','languages','day_rate_idr','notes','image_urls',
   'rating','review_count','available_now',

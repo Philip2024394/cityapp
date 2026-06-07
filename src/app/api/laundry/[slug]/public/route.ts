@@ -5,6 +5,10 @@ export const runtime = 'nodejs'
 
 const PUBLIC_COLS = [
   'id','slug','display_name',
+  // owner_user_id is the auth.users.id of whoever owns this profile.
+  // Exposed publicly (read-only) so the addon panels (e.g. /add-ons Q&A
+  // public render) can scope their query to "this provider's items".
+  'owner_user_id:user_id',
   'years_experience','bio',
   'price_wash_per_kg_idr','price_wash_dry_per_kg_idr','price_wash_iron_per_kg_idr',
   'min_kg','turnaround_hours',

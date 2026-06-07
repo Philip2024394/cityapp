@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import JsonLd from '@/components/seo/JsonLd'
 import PlaceProfileShell from '@/components/profile/PlaceProfileShell'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
+import ProfileQaPanel from '@/components/addons/ProfileQaPanel'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { CATEGORIES } from '@/lib/places/categories'
 import type { PlaceCategory } from '@/lib/places/types'
@@ -49,6 +50,7 @@ type Row = {
   cuisine_types:    string[] | null
   free_delivery:    boolean | null
   delivery_enabled: boolean | null
+  owner_user_id:    string | null
 }
 
 type OfferRow = {
@@ -65,7 +67,7 @@ async function loadPlace(slug: string): Promise<Row | null> {
   if (!supabase) return null
   const { data } = await supabase
     .from('places')
-    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count, contact_enabled, cuisine_types, free_delivery, delivery_enabled')
+    .select('id, slug, name, category, description, image_urls, city, address, tags, lat, lng, whatsapp_e164, hours_json, rating, review_count, contact_enabled, cuisine_types, free_delivery, delivery_enabled, owner_user_id')
     .eq('slug', slug)
     .eq('status', 'approved')
     .maybeSingle()
@@ -184,6 +186,9 @@ export default async function FoodDetailPage(
         freeDelivery={place.free_delivery === true}
         deliveryEnabled={place.delivery_enabled === true}
       />
+      <div className="max-w-2xl mx-auto px-4">
+        <ProfileQaPanel ownerUserId={place.owner_user_id ?? null} />
+      </div>
       <PoweredByKita2u />
     </>
   )
