@@ -1,5 +1,23 @@
 'use client'
+import { usePathname } from 'next/navigation'
 import { Bike, Car as CarIcon, ArrowRight } from 'lucide-react'
+
+// Founder rule (memory: feedback_indocity_no_rider_cross_promo): NO ride
+// cross-promotion on Kita2u verticals. This card sends a customer to
+// /cari/rider — a CityDrivers ride-hail surface — which violates the rule.
+// We render nothing on Kita2u vertical pages. The card itself stays in the
+// codebase (it's a useful pattern for future driver-side experiments) but
+// is gated below. Per-vertical pages should ALSO drop their imports of
+// this component in their own cleanup pass.
+const KITA2U_VERTICAL_PREFIXES = [
+  '/beautician', '/handyman', '/laundry', '/massage',
+  '/home-clean', '/facial', '/food', '/tour',
+  '/skincare', // legacy alias for facial
+]
+function isOnKita2uVertical(pathname: string | null): boolean {
+  if (!pathname) return false
+  return KITA2U_VERTICAL_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
 
 // ============================================================================
 // VisitUsViaCityDriversCard
@@ -39,6 +57,9 @@ export default function VisitUsViaCityDriversCard({
    *  visually distinct. */
   themeColor: string
 }) {
+  const pathname = usePathname()
+  if (isOnKita2uVertical(pathname)) return null
+
   function go(service: 'person' | 'car') {
     const base = `/cari/rider?service=${service}&dLat=${salonLat}&dLng=${salonLng}&dName=${encodeURIComponent(salonName)}`
     const fallback = () => { window.location.href = base }

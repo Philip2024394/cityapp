@@ -30,8 +30,26 @@
 // ============================================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import { MessageCircle, Bell } from 'lucide-react'
+
+// CityDrivers dashboards where BookingAlertProvider actually belongs.
+// The WhatsApp-intent intercept alert is a ride-hail dispatch surface —
+// it doesn't make sense on Kita2u creator dashboards (beautician, handyman,
+// laundry, massage, home-clean, facial, tour-guide, etc.). Founder audit
+// 2026-06-07 flagged this widget as a CityDrivers leak on Kita2u dashboards.
+const CITYDRIVERS_DASHBOARD_PREFIXES = [
+  '/dashboard/rider',
+  '/dashboard/car',
+  '/dashboard/truck',
+  '/dashboard/bus',
+  '/dashboard/jeep',
+]
+function isOnCityDriversDashboard(pathname: string | null): boolean {
+  if (!pathname) return false
+  return CITYDRIVERS_DASHBOARD_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
 
 const ALERT_AUDIO_URL  = '/sounds/booking-alert.mp3'
 const VIBRATE_PATTERN  = [400, 200, 400, 200, 400]    // 1.6s burst
@@ -45,6 +63,16 @@ type Props = {
 }
 
 export default function BookingAlertProvider({ driverId }: Props) {
+  const pathname = usePathname()
+  // Kita2u creator dashboards: no-op. The component is still mounted by
+  // their layouts (preserving the existing import graph) but renders
+  // nothing and runs no audio / vibration / Supabase channel.
+  if (!isOnCityDriversDashboard(pathname)) return null
+
+  return <BookingAlertInner driverId={driverId} />
+}
+
+function BookingAlertInner({ driverId }: Props) {
   const [audioUnlocked, setAudioUnlocked] = useState(false)
   const [intent, setIntent]               = useState<InboundIntent | null>(null)
   const [showUnlockCard, setShowUnlockCard] = useState(false)

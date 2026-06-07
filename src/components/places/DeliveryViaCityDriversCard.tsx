@@ -1,6 +1,21 @@
 'use client'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Bike, ArrowRight } from 'lucide-react'
+
+// Founder rule (memory: feedback_indocity_no_rider_cross_promo): NO ride
+// cross-promotion on Kita2u verticals. PlaceProfileShell renders this card
+// both on /places/[slug] (legitimate; /places is the CityDrivers-adjacent
+// tourist directory) AND on /food/[slug] (Kita2u vertical — must not promote
+// the /cari ride-hail). Gate the render on pathname so /food stays clean.
+const KITA2U_VERTICAL_PREFIXES = [
+  '/food', '/beautician', '/handyman', '/laundry', '/massage',
+  '/home-clean', '/facial', '/tour', '/skincare',
+]
+function isOnKita2uVertical(pathname: string | null): boolean {
+  if (!pathname) return false
+  return KITA2U_VERTICAL_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
 
 // ============================================================================
 // DeliveryViaCityDriversCard
@@ -36,6 +51,9 @@ export default function DeliveryViaCityDriversCard({
   venueLat:     number | null
   venueLng:     number | null
 }) {
+  const pathname = usePathname()
+  if (isOnKita2uVertical(pathname)) return null
+
   // Build the deep link to /cari with pickup pre-filled. /cari already
   // accepts pLat, pLng, pName, service params (see src/app/cari/page.tsx
   // line ~181: "Optional ?pLat=&pLng=&dLat=&dLng= handoff").
