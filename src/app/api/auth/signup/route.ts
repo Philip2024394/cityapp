@@ -126,6 +126,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: idxErr.message }, { status: 500 })
   }
 
+  // 4.5 — Start the 7-day free trial. (active + null plan + dates) is
+  // our trial encoding; payment flips plan to monthly/yearly and that
+  // implicitly marks the trial complete. After 7 days, expires_at < now
+  // collapses the row to "expired" via refreshExpiry() in
+  // src/lib/auth/account.ts — no cron required.
+  const trialStart = new Date()
+  const trialEnd = new Date(trialStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const { error: trialErr } = await admin
+    .from('user_accounts')
+    .upsert(
+      {
+        user_id: created.user.id,
+        subscription_status: 'active',
+        subscription_plan: null,
+        subscription_started_at: trialStart.toISOString(),
+        subscription_expires_at: trialEnd.toISOString(),
+      },
+      { onConflict: 'user_id' },
+    )
+  if (trialErr) {
+    // Auth user + phone_index already exist — do not roll back. The
+    // user can sign in and we will treat them as "trial setup failed,
+    // status=inactive" until they pay or an admin retrigger fires.
+    console.error('[signup] could not start trial', trialErr)
+  }
+
   // 5. Establish session via the cookie-bound server client.
   const supabase = await getServerSupabase()
   if (!supabase) {

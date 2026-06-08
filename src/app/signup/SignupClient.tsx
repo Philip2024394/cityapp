@@ -475,6 +475,19 @@ function SignupInner({ defaultBrand }: { defaultBrand: 'kita2u' | 'citydrivers' 
 
           {error && <p className="text-[13px] text-red-600 font-semibold">{error}</p>}
 
+          <div
+            className="rounded-2xl p-4 flex items-start gap-3"
+            style={{ background: 'linear-gradient(135deg, rgba(250,204,21,0.12) 0%, rgba(234,179,8,0.18) 100%)', border: '1px solid rgba(250,204,21,0.40)' }}
+          >
+            <Sparkles className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#854D0E' }} strokeWidth={2.5} />
+            <div className="text-[13px] leading-relaxed">
+              <div className="font-extrabold text-[#0A0A0A]">7 days free — no credit card required</div>
+              <div className="text-gray-700 mt-0.5">
+                Every feature unlocked for 7 days. Cancel anytime from the side drawer in your dashboard.
+              </div>
+            </div>
+          </div>
+
           <button type="submit" className={primaryBtnCls + ' mt-2'} disabled={pending}>
             {pending ? 'Creating account…' : 'Create account'}
             <ArrowRight className="w-4 h-4" />

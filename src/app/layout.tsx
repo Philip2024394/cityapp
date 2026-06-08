@@ -112,11 +112,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(SITE),
     title: {
-      default: 'Kita2u — Marketplace kurir motor Indonesia',
+      default: 'Kita2u — Satu link untuk kreator, bisnis kecil, dan jasa lokal',
       template: '%s · Kita2u',
     },
     description:
-      'Platform bisnis untuk rider motor independen. Profil rider, harga sendiri, kontak langsung via WhatsApp. Tidak ada komisi.',
+      'Halaman jualan + booking untuk kreator dan bisnis kecil di Indonesia. Konten, produk, dan jasa di satu link share — 7 hari coba gratis, pelanggan langsung WhatsApp, 0% komisi transaksi.',
     manifest: '/manifest.webmanifest',
     applicationName: 'Kita2u',
     alternates: { canonical: '/' },
@@ -125,9 +125,9 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'Kita2u',
       locale: 'id_ID',
       url: SITE,
-      title: 'Kita2u — Marketplace kurir motor Indonesia',
+      title: 'Kita2u — Satu link untuk kreator, bisnis kecil, dan jasa lokal',
       description:
-        'Cari rider motor independen di kota kamu. Bayar langsung, kontak via WhatsApp, tanpa komisi.',
+        'Konten, produk, dan booking di satu link share. 7 hari coba gratis, batal kapan saja dari side drawer. Pelanggan langsung kontak kamu — tanpa marketplace mengambil keuntunganmu.',
       images: [
         { url: KITA2U_OG_IMAGE, width: 1200, height: 630, alt: 'Kita2u' },
       ],
@@ -135,7 +135,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'Kita2u',
-      description: 'Marketplace kurir motor Indonesia — tanpa komisi.',
+      description: 'Satu link untuk kreator dan bisnis kecil — 7 hari coba gratis, pelanggan langsung WhatsApp, 0% komisi transaksi.',
       images: [KITA2U_OG_IMAGE],
     },
     appleWebApp: {

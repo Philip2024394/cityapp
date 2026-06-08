@@ -26,6 +26,10 @@ const PUBLIC_COLS = [
   // Card hero strip + mini portfolio + themed accents (new card design)
   'cover_image_url',
   'theme_color',
+  // mig 0202 — user-controlled button text color (replaces the
+  // auto-luminance inkForTheme() heuristic that produced illegible
+  // theme-on-theme button text for medium-luminance themes)
+  'button_text_color',
   'service_photos',
 ].join(', ')
 

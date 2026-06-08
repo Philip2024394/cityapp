@@ -2,12 +2,14 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getLegalEntity } from '@/lib/legal/entity'
 
-// What CityDrivers is + isn't. Anchors our SaaS positioning publicly.
+// What Kita2u is + isn't. Anchors our SaaS positioning publicly.
 // Plain HTML, no client components — readable + crawlable by search +
-// regulators alike.
+// regulators alike. Reachable on kita2u.com only (citydrivers.id has
+// its own /about scoped under the cityriders gate in middleware).
 export const metadata = {
-  title: 'About · Kita2u — Booking software for independent riders',
-  description: 'Kita2u is booking software for independent Indonesian motorcycle riders. Each rider runs their own business; we are not a transportation service provider.',
+  title: 'About · Kita2u — One link for creators and small businesses',
+  description:
+    'Kita2u is a listing + booking page for creators, small businesses, and independent service providers in Indonesia. One shareable link, 0% commission on customer transactions, direct WhatsApp contact.',
 }
 
 export default function AboutPage() {
@@ -29,65 +31,76 @@ export default function AboutPage() {
             What <span style={{ color: '#0A0A0A' }}>Kita</span><span style={{ color: '#FACC15' }}>2u</span> is
           </h1>
           <p className="text-muted text-[14px] mt-2">
-            Booking software for independent Indonesian motorcycle riders. Each rider runs their own local business.
+            One shareable page for creators, small businesses, and local service providers.
+            Sell, list, and take bookings — all from a single link.
           </p>
         </div>
 
         <Section title="We are software">
           <p>
-            Kita2u is a Software-as-a-Service (SaaS) listing platform. Independent motorcycle
-            couriers subscribe for Rp 38,000/month to get a public profile, GPS-marketplace
-            visibility, a customer database, business tools, and WhatsApp-driven lead capture.
-            That is the entire product.
+            Kita2u is a Software-as-a-Service (SaaS) listing platform. Creators, small businesses,
+            and independent service providers get a public profile, product / menu / booking
+            tools, a customer database, and WhatsApp-driven lead capture. That is the entire
+            product. We ship one shareable page that handles content, products, and bookings —
+            replacing the need for a separate website, link-in-bio service, or marketplace
+            listing.
           </p>
         </Section>
 
-        <Section title="We are NOT a transportation service">
+        <Section title="We are NOT a marketplace operator">
           <ul className="list-disc list-inside space-y-1.5">
-            <li>We do not own vehicles</li>
-            <li>We do not employ riders — every rider is an independent business</li>
-            <li>We do not set prices — riders set their own per-km rates</li>
-            <li>Customers choose their rider manually — we never auto-assign</li>
-            <li>We do not process payments — customers pay riders directly</li>
-            <li>We do not take commission — riders keep 100% of their earnings</li>
-            <li>We do not control rider conduct, hours, vehicles, or service quality</li>
+            <li>We do not stock, ship, or fulfil any product</li>
+            <li>We do not employ creators or service providers — each runs their own business</li>
+            <li>We do not set prices — every page owner sets their own rates</li>
+            <li>Customers contact the business directly — we never auto-assign or route</li>
+            <li>We do not process payments — customers pay the business directly</li>
+            <li>We do not take a per-transaction commission — page owners keep 100% of what their customers pay</li>
+            <li>We do not control listings, hours, service quality, or fulfilment</li>
           </ul>
           <p className="text-muted mt-2">
-            All transportation services on this platform are provided by individual independent
-            couriers. Kita2u provides only the software and directory.
+            All goods and services on Kita2u pages are provided by independent businesses. Kita2u
+            provides only the software and the directory link.
           </p>
         </Section>
 
         <Section title="Regulatory positioning">
           <p>
             Kita2u operates as a registered Indonesian Penyelenggara Sistem Elektronik (PSE
-            Privat) and as a B2B software vendor. We do not operate as an Aplikasi Penyedia Jasa
-            Transportasi (APJT) under Permenhub PM 12/2019, because we do not provide
-            transportation services, do not control pricing, do not process payments, and do not
-            assign customers to riders. Each rider on this platform is responsible for compliance
-            with their own local transport, tax, and safety regulations as an independent business.
+            Privat) and as a B2B software vendor. We do not operate as a marketplace under
+            Kemenkominfo PMSE rules because we do not hold transaction records, do not custody
+            funds, and do not intermediate orders. Each business on Kita2u is responsible for
+            its own tax, consumer-protection, and category-specific compliance as an independent
+            operator.
           </p>
         </Section>
 
         <Section title="Revenue model">
           <p>
-            Our only revenue is the rider subscription fee (Rp 38,000/month, billed via Midtrans).
-            We never charge per-trip fees, commission, payment-processing fees, or take a cut of
-            any transaction between a customer and a rider. Our financial relationship is with the
-            rider as a software subscriber, not with the customer.
+            Kita2u runs on a monthly subscription with a 7-day free trial. Every feature is
+            unlocked during the trial. After day 7, page owners continue on the plan they
+            choose, or cancel from the side drawer in their dashboard in one tap — no email
+            loop, no waiting period, no win-back script.
+          </p>
+          <p className="mt-2">
+            We never charge per-trip, per-sale, or per-booking commission, and we do not take
+            a cut of any transaction between a customer and a page owner. Our only revenue is
+            the subscription fee, billed via Midtrans (QRIS, bank transfer, e-wallet). Custom
+            domains, premium templates, and a one-of-a-kind app built to your requirements are
+            available as paid add-ons.
           </p>
         </Section>
 
         <Section title="If you are a customer">
           <p>
-            When you contact a rider through this directory, you are entering a direct service
-            agreement with that independent rider — not with Kita2u. The rider sets the price,
-            performs the service, handles payment, and is responsible for any aspect of the trip.
+            When you order, book, or message a business through a Kita2u page, you are entering a
+            direct service agreement with that independent business — not with Kita2u. The
+            business sets the price, fulfils the service, handles payment, and is responsible
+            for the outcome.
           </p>
           <p className="mt-2">
-            For complaints about a specific rider, contact the rider directly via WhatsApp. We
-            cannot mediate, refund, or compel rider behavior because we are not their employer or
-            agent.
+            For complaints about a specific business, contact the business directly via WhatsApp.
+            We cannot mediate, refund, or compel the business&apos;s behaviour because we are not
+            their employer or agent.
           </p>
         </Section>
 

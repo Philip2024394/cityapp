@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Star, Award, Menu, Home, Hotel, Building2, Store, Share2, Link2, MessageCircle, X, ChevronLeft, ChevronRight, ChevronDown, BadgeCheck, MapPin, Bike, ExternalLink, Calendar, Mail, FileText, ShieldCheck, HelpCircle, type LucideIcon } from 'lucide-react'
 import VisitUsMap from '@/components/profile/VisitUsMap'
 import RunningMarquee from '@/components/profile/RunningMarquee'
@@ -44,6 +45,63 @@ import ProfileQaPanel from '@/components/addons/ProfileQaPanel'
 // surface on this page via the `theme` constant below.
 const DEFAULT_THEME = '#FACC15'
 
+// ─────────────────────────────────────────────────────────────────────
+// Ink derivation — when a beautician picks a very pale theme (cream,
+// ivory) the theme itself disappears against white surfaces. For those
+// surfaces (icon strokes, button text on white/light backgrounds) we
+// swap in a warm dark brown so the glyph stays readable. Saturated /
+// dark themes (orange, pink, etc.) pass through unchanged.
+// ─────────────────────────────────────────────────────────────────────
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const m = /^#?([a-f0-9]{6})$/i.exec(hex.trim())
+  if (!m) return null
+  const n = parseInt(m[1], 16)
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+
+function relativeLuminance(hex: string): number {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return 0.5
+  const toLinear = (c: number) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * toLinear(rgb.r) + 0.7152 * toLinear(rgb.g) + 0.0722 * toLinear(rgb.b)
+}
+
+// Ink color = the colour used for icon strokes / button text on light
+// surfaces. For light themes (cream, ivory) the theme itself disappears
+// against white/cream, so we substitute a warm chocolate brown that reads
+// clearly as "chocolate" rather than "near-black." For dark/saturated
+// themes (orange, pink, blue) the theme already reads fine on white, so
+// we pass it through unchanged.
+function inkForTheme(theme: string): string {
+  if (relativeLuminance(theme) > 0.75) {
+    // Chocolate brown — high contrast on cream (≈ 8.6:1) and unambiguous
+    // brown in hue, not the espresso-black that #4B2E14 was reading as.
+    return '#5C3317'
+  }
+  return theme
+}
+
+// Decorative service-illustration stamps used in the info-card's right
+// slot when the beautician offers home / hotel / villa visits. Keyed by
+// theme hex (canonical lower-case). Un-mapped themes fall back to the
+// Top Rated Seller badge — caller handles that branch.
+const HOME_SERVICE_IMAGES: Record<string, string> = {
+  '#ec4899': 'https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2011_45_02%20AM.png',
+  '#facc15': 'https://ik.imagekit.io/pinky/Untitledasdasdasdasdasasddassadasdasd-removebg-preview.png',
+  '#fffdd0': 'https://ik.imagekit.io/pinky/Untitledasdasdasdasdasasddas.png',
+  '#22c55e': 'https://ik.imagekit.io/pinky/Untitledasdasdasdasdasasddassadasdasdasdasd-removebg-preview.png',
+  '#b91c1c': 'https://ik.imagekit.io/pinky/Untitledasdasdasdasdasdasdasdasdasdassssssdfsdfsdf-removebg-preview.png',
+  '#000000': 'https://ik.imagekit.io/pinky/Untitledasdasdasdasdasdasdasdasdasdassssssdfsdfsdfasda-removebg-preview.png',
+  '#f97316': 'https://ik.imagekit.io/pinky/Untitledasdasdasdasdasdasdasdasdasdassssssdfsdfsdfasdaasdasd-removebg-preview.png',
+}
+function imageForTheme(themeHex: string): string | null {
+  const k = (themeHex || '').trim().toLowerCase()
+  return HOME_SERVICE_IMAGES[k] ?? null
+}
+
 // Review row as returned by GET /api/reviews. created_at is ISO,
 // formatted to "Xd ago" / absolute date in the UI.
 type ReviewRow = {
@@ -67,6 +125,7 @@ const DEFAULT_BEAUTICIAN_HERO =
   'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2006_53_11%20AM.png'
 
 export default function BeauticianProviderPage() {
+  const t = useTranslations('beauticianProfile')
   const params = useParams<{ slug: string }>()
   const slug = String(params?.slug || '').toLowerCase()
   const [p, setP] = useState<BeauticianProviderPublic | null>(null)
@@ -140,6 +199,27 @@ export default function BeauticianProviderPage() {
   // Resolved accent color for every accent surface on this page.
   // p.theme_color (mig 0078) wins; fall back to global default pink.
   const theme = p?.theme_color || DEFAULT_THEME
+  // Ink for text/icons sitting on a THEME-COLORED background (button bg,
+  // active badge bg, etc.). User-controlled via the dashboard
+  // button_text_color picker; defaults to white so a vivid theme
+  // (orange / pink / blue) keeps its standard high-contrast white label.
+  const themeInk  = p?.button_text_color || '#FFFFFF'
+
+  // Color for icons / accent strokes sitting on a NEUTRAL / WHITE
+  // background (hero icon pills, FAQ accent, service-badge inactive
+  // chips). Defaults to the theme color so the brand reads through
+  // (Dewi pink, Ayu orange). Falls back to chocolate when the theme
+  // itself disappears against white (Tata's cream luminance > 0.75)
+  // — the existing inkForTheme() helper already encodes that rule.
+  const themeIcon = inkForTheme(theme)
+
+  // Info-card right slot: when the beautician offers home / hotel /
+  // villa visits AND her theme is in the HOME_SERVICE_IMAGES map, swap
+  // the Top Rated Seller badge for the brand illustration. Un-mapped
+  // themes (e.g. Ayu's orange) still see the badge.
+  const serviceLocs = new Set(p?.service_locations ?? [])
+  const offersHomeHotelVilla = serviceLocs.has('home') || serviceLocs.has('hotel') || serviceLocs.has('villa')
+  const homeServiceImage     = offersHomeHotelVilla ? imageForTheme(theme) : null
 
   // Fetch reviews only when the panel is first opened, then again
   // after a new submission (bump reviewsRefreshCount).
@@ -157,14 +237,14 @@ export default function BeauticianProviderPage() {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black mb-2">Beautician not found</h1>
-          <Link href="/beautician" className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block">Back to marketplace</Link>
+          <h1 className="text-[20px] font-black mb-2">{t('notFoundTitle')}</h1>
+          <Link href="/beautician" className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block">{t('notFoundBack')}</Link>
         </div>
       </Shell>
     )
   }
   if (!p) {
-    return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
+    return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">{t('loading')}</div></Shell>
   }
 
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
@@ -172,10 +252,10 @@ export default function BeauticianProviderPage() {
 
   // WhatsApp prefill text for the under-carousel contact button.
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di Kita2u.`,
-    `Saya tertarik untuk booking session beauty service.`,
-    partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
-    `Apakah Anda available?`,
+    t('waGreeting', { name: p.display_name }),
+    t('waInterest'),
+    partnerTag ? t('waPartner', { partner: partnerTag }) : '',
+    t('waAvailable'),
   ].filter(Boolean).join('\n')
 
   // Cart UI lights up only when the vendor has opted into Stripe or
@@ -197,9 +277,9 @@ export default function BeauticianProviderPage() {
           <button
             type="button"
             onClick={() => setShareOpen(true)}
-            aria-label="Share profile"
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-md active:scale-[0.96] transition"
-            style={{ background: theme }}
+            aria-label={t('shareAria')}
+            className="w-10 h-10 rounded-full flex items-center justify-center shadow-md active:scale-[0.96] transition"
+            style={{ background: theme, color: themeInk }}
           >
             <Share2 className="w-4 h-4" strokeWidth={2.5} />
           </button>
@@ -225,12 +305,19 @@ export default function BeauticianProviderPage() {
               when set; otherwise falls back to the default copy. */}
           {(() => {
             const ht = p.hero_text || {}
-            const line1   = ht.line1   || 'Professional'
-            const line2   = ht.line2   || 'Beautician'
-            const tagline = ht.tagline || 'Enhancing your natural beauty effortless'
-            const line2Color   = ht.color         || theme
-            const line1Color   = ht.line1_color   || '#000000'
-            const taglineColor = ht.tagline_color || '#000000'
+            const line1   = ht.line1   || t('heroDefaultLine1')
+            const line2   = ht.line2   || t('heroDefaultLine2')
+            const tagline = ht.tagline || t('heroDefaultTagline')
+            // For light themes (cream / ivory — luminance > 0.75) every
+            // hero text colour defaults to themeIcon (chocolate brown
+            // for cream) so the tagline + headline don't disappear
+            // against the cover. Dark themes keep the original defaults
+            // (line 2 = theme, line 1 + tagline = black) unchanged so
+            // Dewi / Ayu / Sari etc. read as before.
+            const isLightTheme = relativeLuminance(theme) > 0.75
+            const line2Color   = ht.color         || (isLightTheme ? themeIcon : theme)
+            const line1Color   = ht.line1_color   || (isLightTheme ? themeIcon : '#000000')
+            const taglineColor = ht.tagline_color || (isLightTheme ? themeIcon : '#000000')
             // Map legacy 'dance' / 'flyin' values to 'none' so old saved
             // data doesn't break the new effect set.
             const rawEffect = ht.effect || 'none'
@@ -277,7 +364,7 @@ export default function BeauticianProviderPage() {
                     animation: cr-hero-underline 3.2s cubic-bezier(0.4,0,0.2,1) infinite;
                   }
                 `}</style>
-                <div className="flex items-center gap-0.5 text-[28px] sm:text-[34px] font-normal drop-shadow-[0_2px_6px_rgba(255,255,255,0.55)]" style={{ color: line1Color }}>
+                <div className="flex items-center gap-0.5 text-[28px] sm:text-[34px] font-normal" style={{ color: line1Color }}>
                   <span>{line1}</span>
                   <Sparkles
                     className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 -mt-3"
@@ -287,13 +374,13 @@ export default function BeauticianProviderPage() {
                   />
                 </div>
                 <div
-                  className="text-[28px] sm:text-[34px] font-black mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] overflow-hidden"
+                  className="text-[28px] sm:text-[34px] font-black mt-1 overflow-hidden"
                 >
                   <span className="cr-hero-word inline-block" style={{ color: line2Color }}>
                     {line2}
                   </span>
                 </div>
-                <div className="text-[13px] sm:text-[14px] font-semibold mt-1.5 drop-shadow-[0_1px_3px_rgba(255,255,255,0.55)] whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: taglineColor, maxWidth: 'min(360px, calc(100vw - 32px))' }}>
+                <div className="text-[13px] sm:text-[14px] font-semibold mt-1.5 whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: taglineColor, maxWidth: 'min(360px, calc(100vw - 32px))' }}>
                   {tagline}
                 </div>
 
@@ -308,14 +395,14 @@ export default function BeauticianProviderPage() {
                   const hasSpa = Boolean(p.has_physical_location)
                   if (locs.size === 0 && !hasSpa) return null
                   const items: Array<{ key: string; icon: typeof Home; label: string }> = []
-                  if (locs.has('home'))  items.push({ key: 'home',  icon: Home,      label: 'Home' })
-                  if (locs.has('hotel')) items.push({ key: 'hotel', icon: Hotel,     label: 'Hotel' })
-                  if (locs.has('villa')) items.push({ key: 'villa', icon: Building2, label: 'Villa' })
+                  if (locs.has('home'))  items.push({ key: 'home',  icon: Home,      label: t('locHome') })
+                  if (locs.has('hotel')) items.push({ key: 'hotel', icon: Hotel,     label: t('locHotel') })
+                  if (locs.has('villa')) items.push({ key: 'villa', icon: Building2, label: t('locVilla') })
                   // Spa icon — appended when has_physical_location is on.
                   // When spa is the ONLY mode, the label expands to
                   // "Beautician Spa" so it's obvious this is in-salon only.
                   if (hasSpa) {
-                    const label = locs.size === 0 ? 'Beautician Spa' : 'Spa'
+                    const label = locs.size === 0 ? t('locSpaOnly') : t('locSpa')
                     items.push({ key: 'spa', icon: Store, label })
                   }
                   return (
@@ -323,7 +410,7 @@ export default function BeauticianProviderPage() {
                       {items.map((it, idx) => (
                         <React.Fragment key={it.key}>
                           {idx > 0 && <div className="w-px h-11 bg-black/25 mt-1" aria-hidden />}
-                          <HeroIcon icon={it.icon} slogan={it.label} theme={theme} />
+                          <HeroIcon icon={it.icon} slogan={it.label} theme={themeIcon} />
                         </React.Fragment>
                       ))}
                     </div>
@@ -341,11 +428,11 @@ export default function BeauticianProviderPage() {
             type="button"
             onClick={() => setShowReviews((v) => !v)}
             aria-pressed={showReviews}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[11px] font-extrabold shadow-md active:scale-[0.97] transition"
-            style={{ background: theme }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold shadow-md active:scale-[0.97] transition"
+            style={{ background: theme, color: themeInk }}
           >
-            <Star className="w-3.5 h-3.5" strokeWidth={0} fill="#FFFFFF" />
-            {showReviews ? 'Hide reviews' : 'Reviews'}
+            <Star className="w-3.5 h-3.5" strokeWidth={0} fill={themeInk} />
+            {showReviews ? t('reviewsToggleHide') : t('reviewsToggleShow')}
           </button>
         </div>
 
@@ -378,12 +465,12 @@ export default function BeauticianProviderPage() {
                   className="w-4 h-4 shrink-0"
                   strokeWidth={2.5}
                   fill={theme}
-                  style={{ color: '#FFFFFF' }}
-                  aria-label="Verified"
+                  style={{ color: themeInk }}
+                  aria-label={t('verifiedAria')}
                 />
               </h1>
               <p className="text-[12px] text-gray-500 truncate mt-0.5">
-                {p.city?.trim() || 'Indonesia'}
+                {p.city?.trim() || t('cityFallback')}
               </p>
               <div className="flex items-center gap-1 mt-1">
                 <Star
@@ -396,7 +483,7 @@ export default function BeauticianProviderPage() {
                   {p.rating != null && p.rating > 0 ? p.rating.toFixed(1) : '—'}
                 </span>
                 <span className="text-[11px] text-gray-500">
-                  ({p.rating_count ?? 0} review{(p.rating_count ?? 0) === 1 ? '' : 's'})
+                  ({p.rating_count ?? 0} {(p.rating_count ?? 0) === 1 ? t('reviewSingular') : t('reviewPlural')})
                 </span>
               </div>
             </div>
@@ -405,7 +492,10 @@ export default function BeauticianProviderPage() {
                 Contact Us button when the provider has opted into the
                 email contact form (mig 0137). Tapping it switches the
                 page's main content to the ContactForm panel, leaving
-                Visit Us untouched. */}
+                Visit Us untouched. When the beautician offers home /
+                hotel / villa visits AND her theme has a matching
+                illustration, the badge is replaced by a transparent
+                PNG stamp instead (decorative, no border / background). */}
             {(() => {
               const hasContactForm = Boolean(
                 (p as unknown as { contact_form_enabled?: boolean }).contact_form_enabled
@@ -417,12 +507,25 @@ export default function BeauticianProviderPage() {
                     type="button"
                     onClick={() => { setShowContactForm(true); setShowVisitUs(false); setShowReviews(false) }}
                     aria-pressed={showContactForm}
-                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-white shadow-sm active:scale-[0.96] transition"
-                    style={{ background: theme }}
+                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full shadow-sm active:scale-[0.96] transition"
+                    style={{ background: theme, color: themeInk }}
                   >
                     <Mail className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    <span className="text-[11px] font-extrabold whitespace-nowrap">Contact Us</span>
+                    <span className="text-[11px] font-extrabold whitespace-nowrap">{t('contactUs')}</span>
                   </button>
+                )
+              }
+              if (homeServiceImage) {
+                return (
+                  <div className="shrink-0 w-[94px] h-[94px] flex items-center justify-center">
+                    <img
+                      src={homeServiceImage}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
                 )
               }
               return (
@@ -430,9 +533,9 @@ export default function BeauticianProviderPage() {
                   className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
                   style={{ background: '#F3F4F6' }}
                 >
-                  <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: theme }} />
-                  <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: theme }}>
-                    Top Rated Seller
+                  <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: themeIcon }} />
+                  <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: themeIcon }}>
+                    {t('topRatedSeller')}
                   </span>
                 </div>
               )
@@ -481,9 +584,9 @@ export default function BeauticianProviderPage() {
             bottomCta={
               (typeof p.latitude === 'number' && typeof p.longitude === 'number')
                 ? {
-                    label: 'Book Bike Service',
+                    label: t('bookBikeService'),
                     icon: Bike,
-                    note: `We'll use your location for pickup and ${p.display_name}'s for drop-off — fare shows on the next screen.`,
+                    note: t('bookBikeNote', { name: p.display_name }),
                     onClick: () => {
                       const lat = p.latitude as number
                       const lng = p.longitude as number
@@ -496,7 +599,7 @@ export default function BeauticianProviderPage() {
                         (pos) => {
                           const pLat = pos.coords.latitude.toFixed(6)
                           const pLng = pos.coords.longitude.toFixed(6)
-                          window.location.href = `${base}&pLat=${pLat}&pLng=${pLng}&pName=${encodeURIComponent('My location')}`
+                          window.location.href = `${base}&pLat=${pLat}&pLng=${pLng}&pName=${encodeURIComponent(t('myLocation'))}`
                         },
                         fallback,
                         { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
@@ -510,18 +613,18 @@ export default function BeauticianProviderPage() {
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <h2 className="inline-flex items-center gap-1.5 text-[13px] font-extrabold uppercase tracking-wider text-black">
-                <Mail className="w-3.5 h-3.5" strokeWidth={2.5} style={{ color: theme }} />
-                Contact Us
+                <Mail className="w-3.5 h-3.5" strokeWidth={2.5} style={{ color: themeIcon }} />
+                {t('contactUs')}
               </h2>
               <button
                 type="button"
                 onClick={() => setShowContactForm(false)}
-                aria-label="Close"
+                aria-label={t('closeLabel')}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.96] transition"
                 style={{ color: theme }}
               >
                 <X className="w-3.5 h-3.5" strokeWidth={2.5} />
-                Close
+                {t('closeLabel')}
               </button>
             </div>
             {/* FAQ — sits ABOVE the contact form so customers can self-
@@ -532,7 +635,9 @@ export default function BeauticianProviderPage() {
                 items={p.faq_items as Array<{ q: string; a: string }>}
                 openIdx={faqOpenIdx}
                 onToggle={(i) => setFaqOpenIdx((cur) => (cur === i ? null : i))}
-                themeColor={theme}
+                themeColor={themeIcon}
+                heading={t('faqHeading')}
+                emptyQuestion={t('faqEmptyQuestion')}
               />
             )}
             <ContactFormPanel
@@ -549,8 +654,10 @@ export default function BeauticianProviderPage() {
               <LegalFooter
                 hasTerms={Boolean(p.legal_terms?.trim())}
                 hasPrivacy={Boolean(p.legal_privacy?.trim())}
+                termsLabel={t('legalTerms')}
+                privacyLabel={t('legalPrivacy')}
                 onOpen={(kind) => setLegalView(kind)}
-                themeColor={theme}
+                themeColor={themeIcon}
               />
             )}
           </section>
@@ -571,7 +678,7 @@ export default function BeauticianProviderPage() {
         <section className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-              About {p.display_name}
+              {t('aboutHeading', { name: p.display_name })}
             </h2>
             {/* Visit Us button — original behaviour: gated on
                 has_physical_location only. Contact Us moved to the
@@ -581,10 +688,10 @@ export default function BeauticianProviderPage() {
                 type="button"
                 onClick={() => { setShowVisitUs(true); setShowContactForm(false); setShowReviews(false) }}
                 className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider active:scale-[0.97] transition"
-                style={{ color: theme }}
+                style={{ color: themeIcon }}
               >
                 <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
-                Visit Us
+                {t('visitUs')}
               </button>
             )}
           </div>
@@ -606,7 +713,7 @@ export default function BeauticianProviderPage() {
                 {p.bio.replace(/\s*\n\s*/g, ' ')}
               </p>
             ) : (
-              <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">No bio yet.</p>
+              <p className="text-[13px] text-gray-400 italic flex-1 min-w-0">{t('noBioYet')}</p>
             )}
           </div>
         </section>
@@ -637,7 +744,7 @@ export default function BeauticianProviderPage() {
           return (
             <section className="space-y-2" style={{ marginTop: 15 }}>
               <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-                Services Provided
+                {t('servicesProvided')}
               </h2>
               <div className="flex flex-wrap items-center gap-1.5">
                 {/* "All" reset chip — clears any active service filter
@@ -651,11 +758,11 @@ export default function BeauticianProviderPage() {
                   className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-extrabold tracking-wide transition active:scale-[0.97]"
                   style={
                     activeService === null
-                      ? { background: theme, color: '#FFFFFF' }
+                      ? { background: theme, color: themeInk }
                       : { background: '#F3F4F6', color: '#374151' }
                   }
                 >
-                  All
+                  {t('filterAll')}
                 </button>
                 {visible.map((sid) => (
                   <ServiceFilterBadge
@@ -663,16 +770,18 @@ export default function BeauticianProviderPage() {
                     active={activeService === sid}
                     onClick={() => setActiveService(activeService === sid ? null : sid)}
                     theme={theme}
+                    themeInk={themeInk}
+                    iconColor={themeIcon}
                   />
                 ))}
                 {hasMore && (
                   <button
                     type="button"
                     onClick={() => setShowMoreServices((v) => !v)}
-                    aria-label={showMoreServices ? 'Hide other services' : 'Show other services'}
+                    aria-label={showMoreServices ? t('hideOtherServices') : t('showOtherServices')}
                     aria-expanded={showMoreServices}
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white shrink-0 active:scale-[0.96] transition"
-                    style={{ background: theme }}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full shrink-0 active:scale-[0.96] transition"
+                    style={{ background: theme, color: themeInk }}
                   >
                     <Menu className="w-4 h-4" strokeWidth={2.5} />
                   </button>
@@ -686,6 +795,8 @@ export default function BeauticianProviderPage() {
                       active={activeService === sid}
                       onClick={() => setActiveService(activeService === sid ? null : sid)}
                       theme={theme}
+                      themeInk={themeInk}
+                      iconColor={themeIcon}
                     />
                   ))}
                 </div>
@@ -704,8 +815,8 @@ export default function BeauticianProviderPage() {
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
                   {activeService
-                    ? `${SERVICE_OFFERED_LABELS[activeService]} — Portfolio`
-                    : 'Portfolio'}
+                    ? t('portfolioForService', { label: SERVICE_OFFERED_LABELS[activeService] })
+                    : t('portfolio')}
                 </h2>
                 <PortfolioViewToggle
                   view={portfolioView}
@@ -714,12 +825,13 @@ export default function BeauticianProviderPage() {
                 />
               </div>
               <p className="text-[11px] text-gray-500 italic -mt-1">
-                Please contact for additional services not listed
+                {t('portfolioHint')}
               </p>
               <PortfolioCarousel
                 photos={photos as PortfolioPhoto[]}
                 onViewDetails={(ph) => setDetailPhoto(ph as BeauticianServicePhoto)}
                 themeColor={theme}
+                inkColor={themeInk}
                 view={portfolioView}
                 currencySymbol={countryByCode((p as unknown as { country_code?: string | null }).country_code ?? 'ID').currency_symbol}
               />
@@ -729,7 +841,7 @@ export default function BeauticianProviderPage() {
 
         {/* Running marquee — weekly promo ribbon under the carousel. */}
         <RunningMarquee
-          text={p.promo_text || 'Message me this week — exclusive promo on professional beauty service delivered straight to your home, hotel or villa, in the comfort of your stay.'}
+          text={p.promo_text || t('promoFallback')}
         />
 
         {/* CTA row under the carousel — large price on the left,
@@ -741,7 +853,7 @@ export default function BeauticianProviderPage() {
               {formatStartFromPrice(p)}
             </div>
             <div className="text-[11px] sm:text-[12px] font-medium text-gray-500 mt-1">
-              Start from
+              {t('startFrom')}
             </div>
           </div>
           {p.whatsapp_e164 && (
@@ -774,16 +886,16 @@ export default function BeauticianProviderPage() {
               <button
                 type="button"
                 onClick={() => { setContactServiceName(''); setContactOpen(true) }}
-                className={`inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl text-white font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0 ${
+                className={`inline-flex items-center gap-1.5 justify-center px-5 py-3 rounded-xl font-extrabold text-[13px] shadow-md active:scale-[0.97] transition shrink-0 ${
                   p.cta_button_effect === 'pulse' ? 'cr-cta-pulse'
                 : p.cta_button_effect === 'glow'  ? 'cr-cta-glow'
                 : p.cta_button_effect === 'shake' ? 'cr-cta-shake'
                 : ''
                 }`}
-                style={{ background: theme }}
+                style={{ background: theme, color: themeInk }}
               >
-                <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
-                Contact
+                <MessageCircle className="w-4 h-4" strokeWidth={2.5} style={{ color: themeInk }} />
+                {t('contactCta')}
               </button>
             </>
           )}
@@ -805,17 +917,17 @@ export default function BeauticianProviderPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-[16px] font-black text-black">Share Profile</h3>
+              <h3 className="text-[16px] font-black text-black">{t('shareProfileTitle')}</h3>
               <button
                 onClick={() => setShareOpen(false)}
-                aria-label="Close"
+                aria-label={t('closeLabel')}
                 className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
               >
                 <X className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
               </button>
             </div>
             <p className="text-[12px] text-gray-500 mb-4">
-              Bagikan profil {p.display_name} ke teman atau klien.
+              {t('shareProfileBlurb', { name: p.display_name })}
             </p>
             <div className="space-y-2">
               {/* Copy link — single-tap; status flips to "Copied!" for 1.8s. */}
@@ -833,7 +945,7 @@ export default function BeauticianProviderPage() {
                 </span>
                 <div className="flex-1 text-left min-w-0">
                   <div className="text-[13px] font-extrabold text-black">
-                    {shareCopied ? 'Copied!' : 'Copy link'}
+                    {shareCopied ? t('shareCopied') : t('shareCopyLink')}
                   </div>
                   <div className="text-[11px] text-gray-500 truncate">{profileUrl}</div>
                 </div>
@@ -841,7 +953,7 @@ export default function BeauticianProviderPage() {
 
               {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di Kita2u: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`${t('shareWhatsAppLine', { name: p.display_name })} ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -852,7 +964,7 @@ export default function BeauticianProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">WhatsApp</div>
-                  <div className="text-[11px] text-white/85">Send link to a contact</div>
+                  <div className="text-[11px] text-white/85">{t('shareWhatsAppSub')}</div>
                 </div>
               </a>
 
@@ -869,7 +981,7 @@ export default function BeauticianProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">Facebook</div>
-                  <div className="text-[11px] text-white/85">Share to your timeline</div>
+                  <div className="text-[11px] text-white/85">{t('shareFacebookSub')}</div>
                 </div>
               </a>
 
@@ -892,7 +1004,7 @@ export default function BeauticianProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">Instagram</div>
-                  <div className="text-[11px] text-white/85">Link copied — paste to DM / Story</div>
+                  <div className="text-[11px] text-white/85">{t('shareInstagramSub')}</div>
                 </div>
               </button>
 
@@ -912,7 +1024,7 @@ export default function BeauticianProviderPage() {
                 </span>
                 <div className="flex-1 text-left">
                   <div className="text-[13px] font-extrabold">TikTok</div>
-                  <div className="text-[11px] text-white/85">Link copied — paste to bio / DM</div>
+                  <div className="text-[11px] text-white/85">{t('shareTikTokSub')}</div>
                 </div>
               </button>
             </div>
@@ -926,7 +1038,7 @@ export default function BeauticianProviderPage() {
           vertical "BACK" text below. Diverts back to /beautician. */}
       <Link
         href="/beautician"
-        aria-label="Back to Kita2u beauticians"
+        aria-label={t('backAria')}
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,
@@ -956,7 +1068,7 @@ export default function BeauticianProviderPage() {
             letterSpacing: '0.18em',
           }}
         >
-          Back
+          {t('backLabel')}
         </span>
       </Link>
 
@@ -968,11 +1080,11 @@ export default function BeauticianProviderPage() {
         <button
           type="button"
           onClick={() => setReviewFormOpen(true)}
-          className="fixed left-1/2 -translate-x-1/2 z-30 inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-xl text-white text-[13px] font-extrabold shadow-lg active:scale-[0.97] transition"
-          style={{ bottom: 18, background: theme, boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }}
+          className="fixed left-1/2 -translate-x-1/2 z-30 inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-xl text-[13px] font-extrabold shadow-lg active:scale-[0.97] transition"
+          style={{ bottom: 18, background: theme, color: themeInk, boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }}
         >
-          <Star className="w-4 h-4" strokeWidth={0} fill="#FFFFFF" />
-          Leave Review
+          <Star className="w-4 h-4" strokeWidth={0} fill={themeInk} />
+          {t('leaveReview')}
         </button>
       )}
 
@@ -999,6 +1111,7 @@ export default function BeauticianProviderPage() {
           <PortfolioDetailPopup
             photo={detailPhoto}
             themeColor={theme}
+            inkColor={themeInk}
             canContact={Boolean(p.whatsapp_e164)}
             currencySymbol={currencySymbol}
             cartQty={inCart?.qty}
@@ -1030,8 +1143,10 @@ export default function BeauticianProviderPage() {
           the plaintext line breaks read like a document. */}
       {legalView && (
         <LegalViewer
-          title={legalView === 'terms' ? 'Terms & conditions' : 'Privacy policy'}
+          title={legalView === 'terms' ? t('legalTerms') : t('legalPrivacy')}
           body={(legalView === 'terms' ? p.legal_terms : p.legal_privacy) ?? ''}
+          emptyText={t('legalEmpty')}
+          closeAria={t('closeLabel')}
           themeColor={theme}
           onClose={() => setLegalView(null)}
         />
@@ -1112,8 +1227,8 @@ export default function BeauticianProviderPage() {
 // this file. Inline copies removed in Phase 2-A2.
 
 function ServiceFilterBadge({
-  sid, active, onClick, theme,
-}: { sid: BeauticianServiceOffered; active: boolean; onClick: () => void; theme: string }) {
+  sid, active, onClick, theme, themeInk, iconColor,
+}: { sid: BeauticianServiceOffered; active: boolean; onClick: () => void; theme: string; themeInk: string; iconColor: string }) {
   return (
     <button
       type="button"
@@ -1122,14 +1237,14 @@ function ServiceFilterBadge({
       className="inline-flex items-center gap-1.5 text-[12px] font-extrabold px-3 py-1.5 rounded-full transition active:scale-[0.97]"
       style={
         active
-          ? { background: theme, color: '#FFFFFF' }
+          ? { background: theme, color: themeInk }
           : { background: 'rgba(229, 231, 235, 0.95)', color: '#0A0A0A' }
       }
     >
       <Sparkles
         className="w-3.5 h-3.5"
         strokeWidth={2.5}
-        style={{ color: active ? '#FFFFFF' : theme }}
+        style={{ color: active ? themeInk : iconColor }}
       />
       {SERVICE_OFFERED_LABELS[sid] ?? sid}
     </button>
@@ -1231,6 +1346,7 @@ function ReviewsPanel({
   theme:       string
   onSubmitted: () => void
 }) {
+  const t = useTranslations('beauticianProfile')
   const [stars, setStars]         = useState(0)
   const [name, setName]           = useState('')
   const [whatsapp, setWhatsapp]   = useState('')
@@ -1242,12 +1358,15 @@ function ReviewsPanel({
   const avg = visible.length === 0
     ? 0
     : visible.reduce((s, r) => s + r.rating, 0) / visible.length
+  // Readable foreground on the theme — chocolate brown for pale themes
+  // (cream/ivory) so X / Submit / avatar initial stay visible.
+  const themeInk = inkForTheme(theme)
 
   async function submit() {
     setErr(null)
-    if (stars < 1 || stars > 5) { setErr('Pilih rating 1-5 bintang.'); return }
-    if (!name.trim())            { setErr('Isi nama.');                  return }
-    if (comment.trim().length > 250) { setErr('Review max 250 huruf.');  return }
+    if (stars < 1 || stars > 5) { setErr(t('reviewsErrStars')); return }
+    if (!name.trim())            { setErr(t('reviewsErrName'));   return }
+    if (comment.trim().length > 250) { setErr(t('reviewsErrTooLong')); return }
     setSubmitting(true)
     try {
       const sessionId = readOrMakeReviewSessionId()
@@ -1265,7 +1384,7 @@ function ReviewsPanel({
         }),
       })
       const j = await r.json().catch(() => ({}))
-      if (!r.ok) { setErr(j?.error || 'Failed to submit'); return }
+      if (!r.ok) { setErr(j?.error || t('reviewsErrSubmit')); return }
       // Reset + close + refetch via parent.
       setStars(0); setName(''); setWhatsapp(''); setComment(''); setFormOpen(false)
       onSubmitted()
@@ -1277,11 +1396,11 @@ function ReviewsPanel({
       {!formOpen && (
         <div className="flex items-baseline justify-between">
           <h2 className="text-[13px] font-extrabold uppercase tracking-wider text-black">
-            Reviews
+            {t('reviewsHeading')}
           </h2>
           <div className="text-[12px] font-bold text-gray-500">
             <span className="text-black font-black text-[14px]">{avg > 0 ? avg.toFixed(1) : '—'}</span>
-            {' · '}{visible.length} {visible.length === 1 ? 'review' : 'reviews'}
+            {' · '}{visible.length} {visible.length === 1 ? t('reviewSingular') : t('reviewPlural')}
           </div>
         </div>
       )}
@@ -1292,13 +1411,13 @@ function ReviewsPanel({
       {formOpen && (
         <div className="space-y-2.5 px-1 pt-1">
           <div className="flex items-center justify-between">
-            <div className="text-[13px] font-extrabold text-black">Leave a review</div>
+            <div className="text-[13px] font-extrabold text-black">{t('reviewsLeaveTitle')}</div>
             <button
               type="button"
               onClick={() => { setFormOpen(false); setErr(null) }}
-              aria-label="Close form"
-              className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm active:scale-[0.95] transition"
-              style={{ background: theme }}
+              aria-label={t('reviewsCloseFormAria')}
+              className="w-7 h-7 rounded-full flex items-center justify-center shadow-sm active:scale-[0.95] transition"
+              style={{ background: theme, color: themeInk }}
             >
               <X className="w-3.5 h-3.5" strokeWidth={2.5} />
             </button>
@@ -1314,7 +1433,7 @@ function ReviewsPanel({
                   key={i}
                   type="button"
                   onClick={() => setStars(i + 1)}
-                  aria-label={`Rate ${i + 1} star${i ? 's' : ''}`}
+                  aria-label={i === 0 ? t('reviewsRateAria', { n: 1 }) : t('reviewsRateAriaPlural', { n: i + 1 })}
                   className="p-1 active:scale-[0.9] transition"
                 >
                   <Star
@@ -1333,14 +1452,14 @@ function ReviewsPanel({
             value={name}
             maxLength={60}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Nama Anda"
+            placeholder={t('reviewsNamePlaceholder')}
             className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none focus:border-pink-500"
           />
           <input
             type="tel"
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
-            placeholder="WhatsApp (opsional, +62…)"
+            placeholder={t('reviewsWhatsAppPlaceholder')}
             className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] focus:outline-none focus:border-pink-500"
           />
           <div className="space-y-1">
@@ -1349,7 +1468,7 @@ function ReviewsPanel({
               maxLength={250}
               rows={3}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Tulis pengalaman Anda (max 250 huruf)"
+              placeholder={t('reviewsCommentPlaceholder')}
               className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-pink-500"
             />
             <div className="text-[10px] text-gray-500 text-right">{comment.length}/250</div>
@@ -1365,10 +1484,10 @@ function ReviewsPanel({
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full text-white text-[13px] font-extrabold disabled:opacity-60 active:scale-[0.98] transition"
-            style={{ background: theme }}
+            className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full text-[13px] font-extrabold disabled:opacity-60 active:scale-[0.98] transition"
+            style={{ background: theme, color: themeInk }}
           >
-            {submitting ? 'Submitting…' : 'Submit review'}
+            {submitting ? t('reviewsSubmitting') : t('reviewsSubmit')}
           </button>
         </div>
       )}
@@ -1379,11 +1498,11 @@ function ReviewsPanel({
       {!formOpen && (
       <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
         {loading && visible.length === 0 && (
-          <div className="text-[12px] text-gray-500 italic">Loading reviews…</div>
+          <div className="text-[12px] text-gray-500 italic">{t('reviewsLoading')}</div>
         )}
         {!loading && visible.length === 0 && (
           <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-center">
-            <div className="text-[12px] text-gray-500">Belum ada review. Jadilah yang pertama.</div>
+            <div className="text-[12px] text-gray-500">{t('reviewsEmpty')}</div>
           </div>
         )}
         {visible.map((r) => (
@@ -1391,14 +1510,14 @@ function ReviewsPanel({
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-black shrink-0"
-                  style={{ background: theme }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-black shrink-0"
+                  style={{ background: theme, color: themeInk }}
                 >
                   {r.reviewer_name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <div className="text-[12px] font-extrabold text-black truncate">{r.reviewer_name}</div>
-                  <div className="text-[10px] text-gray-500">{formatReviewWhen(r.created_at)}</div>
+                  <div className="text-[10px] text-gray-500">{formatReviewWhen(r.created_at, t)}</div>
                 </div>
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
@@ -1439,17 +1558,18 @@ function readOrMakeReviewSessionId(): string {
   } catch { return `sid-${Date.now()}` }
 }
 
-function formatReviewWhen(iso: string): string {
+type ReviewTimeT = (key: string, values?: Record<string, string | number>) => string
+function formatReviewWhen(iso: string, t: ReviewTimeT): string {
   const ms = Date.now() - new Date(iso).getTime()
   if (!Number.isFinite(ms) || ms < 0) return ''
   const m = Math.floor(ms / 60000)
-  if (m < 1)  return 'just now'
-  if (m < 60) return `${m}m ago`
+  if (m < 1)  return t('timeJustNow')
+  if (m < 60) return t('timeMinutes', { n: m })
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
+  if (h < 24) return t('timeHours', { n: h })
   const d = Math.floor(h / 24)
-  if (d < 7)  return `${d}d ago`
-  if (d < 30) return `${Math.floor(d / 7)}w ago`
+  if (d < 7)  return t('timeDays', { n: d })
+  if (d < 30) return t('timeWeeks', { n: Math.floor(d / 7) })
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
@@ -1471,7 +1591,7 @@ function HeroIcon({
             ? <Icon className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px]" strokeWidth={2.25} style={{ color: theme }} />
             : null}
       </span>
-      <div className="mt-1.5 text-[13px] sm:text-[14px] font-bold text-black leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
+      <div className="mt-1.5 text-[13px] sm:text-[14px] font-bold text-black leading-tight whitespace-pre-line">
         {slogan}
       </div>
     </div>
@@ -1501,18 +1621,20 @@ function Shell({ children }: { children: React.ReactNode }) {
 // (clicking an open question closes it); no in-page scroll lock.
 // ─────────────────────────────────────────────────────────────────────
 function FaqAccordion({
-  items, openIdx, onToggle, themeColor,
+  items, openIdx, onToggle, themeColor, heading, emptyQuestion,
 }: {
-  items:      Array<{ q: string; a: string }>
-  openIdx:    number | null
-  onToggle:   (i: number) => void
-  themeColor: string
+  items:         Array<{ q: string; a: string }>
+  openIdx:       number | null
+  onToggle:      (i: number) => void
+  themeColor:    string
+  heading:       string
+  emptyQuestion: string
 }) {
   return (
     <section className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-2.5">
       <div className="flex items-center gap-2">
         <HelpCircle className="w-4 h-4 shrink-0" style={{ color: themeColor }} strokeWidth={2.5} />
-        <div className="text-[13px] font-extrabold text-black">Frequently asked</div>
+        <div className="text-[13px] font-extrabold text-black">{heading}</div>
       </div>
       <ul className="space-y-1.5">
         {items.map((it, i) => {
@@ -1526,7 +1648,7 @@ function FaqAccordion({
                 className="w-full text-left flex items-center gap-2 px-3 py-2.5 min-h-[44px] active:scale-[0.995] transition"
               >
                 <span className="flex-1 text-[13px] font-extrabold text-black leading-snug">
-                  {it.q || '(no question)'}
+                  {it.q || emptyQuestion}
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -1554,12 +1676,14 @@ function FaqAccordion({
 // viewer; the customer never leaves the profile.
 // ─────────────────────────────────────────────────────────────────────
 function LegalFooter({
-  hasTerms, hasPrivacy, onOpen, themeColor,
+  hasTerms, hasPrivacy, onOpen, themeColor, termsLabel, privacyLabel,
 }: {
-  hasTerms:   boolean
-  hasPrivacy: boolean
-  onOpen:     (kind: 'terms' | 'privacy') => void
-  themeColor: string
+  hasTerms:     boolean
+  hasPrivacy:   boolean
+  onOpen:       (kind: 'terms' | 'privacy') => void
+  themeColor:   string
+  termsLabel:   string
+  privacyLabel: string
 }) {
   return (
     <div className="pt-1">
@@ -1572,7 +1696,7 @@ function LegalFooter({
             style={{ color: themeColor, minHeight: 32 }}
           >
             <FileText className="w-3.5 h-3.5" strokeWidth={2.5} />
-            Terms &amp; conditions
+            {termsLabel}
           </button>
         )}
         {hasTerms && hasPrivacy && <span aria-hidden className="text-gray-300">·</span>}
@@ -1584,7 +1708,7 @@ function LegalFooter({
             style={{ color: themeColor, minHeight: 32 }}
           >
             <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
-            Privacy policy
+            {privacyLabel}
           </button>
         )}
       </div>
@@ -1598,12 +1722,14 @@ function LegalFooter({
 // paragraphing render exactly as the vendor typed it.
 // ─────────────────────────────────────────────────────────────────────
 function LegalViewer({
-  title, body, themeColor, onClose,
+  title, body, themeColor, onClose, emptyText, closeAria,
 }: {
   title:      string
   body:       string
   themeColor: string
   onClose:    () => void
+  emptyText:  string
+  closeAria:  string
 }) {
   return (
     <div
@@ -1624,7 +1750,7 @@ function LegalViewer({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={closeAria}
             className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0"
             style={{ minWidth: 44, minHeight: 44 }}
           >
@@ -1632,7 +1758,7 @@ function LegalViewer({
           </button>
         </div>
         <div className="px-5 py-4 overflow-y-auto flex-1 text-[13px] text-gray-800 leading-relaxed whitespace-pre-wrap">
-          {body.trim() || 'This vendor has not provided a document yet.'}
+          {body.trim() || emptyText}
         </div>
       </div>
     </div>

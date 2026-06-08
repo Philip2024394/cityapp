@@ -47,6 +47,9 @@ type Extras = {
   cta_button_effect?: 'none' | 'pulse' | 'glow' | 'shake' | null
   // mig 0141 — animated avatar ring style
   avatar_frame_style?: 'none' | 'gradient' | 'pulse' | 'rainbow' | null
+  // Button text color (also drives hero icon strokes on the public page).
+  // Hex #RRGGBB — defaults to white when null.
+  button_text_color?: string | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -83,6 +86,12 @@ export default function BeauticianEditPage() {
     if (!r.ok || !j?.ok) { alert(j?.error || 'Could not save.'); return false }
     setProvider((prev) => prev ? { ...prev, ...patch } : prev)
     return true
+  }
+
+  // Local-state-only patch — used when a control already posted to its
+  // own dedicated endpoint and just needs the live preview to refresh.
+  function setLocal(patch: Partial<FullProvider>) {
+    setProvider((prev) => prev ? { ...prev, ...patch } : prev)
   }
 
   if (loading) return <Shell><Loading /></Shell>
@@ -208,6 +217,7 @@ export default function BeauticianEditPage() {
           theme={theme}
           ht={ht}
           onSave={save}
+          onSetLocal={setLocal}
         />
 
         <p className="text-[12px] text-black/55 mt-4 leading-snug">
@@ -221,12 +231,13 @@ export default function BeauticianEditPage() {
 }
 
 function BannerInlineControls({
-  provider, theme, ht, onSave,
+  provider, theme, ht, onSave, onSetLocal,
 }: {
-  provider: FullProvider
-  theme:    string
-  ht:       BeauticianHeroText
-  onSave:   (patch: Partial<FullProvider>) => Promise<boolean> | boolean
+  provider:   FullProvider
+  theme:      string
+  ht:         BeauticianHeroText
+  onSave:     (patch: Partial<FullProvider>) => Promise<boolean> | boolean
+  onSetLocal: (patch: Partial<FullProvider>) => void
 }) {
   // Drafts live locally; debounced commits push to onSave so we don't
   // hit the API on every keystroke.
@@ -341,6 +352,34 @@ function BannerInlineControls({
               color: undefined,
             },
           })}
+        />
+      </Section>
+
+      {/* Button text color — paired with theme so beauticians choose the
+          contrasting label color right after the brand color. Same value
+          also drives hero icon strokes on the public profile. Defaults to
+          white when unset. Saves via a dedicated endpoint (the shared
+          /profile endpoint doesn't accept this field). */}
+      <Section title="Button text color" icon={<Type size={16} strokeWidth={2.5} />}>
+        <ButtonTextColorPicker
+          value={provider.button_text_color ?? null}
+          themeColor={theme}
+          onChange={async (hex) => {
+            const r = await fetch('/api/beautician/me/button-text-color', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ button_text_color: hex }),
+            })
+            const j = await r.json().catch(() => ({}))
+            if (!r.ok || !j?.ok) {
+              alert(j?.error || 'Could not save button text color.')
+              return false
+            }
+            // Local-only state refresh — the dedicated endpoint already
+            // persisted the change, so we just sync the live preview.
+            onSetLocal({ button_text_color: hex })
+            return true
+          }}
         />
       </Section>
 
@@ -619,6 +658,138 @@ function AvatarFramePreview({ style, themeColor }: { style: AvatarFrameStyle; th
         themeColor={themeColor}
         fallbackInitial="A"
       />
+    </div>
+  )
+}
+
+// Button text color picker — preset swatches sized for the most common
+// brand-theme pairings (white on dark, dark hexes for cream / amber /
+// orange / pink themes) plus an optional custom hex field. The live
+// preview chip renders a mock CTA button using the current theme as the
+// background so the beautician sees the contrast they'll ship.
+//
+// Defaults: when value is null the white preset is highlighted (matches
+// the DB column default '#FFFFFF').
+function ButtonTextColorPicker({
+  value, themeColor, onChange,
+}: {
+  value:      string | null
+  themeColor: string
+  onChange:   (hex: string) => void | Promise<unknown>
+}) {
+  const PRESETS: Array<{ hex: string; label: string }> = [
+    { hex: '#FFFFFF', label: 'White'         },
+    { hex: '#0A0A0A', label: 'Black'         },
+    { hex: '#5C3317', label: 'Chocolate'     },
+    { hex: '#854D0E', label: 'Amber dark'    },
+    { hex: '#7C2D12', label: 'Rust'          },
+    { hex: '#831843', label: 'Rose dark'     },
+  ]
+  const HEX_RE = /^#[A-Fa-f0-9]{6}$/
+  // Empty value (or unset) falls back to white per backend default.
+  const active = (value ?? '#FFFFFF').toUpperCase()
+  const [customDraft, setCustomDraft] = useState<string>('')
+  const [customError, setCustomError] = useState<string | null>(null)
+
+  function applyCustom() {
+    const v = customDraft.trim()
+    if (!v) { setCustomError(null); return }
+    const normalised = v.startsWith('#') ? v : '#' + v
+    if (!HEX_RE.test(normalised)) {
+      setCustomError('Use #RRGGBB format, e.g. #5C3317')
+      return
+    }
+    setCustomError(null)
+    void onChange(normalised.toUpperCase())
+    setCustomDraft('')
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Live preview — mock "Contact me" pill rendered with the current
+          theme color background and the chosen text color, plus a hero
+          sparkle icon stroked with the same color so the user sees both
+          uses at a glance. */}
+      <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 flex items-center gap-3">
+        <div
+          className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-[13px] font-extrabold shadow-sm"
+          style={{ background: themeColor, color: active }}
+        >
+          Contact me
+        </div>
+        <Sparkles
+          className="w-7 h-7 shrink-0"
+          strokeWidth={2}
+          style={{ color: active, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))' }}
+        />
+        <span className="text-[12px] font-mono text-black/55 ml-auto">{active}</span>
+      </div>
+
+      {/* Preset swatches — labelled so the beautician knows what each
+          preset is tuned for (cream theme → chocolate text, etc.) */}
+      <div className="flex flex-wrap items-center gap-2">
+        {PRESETS.map((p) => {
+          const on = active === p.hex.toUpperCase()
+          // White swatch needs a visible border so it doesn't disappear
+          // against the white card.
+          const isWhite = p.hex.toUpperCase() === '#FFFFFF'
+          return (
+            <button
+              key={p.hex}
+              type="button"
+              onClick={() => void onChange(p.hex)}
+              aria-label={`${p.label} (${p.hex})`}
+              aria-pressed={on}
+              title={`${p.label} — ${p.hex}`}
+              className={`relative w-11 h-11 rounded-full transition active:scale-[0.95] ${on ? 'ring-2 ring-offset-2 ring-offset-white ring-gray-900' : 'ring-1 ring-gray-200'}`}
+              style={{
+                background: p.hex,
+                border: isWhite ? '1px solid rgba(0,0,0,0.12)' : undefined,
+              }}
+            >
+              {on && (
+                <Check
+                  className="absolute inset-0 m-auto w-4 h-4"
+                  strokeWidth={3}
+                  style={{ color: isWhite ? '#0A0A0A' : '#FFFFFF' }}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Optional custom hex input — kept compact so it doesn't dominate
+          the section. Accepts with or without leading #. */}
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          inputMode="text"
+          autoCapitalize="characters"
+          spellCheck={false}
+          maxLength={7}
+          value={customDraft}
+          onChange={(e) => setCustomDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCustom() } }}
+          placeholder="#RRGGBB"
+          aria-label="Custom hex color"
+          className="w-32 rounded-xl bg-white border border-gray-200 px-3 py-2 text-[13px] font-mono focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
+        />
+        <button
+          type="button"
+          onClick={applyCustom}
+          className="inline-flex items-center gap-1 h-[38px] px-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-900 text-[12px] font-extrabold hover:bg-gray-200 active:scale-[0.97] transition"
+        >
+          Apply
+        </button>
+        {customError && (
+          <span className="text-[11px] text-red-600 font-bold leading-snug">{customError}</span>
+        )}
+      </div>
+
+      <p className="text-[12px] text-black/55 leading-snug">
+        Used for button text and hero icon strokes on your public page.
+      </p>
     </div>
   )
 }

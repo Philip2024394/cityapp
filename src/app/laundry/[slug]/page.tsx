@@ -166,7 +166,7 @@ export default function LaundryProviderPage() {
 
   // WhatsApp prefill text for the under-carousel contact button.
   const waText = [
-    `Halo ${p.display_name}, saya menemukan profil Anda di CityDrivers.`,
+    `Halo ${p.display_name}, saya menemukan profil Anda di Kita2u.`,
     `Saya tertarik untuk pesan laundry.`,
     partnerTag ? `Saya tamu dari ${partnerTag}.` : '',
     `Apakah Anda available?`,
@@ -765,7 +765,7 @@ export default function LaundryProviderPage() {
 
               {/* WhatsApp — accepts URL share natively via wa.me. */}
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di CityDrivers: ${profileUrl}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`Lihat profil ${p.display_name} di Kita2u: ${profileUrl}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white active:scale-[0.99] transition"
@@ -850,7 +850,7 @@ export default function LaundryProviderPage() {
           vertical "BACK" text below. Diverts back to /laundry. */}
       <Link
         href="/laundry"
-        aria-label="Back to CityDrivers laundry"
+        aria-label="Back to Kita2u laundry"
         className="fixed z-50 flex flex-col items-center justify-center gap-2 active:scale-[0.97] transition"
         style={{
           right: 0,

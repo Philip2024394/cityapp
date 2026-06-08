@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
-  Menu, X as XIcon,
+  Menu, X as XIcon, XCircle,
   LayoutDashboard, Bike, User, DollarSign, Package, Flame, Users,
   IdCard, MessageSquare, Star, LogOut,
   Handshake, QrCode,
@@ -658,9 +658,31 @@ function AppDrawerInner({
           ))}
         </nav>
 
-        {/* Sign out at the bottom (only when signed in) */}
+        {/* Account actions at the bottom (only when signed in). Cancel
+            my app is placed above Sign out so a user wanting to leave
+            the platform sees the subscription action first — this
+            mirrors the marketing copy on / + /about + the FAQ ("open
+            the side drawer in your dashboard and tap Cancel my app"),
+            which is the contract the landing makes with cold visitors.
+            Both buttons live at the foot of every variant rather than
+            inside per-variant NAV_ITEMS arrays so adding a new vertical
+            never accidentally hides them. */}
         {email && (
-          <div className="px-3 py-3 border-t border-gray-200 shrink-0 pb-safe">
+          <div className="px-3 py-3 border-t border-gray-200 shrink-0 pb-safe space-y-2">
+            <Link
+              href="/account/cancel"
+              onClick={onClose}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition active:scale-[0.99]"
+              style={{
+                background: 'rgba(0,0,0,0.04)',
+                border: '1px solid rgba(0,0,0,0.12)',
+                color: '#0A0A0A',
+                minHeight: 44,
+              }}
+            >
+              <XCircle className="w-4 h-4 shrink-0" strokeWidth={2.5} />
+              <span className="text-[13px] font-extrabold flex-1 min-w-0">Cancel my app</span>
+            </Link>
             <button
               onClick={signOut}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition active:scale-[0.99]"

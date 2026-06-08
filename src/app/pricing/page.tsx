@@ -116,11 +116,11 @@ export default function PricingPage() {
           ]}
         />
 
-        {/* ── Tier 3: CityDrivers driver subscription ─────────────────── */}
+        {/* ── Tier 3: Driver subscription ─────────────────────────────── */}
         <Tier
-          eyebrow="CityDrivers driver subscription"
+          eyebrow="Driver subscription"
           title="Rp 38,000 / month — or Rp 350,000 / year (save ~23%)"
-          summary={`Bike, car, truck, minibus, and jeep drivers list on CityDrivers for a flat monthly subscription. ${TRIAL_DAYS}-day free trial. Founder cohort: the first ${FOUNDER_COHORT_CAP.toLocaleString('en-US')} Indonesian drivers are locked at Rp 38,000/month for life — that rate never goes up for you.`}
+          summary={`Bike, car, truck, minibus, and jeep drivers list on Kita2u for a flat monthly subscription. ${TRIAL_DAYS}-day free trial. Founder cohort: the first ${FOUNDER_COHORT_CAP.toLocaleString('en-US')} Indonesian drivers are locked at Rp 38,000/month for life — that rate never goes up for you.`}
           priceTiles={[
             { idr: SUBSCRIPTION_MONTHLY_IDR, label: 'per month' },
             { idr: SUBSCRIPTION_YEARLY_IDR,  label: 'per year — save ~23%', highlight: true },
@@ -189,7 +189,7 @@ export default function PricingPage() {
             Legal posture
           </div>
           <p className="text-[12.5px] leading-relaxed mt-2" style={{ color: TEXT_MUTED }}>
-            CityDrivers and Kita2u operate as software directories under
+            Kita2u operates as a software directory under
             <strong> Permenhub PM 12/2019</strong>. We never appoint trips, never set fares, never custody
             payments. Every booking is a direct agreement between the customer and the merchant/driver
             via WhatsApp; the platform&apos;s role is discovery and contact handoff only.

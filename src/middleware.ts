@@ -47,6 +47,54 @@ const KITA2U_HOSTS = new Set([
   'kita2u.com',
   'www.kita2u.com',
 ])
+// kita2u.com host scope. The Kita2u marketplace serves every customer-
+// facing vertical (beautician, handyman, laundry, massage, home-clean,
+// facial, skincare, tour, food, rent, rentals, property) plus shared
+// marketing, auth, and merchant dashboards. The CityRiders / driver-
+// directory surfaces (cityriders hub, cari, drivers, r, places city-
+// pass, ride verticals, partners, alert, business B2B, driver
+// dashboards) belong to citydrivers.id only and must not render here
+// — every CityRiders prefix below is rewritten back to the Kita2u
+// landing on `/` so a typed URL, stale share-link, or indexed driver
+// page never surfaces the wrong brand on kita2u.com. Founder direction
+// 2026-06-08 after kita2u.com soft launch (customers were seeing
+// driver-app pages on the marketplace host).
+//
+// Pattern is a denylist, not a whitelist (the CityRiders gate above
+// uses a whitelist because that host serves a single app). Kita2u is
+// the multi-vertical marketplace — denylisting the driver surfaces
+// captures intent in fewer lines and means new verticals added later
+// inherit "shows on kita2u.com" by default without re-editing this
+// file.
+const KITA2U_DENY_PREFIXES = [
+  '/cityriders',
+  '/citydrivers',
+  '/cari',
+  '/drivers',
+  '/r',
+  '/places',
+  // /list-place is the place-owner intake form for the CityDrivers /places
+  // city-pass directory above — the page body links back to /places and
+  // /r/[driver-demo], both of which are CityRiders surfaces. Belongs in
+  // the same denylist so a kita2u.com visitor never sees "List Your Place
+  // on CityDrivers" copy on the marketplace host.
+  '/list-place',
+  '/car',
+  '/truck',
+  '/bus',
+  '/jeep',
+  '/ride',
+  '/partners',
+  '/alert',
+  '/business',
+  '/dashboard/rider',
+  '/dashboard/car',
+  '/dashboard/truck',
+  '/dashboard/bus',
+  '/dashboard/jeep',
+  '/dashboard/partner',
+  '/dashboard/places',
+]
 const CITYRIDERS_PAGE_PREFIXES = [
   '/cityriders',
   '/cari',
@@ -92,6 +140,10 @@ function isAuthPage(pathname: string): boolean {
 function isCityridersPath(pathname: string): boolean {
   if (pathname === '/') return false
   return CITYRIDERS_PAGE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
+function isKita2uDenied(pathname: string): boolean {
+  return KITA2U_DENY_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
 export async function middleware(req: NextRequest) {
@@ -163,6 +215,19 @@ export async function middleware(req: NextRequest) {
       dest.search = ''
       return NextResponse.rewrite(dest)
     }
+  }
+
+  // Host-scope gate: on kita2u.com, every CityRiders / driver-directory
+  // surface is rewritten back to the Kita2u landing on `/`. Mirror of the
+  // cityriders gate above — strict editorial separation so the driver
+  // brand never surfaces on the marketplace host. Customers landing on
+  // a stale /cari, /drivers, or /cityriders link see the Kita2u home
+  // instead of the wrong brand.
+  if (KITA2U_HOSTS.has(reqHost) && isKita2uDenied(url.pathname)) {
+    const dest = url.clone()
+    dest.pathname = '/'
+    dest.search = ''
+    return NextResponse.rewrite(dest)
   }
 
   const res = NextResponse.next()

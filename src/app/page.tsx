@@ -380,8 +380,8 @@ export default function LandingPage() {
               { icon: Hammer,           label: 'Handyman',              sub: 'Per-job tukang' },
               { icon: Stethoscope,      label: 'Home cleaning',          sub: 'House + office' },
               { icon: MapPin,           label: 'Tour guides',           sub: 'Day trips, packages' },
-              { icon: Bike,             label: 'Bike rentals',          sub: 'Scooters, mountain' },
-              { icon: Car,              label: 'Drivers (Bike → Jeep)', sub: 'Self-published rates' },
+              { icon: Bike,             label: 'Bike rentals',          sub: 'Scooters, mountain, daily' },
+              { icon: Car,              label: 'Car & jeep tours',      sub: 'Self-drive, daily, 4x4' },
             ].map((v) => {
               const Icon = v.icon
               return (
@@ -403,7 +403,7 @@ export default function LandingPage() {
             })}
           </div>
           <p className="text-center text-[12px] text-gray-500 italic">
-            Don&apos;t see your category? Tell us — most verticals can be cloned from an existing template in 24 hours.
+            Don&apos;t see your category? Tell us — our team adjusts an existing template in 24 hours, or builds a one-of-a-kind app for your business on request.
           </p>
         </div>
       </section>
@@ -582,28 +582,34 @@ export default function LandingPage() {
               </div>
               <div className="min-w-0">
                 <div className="font-extrabold text-[15px] text-[#0A0A0A] leading-tight">For service providers</div>
-                <div className="text-[13px] text-gray-600 leading-snug mt-1">Drivers, beauticians, tukang, tour guides — get a profile that earns while you sleep.</div>
+                <div className="text-[13px] text-gray-600 leading-snug mt-1">Beauticians, tukang, tour guides, photographers, freelancers — get a profile that earns while you sleep.</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* PRICING TEASER — quick "free to start" callout that links into
-          the full /pricing page for details. */}
+      {/* PRICING TEASER — 7-day free trial + one-tap cancel from the
+          dashboard side drawer. Founder direction 2026-06-08: lead the
+          pricing pitch with the trial + frictionless cancel guarantee,
+          not "free forever". Subscription model with a 7-day try-it-
+          first window is the real offer. */}
       <section className="reveal-on-scroll relative z-10 px-6 py-12">
         <div className="max-w-2xl mx-auto text-center space-y-4">
           <h2 className="font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
-            Free to start
+            7 days free. Cancel in one tap.
           </h2>
           <p className="text-[14px] text-gray-600 leading-relaxed max-w-md mx-auto">
-            Get your Kita2u page, profile, and direct WhatsApp bookings at no cost. Custom domains and template tweaks are paid add-ons.
+            Try every feature free for 7 days. Not the right fit? Open the side drawer in your dashboard and tap <strong className="text-[#0A0A0A]">Cancel my app</strong> — confirmed in one tap. No email back-and-forth, no retention call, no waiting period.
+          </p>
+          <p className="text-[13px] text-gray-500 leading-snug max-w-md mx-auto">
+            Need something different? Our team can adjust your template or build a one-of-a-kind app for your business on request — message us before you commit, and we will scope and quote the work first.
           </p>
           <Link
             href="/pricing"
             className="inline-block text-brand hover:underline font-extrabold text-[14px]"
           >
-            See pricing →
+            See plans →
           </Link>
         </div>
       </section>
@@ -624,7 +630,19 @@ export default function LandingPage() {
               },
               {
                 q: 'Does Kita2u take a commission on my sales?',
-                a: 'No platform fee on transactions. You keep what your customers pay you. Custom domain and template add-ons are the only paid features.',
+                a: 'No. Kita2u takes 0% of customer transactions — you keep 100% of what your customers pay you. Our revenue is your monthly subscription only, and that subscription starts with a 7-day free trial.',
+              },
+              {
+                q: 'How does the 7-day free trial work?',
+                a: 'Sign up, pick your app — every feature is unlocked for 7 days. If you keep going past day 7, you continue on the plan you choose; if not, no charge. You always know where day 7 falls because it is shown in your dashboard from the moment you sign in.',
+              },
+              {
+                q: 'How do I cancel my app?',
+                a: 'Open the side drawer in your dashboard and tap "Cancel my app." That is the entire flow — confirmed in one tap, no email back-and-forth, no retention call, no waiting period. Cancellation takes effect immediately, and you can cancel on day one, day seven, or any day after that.',
+              },
+              {
+                q: 'Can your team build a custom app for my business?',
+                a: 'Yes. If our existing templates do not fit, our team adjusts an existing one or builds a one-of-a-kind app from your requirements. Message us through the contact page — we will scope the work and provide a written quote before you commit.',
               },
               {
                 q: 'How do I pay for Kita2u?',

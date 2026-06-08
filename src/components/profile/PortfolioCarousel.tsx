@@ -37,10 +37,15 @@ function priceLabel(amount: number | null | undefined, symbol: string): string |
 }
 
 export default function PortfolioCarousel({
-  photos, themeColor, onViewDetails, view = 'carousel', currencySymbol = 'Rp',
+  photos, themeColor, inkColor = '#FFFFFF', onViewDetails, view = 'carousel', currencySymbol = 'Rp',
 }: {
   photos: PortfolioPhoto[]
   themeColor: string
+  /** Foreground color for text/icons sitting ON `themeColor` surfaces.
+   *  Defaults to white so existing callers stay unchanged; pass a dark
+   *  hex (e.g. chocolate) when the theme is light and white would be
+   *  illegible. */
+  inkColor?: string
   onViewDetails: (photo: PortfolioPhoto) => void
   /** Layout mode. 'carousel' = auto-drifting horizontal strip (default).
    *  'grid' = static 2-col responsive grid. Same PortfolioCard items in
@@ -120,6 +125,7 @@ export default function PortfolioCarousel({
             photo={photo}
             onViewDetails={() => onViewDetails(photo)}
             themeColor={themeColor}
+            inkColor={inkColor}
           />
         ))}
       </div>
@@ -141,6 +147,7 @@ export default function PortfolioCarousel({
             photo={photo}
             onViewDetails={() => onViewDetails(photo)}
             themeColor={themeColor}
+            inkColor={inkColor}
           />
         ))}
         {/* Duplicate strip so the seamless drift loop has no visible gap. */}
@@ -151,6 +158,7 @@ export default function PortfolioCarousel({
             photo={photo}
             onViewDetails={() => onViewDetails(photo)}
             themeColor={themeColor}
+            inkColor={inkColor}
           />
         ))}
       </div>
@@ -159,11 +167,12 @@ export default function PortfolioCarousel({
 }
 
 function PortfolioCard({
-  photo, onViewDetails, themeColor, currencySymbol = 'Rp',
+  photo, onViewDetails, themeColor, inkColor = '#FFFFFF', currencySymbol = 'Rp',
 }: {
   photo: PortfolioPhoto
   onViewDetails: () => void
   themeColor: string
+  inkColor?: string
   currencySymbol?: string
 }) {
   const price = priceLabel(photo.price_idr, currencySymbol)
@@ -222,8 +231,8 @@ function PortfolioCard({
           <button
             type="button"
             onClick={onViewDetails}
-            className="ml-auto inline-flex items-center justify-center px-2.5 py-1 rounded-full text-white text-[10px] font-extrabold active:scale-[0.97] transition shrink-0"
-            style={{ background: themeColor }}
+            className="ml-auto inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-extrabold active:scale-[0.97] transition shrink-0"
+            style={{ background: themeColor, color: inkColor }}
           >
             View Details
           </button>
@@ -238,11 +247,15 @@ function PortfolioCard({
 // ─────────────────────────────────────────────────────────────────────
 
 export function PortfolioDetailPopup({
-  photo, themeColor, canContact, onClose, onContact,
+  photo, themeColor, inkColor = '#FFFFFF', canContact, onClose, onContact,
   onAddToCart, cartQty, currencySymbol = 'Rp',
 }: {
   photo:      PortfolioPhoto
   themeColor: string
+  /** Foreground color for text/icons sitting ON `themeColor` surfaces.
+   *  Defaults to white so existing callers stay unchanged; pass a dark
+   *  hex when the theme is light. */
+  inkColor?:  string
   canContact: boolean
   onClose:    () => void
   onContact:  () => void
@@ -306,8 +319,8 @@ export function PortfolioDetailPopup({
               />
               {view !== 'main' && (
                 <div
-                  className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white shadow"
-                  style={{ background: themeColor }}
+                  className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow"
+                  style={{ background: themeColor, color: inkColor }}
                 >
                   {view === 'before' ? 'Before' : 'After'}
                 </div>
@@ -328,6 +341,7 @@ export function PortfolioDetailPopup({
                 active={view === 'main'}
                 onClick={() => setView('main')}
                 themeColor={themeColor}
+                inkColor={inkColor}
                 objectPosition={photo.object_position ?? undefined}
               />
               {hasBefore && (
@@ -337,6 +351,7 @@ export function PortfolioDetailPopup({
                   active={view === 'before'}
                   onClick={() => setView('before')}
                   themeColor={themeColor}
+                  inkColor={inkColor}
                 />
               )}
               {hasAfter && (
@@ -346,6 +361,7 @@ export function PortfolioDetailPopup({
                   active={view === 'after'}
                   onClick={() => setView('after')}
                   themeColor={themeColor}
+                  inkColor={inkColor}
                 />
               )}
               {hasCompare && (
@@ -355,6 +371,7 @@ export function PortfolioDetailPopup({
                   active={view === 'compare'}
                   onClick={() => setView('compare')}
                   themeColor={themeColor}
+                  inkColor={inkColor}
                   overlayIcon
                 />
               )}
@@ -435,8 +452,8 @@ export function PortfolioDetailPopup({
             <button
               type="button"
               onClick={onContact}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-full text-white font-extrabold text-[13px] shadow-md active:scale-[0.98] transition"
-              style={{ background: themeColor }}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-full font-extrabold text-[13px] shadow-md active:scale-[0.98] transition"
+              style={{ background: themeColor, color: inkColor }}
             >
               <MessageCircle className="w-4 h-4" strokeWidth={2.5} />
               Contact
@@ -449,13 +466,17 @@ export function PortfolioDetailPopup({
 }
 
 function ThumbButton({
-  label, src, active, onClick, themeColor, objectPosition, overlayIcon,
+  label, src, active, onClick, themeColor, inkColor = '#FFFFFF', objectPosition, overlayIcon,
 }: {
   label:           string
   src:             string
   active:          boolean
   onClick:         () => void
   themeColor:      string
+  /** Foreground color used for the label bar when the thumb is the
+   *  active selection (when active=true, the bar background flips to
+   *  themeColor). Defaults to white. */
+  inkColor?:       string
   objectPosition?: string
   /** When true, overlays an ArrowLeftRight glyph on the thumb so the
    *  user can tell at a glance this is the interactive comparison view,
@@ -498,7 +519,7 @@ function ThumbButton({
         className="absolute bottom-0 inset-x-0 text-center text-[10px] font-black uppercase tracking-wider py-0.5"
         style={{
           background: active ? themeColor : 'rgba(0,0,0,0.55)',
-          color: '#FFFFFF',
+          color: active ? inkColor : '#FFFFFF',
         }}
       >
         {label}

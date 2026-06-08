@@ -111,6 +111,11 @@ export type BeauticianProviderPublic = Pick<
   // mig 0078 — Per-profile theme accent color (hex #RRGGBB).
   // NULL = use the global default pink at render time.
   theme_color?: string | null
+  // mig 0202 — User-controlled button text color (hex #RRGGBB).
+  // Replaces the auto-luminance inkForTheme() heuristic. Default
+  // '#FFFFFF' is set at the DB level; this column also drives the
+  // hero-button icon stroke color on the public profile page.
+  button_text_color?: string | null
   // mig 0079 — Physical Visit Us location (opt-in)
   has_physical_location?: boolean
   latitude?:  number | null
@@ -286,6 +291,12 @@ export const BANNER_LIBRARY: Record<string, Partial<Record<BeauticianServiceOffe
       'https://ik.imagekit.io/7grri5v7d/phil%203.png?updatedAt=1771624551780',
       'https://ik.imagekit.io/7grri5v7d/phil%205.png?updatedAt=1771624516872',
       'https://ik.imagekit.io/7grri5v7d/beauty%20woman.png?updatedAt=1773339036755',
+      // 2026-06-08 — founder upload batch
+      'https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2012_37_59%20PM.png',
+      'https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2012_12_38%20PM.png',
+      'https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2012_11_04%20PM.png',
+      'https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2012_05_01%20PM.png',
+      'https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2012_04_32%20PM.png',
     ],
     nails: [
       'https://ik.imagekit.io/nepgaxllc/ChatGPT%20Image%20May%2025,%202026,%2003_57_21%20PM.png?updatedAt=1779699457510',

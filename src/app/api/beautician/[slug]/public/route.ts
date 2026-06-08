@@ -38,6 +38,10 @@ const PUBLIC_COLS = [
   'marketplace_categories',
   // mig 0078 per-profile theme accent color
   'theme_color',
+  // mig 0202 — per-profile button text / hero-icon ink color (default
+  // '#FFFFFF', overridden to e.g. chocolate '#5C3317' on cream themes
+  // so white text doesn't disappear against cream-coloured surfaces).
+  'button_text_color',
   // mig 0079 Visit Us physical location (opt-in)
   'has_physical_location','latitude','longitude',
   // mig 0081 hero text customisation

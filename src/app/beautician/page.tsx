@@ -3,7 +3,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  Building, Building2, ChevronRight, Home, Hotel, Plus, Search, Star, X,
+  Building, Building2, ChevronRight, Home, Hotel, Plus, Search, X,
   type LucideIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -64,17 +64,6 @@ function todayHoursLabel(hours: Record<string, string> | null | undefined): stri
   const [start, end] = range.split('-').map((s) => s.trim())
   if (!start || !end) return null
   return `${format12h(start)} – ${format12h(end)}`
-}
-
-// Deterministic placeholder rating per provider (4.3 – 4.9). Used only
-// when the row has no real rating yet.
-function placeholderRating(seed: string): number {
-  let h = 0
-  for (let i = 0; i < seed.length; i++) {
-    h = ((h << 5) - h) + seed.charCodeAt(i)
-    h |= 0
-  }
-  return 4.3 + ((Math.abs(h) % 70) / 100)
 }
 
 type ChipDef = { id: 'all' | BeauticianServiceOffered; label: string }
@@ -324,7 +313,6 @@ function BeauticianRowCard({
   onOpen: () => void
 }) {
   const eff      = effectiveAvailability(p)
-  const rating   = (p.rating ?? placeholderRating(p.slug)).toFixed(1)
   const hours    = todayHoursLabel(p.operating_hours) ?? 'By appointment'
 
   // Primary specialty label — prefer marketplace_categories[0], fall back
@@ -362,6 +350,19 @@ function BeauticianRowCard({
   const dotColor   = eff === 'online' ? '#22C55E' : eff === 'busy' ? '#F59E0B' : '#A1A1AA'
   const dotText    = eff === 'online' ? '#15803D' : eff === 'busy' ? '#A16207' : '#71717A'
   const dotLabel   = eff === 'online' ? 'Online'  : eff === 'busy' ? 'Busy'    : 'Offline'
+
+  // Card badges (home/hotel/villa pills + the right-column category
+  // badge) render in solid theme color — same palette the per-profile
+  // page uses for buttons. Text uses the provider's user-controlled
+  // button_text_color (default white, override e.g. chocolate #5C3317
+  // for cream themes), so contrast stays correct across light + dark
+  // themes without per-card color math. Falls back to Kita2u amber +
+  // white when the row has no theme / button_text_color yet.
+  const themeColor = p.theme_color        || '#FACC15'
+  const pillInk    = p.button_text_color  || '#FFFFFF'
+  const pillBg     = themeColor
+  const pillBorder = themeColor
+  const pillText   = pillInk
 
   return (
     <button
@@ -428,7 +429,12 @@ function BeauticianRowCard({
             {pills.slice(0, 3).map((pill) => (
               <span
                 key={pill.key}
-                className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 bg-[#FEF9C3] border border-[#FDE68A] text-[#854D0E] text-[12px] font-extrabold leading-none whitespace-nowrap"
+                className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 border text-[12px] font-extrabold leading-none whitespace-nowrap"
+                style={{
+                  background:  pillBg,
+                  borderColor: pillBorder,
+                  color:       pillText,
+                }}
               >
                 {pill.label}
               </span>
@@ -437,12 +443,26 @@ function BeauticianRowCard({
         )}
       </div>
 
-      {/* Right column — rating top, chevron bottom */}
+      {/* Right column — category badge top, chevron bottom. Star rating
+          removed 2026-06-08 per founder direction; the marketplace card
+          leads with the primary category (makeup / hair / nails / lashes
+          / brows / facial / etc.) tinted in the provider's theme so the
+          listing reads as "what they do" not "what they're rated". */}
       <div className="shrink-0 flex flex-col items-end justify-between h-[88px] py-0.5">
-        <span className="inline-flex items-center gap-0.5 text-[12px] font-extrabold text-bg">
-          <Star className="w-3 h-3" strokeWidth={2.5} fill="#FACC15" style={{ color: '#FACC15' }} aria-hidden />
-          {rating}
-        </span>
+        {mainLabel ? (
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 border text-[10px] font-extrabold leading-none whitespace-nowrap uppercase tracking-wide"
+            style={{
+              background:  pillBg,
+              borderColor: pillBorder,
+              color:       pillText,
+            }}
+          >
+            {mainLabel}
+          </span>
+        ) : (
+          <span aria-hidden />
+        )}
         <ChevronRight className="w-5 h-5" strokeWidth={2.75} aria-hidden style={{ color: '#FACC15' }} />
       </div>
     </button>
