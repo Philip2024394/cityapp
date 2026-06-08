@@ -6,6 +6,12 @@ import {
   ChevronLeft, Search as SearchIcon,
   UtensilsCrossed, MapPinned,
   Flower2, Scissors, Shirt, Sparkles, Wrench, SprayCan, X,
+  // Coming-soon tile icons — 15 future verticals on the marketplace
+  // roadmap (tattoo → parcel delivery). Each tile renders locked with
+  // a small Lock badge overlay so visitors see the pipeline without
+  // being able to tap into routes that don't exist yet.
+  Lock, Brush, Crown, Camera, Video, ChefHat, Cake, Flower,
+  Dumbbell, Heart, GraduationCap, PawPrint, Truck, PenTool, Car, Package,
   type LucideIcon,
 } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
@@ -48,14 +54,38 @@ const LIFESTYLE_TILES: ReadonlyArray<LifestyleTile> = [
   { id: 'tour',       label: 'Tour',    Icon: MapPinned,       href: '/tour' },
 ]
 
+// Coming-soon tiles — locked, grayed-out, non-navigable. Founder
+// direction 2026-06-08: surface the 15 next verticals on the roadmap
+// so the marketplace doesn't read as "8 categories, ceiling reached"
+// when in fact tattoo / barber / photography / catering / etc. are
+// the next batch. Each tile shows a small Lock badge top-right; tap
+// does nothing (cursor-not-allowed). Move an entry up to
+// LIFESTYLE_TILES + add an href when the underlying app ships.
+type ComingSoonTile = { id: string; label: string; Icon: LucideIcon }
+const COMING_SOON_TILES: ReadonlyArray<ComingSoonTile> = [
+  { id: 'tattoo',     label: 'Tattoo',    Icon: Brush          },
+  { id: 'barber',     label: 'Barber',    Icon: Crown          },
+  { id: 'photo',      label: 'Photo',     Icon: Camera         },
+  { id: 'video',      label: 'Video',     Icon: Video          },
+  { id: 'catering',   label: 'Catering',  Icon: ChefHat        },
+  { id: 'cake',       label: 'Cake',      Icon: Cake           },
+  { id: 'florist',    label: 'Florist',   Icon: Flower         },
+  { id: 'fitness',    label: 'Fitness',   Icon: Dumbbell       },
+  { id: 'yoga',       label: 'Yoga',      Icon: Heart          },
+  { id: 'tutoring',   label: 'Tutoring',  Icon: GraduationCap  },
+  { id: 'pet',        label: 'Pet care',  Icon: PawPrint       },
+  { id: 'mover',      label: 'Mover',     Icon: Truck          },
+  { id: 'tailor',     label: 'Tailor',    Icon: PenTool        },
+  { id: 'car-wash',   label: 'Car wash',  Icon: Car            },
+  { id: 'parcel',     label: 'Parcel',    Icon: Package        },
+]
+
 type Locale = 'id' | 'en'
 const STRINGS: Record<Locale, {
   back: string
-  hero: string
   rideSub: string
   parcelSub: string
   lifestyleLabel: string
-  signIn: string
   searchPlaceholder: string
   searchSuggestionsLabel: string
   searchNoMatch: string
@@ -64,11 +94,9 @@ const STRINGS: Record<Locale, {
 }> = {
   id: {
     back: 'Kembali',
-    hero: 'Apa yang bisa kami bantu hari ini?',
     rideSub: 'Penumpang',
     parcelSub: 'Kurir',
     lifestyleLabel: 'Gaya Hidup',
-    signIn: 'Masuk',
     searchPlaceholder: 'Apa yang kamu butuhkan? — potong rambut, pijat, tukang…',
     searchSuggestionsLabel: 'Saran',
     searchNoMatch: 'Tidak ada yang persis cocok.',
@@ -77,11 +105,9 @@ const STRINGS: Record<Locale, {
   },
   en: {
     back: 'Back',
-    hero: 'How can we help today?',
     rideSub: 'Passenger',
     parcelSub: 'Courier',
     lifestyleLabel: 'Lifestyle',
-    signIn: 'Sign in',
     searchPlaceholder: 'What do you need? — haircut, massage, repair…',
     searchSuggestionsLabel: 'Suggestions',
     searchNoMatch: 'No exact match.',
@@ -175,14 +201,6 @@ export default function ExploreClient() {
       </div>
 
       <section className="relative z-20 px-4 pt-3 pb-6 flex-1 max-w-xl mx-auto w-full">
-        {/* Hero question */}
-        <h1
-          className="text-center text-[20px] sm:text-[22px] font-extrabold leading-tight mb-4"
-          style={{ color: INK }}
-        >
-          {t.hero}
-        </h1>
-
         {/* INTENT SEARCH (Phase 1) — fuzzy-match the visitor's free text
             against the 11-intent table and surface ranked suggestions. The
             input is the primary above-the-fold action for visitors who
@@ -308,6 +326,50 @@ export default function ExploreClient() {
                 </Link>
               )
             })}
+            {/* Coming-soon tiles render in the same grid below the active
+                ones so the pipeline reads as one continuous list. Non-
+                navigable (div with aria-disabled), low-opacity, gray
+                icon pill instead of gold, and a small black Lock badge
+                in the top-right corner so the locked state is obvious. */}
+            {COMING_SOON_TILES.map((tile, i) => {
+              const Icon = tile.Icon
+              const j = LIFESTYLE_TILES.length + i
+              return (
+                <div
+                  key={tile.id}
+                  role="button"
+                  aria-disabled="true"
+                  aria-label={`${tile.label} — coming soon`}
+                  title="Coming soon"
+                  className="relative aspect-square flex flex-col items-center justify-center gap-1 p-1.5 rounded-2xl cursor-not-allowed"
+                  style={{
+                    background: '#FAFAFA',
+                    border: '1px solid #F1F1F1',
+                    boxShadow: CARD_SHADOW,
+                    opacity: 0.6,
+                    animation: `fadeUp 0.45s ease-out ${0.15 + j * 0.04}s both`,
+                  }}
+                >
+                  <span
+                    className="w-9 h-9 rounded-xl flex items-center justify-center"
+                    style={{ background: '#E5E5E5', border: '1px solid #D4D4D4' }}
+                    aria-hidden
+                  >
+                    <Icon className="w-5 h-5" strokeWidth={2.25} style={{ color: '#737373' }} />
+                  </span>
+                  <span className="text-[12px] font-bold text-gray-500 leading-tight">
+                    {tile.label}
+                  </span>
+                  <span
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: '#0A0A0A' }}
+                    aria-hidden
+                  >
+                    <Lock className="w-2.5 h-2.5" strokeWidth={3} style={{ color: '#FFFFFF' }} />
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -359,13 +421,6 @@ export default function ExploreClient() {
             >EN</button>
           </div>
 
-          <Link
-            href="/login"
-            className="font-extrabold hover:underline min-h-[44px] flex items-center"
-            style={{ color: INK }}
-          >
-            {t.signIn} →
-          </Link>
         </div>
       </section>
 

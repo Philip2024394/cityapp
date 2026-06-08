@@ -502,6 +502,19 @@ function Shell({ children }: { children: React.ReactNode }) {
               2u
             </span>
           </Link>
+
+          {/* Explicit Home icon on the right — the wordmark also routes
+              to /, but the founder wanted an unambiguous house-shaped
+              affordance on the marketplace card surface so visitors
+              browsing categories always have a one-tap escape back to
+              the Kita2u landing. 44px tap target meets WCAG 2.5.5. */}
+          <Link
+            href="/"
+            aria-label="Go to Kita2u home"
+            className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-full bg-white border border-[#E4E4E7] hover:bg-[#FEF9C3] hover:border-[#FACC15] active:scale-95 transition"
+          >
+            <Home className="w-5 h-5" strokeWidth={2.5} style={{ color: '#0A0A0A' }} />
+          </Link>
         </div>
       </header>
 

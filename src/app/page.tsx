@@ -32,21 +32,18 @@ const STRINGS: Record<Locale, {
   h1Line2: string
   lede: string
   enter: string
-  signIn: string
 }> = {
   id: {
     h1Line1: 'Dibuat untuk',
     h1Line2: 'kreator.',
     lede: 'Pertumbuhan dari media sosial — tanpa platform raksasa mengambil keuntunganmu. Audiens, harga, dan pelanggan tetap milikmu, 24 jam sehari.',
     enter: 'Masuk Aplikasi',
-    signIn: 'Masuk',
   },
   en: {
     h1Line1: 'Built for',
     h1Line2: 'creators.',
     lede: 'Social media growth without the giants taking your profit. Your audience, your prices, your customers — kept forever, growing 24 hours a day.',
     enter: 'Enter App',
-    signIn: 'Sign in',
   },
 }
 
@@ -184,17 +181,11 @@ export default function LandingPage() {
             <span style={{ color: '#FACC15' }}>2u</span>
           </Link>
           <div className="flex items-center gap-4 sm:gap-5">
-            <nav className="hidden sm:flex items-center gap-5 text-[14px] font-extrabold text-[#0A0A0A]">
+            <nav className="flex items-center gap-3 sm:gap-5 text-[13px] sm:text-[14px] font-extrabold text-[#0A0A0A]">
               <Link href="/how-it-works"   className="hover:text-brand transition">How it works</Link>
-              <Link href="/pricing"        className="hover:text-brand transition">Pricing</Link>
-              <Link href="/custom-domains" className="hover:text-brand transition">Custom domains</Link>
+              <Link href="/pricing"        className="hidden sm:inline hover:text-brand transition">Pricing</Link>
+              <Link href="/custom-domains" className="hidden sm:inline hover:text-brand transition">Custom domains</Link>
             </nav>
-            <Link
-              href="/login"
-              className="text-brand hover:underline font-extrabold text-[14px] shrink-0"
-            >
-              {t.signIn} →
-            </Link>
           </div>
         </div>
       </header>
@@ -511,7 +502,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {[
               { headline: 'Your link, your funnel',
-                body: 'Every TikTok bio, Instagram link-tree, WhatsApp Status, printed flyer — they all feed your Kita2u page, not a marketplace.' },
+                body: 'Every TikTok bio, WhatsApp Status, printed flyer — they all feed your Kita2u page, not a marketplace.' },
               { headline: 'Your customer, your inbox',
                 body: 'Direct WhatsApp from the moment they tap. Build a contact list you actually own and can message again.' },
               { headline: 'Your brand, your rules',

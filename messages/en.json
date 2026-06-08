@@ -914,5 +914,83 @@
     "timeHours": "{n}h ago",
     "timeDays": "{n}d ago",
     "timeWeeks": "{n}w ago"
+  },
+  "howItWorks": {
+    "header": {
+      "startTrial": "Start free trial"
+    },
+    "hero": {
+      "line1": "The traffic is looking.",
+      "line2a": "The question is — ",
+      "line2b": "can you be found?",
+      "body": "Your customers are scrolling, searching, asking — every second of every day. Kita2u puts your business in their hands, on their feed, and at the top of Google so the answer is always yes."
+    },
+    "setup": {
+      "line1": "Three steps.",
+      "line2": "Done before your coffee.",
+      "intro": "Upload, copy, share. That's it — and the platform does the SEO work in the background while you get on with the day.",
+      "step1": {
+        "headline": "Upload your products",
+        "body": "Add photos, prices, hours. No designer needed — your page builds itself as you fill in the blanks."
+      },
+      "step2": {
+        "headline": "Copy your link",
+        "body": "One short kita2u link is yours instantly. Paste it anywhere — bio, business card, status, flyer."
+      },
+      "step3": {
+        "headline": "Share to every social",
+        "body": "TikTok, Instagram, Facebook, WhatsApp — one link, every platform. Your customers tap once and land directly on you."
+      }
+    },
+    "seo": {
+      "line1": "Your link grows.",
+      "line2": "Google does the work.",
+      "body1": "Every day, Google crawls your Kita2u page. The more your link is shared, the higher it climbs in search. After a few weeks, customers start finding you without you doing anything — they searched for your service, your city, your category, and you were already there.",
+      "body2a": "That's the difference between an account on someone else's platform and a page that's ",
+      "body2strong": "yours",
+      "body2b": ". Yours grows. Yours compounds. Yours stays.",
+      "card": {
+        "eyebrow": "Search visibility",
+        "title": "Climbing daily",
+        "week1": "Week 1",
+        "week4": "Week 4",
+        "week12": "Week 12",
+        "disclaimer": "Indicative. Actual ranking depends on category, geography, and how often you share your link."
+      }
+    },
+    "goodbye": {
+      "eyebrow": "Time to wave goodbye",
+      "line1": "Stop renting your customers",
+      "line2a": "from ",
+      "line2b": "someone else's platform.",
+      "body": "The marketplace giants take a cut of every sale, hide your customers behind their algorithm, and bury you the moment they change the rules. Your business deserves a real address — not a stall in someone else's mall.",
+      "tagline": "Your link. Your customers. Your rules. Always."
+    },
+    "pillars": {
+      "headlinePrefix": "Why builders pick",
+      "intro": "The infrastructure of a serious app. The price of one weekly coffee. The team that ships your edits the same day.",
+      "global": {
+        "headline": "Proven across the globe",
+        "body": "High-performance Kita2u pages live in dozens of countries — and rank on the first Google page within weeks."
+      },
+      "seo": {
+        "headline": "Top Google SEO build",
+        "body": "Every page is optimised end to end — speed, mobile, semantic markup, structured data. You inherit it for free."
+      },
+      "team": {
+        "headline": "A team that stays close",
+        "body": "Real humans on WhatsApp, answering within hours. Tell us what you want — chances are we will adjust it the same day."
+      }
+    },
+    "cta": {
+      "line1": "Let's get you on the",
+      "line2": "correct path.",
+      "bodyA": "Your customers are out there, looking. Five minutes is all you need to make sure they find ",
+      "bodyStrong": "you",
+      "bodyB": ".",
+      "startTrial": "Start 7-day free trial",
+      "seePlans": "See plans",
+      "disclaimer": "No credit card required · Cancel in one tap from your dashboard side drawer"
+    }
   }
 }

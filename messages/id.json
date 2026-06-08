@@ -914,5 +914,83 @@
     "timeHours": "{n}j yang lalu",
     "timeDays": "{n}h yang lalu",
     "timeWeeks": "{n}mg yang lalu"
+  },
+  "howItWorks": {
+    "header": {
+      "startTrial": "Mulai uji coba gratis"
+    },
+    "hero": {
+      "line1": "Trafficnya mencari.",
+      "line2a": "Pertanyaannya — ",
+      "line2b": "bisakah kamu ditemukan?",
+      "body": "Pelangganmu sedang scroll, mencari, bertanya — setiap detik setiap hari. Kita2u menaruh bisnismu di genggaman mereka, di feed mereka, dan di puncak Google supaya jawabannya selalu iya."
+    },
+    "setup": {
+      "line1": "Tiga langkah.",
+      "line2": "Selesai sebelum kopimu habis.",
+      "intro": "Upload, salin, bagikan. Itu saja — platform yang mengurus SEO di belakang layar selagi kamu lanjut beraktivitas.",
+      "step1": {
+        "headline": "Upload produkmu",
+        "body": "Tambahkan foto, harga, jam buka. Tanpa perlu desainer — halamanmu terbentuk sendiri saat kamu mengisi datanya."
+      },
+      "step2": {
+        "headline": "Salin link-mu",
+        "body": "Satu link kita2u pendek langsung jadi milikmu. Tempel di mana saja — bio, kartu nama, status, brosur."
+      },
+      "step3": {
+        "headline": "Bagikan ke semua sosial",
+        "body": "TikTok, Instagram, Facebook, WhatsApp — satu link, semua platform. Pelangganmu cukup tap sekali dan langsung mendarat di kamu."
+      }
+    },
+    "seo": {
+      "line1": "Link-mu tumbuh.",
+      "line2": "Google yang kerjakan.",
+      "body1": "Setiap hari, Google merayapi halaman Kita2u-mu. Semakin sering link-mu dibagikan, semakin tinggi posisinya di pencarian. Setelah beberapa minggu, pelanggan mulai menemukanmu tanpa kamu lakukan apa-apa — mereka mencari jasamu, kotamu, kategorimu, dan kamu sudah ada di sana.",
+      "body2a": "Itulah bedanya akun di platform orang lain dengan halaman yang ",
+      "body2strong": "milikmu sendiri",
+      "body2b": ". Milikmu tumbuh. Milikmu berlipat. Milikmu tinggal.",
+      "card": {
+        "eyebrow": "Visibilitas pencarian",
+        "title": "Naik setiap hari",
+        "week1": "Minggu 1",
+        "week4": "Minggu 4",
+        "week12": "Minggu 12",
+        "disclaimer": "Bersifat indikatif. Peringkat sebenarnya tergantung kategori, lokasi, dan seberapa sering kamu membagikan link-mu."
+      }
+    },
+    "goodbye": {
+      "eyebrow": "Saatnya pamit",
+      "line1": "Berhenti menyewa pelangganmu",
+      "line2a": "dari ",
+      "line2b": "platform orang lain.",
+      "body": "Raksasa marketplace memotong setiap penjualanmu, menyembunyikan pelanggan di balik algoritma mereka, dan menenggelamkan kamu begitu aturannya berubah. Bisnismu pantas punya alamat sungguhan — bukan lapak di mall orang lain.",
+      "tagline": "Link-mu. Pelangganmu. Aturanmu. Selalu."
+    },
+    "pillars": {
+      "headlinePrefix": "Kenapa para builder memilih",
+      "intro": "Infrastruktur kelas aplikasi serius. Harganya cuma satu kopi mingguan. Tim yang merilis perubahanmu di hari yang sama.",
+      "global": {
+        "headline": "Terbukti di seluruh dunia",
+        "body": "Halaman Kita2u berperforma tinggi sudah aktif di puluhan negara — dan ranking di halaman pertama Google dalam hitungan minggu."
+      },
+      "seo": {
+        "headline": "Build SEO Google teratas",
+        "body": "Setiap halaman dioptimalkan tuntas — kecepatan, mobile, semantic markup, structured data. Semuanya jadi milikmu, gratis."
+      },
+      "team": {
+        "headline": "Tim yang selalu dekat",
+        "body": "Manusia sungguhan di WhatsApp, membalas dalam hitungan jam. Bilang apa yang kamu mau — kemungkinan besar kami sesuaikan di hari yang sama."
+      }
+    },
+    "cta": {
+      "line1": "Mari bawa kamu ke",
+      "line2": "jalur yang benar.",
+      "bodyA": "Pelangganmu di luar sana, sedang mencari. Lima menit saja sudah cukup untuk memastikan mereka menemukan ",
+      "bodyStrong": "kamu",
+      "bodyB": ".",
+      "startTrial": "Mulai uji coba gratis 7 hari",
+      "seePlans": "Lihat paket",
+      "disclaimer": "Tanpa kartu kredit · Berhenti kapan saja dengan satu tap dari side drawer dashboard"
+    }
   }
 }
