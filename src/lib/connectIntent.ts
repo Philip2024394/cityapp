@@ -23,13 +23,28 @@ export type ConnectIntentSource =
   | 'massage_profile' | 'home_clean_profile' | 'tour_profile'
   | 'facial_profile' | 'skincare_profile' | 'rentals_profile'
   | 'property_profile' | 'places_profile' | 'bus_profile'
+  | 'tattoo_profile'
+  | 'barber_profile'
+  | 'photo_profile'
+  | 'video_profile'
+  | 'catering_profile'
+  | 'cake_profile'
+  | 'florist_profile'
+  | 'fitness_profile'
+  | 'yoga_profile'
+  | 'tutoring_profile'
+  | 'pet_profile'
+  | 'mover_profile'
+  | 'tailor_profile'
+  | 'carwash_profile'
+  | 'parcel_profile'
   | 'other'
 
 export type ConnectIntentVertical =
   | 'rider' | 'car'
   | 'beautician' | 'handyman' | 'laundry' | 'massage' | 'home-clean'
   | 'tour-guide' | 'facial' | 'skincare' | 'rentals' | 'property'
-  | 'places'
+  | 'places' | 'tattoo' | 'barber' | 'photo' | 'video' | 'catering' | 'cake' | 'florist' | 'fitness' | 'yoga' | 'tutoring' | 'pet' | 'mover' | 'tailor' | 'carwash' | 'parcel'
 
 export function fireConnectIntent(
   providerId: string,

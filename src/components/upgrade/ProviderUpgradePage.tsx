@@ -23,7 +23,7 @@ export type ProviderUpgradeProps = {
   /** Vertical label used in the H1, e.g. "Massage Therapist". */
   verticalLabel: string
   /** Vertical slug for the product enum prefix, e.g. "massage". */
-  verticalSlug: 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean'
+  verticalSlug: 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean' | 'tattoo' | 'barber' | 'photo' | 'video' | 'catering' | 'cake' | 'florist' | 'fitness' | 'yoga' | 'tutoring' | 'pet' | 'mover' | 'tailor' | 'carwash' | 'parcel'
   /** URL to return to on activation, e.g. "/dashboard/massage". */
   dashboardHref: string
   /** Page to go back to on the ← link, e.g. "/dashboard/massage". */

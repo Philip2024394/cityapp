@@ -41,7 +41,7 @@ const GOLD_LINE   = 'rgba(250,204,21,0.35)'
 // instead of routing here.
 type LifestyleId =
   | 'food' | 'tour' | 'massage' | 'facial'
-  | 'beautician' | 'laundry' | 'handyman' | 'home-clean'
+  | 'beautician' | 'laundry' | 'handyman' | 'home-clean' | 'tattoo' | 'barber' | 'photo' | 'video' | 'catering' | 'cake' | 'florist' | 'fitness' | 'yoga' | 'tutoring' | 'pet' | 'mover' | 'tailor' | 'car-wash' | 'parcel'
 type LifestyleTile = { id: LifestyleId; label: string; Icon: LucideIcon; href: string }
 const LIFESTYLE_TILES: ReadonlyArray<LifestyleTile> = [
   { id: 'food',       label: 'Food',    Icon: UtensilsCrossed, href: '/food' },
@@ -52,33 +52,31 @@ const LIFESTYLE_TILES: ReadonlyArray<LifestyleTile> = [
   { id: 'home-clean', label: 'Clean',   Icon: SprayCan,        href: '/home-clean' },
   { id: 'facial',     label: 'Facial',  Icon: Sparkles,        href: '/facial' },
   { id: 'tour',       label: 'Tour',    Icon: MapPinned,       href: '/tour' },
+  { id: 'tattoo',     label: 'Tattoo',  Icon: Brush,           href: '/tattoo' },
+  { id: 'barber',     label: 'Barber',  Icon: Crown,           href: '/barber' },
+  { id: 'photo',      label: 'Photo',   Icon: Camera,          href: '/photo' },
+  { id: 'video',      label: 'Video',   Icon: Video,           href: '/video' },
+  { id: 'catering',   label: 'Catering',Icon: ChefHat,         href: '/catering' },
+  { id: 'cake',       label: 'Cake',    Icon: Cake,            href: '/cake' },
+  { id: 'florist',    label: 'Florist', Icon: Flower,          href: '/florist' },
+  { id: 'fitness',    label: 'Fitness', Icon: Dumbbell,        href: '/fitness' },
+  { id: 'yoga',       label: 'Yoga',    Icon: Heart,           href: '/yoga' },
+  { id: 'tutoring',   label: 'Tutoring',Icon: GraduationCap,   href: '/tutoring' },
+  { id: 'pet',        label: 'Pet care',Icon: PawPrint,        href: '/pet' },
+  { id: 'mover',      label: 'Mover',   Icon: Truck,           href: '/mover' },
+  { id: 'tailor',     label: 'Tailor',  Icon: PenTool,         href: '/tailor' },
+  { id: 'car-wash',   label: 'Car wash',Icon: Car,             href: '/car-wash' },
+  { id: 'parcel',     label: 'Parcel',  Icon: Package,         href: '/parcel' },
 ]
 
-// Coming-soon tiles — locked, grayed-out, non-navigable. Founder
-// direction 2026-06-08: surface the 15 next verticals on the roadmap
-// so the marketplace doesn't read as "8 categories, ceiling reached"
-// when in fact tattoo / barber / photography / catering / etc. are
-// the next batch. Each tile shows a small Lock badge top-right; tap
-// does nothing (cursor-not-allowed). Move an entry up to
-// LIFESTYLE_TILES + add an href when the underlying app ships.
+// Coming-soon tiles — historically the locked-tile rail surfaced the
+// next batch of verticals. After parcel shipped 2026-06-09 the rail
+// is EMPTY (all 15 activation-series verticals live). We keep the
+// rail render block in place with an empty array so the next batch
+// of locked tiles can be added back here without re-wiring the JSX.
+// Founder direction: keep the dormant rail rather than rip it out.
 type ComingSoonTile = { id: string; label: string; Icon: LucideIcon }
-const COMING_SOON_TILES: ReadonlyArray<ComingSoonTile> = [
-  { id: 'tattoo',     label: 'Tattoo',    Icon: Brush          },
-  { id: 'barber',     label: 'Barber',    Icon: Crown          },
-  { id: 'photo',      label: 'Photo',     Icon: Camera         },
-  { id: 'video',      label: 'Video',     Icon: Video          },
-  { id: 'catering',   label: 'Catering',  Icon: ChefHat        },
-  { id: 'cake',       label: 'Cake',      Icon: Cake           },
-  { id: 'florist',    label: 'Florist',   Icon: Flower         },
-  { id: 'fitness',    label: 'Fitness',   Icon: Dumbbell       },
-  { id: 'yoga',       label: 'Yoga',      Icon: Heart          },
-  { id: 'tutoring',   label: 'Tutoring',  Icon: GraduationCap  },
-  { id: 'pet',        label: 'Pet care',  Icon: PawPrint       },
-  { id: 'mover',      label: 'Mover',     Icon: Truck          },
-  { id: 'tailor',     label: 'Tailor',    Icon: PenTool        },
-  { id: 'car-wash',   label: 'Car wash',  Icon: Car            },
-  { id: 'parcel',     label: 'Parcel',    Icon: Package        },
-]
+const COMING_SOON_TILES: ReadonlyArray<ComingSoonTile> = []
 
 type Locale = 'id' | 'en'
 const STRINGS: Record<Locale, {

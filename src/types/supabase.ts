@@ -2458,6 +2458,3681 @@ export type Database = {
         }
         Relationships: []
       }
+      tattoo_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      tattoo_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          tattoo_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          tattoo_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          tattoo_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tattoo_bookings_tattoo_id_fkey"
+            columns: ["tattoo_id"]
+            isOneToOne: false
+            referencedRelation: "tattoo_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      barber_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      barber_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          barber_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          barber_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          barber_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_bookings_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barber_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      photo_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          photo_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          photo_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          photo_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_bookings_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "photo_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      video_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          video_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          video_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          video_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_bookings_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cake_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      cake_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          cake_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          cake_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          cake_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cake_bookings_cake_id_fkey"
+            columns: ["cake_id"]
+            isOneToOne: false
+            referencedRelation: "cake_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      florist_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      florist_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          florist_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          florist_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          florist_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "florist_bookings_florist_id_fkey"
+            columns: ["florist_id"]
+            isOneToOne: false
+            referencedRelation: "florist_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fitness_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      fitness_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          fitness_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          fitness_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          fitness_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fitness_bookings_fitness_id_fkey"
+            columns: ["fitness_id"]
+            isOneToOne: false
+            referencedRelation: "fitness_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yoga_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      yoga_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          yoga_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          yoga_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          yoga_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yoga_bookings_yoga_id_fkey"
+            columns: ["yoga_id"]
+            isOneToOne: false
+            referencedRelation: "yoga_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutoring_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      tutoring_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          tutoring_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          tutoring_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          tutoring_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutoring_bookings_tutoring_id_fkey"
+            columns: ["tutoring_id"]
+            isOneToOne: false
+            referencedRelation: "tutoring_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      pet_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          pet_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          pet_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          pet_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_bookings_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mover_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      mover_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          mover_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          mover_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          mover_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mover_bookings_mover_id_fkey"
+            columns: ["mover_id"]
+            isOneToOne: false
+            referencedRelation: "mover_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tailor_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      tailor_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          tailor_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          tailor_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          tailor_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tailor_bookings_tailor_id_fkey"
+            columns: ["tailor_id"]
+            isOneToOne: false
+            referencedRelation: "tailor_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carwash_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      carwash_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          carwash_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          carwash_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          carwash_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carwash_bookings_carwash_id_fkey"
+            columns: ["carwash_id"]
+            isOneToOne: false
+            referencedRelation: "carwash_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcel_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      parcel_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          parcel_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          parcel_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          parcel_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_bookings_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcel_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catering_providers: {
+        Row: {
+          availability: string
+          bio: string
+          busy_dates: string[]
+          busy_time_slots: Json
+          button_text_color: string | null
+          certifications: string[] | null
+          city: string | null
+          contact_email: string | null
+          contact_form_enabled: boolean
+          country_code: string
+          cover_image_url: string | null
+          created_at: string
+          custom_services_offered: string[] | null
+          day_rate_idr: number | null
+          display_name: string
+          facebook_url: string | null
+          gallery_image_urls: string[] | null
+          has_own_tools: boolean
+          has_physical_location: boolean
+          hero_text: Json | null
+          hourly_rate_idr: number | null
+          id: string
+          inquiry_count: number
+          instagram_url: string | null
+          is_mock: boolean
+          kakaotalk_id: string | null
+          ktp_image_url: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          latitude: number | null
+          line_id: string | null
+          longitude: number | null
+          mock_hidden_at: string | null
+          operating_hours: Json | null
+          paid_until: string | null
+          profile_image_url: string | null
+          promo_text: string | null
+          rating: number | null
+          rating_count: number
+          rejected_reason: string | null
+          service_area_notes: string | null
+          service_photos: Json
+          slug: string
+          snapchat_url: string | null
+          specialties: string[]
+          status: string
+          subscription_status: string
+          telegram_handle: string | null
+          theme_color: string | null
+          tiktok_url: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+          visitor_count: number
+          website_url: string | null
+          wechat_id: string | null
+          whatsapp_e164: string
+          x_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          availability?: string
+          bio: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          availability?: string
+          bio?: string
+          busy_dates?: string[]
+          busy_time_slots?: Json
+          button_text_color?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          contact_email?: string | null
+          contact_form_enabled?: boolean
+          country_code?: string
+          cover_image_url?: string | null
+          created_at?: string
+          custom_services_offered?: string[] | null
+          day_rate_idr?: number | null
+          display_name?: string
+          facebook_url?: string | null
+          gallery_image_urls?: string[] | null
+          has_own_tools?: boolean
+          has_physical_location?: boolean
+          hero_text?: Json | null
+          hourly_rate_idr?: number | null
+          id?: string
+          inquiry_count?: number
+          instagram_url?: string | null
+          is_mock?: boolean
+          kakaotalk_id?: string | null
+          ktp_image_url?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          latitude?: number | null
+          line_id?: string | null
+          longitude?: number | null
+          mock_hidden_at?: string | null
+          operating_hours?: Json | null
+          paid_until?: string | null
+          profile_image_url?: string | null
+          promo_text?: string | null
+          rating?: number | null
+          rating_count?: number
+          rejected_reason?: string | null
+          service_area_notes?: string | null
+          service_photos?: Json
+          slug?: string
+          snapchat_url?: string | null
+          specialties?: string[]
+          status?: string
+          subscription_status?: string
+          telegram_handle?: string | null
+          theme_color?: string | null
+          tiktok_url?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          visitor_count?: number
+          website_url?: string | null
+          wechat_id?: string | null
+          whatsapp_e164?: string
+          x_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      catering_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_whatsapp: string
+          catering_id: string
+          id: string
+          notes: string | null
+          requested_date: string
+          requested_time: string
+          service_name: string | null
+          status: string
+          submitter_ip_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_whatsapp: string
+          catering_id: string
+          id?: string
+          notes?: string | null
+          requested_date: string
+          requested_time: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_whatsapp?: string
+          catering_id?: string
+          id?: string
+          notes?: string | null
+          requested_date?: string
+          requested_time?: string
+          service_name?: string | null
+          status?: string
+          submitter_ip_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catering_bookings_catering_id_fkey"
+            columns: ["catering_id"]
+            isOneToOne: false
+            referencedRelation: "catering_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_clean_bookings: {
         Row: {
           created_at: string

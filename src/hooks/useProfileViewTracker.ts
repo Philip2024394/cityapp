@@ -18,7 +18,7 @@ import { useEffect } from 'react'
 type Source = 'direct' | 'wa_share' | 'social' | 'qr'
 
 export function useProfileViewTracker(args: {
-  providerType: 'driver' | 'bike_rental' | 'tour_guide' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean'
+  providerType: 'driver' | 'bike_rental' | 'tour_guide' | 'massage' | 'beautician' | 'laundry' | 'handyman' | 'home_clean' | 'tattoo' | 'barber' | 'photo' | 'video' | 'catering' | 'cake' | 'florist' | 'fitness' | 'yoga' | 'tutoring' | 'pet' | 'mover' | 'tailor' | 'carwash' | 'parcel'
   providerId:   string | null | undefined
   source?:      Source
 }) {

@@ -797,6 +797,141 @@
       "searchPlaceholder": "Search handymen — name, area…",
       "searchAria": "Search handymen"
     },
+    "tattoo": {
+      "metaTitle": "Tattoo Artists · Kita2u",
+      "metaDescription": "Tattoo artists near you — fineline, blackwork, traditional, custom design.",
+      "title": "Tattoo Artists",
+      "subtitle": "Custom tattoos · Fineline · Blackwork · Cover-up · Flash",
+      "listAria": "List your tattoo studio",
+      "searchPlaceholder": "Search tattoo artists — name, studio, style…",
+      "searchAria": "Search tattoo artists"
+    },
+    "barber": {
+      "metaTitle": "Barbers · Kita2u",
+      "metaDescription": "Barbershops near you — classic cut, fade, beard trim, hot towel shave, kids cut.",
+      "title": "Barbers",
+      "subtitle": "Classic cut · Fade · Beard trim · Hot towel · Walk-in welcome",
+      "listAria": "List your barbershop",
+      "searchPlaceholder": "Search barbers — name, shop, service…",
+      "searchAria": "Search barbers"
+    },
+    "photo": {
+      "metaTitle": "Photographers · Kita2u",
+      "metaDescription": "Photographers near you — wedding, prewedding, family, product, editorial, food.",
+      "title": "Photographers",
+      "subtitle": "Wedding · Prewedding · Product · Editorial · On-location welcome",
+      "listAria": "List your photography studio",
+      "searchPlaceholder": "Search photographers — name, studio, genre…",
+      "searchAria": "Search photographers"
+    },
+    "video": {
+      "metaTitle": "Videographers · Kita2u",
+      "metaDescription": "Videographers near you — wedding cinematic, music video, brand commercial, social reel, drone aerial.",
+      "title": "Videographers",
+      "subtitle": "Cinematic stories worth pressing play — Wedding · Brand · Music · Drone-ready",
+      "listAria": "List your video production studio",
+      "searchPlaceholder": "Search videographers — name, studio, genre…",
+      "searchAria": "Search videographers"
+    },
+    "catering": {
+      "metaTitle": "Catering · Kita2u",
+      "metaDescription": "Catering businesses near you — nasi box, buffet, tumpeng, snack box. Halal, Padang, Javanese, vegan.",
+      "title": "Catering",
+      "subtitle": "Home-style cooking that gets seconds — Nasi Box · Buffet · Tumpeng · Halal",
+      "listAria": "List your catering business",
+      "searchPlaceholder": "Search catering — name, city, menu…",
+      "searchAria": "Search catering"
+    },
+    "cake": {
+      "metaTitle": "Cake & Bakery · Kita2u",
+      "metaDescription": "Cake & bakery businesses near you — birthday custom, Korean bento, dessert table, cookies hampers. Halal, custom 3D, ready stock.",
+      "title": "Cake & Bakery",
+      "subtitle": "Custom cakes that earn the photo opportunity — Birthday · Wedding · Korean Bento · Dessert Table",
+      "listAria": "List your cake & bakery business",
+      "searchPlaceholder": "Search cake — name, city, category…",
+      "searchAria": "Search cake & bakery businesses"
+    },
+    "florist": {
+      "metaTitle": "Florist · Kita2u",
+      "metaDescription": "Florist businesses near you — hand bouquet wisuda, standing flower grand opening, box arrangement anniversary, premium import. Same-day delivery, custom message card.",
+      "title": "Florist",
+      "subtitle": "Arrangements worth waiting on the doorstep for — Hand Bouquet · Standing · Box · Wisuda",
+      "listAria": "List your florist business",
+      "searchPlaceholder": "Search florist — name, city, category…",
+      "searchAria": "Search florist businesses"
+    },
+    "fitness": {
+      "metaTitle": "Personal Trainer · Kita2u",
+      "metaDescription": "Personal trainers near you — strength, HIIT, yoga, pilates, boxing, fat loss, muscle gain. Sessions di gym/rumah/outdoor, package discount 10-pack, monthly coaching + nutrition.",
+      "title": "Personal Trainer",
+      "subtitle": "Results that stick — because the coach keeps showing up. Strength · HIIT · Fat Loss · Muscle Gain",
+      "listAria": "List as a personal trainer",
+      "searchPlaceholder": "Search coach — name, city, training type…",
+      "searchAria": "Search personal trainers"
+    },
+    "yoga": {
+      "metaTitle": "Yoga Teacher · Kita2u",
+      "metaDescription": "Yoga teachers & studios near you — vinyasa, yin, hatha, ashtanga, prenatal, aerial, hot yoga. Studio/private/online classes, trial drop-in, 10-pack discount, monthly unlimited.",
+      "title": "Yoga Teacher",
+      "subtitle": "Find your breath. Bring your mat — or we'll lend you one. Vinyasa · Yin · Hatha · Prenatal",
+      "listAria": "List as a yoga teacher",
+      "searchPlaceholder": "Search yoga teacher — name, city, style…",
+      "searchAria": "Search yoga teachers"
+    },
+    "tutoring": {
+      "metaTitle": "Tutor · Kita2u",
+      "metaDescription": "Private tutors near you — matematika, fisika, kimia, biologi, english, mengaji, UTBK SBMPTN prep, SAT TOEFL IELTS, Cambridge IB. Per-pertemuan + paket bundle, datang ke rumah / online / studio, gratis trial 30 menit.",
+      "title": "Tutor",
+      "subtitle": "Higher grades. Real understanding. Homework done. Matematika · Fisika · UTBK · English",
+      "listAria": "List as a tutor",
+      "searchPlaceholder": "Search tutor — name, city, subject…",
+      "searchAria": "Search tutors"
+    },
+    "pet": {
+      "metaTitle": "Pet Care · Kita2u",
+      "metaDescription": "Independent pet groomers and pet sitters near you — kucing, anjing, kelinci, hamster, burung, exotic. Grooming bath, full grooming, nail trim, ear cleaning, pet hotel ber-AC, pet sitting datang ke rumah, daycare, training. Antar-jemput dalam kota, vaksin wajib untuk boarding, peralatan steril.",
+      "title": "Pet Care",
+      "subtitle": "Your furry family member deserves the spa treatment. Grooming · Hotel · Sitting · Training",
+      "listAria": "List your pet care business",
+      "searchPlaceholder": "Search pet care — name, city, service…",
+      "searchAria": "Search pet care"
+    },
+    "mover": {
+      "metaTitle": "Mover · Moving Service · Kita2u",
+      "metaDescription": "Independent moving services near you — Grandmax, Pickup, Box CDD, Wing, Tronton. Small home moves, full house relocations, office moves, single furniture pickups, interstate cross-Java. Packing material included, all-risk insurance available, professional 1-2 crew, FREE survey for full-house moves.",
+      "title": "Mover · Moving Service",
+      "subtitle": "Stress-free moves. We handle the heavy lifting. Grandmax · Pickup · Box · Interstate",
+      "listAria": "List your moving service",
+      "searchPlaceholder": "Search movers — name, city, vehicle…",
+      "searchAria": "Search movers"
+    },
+    "tailor": {
+      "metaTitle": "Tailor · Custom Clothing · Kita2u",
+      "metaDescription": "Independent tailors / penjahit near you — kebaya bridal, jas pria custom, kemeja, gaun pesta, seragam kantor, batik, streetwear, vermak/alteration. Customer-provides-fabric or stock fabric available, 2-3x fitting standard, lead time 1-6 weeks, home-visit measurement available. FREE design consultation via WhatsApp.",
+      "title": "Tailor · Custom Clothing",
+      "subtitle": "Custom-fit clothes that earn their hanger. Kebaya · Jas · Vermak · Seragam",
+      "listAria": "List your tailor business",
+      "searchPlaceholder": "Search tailors — name, city, garment…",
+      "searchAria": "Search tailors"
+    },
+    "carWash": {
+      "metaTitle": "Car Wash · Cuci Mobil & Motor · Kita2u",
+      "metaDescription": "Independent car washes / cuci mobil & motor near you — motor body express, mobil body + dalam, detailing premium SUV, polish wax, ceramic coating 9H with garansi 1 tahun, engine bay, interior shampoo. Lokasi cuci or panggilan ke rumah / hotel valet available. Member card 10x cuci diskon. FREE estimate via WhatsApp.",
+      "title": "Car Wash · Cuci Mobil & Motor",
+      "subtitle": "A clean ride. A better day. Body · Detailing · Poles · Coating",
+      "listAria": "List your car wash business",
+      "searchPlaceholder": "Search car washes — name, city, service…",
+      "searchAria": "Search car washes"
+    },
+    "parcel": {
+      "metaTitle": "Parcel · Kurir Antar Barang · Same-Day Delivery · Kita2u",
+      "metaDescription": "Independent parcel couriers / jasa kurir antar barang near you — motor dalam kota (max 20kg), pickup van antar kota (max 300kg), box CDD e-commerce bulk pickup, sepeda kampung antar, same-day, next-day, instant 60-menit garansi, dokumen express, e-commerce return. GPS share real-time, COD tersedia, asuransi paket berharga. Pickup di lokasi pengirim. FREE quote via WhatsApp.",
+      "title": "Parcel · Kurir Antar Barang",
+      "subtitle": "Get it there. Fast. Same-Day · Instant 60 Menit · Antar Kota · COD",
+      "listAria": "List your parcel courier business",
+      "searchPlaceholder": "Search couriers — name, city, vehicle…",
+      "searchAria": "Search parcel couriers"
+    },
     "laundry": {
       "metaTitle": "Laundry · Kita2u",
       "metaDescription": "Laundry shops near you — pickup, drop-off, per-kg pricing.",
