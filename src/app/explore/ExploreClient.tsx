@@ -199,6 +199,18 @@ export default function ExploreClient() {
       </div>
 
       <section className="relative z-20 px-4 pt-3 pb-6 flex-1 max-w-xl mx-auto w-full">
+        {/* Above-search illustration — founder upload 2026-06-09. Sits
+            directly above the intent-search input so visitors see a
+            visual hook before the search prompt. Centered, ~220-260px
+            so it punctuates the section without crowding the bar. */}
+        <img
+          src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2005_06_34%20PM.png?updatedAt=1780913211870"
+          alt=""
+          aria-hidden
+          loading="lazy"
+          decoding="async"
+          className="mx-auto block max-w-[220px] sm:max-w-[260px] h-auto mb-4"
+        />
         {/* INTENT SEARCH (Phase 1) — fuzzy-match the visitor's free text
             against the 11-intent table and surface ranked suggestions. The
             input is the primary above-the-fold action for visitors who

@@ -353,6 +353,17 @@ export default function LandingPage() {
       <section className="reveal-on-scroll relative z-10 px-6 py-12 bg-white">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="text-center space-y-2">
+            {/* Section illustration — founder upload 2026-06-09. Sits
+                above the "Apps we build for you" headline so the
+                10-vertical grid opens on a visual hook. */}
+            <img
+              src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2005_03_14%20PM.png?updatedAt=1780913019191"
+              alt=""
+              aria-hidden
+              loading="lazy"
+              decoding="async"
+              className="mx-auto block max-w-[220px] sm:max-w-[260px] h-auto"
+            />
             <h2 className="font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
               Apps we build for you
             </h2>
@@ -407,6 +418,17 @@ export default function LandingPage() {
       <section className="reveal-on-scroll relative z-10 px-6 py-14" style={{ background: 'linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%)' }}>
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="text-center space-y-2">
+            {/* Section illustration — founder upload 2026-06-09. Sits
+                above the "Stop letting mass giants" headline so the
+                anti-marketplace section opens on a visual. */}
+            <img
+              src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2005_34_11%20PM.png?updatedAt=1780914868798"
+              alt=""
+              aria-hidden
+              loading="lazy"
+              decoding="async"
+              className="mx-auto block max-w-[220px] sm:max-w-[260px] h-auto"
+            />
             <h2 className="font-black text-[26px] sm:text-[32px] tracking-tight leading-[1.1] text-[#0A0A0A]">
               Stop letting mass giants run your business.
             </h2>
@@ -491,6 +513,17 @@ export default function LandingPage() {
       <section className="reveal-on-scroll relative z-10 px-6 py-12 bg-white">
         <div className="max-w-2xl mx-auto space-y-5">
           <div className="text-center space-y-2">
+            {/* Section illustration — founder upload 2026-06-09. Sits
+                above the "Build YOUR customer base" headline so the
+                own-the-audience pitch leads with a visual. */}
+            <img
+              src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2004_58_19%20PM.png?updatedAt=1780912715653"
+              alt=""
+              aria-hidden
+              loading="lazy"
+              decoding="async"
+              className="mx-auto block max-w-[220px] sm:max-w-[260px] h-auto"
+            />
             <h2 className="font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
               Build YOUR customer base.<br />Not theirs.
             </h2>
@@ -527,6 +560,17 @@ export default function LandingPage() {
       {/* PERSONAS — three target audiences with relevant pitches. */}
       <section className="reveal-on-scroll relative z-10 px-6 py-12 bg-gray-50 border-y border-gray-100">
         <div className="max-w-2xl mx-auto space-y-6">
+          {/* Section illustration — founder upload 2026-06-09. Sits
+              above the "Who Kita2u is for" headline so the personas
+              section opens on a visual hook. */}
+          <img
+            src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2004_55_09%20PM.png?updatedAt=1780912524548"
+            alt=""
+            aria-hidden
+            loading="lazy"
+            decoding="async"
+            className="mx-auto block max-w-[220px] sm:max-w-[260px] h-auto"
+          />
           <h2 className="text-center font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
             Who Kita2u is for
           </h2>
@@ -587,6 +631,18 @@ export default function LandingPage() {
           first window is the real offer. */}
       <section className="reveal-on-scroll relative z-10 px-6 py-12">
         <div className="max-w-2xl mx-auto text-center space-y-4">
+          {/* Section illustration — founder upload 2026-06-09. Sits above
+              the "7 days free" headline so the trial pitch leads with a
+              visual. ~220-260px so it punctuates the section without
+              crowding the headline. */}
+          <img
+            src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2005_17_59%20PM.png?updatedAt=1780913894740"
+            alt=""
+            aria-hidden
+            loading="lazy"
+            decoding="async"
+            className="mx-auto block max-w-[220px] sm:max-w-[260px] h-auto"
+          />
           <h2 className="font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
             7 days free. Cancel in one tap.
           </h2>
