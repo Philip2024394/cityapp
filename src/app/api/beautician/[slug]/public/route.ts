@@ -64,6 +64,9 @@ const PUBLIC_COLS = [
   // above the contact form when faq_enabled is true. Terms / Privacy
   // surface as footer links + an in-page modal viewer.
   'faq_items','faq_enabled','legal_terms','legal_privacy',
+  // mig 0224 — vendor-uploaded static QRIS image. Drives the
+  // "Pay deposit via QRIS" block under the Contact CTA.
+  'qr_payment_url',
 ].join(', ')
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {

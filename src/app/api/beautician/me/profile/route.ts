@@ -21,6 +21,8 @@ type Body = {
   service_area_notes?: string
   profile_image_url?: string
   ktp_image_url?: string
+  // mig 0224 — static QRIS image URL (vendor's own merchant QR)
+  qr_payment_url?: string | null
   // mig 0072 — universal profile extras
   cover_image_url?:    string | null
   gallery_image_urls?: string[]
@@ -128,6 +130,18 @@ export async function POST(req: Request) {
     const v = body.ktp_image_url.trim() || null
     if (v && !isValidKtpRef(v, user.id)) return NextResponse.json({ error: 'invalid_ktp' }, { status: 400 })
     update.ktp_image_url = v
+  }
+  // mig 0224 — static QRIS image URL. Same host allowlist as other
+  // profile images (ik.imagekit.io + Supabase Storage). Empty string
+  // or explicit null clears the field, which hides the public-profile
+  // "Pay deposit via QRIS" block.
+  if (body.qr_payment_url !== undefined) {
+    const raw = body.qr_payment_url
+    const v = typeof raw === 'string' ? raw.trim() || null : null
+    if (v && !isAllowedImageUrl(v)) {
+      return NextResponse.json({ error: 'invalid_qr_payment_url' }, { status: 400 })
+    }
+    ;(update as Record<string, unknown>).qr_payment_url = v
   }
 
   const universal = validateUniversalProfile(body)

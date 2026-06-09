@@ -155,6 +155,11 @@ export type BeauticianProviderPublic = Pick<
   // "Made with Kita2u" footer badge (Free tier only). Server fills
   // this in /api/beautician/[slug]/public; client never writes it.
   owner_plan?: 'free' | 'pro' | 'studio' | null
+  // mig 0224 — vendor-uploaded static QRIS image URL. When non-null,
+  // the public profile renders a "Pay deposit via QRIS" block under
+  // the Contact CTA. Kita2u never custodies funds — the customer
+  // scans the merchant's own QR and pays direct.
+  qr_payment_url?: string | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.
