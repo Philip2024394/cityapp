@@ -9,9 +9,9 @@ import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import {
-  User, BookOpen, MapPin, Banknote, MessageCircle, Compass, Camera,
+  User, BookOpen, MapPin, Banknote, MessageCircle, Compass,
   Scissors, Palette, Sun, Hand, Waves, Eye, Crown, Droplet,
-  Check, AlertCircle, Briefcase,
+  Check, AlertCircle, Briefcase, ChevronLeft,
   type LucideIcon,
 } from 'lucide-react'
 import { INDONESIAN_CITIES } from '@/data/indonesianCities'
@@ -109,7 +109,7 @@ function Gate() {
         <Link href="/signup?intent=beautician&next=/beautician/signup" className="block w-full rounded-2xl bg-brand text-bg px-6 py-4 text-center text-[14px] font-extrabold uppercase tracking-wider hover:brightness-105">
           Create new account
         </Link>
-        <Link href="/login?next=/beautician/signup" className="block w-full rounded-2xl bg-white/[0.06] border border-ink/15 text-ink px-6 py-4 text-center text-[14px] font-extrabold uppercase tracking-wider hover:bg-white/10">
+        <Link href="/login?next=/beautician/signup" className="block w-full rounded-2xl bg-gray-50 border border-gray-200 text-[#0A0A0A] px-6 py-4 text-center text-[14px] font-extrabold uppercase tracking-wider hover:bg-gray-100">
           Sign in to existing account
         </Link>
       </div>
@@ -277,30 +277,76 @@ function Form({ userId }: { userId: string }) {
   )
 
   return (
-    <div className="px-4 pt-6 pb-20 max-w-md mx-auto">
-      <Link href="/" className="text-[12px] text-ink/70 hover:text-ink inline-block mb-4">← Back</Link>
+    <>
+      <header className="sticky top-0 z-30 bg-white/92 backdrop-blur-sm border-b border-gray-100 px-5 sm:px-6 pt-4 pb-3">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-[14px] font-bold text-gray-700 hover:text-black transition"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span className="font-black text-[18px] tracking-tight">
+              <span style={{ color: '#0A0A0A' }}>Kita</span>
+              <span style={{ color: '#FACC15' }}>2u</span>
+            </span>
+          </Link>
+        </div>
+      </header>
 
-      <h1 className="text-[26px] font-black leading-tight mb-2">Beautician signup</h1>
-      <p className="text-[13px] text-ink/70 mb-6">
-        Set your services + package prices.
-        Rp 38.000/month, 7-day free trial.
-      </p>
-
-      {missing.size > 0 && (
-        <div className="mb-4 rounded-xl bg-red-500/15 border border-red-500/50 px-4 py-3 flex items-start gap-2.5">
-          <AlertCircle className="w-5 h-5 text-red-300 shrink-0 mt-0.5" strokeWidth={2.5} />
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-extrabold text-red-200">
-              Lengkapi {missing.size} kolom yang wajib diisi
-            </div>
-            <div className="text-[11px] text-red-200/80 mt-0.5 leading-snug">
-              Scroll otomatis ke kolom pertama yang kosong. Semua kolom wajib dilengkapi sebelum profil bisa disimpan.
+      <div className="px-4 pt-6 pb-20 max-w-md mx-auto">
+        {/* Hero — profile image upload greets the user as the very first action. */}
+        <div
+          ref={refs.profile_image_url}
+          className={`rounded-2xl px-5 py-7 mb-6 text-center ${
+            missing.has('profile_image_url')
+              ? 'bg-red-500/10 border border-red-500/50'
+              : 'bg-gray-50 border border-gray-200'
+          }`}
+        >
+          <h1 className="text-[20px] font-black leading-tight text-[#0A0A0A]">
+            Welcome — let&apos;s set up your beautician page
+          </h1>
+          <p className="text-[12px] text-gray-600 mt-1.5 mb-5 leading-snug">
+            Start with your profile photo. You can change everything later.
+          </p>
+          <div className="flex justify-center">
+            <div className="w-full max-w-[220px]">
+              <ProfileImageUploader
+                value={f.profile_image_url || null}
+                onChange={(v) => upd('profile_image_url', v ?? '')}
+                userId={userId}
+                previewShape="circle"
+              />
             </div>
           </div>
+          {missing.has('profile_image_url') && (
+            <p className="text-[11px] font-extrabold text-red-500 mt-3">
+              Profile photo is required
+            </p>
+          )}
         </div>
-      )}
 
-      <form onSubmit={submit} className="space-y-4">
+        <h2 className="text-[22px] font-black leading-tight mb-2 text-[#0A0A0A]">Beautician signup</h2>
+        <p className="text-[13px] text-gray-600 mb-6">
+          Set your services + package prices.
+          Rp 38.000/month, 7-day free trial.
+        </p>
+
+        {missing.size > 0 && (
+          <div className="mb-4 rounded-xl bg-red-500/15 border border-red-500/50 px-4 py-3 flex items-start gap-2.5">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" strokeWidth={2.5} />
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-extrabold text-red-600">
+                Lengkapi {missing.size} kolom yang wajib diisi
+              </div>
+              <div className="text-[11px] text-red-600/80 mt-0.5 leading-snug">
+                Scroll otomatis ke kolom pertama yang kosong. Semua kolom wajib dilengkapi sebelum profil bisa disimpan.
+              </div>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={submit} className="space-y-4">
         <Field
           icon={User}
           label="Full Name *"
@@ -344,10 +390,10 @@ function Form({ userId }: { userId: string }) {
             <div
               className={`absolute bottom-2 right-3 text-[11px] font-extrabold tabular-nums pointer-events-none select-none ${
                 f.bio.length >= 280
-                  ? 'text-red-400'
+                  ? 'text-red-500'
                   : f.bio.length >= 240
-                    ? 'text-amber-300'
-                    : 'text-ink/45'
+                    ? 'text-amber-500'
+                    : 'text-gray-500'
               }`}
               aria-live="polite"
             >
@@ -360,12 +406,12 @@ function Form({ userId }: { userId: string }) {
             both services_offered (full list of sub-services unlocked
             in the dashboard later) and marketplace_categories (the
             filter groups this beautician shows up under). */}
-        <div ref={refs.main_services} className={`rounded-2xl p-4 ${missing.has('main_services') ? 'bg-red-500/10 border border-red-500/50' : 'bg-black/85 border border-white/10'}`}>
-          <div className="text-[13px] font-extrabold uppercase tracking-wider text-ink inline-flex items-center gap-1.5">
-            <Sun className="w-4 h-4 text-brand" strokeWidth={2.5} />
+        <div ref={refs.main_services} className={`rounded-2xl p-4 ${missing.has('main_services') ? 'bg-red-500/10 border border-red-500/50' : 'bg-gray-50 border border-gray-200'}`}>
+          <div className="text-[13px] font-extrabold uppercase tracking-wider text-[#0A0A0A] inline-flex items-center gap-1.5">
+            <Sun className="w-4 h-4 text-[#FACC15]" strokeWidth={2.5} />
             Main Beautician Services *
           </div>
-          <p className="text-[11px] text-ink/55 mt-0.5 mb-3 leading-snug">
+          <p className="text-[11px] text-gray-600 mt-0.5 mb-3 leading-snug">
             Pilih maksimal <strong>3 kategori utama</strong> yang Anda tawarkan ({f.main_services.length}/3). Sub-services bisa di-detail di dashboard nanti.
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -386,21 +432,21 @@ function Form({ userId }: { userId: string }) {
                     on
                       ? 'bg-brand text-bg border-brand shadow-[0_2px_10px_rgba(250,204,21,0.45)]'
                       : atCap
-                        ? 'bg-black/85 text-ink/40 border-white/5 cursor-not-allowed'
-                        : 'bg-black/85 text-ink border-white/10 hover:border-white/30'
+                        ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed'
+                        : 'bg-white text-[#0A0A0A] border-gray-300 hover:border-[#FACC15]'
                   }`}
                 >
                   {on && (
                     <span
-                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-bg/95 flex items-center justify-center"
+                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white flex items-center justify-center"
                       aria-hidden
                     >
                       <Check className="w-3.5 h-3.5 text-brand" strokeWidth={3} />
                     </span>
                   )}
-                  <m.icon className={`w-6 h-6 mb-1.5 ${on ? 'text-bg' : 'text-brand'}`} strokeWidth={2.25} />
+                  <m.icon className={`w-6 h-6 mb-1.5 ${on ? 'text-bg' : 'text-[#FACC15]'}`} strokeWidth={2.25} />
                   <div className="text-[13px] font-extrabold leading-tight">{m.label}</div>
-                  <div className={`text-[10px] leading-snug mt-0.5 ${on ? 'text-bg/70' : 'text-ink/55'}`}>
+                  <div className={`text-[10px] leading-snug mt-0.5 ${on ? 'text-bg/70' : 'text-gray-500'}`}>
                     {m.hint}
                   </div>
                 </button>
@@ -411,12 +457,12 @@ function Form({ userId }: { userId: string }) {
 
         {/* Service Type — drives whether the public profile shows a
             "Visit Us" link (only when there's a business place). */}
-        <div className="rounded-2xl bg-black/85 border border-white/10 p-4">
-          <div className="text-[13px] font-extrabold uppercase tracking-wider text-ink inline-flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-brand" strokeWidth={2.5} />
+        <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4">
+          <div className="text-[13px] font-extrabold uppercase tracking-wider text-[#0A0A0A] inline-flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-[#FACC15]" strokeWidth={2.5} />
             Your service is at *
           </div>
-          <p className="text-[11px] text-ink/55 mt-0.5 mb-3 leading-snug">
+          <p className="text-[11px] text-gray-600 mt-0.5 mb-3 leading-snug">
             Pilih lokasi layanan Anda. Business Place mengaktifkan link "Visit Us" di profil — customer bisa lihat alamat & peta. Mobile = Anda yang datang ke customer.
           </p>
           <div className="grid grid-cols-3 gap-2">
@@ -428,33 +474,33 @@ function Form({ userId }: { userId: string }) {
               <label key={opt.v} className={`flex flex-col items-center justify-center gap-0.5 rounded-xl p-3 cursor-pointer border transition text-center ${
                 f.service_type === opt.v
                   ? 'bg-brand text-bg border-brand shadow-[0_2px_10px_rgba(250,204,21,0.45)]'
-                  : 'bg-black/85 border-white/10 hover:border-white/20 text-ink'
+                  : 'bg-white border-gray-300 hover:border-[#FACC15] text-[#0A0A0A]'
               }`}>
                 <input type="radio" name="service_type" value={opt.v} checked={f.service_type === opt.v} onChange={() => upd('service_type', opt.v)} className="sr-only" />
                 <span className="text-[12px] font-extrabold leading-tight">{opt.label}</span>
-                <span className={`text-[10px] ${f.service_type === opt.v ? 'text-bg/70' : 'text-ink/55'}`}>{opt.hint}</span>
+                <span className={`text-[10px] ${f.service_type === opt.v ? 'text-bg/70' : 'text-gray-500'}`}>{opt.hint}</span>
               </label>
             ))}
           </div>
           {f.service_type !== 'mobile' && (
-            <p className="text-[11px] text-ink/55 mt-2 leading-snug">
+            <p className="text-[11px] text-gray-600 mt-2 leading-snug">
               Catatan: Setelah signup, atur lokasi tempat (lat/lng) di dashboard untuk mengaktifkan map di Visit Us.
             </p>
           )}
         </div>
 
-        <div className="rounded-2xl bg-black/85 border border-white/10 p-4">
-          <div className="text-[13px] font-extrabold uppercase tracking-wider text-ink inline-flex items-center gap-1.5">
-            <Banknote className="w-4 h-4 text-brand" strokeWidth={2.5} />
+        <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4">
+          <div className="text-[13px] font-extrabold uppercase tracking-wider text-[#0A0A0A] inline-flex items-center gap-1.5">
+            <Banknote className="w-4 h-4 text-[#FACC15]" strokeWidth={2.5} />
             Service starting prices
           </div>
-          <p className="text-[11px] text-ink/55 mt-0.5 mb-3 leading-snug">
+          <p className="text-[11px] text-gray-600 mt-0.5 mb-3 leading-snug">
             Ketik dalam <strong>ribuan</strong>. Contoh: <strong>235</strong> = Rp 235k, <strong>1200</strong> = Rp 1.2jt. Kosongkan jika tidak ditawarkan; minimal satu wajib.
           </p>
           <div className="grid grid-cols-3 gap-2">
             {(['makeup','nail','hair'] as const).map((k) => (
               <label key={k} className="block">
-                <span className="text-[11px] font-bold text-ink/70 mb-1 inline-block uppercase">{k}</span>
+                <span className="text-[11px] font-bold text-gray-700 mb-1 inline-block uppercase">{k}</span>
                 <div className="relative">
                   <input
                     type="number" min={0}
@@ -463,7 +509,7 @@ function Form({ userId }: { userId: string }) {
                     placeholder="235"
                     className={inputCls + ' text-[13px] pr-9'}
                   />
-                  <span aria-hidden className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-ink/50 pointer-events-none select-none">
+                  <span aria-hidden className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-gray-500 pointer-events-none select-none">
                     k
                   </span>
                 </div>
@@ -482,7 +528,7 @@ function Form({ userId }: { userId: string }) {
           <div className="relative">
             <span
               aria-hidden
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-extrabold text-ink/70 pointer-events-none select-none"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-extrabold text-gray-600 pointer-events-none select-none"
             >
               +62
             </span>
@@ -531,31 +577,14 @@ function Form({ userId }: { userId: string }) {
           <input value={f.service_area_notes} onChange={(e) => upd('service_area_notes', e.target.value)} placeholder="Jawa Barat — Cianjur" className={inputCls} />
         </Field>
 
-        <div
-          ref={refs.profile_image_url}
-          className={`space-y-1 ${missing.has('profile_image_url') ? 'rounded-xl p-3 -m-3 bg-red-500/10 border border-red-500/50' : ''}`}
-        >
-          <span className={`text-[13px] font-bold inline-flex items-center gap-1.5 ${missing.has('profile_image_url') ? 'text-red-300' : 'text-ink/85'}`}>
-            <Camera className={`w-4 h-4 ${missing.has('profile_image_url') ? 'text-red-400' : 'text-brand'}`} strokeWidth={2.5} />
-            Profile Image *
-            {missing.has('profile_image_url') && <span className="text-[11px] font-extrabold text-red-300 ml-1">required</span>}
-          </span>
-          <p className="text-[11px] text-ink/55 leading-snug">Foto wajah jelas — muncul di kartu marketplace + floating card di profil.</p>
-          <ProfileImageUploader
-            value={f.profile_image_url || null}
-            onChange={(v) => upd('profile_image_url', v ?? '')}
-            userId={userId}
-            previewShape="circle"
-          />
-        </div>
-
-        {err && <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 text-[13px] px-3 py-2">{err}</div>}
+        {err && <div className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-700 text-[13px] px-3 py-2">{err}</div>}
 
         <button type="submit" disabled={submitting} className="w-full rounded-full bg-brand text-bg px-6 py-3.5 text-[14px] font-extrabold uppercase tracking-wider disabled:opacity-60">
           {submitting ? 'Mendaftarkan…' : 'Create beautician profile'}
         </button>
-      </form>
-    </div>
+        </form>
+      </div>
+    </>
   )
 }
 
@@ -572,7 +601,7 @@ function humaniseError(code?: string): string {
   }
 }
 
-const inputCls = 'w-full rounded-xl bg-black/85 border border-white/15 px-4 py-3 text-[14px] text-ink placeholder:text-ink/40 focus:outline-none focus:border-brand'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-300 px-4 py-3 text-[14px] text-[#0A0A0A] placeholder:text-gray-400 focus:outline-none focus:border-[#FACC15]'
 function Field({
   label, help, icon: Icon, missing, innerRef, children,
 }: {
@@ -588,12 +617,12 @@ function Field({
       ref={innerRef}
       className={`block space-y-1 ${missing ? 'rounded-xl p-3 -m-3 bg-red-500/10 border border-red-500/50' : ''}`}
     >
-      <span className={`text-[13px] font-bold inline-flex items-center gap-1.5 ${missing ? 'text-red-300' : 'text-ink/85'}`}>
-        {Icon && <Icon className={`w-4 h-4 ${missing ? 'text-red-400' : 'text-brand'}`} strokeWidth={2.5} />}
+      <span className={`text-[13px] font-bold inline-flex items-center gap-1.5 ${missing ? 'text-red-600' : 'text-[#0A0A0A]'}`}>
+        {Icon && <Icon className={`w-4 h-4 ${missing ? 'text-red-500' : 'text-[#FACC15]'}`} strokeWidth={2.5} />}
         {label}
-        {missing && <span className="text-[11px] font-extrabold text-red-300 ml-1">required</span>}
+        {missing && <span className="text-[11px] font-extrabold text-red-600 ml-1">required</span>}
       </span>
-      {help && <p className="text-[11px] text-ink/55 leading-snug">{help}</p>}
+      {help && <p className="text-[11px] text-gray-600 leading-snug">{help}</p>}
       {children}
     </div>
   )

@@ -88,16 +88,16 @@ export default function BeauticianDashboardPage() {
       </Shell>
     )
   }
+  // First-time visitor with a signed-in user but no provider row yet
+  // skips the dead-end "Not a beautician yet" gate and lands directly
+  // on the upload-profile form so account creation flows straight into
+  // setup. Founder direction 2026-06-09: never show a gate page when
+  // we can route the user to the next useful step instead.
   if (!provider) {
-    return (
-      <Shell>
-        <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[22px] font-black text-black mb-2">Not a beautician yet</h1>
-          <p className="text-[14px] text-black/70 mb-6">Register to start receiving WhatsApp bookings.</p>
-          <Link href="/beautician/signup" className="rounded-full bg-pink-500 text-white px-6 py-3 text-[14px] font-extrabold inline-block">Sign up</Link>
-        </div>
-      </Shell>
-    )
+    if (typeof window !== 'undefined') {
+      window.location.replace('/beautician/signup')
+    }
+    return <Shell><div className="px-4 pt-6 text-black/70 text-[14px]">Loading…</div></Shell>
   }
 
   // Completion logic — each task is "done" when the relevant fields

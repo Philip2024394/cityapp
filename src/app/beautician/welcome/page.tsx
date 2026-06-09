@@ -92,15 +92,15 @@ export default function BeauticianWelcomePage() {
   }
 
   if (loading) return <Shell><Loading /></Shell>
+  // First-time visitor with a signed-in user but no provider row yet
+  // skips the dead-end "Not a beautician yet" gate and lands directly
+  // on the upload-profile form. See /dashboard/beautician/page.tsx for
+  // the canonical comment.
   if (!provider) {
-    return (
-      <Shell>
-        <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black mb-2">Not a beautician yet</h1>
-          <Link href="/beautician/signup" className="rounded-full bg-brand text-bg px-6 py-3 text-[13px] font-extrabold inline-block">Register as beautician</Link>
-        </div>
-      </Shell>
-    )
+    if (typeof window !== 'undefined') {
+      window.location.replace('/beautician/signup')
+    }
+    return <Shell><Loading /></Shell>
   }
 
   // Completion checklist (the 6 items required to "unlock" the link).
