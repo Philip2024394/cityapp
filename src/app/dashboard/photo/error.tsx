@@ -41,7 +41,7 @@ export default function DashboardPhotoError({
           <button
             type="button"
             onClick={reset}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-[#0A0A0A] text-white text-[13px] font-bold hover:opacity-90 transition min-h-[44px]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-yellow-400 text-[#0A0A0A] text-[13px] font-bold hover:bg-yellow-500 transition min-h-[44px]"
           >
             <RotateCcw className="w-4 h-4" aria-hidden /> Try again
           </button>

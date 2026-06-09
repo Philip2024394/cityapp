@@ -311,7 +311,7 @@ export default function BeauticianDashboardPage() {
             <a
               href="/api/beautician/me/flyer"
               download="kita2u-flyer.png"
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-black hover:bg-gray-800 text-white px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-[#0A0A0A] px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
             >
               <Download size={16} /> Download flyer for WhatsApp Status
             </a>

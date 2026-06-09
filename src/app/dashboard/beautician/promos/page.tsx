@@ -486,7 +486,7 @@ function CreatePromoModal({
                         }`}
                       >
                         <img src={p.url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                        <span className="absolute bottom-0 left-0 right-0 text-[10px] font-extrabold uppercase tracking-wider text-white bg-black/45 px-1.5 py-0.5 truncate">
+                        <span className="absolute bottom-0 left-0 right-0 text-[10px] font-extrabold uppercase tracking-wider text-white bg-gray-900/60 px-1.5 py-0.5 truncate">
                           {p.serviceLabel}
                         </span>
                       </button>

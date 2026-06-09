@@ -153,7 +153,7 @@ export default function TailorDashboardPage() {
         <a
           href="/api/tailor/me/flyer"
           download="kita2u-flyer.png"
-          className="block w-full text-center rounded-2xl bg-black hover:bg-gray-800 text-white px-4 py-3 text-[13px] font-extrabold transition"
+          className="block w-full text-center rounded-2xl bg-yellow-400 hover:bg-yellow-500 text-[#0A0A0A] px-4 py-3 text-[13px] font-extrabold transition"
         >
           Download flyer for WhatsApp Status
         </a>

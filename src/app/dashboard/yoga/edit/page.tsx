@@ -159,7 +159,7 @@ export default function YogaEditPage() {
             edit pencil floats over the top-right corner. */}
         <div className="relative rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
           {/* Cover */}
-          <div className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: '16 / 9', maxHeight: 220 }}>
+          <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16 / 9', maxHeight: 220 }}>
             <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
             {/* Hero overlay text */}
             <div className={`absolute left-4 z-10 select-none leading-none cr-hero-${effect}`} style={{ top: 22 }}>

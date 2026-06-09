@@ -152,7 +152,7 @@ export default function BeauticianEditPage() {
             edit pencil floats over the top-right corner. */}
         <div className="relative rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
           {/* Cover */}
-          <div className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: '16 / 9', maxHeight: 220 }}>
+          <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16 / 9', maxHeight: 220 }}>
             <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
             {/* Hero overlay text */}
             <div className={`absolute left-4 z-10 select-none leading-none cr-hero-${effect}`} style={{ top: 22 }}>
@@ -694,7 +694,7 @@ function DraftModeControls({
           type="button"
           onClick={() => void commit()}
           disabled={!dirty || saving}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-black text-white px-4 py-2.5 text-[13px] font-extrabold disabled:opacity-50 active:scale-[0.98] transition min-h-[44px]"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-[#0A0A0A] px-4 py-2.5 text-[13px] font-extrabold disabled:opacity-50 active:scale-[0.98] transition min-h-[44px]"
         >
           {saving ? 'Saving…' : 'Save draft mode'}
         </button>

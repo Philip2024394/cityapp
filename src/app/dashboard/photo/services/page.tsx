@@ -42,12 +42,12 @@ export default function PhotoServicesPage() {
   }, [])
   useEffect(() => { void reload() }, [reload])
 
-  if (loading) return <Shell><div className="px-4 pt-6 text-white/70 text-[14px]">Loading…</div></Shell>
+  if (loading) return <Shell><div className="px-4 pt-6 text-gray-600 text-[14px]">Loading…</div></Shell>
   if (err === 'not_signed_in') {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Sign in required</h1>
+          <h1 className="text-[20px] font-black text-[#0A0A0A] mb-2">Sign in required</h1>
           <Link href="/login?next=/dashboard/photo/services" className="rounded-full bg-yellow-500 text-black px-6 py-3 text-[14px] font-extrabold inline-block">Sign in</Link>
         </div>
       </Shell>
@@ -57,7 +57,7 @@ export default function PhotoServicesPage() {
     return (
       <Shell>
         <div className="px-4 pt-20 max-w-md mx-auto text-center">
-          <h1 className="text-[20px] font-black text-white mb-2">Not a photographer yet</h1>
+          <h1 className="text-[20px] font-black text-[#0A0A0A] mb-2">Not a photographer yet</h1>
           <Link href="/photo/signup" className="rounded-full bg-yellow-500 text-black px-6 py-3 text-[14px] font-extrabold inline-block">Sign up</Link>
         </div>
       </Shell>
@@ -69,9 +69,9 @@ export default function PhotoServicesPage() {
       <div className="px-4 pt-3 pb-32 max-w-lg mx-auto">
         <header className="mb-5 flex items-center justify-between gap-3">
           <div>
-            <Link href="/dashboard/photo" className="text-[12px] font-bold text-white/60 hover:text-white inline-block">← Dashboard</Link>
-            <h1 className="text-[24px] font-black text-white leading-tight">Packages &amp; portfolio</h1>
-            <p className="text-[13px] text-white/70 mt-1">Pick your genres, set package + full-day rates, and add portfolio photos.</p>
+            <Link href="/dashboard/photo" className="text-[12px] font-bold text-gray-500 hover:text-gray-900 inline-block">← Dashboard</Link>
+            <h1 className="text-[24px] font-black text-[#0A0A0A] leading-tight">Packages &amp; portfolio</h1>
+            <p className="text-[13px] text-gray-600 mt-1">Pick your genres, set package + full-day rates, and add portfolio photos.</p>
           </div>
         </header>
         <ServicesForm provider={provider} onSaved={reload} />
@@ -150,8 +150,8 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                   on
                     ? 'bg-yellow-400 text-stone-900 border-yellow-400 shadow-sm shadow-yellow-300/40'
                     : atCap
-                      ? 'bg-white/5 text-white/30 border-white/10 cursor-not-allowed'
-                      : 'bg-white/10 text-white/80 border-white/15 hover:bg-white/15 hover:border-yellow-300'
+                      ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'
+                      : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 hover:border-yellow-400'
                 }`}
               >
                 {SPECIALTY_LABELS[sid]}
@@ -179,7 +179,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                 : `Rp ${n}k`
             return (
               <label key={k} className="block">
-                <span className="text-[12px] font-bold text-white/70 mb-1 inline-block uppercase tracking-wide">{label}</span>
+                <span className="text-[12px] font-bold text-gray-600 mb-1 inline-block uppercase tracking-wide">{label}</span>
                 <div className="relative">
                   <input
                     type="number" min={0} max={9999}
@@ -197,7 +197,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
                     {suffix}
                   </span>
                 </div>
-                <div className="text-[10px] font-bold text-white/55 text-center mt-1 tabular-nums min-h-[14px]">
+                <div className="text-[10px] font-bold text-gray-500 text-center mt-1 tabular-nums min-h-[14px]">
                   {preview ?? ' '}
                 </div>
               </label>
@@ -207,7 +207,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
         {/* Travels-to-client toggle — replaces barber's walk-ins-welcome.
             Stored on has_own_tools for column reuse; the photo surface
             label is what matters to the client. */}
-        <label className="flex items-center gap-2 text-[13px] text-white/85 cursor-pointer mt-2">
+        <label className="flex items-center gap-2 text-[13px] text-gray-700 cursor-pointer mt-2">
           <input
             type="checkbox"
             checked={f.travels_to_client}
@@ -230,7 +230,7 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
       </Card>
 
       {savedFlash && (
-        <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/15 text-emerald-100 text-[14px] px-4 py-3 font-bold">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-[14px] px-4 py-3 font-bold">
           ✓ Saved
         </div>
       )}
@@ -251,10 +251,10 @@ function ServicesForm({ provider, onSaved }: { provider: FullProvider; onSaved: 
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 p-5 shadow-lg shadow-black/20 space-y-3">
+    <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
       <div>
-        <h2 className="text-[15px] font-black text-white">{title}</h2>
-        {hint && <p className="text-[12px] text-white/65 leading-snug mt-1">{hint}</p>}
+        <h2 className="text-[15px] font-black text-[#0A0A0A]">{title}</h2>
+        {hint && <p className="text-[12px] text-gray-600 leading-snug mt-1">{hint}</p>}
       </div>
       {children}
     </section>
@@ -263,11 +263,11 @@ function Card({ title, hint, children }: { title: string; hint?: string; childre
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-[100dvh] text-white overflow-hidden">
+    <main className="relative min-h-[100dvh] bg-white text-[#0A0A0A] overflow-hidden">
       <AppNav />
       {children}
     </main>
   )
 }
 
-const inputCls = 'w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-[14px] text-white placeholder:text-white/40 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/30 min-h-[44px]'
+const inputCls = 'w-full rounded-xl bg-white border border-gray-200 px-4 py-3 text-[14px] text-[#0A0A0A] placeholder:text-gray-400 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 min-h-[44px]'
