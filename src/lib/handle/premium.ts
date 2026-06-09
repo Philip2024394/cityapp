@@ -35,6 +35,12 @@ export const PREMIUM_HANDLES: ReadonlySet<string> = new Set([
   'yoga', 'fitness', 'food', 'cafe', 'spa', 'salon', 'beauty', 'makeup',
   'hair', 'nails', 'lash', 'tattoo', 'barber', 'photo', 'video', 'cake',
   'pet', 'tour', 'tukang', 'cleaner', 'fit', 'gym',
+  // Vertical-route slugs moved here from RESERVED_HANDLES on 2026-06-09
+  // so Pro subscribers can claim them (a yoga teacher wants kita2u.com/yoga).
+  // Next.js static routes always beat dynamic slugs so /yoga still resolves
+  // to the marketplace page; this lets paying users own the public handle.
+  'beautician', 'handyman', 'laundry', 'massage', 'home-clean', 'facial',
+  'catering', 'florist', 'tutoring', 'mover', 'tailor', 'car-wash', 'parcel',
   // Indonesian first names — common business owners
   'sari', 'ayu', 'dewi', 'putri', 'indra', 'rina', 'mira', 'dian',
   'budi', 'agus', 'rama', 'galih', 'rosa', 'bagas', 'tata',

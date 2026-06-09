@@ -18,18 +18,21 @@
  *  off-limits (admin, support, brand). The check API rejects these
  *  before hitting the DB. Lowercase only; comparison is case-insensitive. */
 export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
-  // Platform routes
+  // Platform routes — Next.js static routes always beat dynamic slugs,
+  // so claiming these would shadow nothing technically, but the user
+  // would never be able to share a working URL.
   'api', 'app', 'admin', 'dashboard', 'signup', 'login', 'logout', 'register',
   'start', 'explore', 'search', 'pricing', 'how-it-works', 'custom-domains',
   'about', 'contact', 'terms', 'privacy', 'legal', 'account', 'profile',
   'forgot', 'reset', 'onboarding', 'help', 'support', 'docs', 'blog', 'news',
-  // Vertical routes (one per Kita2u vertical so a profile slug can't shadow)
-  'beautician', 'handyman', 'laundry', 'massage', 'home-clean', 'facial',
-  'food', 'tour', 'tattoo', 'barber', 'photo', 'video', 'catering', 'cake',
-  'florist', 'fitness', 'yoga', 'tutoring', 'pet', 'mover', 'tailor',
-  'car-wash', 'parcel',
   // Brand / sensitive
   'kita2u', 'kita', 'citydrivers', 'cityriders', 'staff', 'team', 'official',
+  // Note: vertical-route slugs (beautician, handyman, yoga, fitness, tattoo,
+  // cake, barber, photo, video, food, pet, tour) moved to PREMIUM_HANDLES on
+  // 2026-06-09 per founder direction. A yoga teacher should be able to BUY
+  // kita2u.com/yoga as a Pro subscriber — the value of that handle is enormous
+  // and the existing /yoga marketplace page is a hardcoded route that always
+  // wins resolution. The slug doesn't shadow the route.
 ])
 
 /** Lowercase handle that matches `[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?`.
