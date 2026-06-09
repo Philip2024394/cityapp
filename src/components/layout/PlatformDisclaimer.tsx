@@ -8,14 +8,13 @@ type Props = {
   variant?: 'links' | 'compact' | 'full'
 }
 
-// Footer disclaimer affirming CityDrivers's position as a SOFTWARE
-// LISTING PLATFORM for independent riders — NOT a transportation
-// service provider. Used on every customer-facing page to anchor the
-// SaaS positioning and reduce risk of being classified as APJT
-// (Aplikasi Penyedia Jasa Transportasi) under Permenhub PM 12/2019.
-//
-// Wording reviewed against the 5 classification tests Indonesian
-// transport authorities apply. DO NOT alter without legal review.
+// Footer disclaimer affirming Kita2u's position as SaaS / software
+// directory for independent creators and small businesses.
+// 2026-06-09 rewrite per founder direction — removed all motorcycle-
+// courier + transportation-service language (CityDrivers-era copy)
+// because Kita2u is apps-for-business now, not a transport directory.
+// CityDrivers (citydrivers.id) keeps the transport-law positioning on
+// its own host; Kita2u stays creator-SaaS positioning here.
 export default function PlatformDisclaimer({ variant = 'full' }: Props) {
   if (variant === 'links') {
     return (
@@ -44,10 +43,11 @@ export default function PlatformDisclaimer({ variant = 'full' }: Props) {
     <footer className="relative z-20 mt-auto px-4 py-5 border-t border-line/50 bg-bg/60 backdrop-blur-md">
       <div className="max-w-3xl mx-auto space-y-2 text-center">
         <p className="text-[11px] text-dim leading-relaxed">
-          <span className="font-bold text-muted"><span style={{ color: '#0A0A0A' }}>Kita</span><span style={{ color: '#FACC15' }}>2u</span></span> is a software listing platform
-          for independent motorcycle couriers. We do not provide transportation services.
-          All trips are arranged directly between customers and independent riders, who set their
-          own prices and operate their own businesses.
+          <span className="font-bold text-muted"><span style={{ color: '#0A0A0A' }}>Kita</span><span style={{ color: '#FACC15' }}>2u</span></span> is a software directory
+          for independent creators, small businesses, and service providers. We do not sell,
+          ship, or fulfil any product, and we never take a per-transaction commission. Every
+          order, booking, and conversation happens directly between the customer and the
+          business through their own WhatsApp.
         </p>
         <div className="flex items-center justify-center gap-3 text-[11px] text-dim">
           <Link href="/about"   className="hover:text-ink">About</Link>
