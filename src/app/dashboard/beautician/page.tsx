@@ -8,6 +8,7 @@ import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import StatusPulse from '@/components/dashboard/StatusPulse'
 import WeeklyHoursEditor from '@/components/dashboard/WeeklyHoursEditor'
 import UniversalProfileExtrasEditor from '@/components/dashboard/UniversalProfileExtrasEditor'
+import ProfileViewsChart from '@/components/dashboard/ProfileViewsChart'
 import {
   type BeauticianProvider,
   type BeauticianAvailability,
@@ -37,11 +38,22 @@ type Extras = {
 }
 type FullProvider = BeauticianProvider & Extras
 
+type AnalyticsPayload = {
+  plan: 'free' | 'pro' | 'studio'
+  retentionDays: number
+  series: Array<{ day: string; views: number }>
+  totalViews: number
+}
+
 export default function BeauticianDashboardPage() {
   const [provider, setProvider] = useState<FullProvider | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [err,      setErr]      = useState<string | null>(null)
   const [copied,   setCopied]   = useState(false)
+  // Task 12/12 — plan-gated profile-view analytics. Free sees 28 days,
+  // Pro / Studio sees 365. Render null when the call errors so the
+  // rest of the dashboard stays intact.
+  const [analytics, setAnalytics] = useState<AnalyticsPayload | null>(null)
 
   // Task 11/12 — Studio tier multi-location: when the user owns more
   // than one beautician page, the active page is selected via the
@@ -72,6 +84,21 @@ export default function BeauticianDashboardPage() {
     finally { setLoading(false) }
   }, [])
   useEffect(() => { void reload() }, [reload])
+
+  // Fire-and-forget analytics fetch. Never blocks the dashboard render —
+  // if it errors we just keep analytics === null and skip the chart.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await fetch('/api/beautician/me/analytics', { cache: 'no-store' })
+        if (!r.ok) return
+        const j = await r.json() as AnalyticsPayload
+        if (!cancelled) setAnalytics(j)
+      } catch { /* leave analytics null on error */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   async function setAvailability(next: BeauticianAvailability) {
     if (!provider) return
@@ -206,6 +233,20 @@ export default function BeauticianDashboardPage() {
             <p className="text-[11px] text-black/55 tabular-nums">{pct}%</p>
           </div>
         </section>
+
+        {/* Task 12/12 — plan-gated profile-view analytics.
+            Free = 28-day window, Pro / Studio = 365-day window.
+            Mirrors Linktree's retention tiers at a fraction of the
+            price; the Free→Pro upgrade nudge lives in the chart. */}
+        {analytics && (
+          <ProfileViewsChart
+            series={analytics.series}
+            retentionDays={analytics.retentionDays}
+            plan={analytics.plan}
+            totalViews={analytics.totalViews}
+            themeColor={accent}
+          />
+        )}
 
         {/* Task cards */}
         <div className="space-y-3">
