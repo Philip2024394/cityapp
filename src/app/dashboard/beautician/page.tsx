@@ -43,10 +43,28 @@ export default function BeauticianDashboardPage() {
   const [err,      setErr]      = useState<string | null>(null)
   const [copied,   setCopied]   = useState(false)
 
+  // Task 11/12 — Studio tier multi-location: when the user owns more
+  // than one beautician page, the active page is selected via the
+  // `?slug=` query param (set by BeauticianPageSwitcher) and persisted
+  // to localStorage so reloads stay on the chosen page. Reading the
+  // URL + storage directly keeps this client-side without forcing the
+  // whole page into a Suspense boundary.
+  const ACTIVE_SLUG_KEY = 'beautician.activeSlug'
   const reload = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await fetch('/api/beautician/me', { cache: 'no-store' })
+      let activeSlug: string | null = null
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        const fromQuery = url.searchParams.get('slug')
+        const fromStore = window.localStorage.getItem(ACTIVE_SLUG_KEY)
+        activeSlug = fromQuery || fromStore || null
+        if (fromQuery) {
+          try { window.localStorage.setItem(ACTIVE_SLUG_KEY, fromQuery) } catch { /* private mode */ }
+        }
+      }
+      const qs = activeSlug ? `?slug=${encodeURIComponent(activeSlug)}` : ''
+      const r = await fetch(`/api/beautician/me${qs}`, { cache: 'no-store' })
       if (r.status === 401) { setErr('not_signed_in'); return }
       const j = await r.json() as { provider: FullProvider | null }
       setProvider(j.provider)
