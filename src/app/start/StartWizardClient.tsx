@@ -226,20 +226,20 @@ function StepCustomise({
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
         {/* LEFT — controls */}
         <div className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Profile photo */}
-            <div>
-              <div className="text-[13px] font-extrabold uppercase tracking-wider text-[#0A0A0A] mb-2">
-                Profile photo
+          <div className="space-y-4">
+            {/* Profile photo deferred to the authenticated signup form
+                (fixes the upload-fails issue: /start runs pre-auth so
+                Supabase Storage RLS rejected the upload). The canonical
+                /<vertical>/signup page has its own ProfileImageUploader
+                that runs after phone+password auth. Founder direction
+                2026-06-09. */}
+            <div
+              className="rounded-2xl border p-3.5 flex items-start gap-3"
+              style={{ background: '#FEFCE8', borderColor: '#FDE68A' }}
+            >
+              <div className="text-[12px] sm:text-[13px] leading-relaxed" style={{ color: '#854D0E' }}>
+                <strong>Photo comes next.</strong> You&apos;ll upload your profile photo on the next page after signing in — same look, just safer for your data.
               </div>
-              <ProfileImageUploader
-                value={profileImageUrl}
-                onChange={onProfileImage}
-                userId={anonId}
-                label="Your photo"
-                helpText="Logo or face. You can change it anytime."
-                previewShape="circle"
-              />
             </div>
 
             {/* Brand colour swatches */}

@@ -89,7 +89,7 @@ export default function ProfileImageUploader({
   return (
     <div className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-3">
       <div className="flex items-start gap-2">
-        <ImageIcon className="w-4 h-4 mt-0.5 text-pink-500 shrink-0" strokeWidth={2.5} />
+        <ImageIcon className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={2.5} style={{ color: '#FACC15' }} />
         <div className="min-w-0">
           <div className="text-[12px] font-extrabold uppercase tracking-wider text-black/70">{label}</div>
           <p className="text-[12px] text-black/55 mt-0.5 leading-snug">{helpText}</p>
@@ -97,7 +97,7 @@ export default function ProfileImageUploader({
       </div>
 
       {/* Square dashed container — circular preview + upload button inside. */}
-      <div className="aspect-square w-full rounded-3xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-4 p-6 transition hover:border-pink-300 hover:bg-pink-50/40">
+      <div className="aspect-square w-full rounded-3xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-4 p-6 transition hover:border-[#FACC15] hover:bg-yellow-50/40">
         {/* Circular preview — image when set, placeholder icon when empty. */}
         <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-white border-2 border-gray-200 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
           {value ? (
@@ -113,7 +113,12 @@ export default function ProfileImageUploader({
 
         {/* Upload / change file button + hidden input. */}
         <label
-          className={`inline-flex items-center justify-center gap-1.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white px-5 py-2.5 text-[13px] font-extrabold uppercase tracking-wider shadow-md shadow-pink-500/25 cursor-pointer transition active:scale-[0.97] min-h-[44px] ${uploading ? 'opacity-60 cursor-wait' : ''}`}
+          className={`inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-[13px] font-extrabold uppercase tracking-wider shadow-md cursor-pointer transition active:scale-[0.97] min-h-[44px] ${uploading ? 'opacity-60 cursor-wait' : ''}`}
+          style={{
+            background: '#FACC15',
+            color: '#0A0A0A',
+            boxShadow: '0 4px 12px rgba(250,204,21,0.40)',
+          }}
         >
           <Upload className="w-4 h-4" strokeWidth={2.5} />
           {uploading ? 'Uploading…' : value ? 'Change file' : 'Upload file'}
