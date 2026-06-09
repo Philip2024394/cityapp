@@ -182,7 +182,13 @@ export default function HandleEntryHero({ locale }: { locale: Locale }) {
     if (status.kind !== 'available') return
     const trimmed = handle.trim()
     if (!trimmed) return
-    router.push(`/start?handle=${encodeURIComponent(trimmed)}`)
+    // 2026-06-09 — Free-tier theme-first funnel. The visitor lands on
+    // /themes with their handle in tow; tapping a theme card drops them
+    // into /free-signup with both `handle` and `theme` set. The
+    // vertical-first /start wizard stays for Pro-intent visitors who
+    // hit it directly (e.g. /start?intent=beautician), but the cold
+    // landing now optimises for the link-in-bio Free tier first.
+    router.push(`/themes?handle=${encodeURIComponent(trimmed)}`)
   }
 
   const ready    = status.kind === 'available'
