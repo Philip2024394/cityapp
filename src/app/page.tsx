@@ -367,7 +367,7 @@ export default function LandingPage() {
                 above the "Apps we build for you" headline so the
                 10-vertical grid opens on a visual hook. */}
             <img
-              src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2005_03_14%20PM.png?updatedAt=1780913019191"
+              src="https://ik.imagekit.io/pinky/Untitledasdasdasasdasdasdasdasdasd-removebg-preview.png"
               alt=""
               aria-hidden
               loading="lazy"
@@ -432,7 +432,7 @@ export default function LandingPage() {
                 above the "Stop letting mass giants" headline so the
                 anti-marketplace section opens on a visual. */}
             <img
-              src="https://ik.imagekit.io/pinky/ChatGPT%20Image%20Jun%208,%202026,%2005_34_11%20PM.png?updatedAt=1780914868798"
+              src="https://ik.imagekit.io/pinky/Untitledasdasdasasdasdasd-removebg-preview.png"
               alt=""
               aria-hidden
               loading="lazy"
