@@ -644,8 +644,17 @@ export default function LandingPage() {
             className="mx-auto block max-w-[220px] sm:max-w-[260px] h-auto"
           />
           <h2 className="font-black text-[24px] sm:text-[30px] tracking-tight leading-tight text-[#0A0A0A]">
-            7 days free. Cancel in one tap.
+            7 days free. Then Rp 38,000 / month.
           </h2>
+          {/* Sharpened 2026-06-09 per the Linktree audit — the previous
+              "7 days free. Cancel in one tap." headline buried the price
+              that beats Linktree Pro 6×. The $2.40 comparison is the
+              single highest-converting line on the page. 0% commission
+              is the moat — Linktree Free takes 12% on digital sales,
+              Pro takes 9%; we take 0% at every tier. */}
+          <p className="text-[15px] sm:text-[16px] text-gray-700 leading-relaxed max-w-md mx-auto font-semibold">
+            <span className="text-[#0A0A0A]">~ US$2.40 / month</span> — six times cheaper than Linktree Pro. <span className="text-[#0A0A0A]">0% commission</span> on every customer transaction. Always.
+          </p>
           <p className="text-[14px] text-gray-600 leading-relaxed max-w-md mx-auto">
             Try every feature free for 7 days. Not the right fit? Open the side drawer in your dashboard and tap <strong className="text-[#0A0A0A]">Cancel my app</strong> — confirmed in one tap. No email back-and-forth, no retention call, no waiting period.
           </p>
