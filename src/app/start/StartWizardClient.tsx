@@ -227,18 +227,82 @@ function StepCustomise({
         {/* LEFT — controls */}
         <div className="space-y-5">
           <div className="space-y-4">
-            {/* Profile photo deferred to the authenticated signup form
-                (fixes the upload-fails issue: /start runs pre-auth so
-                Supabase Storage RLS rejected the upload). The canonical
-                /<vertical>/signup page has its own ProfileImageUploader
-                that runs after phone+password auth. Founder direction
-                2026-06-09. */}
-            <div
-              className="rounded-2xl border p-3.5 flex items-start gap-3"
-              style={{ background: '#FEFCE8', borderColor: '#FDE68A' }}
-            >
-              <div className="text-[12px] sm:text-[13px] leading-relaxed" style={{ color: '#854D0E' }}>
-                <strong>Photo comes next.</strong> You&apos;ll upload your profile photo on the next page after signing in — same look, just safer for your data.
+            {/* Profile photo — local preview only. The actual Supabase
+                upload runs on the next page after phone+password auth
+                (RLS requires auth.uid() in the storage path). We use
+                FileReader → base64 data URL so the preview persists
+                visually + survives the sessionStorage hand-off to
+                /<vertical>/signup, where the canonical
+                ProfileImageUploader picks it up and uploads it on
+                first save. Founder direction 2026-06-09. */}
+            <div>
+              <div className="text-[13px] font-extrabold uppercase tracking-wider text-[#0A0A0A] mb-2">
+                Profile photo
+              </div>
+              <div className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm space-y-4">
+                <p className="text-[12px] text-gray-500 leading-snug">
+                  Your face or your logo. You&apos;ll keep this photo all the way to your public page.
+                </p>
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-24 h-24 rounded-full bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0"
+                  >
+                    {profileImageUrl ? (
+                      <img
+                        src={profileImageUrl}
+                        alt="Profile preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[28px]" aria-hidden>📷</span>
+                    )}
+                  </div>
+                  <label
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-[13px] font-extrabold uppercase tracking-wider cursor-pointer transition active:scale-[0.97] min-h-[44px]"
+                    style={{
+                      background: '#FACC15',
+                      color: '#0A0A0A',
+                      boxShadow: '0 4px 12px rgba(250,204,21,0.40)',
+                    }}
+                  >
+                    {profileImageUrl ? 'Change photo' : 'Upload photo'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (!f) return
+                        if (f.size > 5 * 1024 * 1024) {
+                          alert('Image must be under 5MB')
+                          return
+                        }
+                        const reader = new FileReader()
+                        reader.onload = () => {
+                          const dataUrl = String(reader.result || '')
+                          onProfileImage(dataUrl)
+                          // Hand off to the canonical signup form via
+                          // sessionStorage so /<vertical>/signup can
+                          // upload it after auth without re-asking.
+                          try { sessionStorage.setItem('start.photoDataUrl', dataUrl) } catch { /* quota — silent */ }
+                        }
+                        reader.readAsDataURL(f)
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {profileImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onProfileImage(null)
+                      try { sessionStorage.removeItem('start.photoDataUrl') } catch { /* ignore */ }
+                    }}
+                    className="text-[12px] font-bold text-gray-500 hover:text-gray-700 underline"
+                  >
+                    Remove photo
+                  </button>
+                )}
               </div>
             </div>
 
