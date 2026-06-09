@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal, Zap, UserCircle2, Lock } from 'lucide-react'
+import { ChevronLeft, Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal, Zap, UserCircle2, Lock, Layout as LayoutIcon, Link as LinkIcon, Upload, X as XIcon } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
@@ -56,6 +56,12 @@ type Extras = {
   // feature, not auth — see task 10/12 brief).
   is_draft?:        boolean | null
   draft_password?:  string | null
+  // mig 0229 — Free-tier visual ownership. Avatar placement on the
+  // hero, opt-in URL chip under the avatar, and an optional full-page
+  // background image.
+  profile_placement?:         'center' | 'top-left' | 'bottom-left' | null
+  show_url_under_avatar?:     boolean | null
+  page_background_image_url?: string | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -511,6 +517,24 @@ function BannerInlineControls({
         </div>
       </Section>
 
+      {/* mig 0229 — Layout & background. Free-tier visual ownership:
+          avatar placement, opt-in URL chip, and a full-page background
+          image. The FREE chip makes it clear this isn't a Pro upsell —
+          Pro pressure comes from multi-page / custom domain / analytics,
+          not from gating visual polish. */}
+      <Section
+        title="Layout & background"
+        icon={<LayoutIcon size={16} strokeWidth={2.5} />}
+      >
+        <LayoutAndBackgroundControls
+          placement={(provider.profile_placement ?? 'center') as 'center' | 'top-left' | 'bottom-left'}
+          showUrlUnderAvatar={Boolean(provider.show_url_under_avatar)}
+          pageBgUrl={provider.page_background_image_url ?? null}
+          userId={provider.user_id ?? null}
+          onSave={onSave}
+        />
+      </Section>
+
       {/* Running marquee text — the pink ribbon that scrolls under the
           portfolio carousel on the public profile. Max 500 chars. */}
       <Section title="Running text (marquee under portfolio)" icon={<Megaphone size={16} strokeWidth={2.5} />}>
@@ -704,6 +728,285 @@ function DraftModeControls({
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+// mig 0229 — Layout & background controls. Three Free-tier settings:
+//   1. Avatar placement — center / top-left / bottom-left, picked via
+//      a 3-tile SVG mockup picker (selected tile gets a brand-yellow
+//      ring).
+//   2. Show URL under avatar — toggle. When on, the public page
+//      renders a kita2u.com/<slug> chip below the display name.
+//   3. Page background — full-page image uploader. Renders behind the
+//      whole page with an 85% white overlay so foreground content
+//      stays readable. Uses the same Supabase storage bucket as the
+//      banner upload (profile-images / userId/page-bg/<uuid>.<ext>).
+function LayoutAndBackgroundControls({
+  placement, showUrlUnderAvatar, pageBgUrl, userId, onSave,
+}: {
+  placement:          'center' | 'top-left' | 'bottom-left'
+  showUrlUnderAvatar: boolean
+  pageBgUrl:          string | null
+  userId:             string | null
+  onSave:             (patch: Partial<FullProvider>) => Promise<boolean> | boolean
+}) {
+  const [savedFlash, setSavedFlash] = useState<null | 'placement' | 'url' | 'bg'>(null)
+  const flash = (key: 'placement' | 'url' | 'bg') => {
+    setSavedFlash(key)
+    setTimeout(() => setSavedFlash(null), 1200)
+  }
+
+  const PLACEMENTS: Array<{
+    id:    'center' | 'top-left' | 'bottom-left'
+    label: string
+    desc:  string
+    svg:   React.ReactNode
+  }> = [
+    {
+      id:    'center',
+      label: 'Center',
+      desc:  'Avatar in the middle of the card',
+      svg: (
+        <svg viewBox="0 0 60 40" className="w-full h-auto" aria-hidden>
+          <rect x="2" y="2" width="56" height="22" rx="3" fill="#FDE68A" />
+          <rect x="2" y="26" width="56" height="12" rx="3" fill="#F3F4F6" stroke="#E5E7EB" />
+          <circle cx="14" cy="32" r="5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />
+        </svg>
+      ),
+    },
+    {
+      id:    'top-left',
+      label: 'Top-left',
+      desc:  'Avatar in the top-left of the hero',
+      svg: (
+        <svg viewBox="0 0 60 40" className="w-full h-auto" aria-hidden>
+          <rect x="2" y="2" width="56" height="22" rx="3" fill="#FDE68A" />
+          <rect x="2" y="26" width="56" height="12" rx="3" fill="#F3F4F6" stroke="#E5E7EB" />
+          <circle cx="10" cy="10" r="5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />
+        </svg>
+      ),
+    },
+    {
+      id:    'bottom-left',
+      label: 'Bottom-left',
+      desc:  'Avatar straddles the hero/page edge',
+      svg: (
+        <svg viewBox="0 0 60 40" className="w-full h-auto" aria-hidden>
+          <rect x="2" y="2" width="56" height="22" rx="3" fill="#FDE68A" />
+          <rect x="2" y="26" width="56" height="12" rx="3" fill="#F3F4F6" stroke="#E5E7EB" />
+          <circle cx="10" cy="24" r="6.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />
+        </svg>
+      ),
+    },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* FREE chip — makes the no-upsell promise visible. */}
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">
+          Free
+        </span>
+        <p className="text-[12px] text-black/65 leading-snug">
+          Polish your page without upgrading — these three controls are always free.
+        </p>
+      </div>
+
+      {/* 1. Placement picker — 3-tile SVG mockup */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-extrabold uppercase tracking-wider text-black/70">
+            Avatar placement
+          </span>
+          {savedFlash === 'placement' && (
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">
+              ✓ Saved
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {PLACEMENTS.map((opt) => {
+            const on = placement === opt.id
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={async () => {
+                  const ok = await onSave({ profile_placement: opt.id })
+                  if (ok) flash('placement')
+                }}
+                className={`text-left rounded-xl border bg-white p-2 transition active:scale-[0.98] ${
+                  on
+                    ? 'border-yellow-400 ring-2 ring-yellow-400 shadow-[0_2px_10px_rgba(250,204,21,0.35)]'
+                    : 'border-gray-200 hover:border-pink-300'
+                }`}
+                aria-pressed={on}
+              >
+                <div className="rounded-md overflow-hidden mb-1.5 bg-gray-50">
+                  {opt.svg}
+                </div>
+                <div className="text-[12px] font-extrabold text-black leading-tight truncate">
+                  {opt.label}
+                </div>
+                <div className="text-[11px] text-black/55 leading-snug">
+                  {opt.desc}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 2. Show URL under avatar — toggle */}
+      <label className="flex items-start gap-3 rounded-xl bg-gray-50 border border-gray-200 p-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showUrlUnderAvatar}
+          onChange={async (e) => {
+            const next = e.target.checked
+            const ok = await onSave({ show_url_under_avatar: next })
+            if (ok) flash('url')
+          }}
+          className="mt-0.5 w-5 h-5 accent-pink-600 shrink-0"
+        />
+        <span className="flex-1 min-w-0">
+          <span className="flex items-center gap-1.5 text-[13px] font-extrabold text-black leading-snug">
+            <LinkIcon size={14} strokeWidth={2.5} className="text-pink-600" />
+            Show my URL under the avatar
+            {savedFlash === 'url' && (
+              <span className="ml-auto text-[10.5px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">
+                ✓ Saved
+              </span>
+            )}
+          </span>
+          <span className="block text-[12px] text-black/55 leading-snug mt-0.5">
+            Shows <span className="font-mono text-black/70">kita2u.com/&lt;slug&gt;</span> below your name so visitors
+            remember where they are.
+          </span>
+        </span>
+      </label>
+
+      {/* 3. Page background uploader — sits behind the entire page */}
+      <PageBackgroundUploader
+        url={pageBgUrl}
+        userId={userId}
+        onSaved={async (next) => {
+          const ok = await onSave({ page_background_image_url: next })
+          if (ok) flash('bg')
+        }}
+        savedFlash={savedFlash === 'bg'}
+      />
+    </div>
+  )
+}
+
+// Uploader for page_background_image_url. Mirrors the BannerLibraryPicker
+// upload flow (Supabase storage profile-images bucket, JPG/PNG/WEBP, 8MB
+// cap). On success calls onSaved with the public URL.
+function PageBackgroundUploader({
+  url, userId, onSaved, savedFlash,
+}: {
+  url:        string | null
+  userId:     string | null
+  onSaved:    (nextUrl: string | null) => void | Promise<void>
+  savedFlash: boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [err,  setErr]  = useState<string | null>(null)
+
+  const MAX_BYTES = 8 * 1024 * 1024
+  const MIME_RE   = /^image\/(jpeg|jpg|png|webp)$/
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    setErr(null)
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (!userId) { setErr('Not signed in.'); return }
+    if (f.size > MAX_BYTES)  { setErr('File too large (max 8MB).'); return }
+    if (!MIME_RE.test(f.type)) { setErr('Must be JPG / PNG / WEBP.'); return }
+    setBusy(true)
+    try {
+      const supabase = getBrowserSupabase()
+      if (!supabase) { setErr('Not connected to server.'); return }
+      const ext  = (f.name.split('.').pop() || 'jpg').toLowerCase()
+      const path = `${userId}/page-bg/${crypto.randomUUID()}.${ext}`
+      const { error } = await supabase.storage
+        .from('profile-images')
+        .upload(path, f, { upsert: false, contentType: f.type })
+      if (error) { setErr(`Upload failed: ${error.message}`); return }
+      const { data: pub } = supabase.storage.from('profile-images').getPublicUrl(path)
+      if (pub?.publicUrl) await onSaved(pub.publicUrl)
+      if (inputRef.current) inputRef.current.value = ''
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] font-extrabold uppercase tracking-wider text-black/70">
+          Page background
+        </span>
+        {savedFlash && (
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">
+            ✓ Saved
+          </span>
+        )}
+      </div>
+
+      {url ? (
+        <div
+          className="relative rounded-xl overflow-hidden border border-gray-200"
+          style={{ aspectRatio: '16 / 9' }}
+        >
+          {/* The actual stored image so the beautician sees what they
+              uploaded. The public page tints this 85% white at render
+              time — the note below sets that expectation. */}
+          <img src={url} alt="Your page background" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1.5">
+            <label className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider text-black bg-white/95 hover:bg-white cursor-pointer shadow">
+              <Upload className="w-3 h-3" strokeWidth={2.5} />
+              Replace
+              <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} className="hidden" />
+            </label>
+            <button
+              type="button"
+              onClick={() => { void onSaved(null) }}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider text-white bg-black/70 hover:bg-black/85 shadow"
+            >
+              <XIcon className="w-3 h-3" strokeWidth={2.5} />
+              Clear
+            </button>
+          </div>
+        </div>
+      ) : (
+        <label className="flex items-center gap-2 rounded-xl px-4 py-3 cursor-pointer transition active:scale-[0.98]"
+          style={{ background: 'rgba(236,72,153,0.06)', border: '1px dashed rgba(236,72,153,0.45)' }}
+        >
+          <Upload className="w-4 h-4 text-pink-500 shrink-0" strokeWidth={2.5} />
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-extrabold text-gray-900">{busy ? 'Uploading…' : 'Upload page background'}</div>
+            <div className="text-[12px] text-gray-500 leading-snug">JPG · PNG · WEBP · max 8MB</div>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={pick}
+            className="hidden"
+          />
+        </label>
+      )}
+
+      {err && <p className="text-[12px] font-bold text-red-600">{err}</p>}
+
+      <p className="text-[11px] text-black/55 leading-snug">
+        Optional. A faded version of this image appears behind your whole page — we tint it 85% white so your
+        services stay readable.
+      </p>
     </div>
   )
 }

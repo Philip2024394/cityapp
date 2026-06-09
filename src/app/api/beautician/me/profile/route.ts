@@ -69,6 +69,10 @@ type Body = {
   // moat, not security-critical).
   is_draft?:       boolean
   draft_password?: string | null
+  // mig 0229 — Free-tier visual ownership
+  profile_placement?:         'center' | 'top-left' | 'bottom-left'
+  show_url_under_avatar?:     boolean
+  page_background_image_url?: string | null
 }
 
 const SERVICES_OFFERED_ALLOWLIST = new Set([
@@ -148,6 +152,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'invalid_qr_payment_url' }, { status: 400 })
     }
     ;(update as Record<string, unknown>).qr_payment_url = v
+  }
+
+  // mig 0229 — Free-tier visual ownership: avatar placement on the
+  // hero, optional URL chip under the avatar, optional full-page
+  // background image. All three are Free — no plan gate.
+  if (body.profile_placement !== undefined) {
+    const allowed = new Set(['center', 'top-left', 'bottom-left'])
+    if (typeof body.profile_placement !== 'string' || !allowed.has(body.profile_placement)) {
+      return NextResponse.json({ error: 'invalid_profile_placement' }, { status: 400 })
+    }
+    ;(update as Record<string, unknown>).profile_placement = body.profile_placement
+  }
+  if (body.show_url_under_avatar !== undefined) {
+    if (typeof body.show_url_under_avatar !== 'boolean') {
+      return NextResponse.json({ error: 'invalid_show_url_under_avatar' }, { status: 400 })
+    }
+    ;(update as Record<string, unknown>).show_url_under_avatar = body.show_url_under_avatar
+  }
+  if (body.page_background_image_url !== undefined) {
+    const raw = body.page_background_image_url
+    const v = typeof raw === 'string' ? raw.trim() || null : null
+    if (v && !isAllowedImageUrl(v)) {
+      return NextResponse.json({ error: 'invalid_page_background_image_url' }, { status: 400 })
+    }
+    ;(update as Record<string, unknown>).page_background_image_url = v
   }
 
   const universal = validateUniversalProfile(body)

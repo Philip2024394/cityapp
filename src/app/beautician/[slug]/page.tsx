@@ -374,8 +374,23 @@ export default function BeauticianProviderPage() {
     (p as unknown as { country_code?: string | null }).country_code ?? 'ID',
   ).currency_symbol
 
+  // mig 0229 — Free-tier layout flags. profile_placement drives where
+  // the avatar sits on the hero (center default mirrors the legacy
+  // behaviour). show_url_under_avatar opt-ins the kita2u.com/<slug>
+  // chip below the display name. page_background_image_url paints the
+  // whole page behind the content under an 85% white overlay.
+  const profilePlacement = ((): 'center' | 'top-left' | 'bottom-left' => {
+    const raw = (p as unknown as { profile_placement?: string | null }).profile_placement
+    return raw === 'top-left' || raw === 'bottom-left' ? raw : 'center'
+  })()
+  const showUrlUnderAvatar = Boolean(
+    (p as unknown as { show_url_under_avatar?: boolean | null }).show_url_under_avatar,
+  )
+  const pageBackgroundImageUrl =
+    (p as unknown as { page_background_image_url?: string | null }).page_background_image_url ?? null
+
   return (
-    <Shell>
+    <Shell backgroundImageUrl={pageBackgroundImageUrl}>
       {/* Hero — cover with overlay text, plus a floating info-card that
           sits on the bottom edge of the cover (15px rounded corners). */}
       <div className="relative pb-2">
@@ -544,27 +559,62 @@ export default function BeauticianProviderPage() {
         </div>
 
         {/* Floating info card — overlaps the bottom edge of the cover.
-            All 4 corners 15px. Left: avatar. Middle: name / city / rating.
-            Right: "Top Rated Seller" badge. */}
-        <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
-          <div
-            className="bg-white border border-gray-200 shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-3 flex items-center gap-3"
-            style={{ borderRadius: 15 }}
-          >
-            {/* Profile image — wrapped in AvatarFrame so the optional
-                animated ring (mig 0141) renders around the photo. Size
-                64px keeps parity with the previous w-16 h-16 footprint. */}
-            <AvatarFrame
-              src={p.profile_image_url ?? null}
-              alt={p.display_name}
-              size={64}
-              style={p.avatar_frame_style ?? 'none'}
-              themeColor={theme}
-              fallbackInitial={p.display_name?.[0]?.toUpperCase()}
-            />
+            mig 0229: profile_placement branches the layout. 'center'
+            keeps the legacy card (default for every existing row).
+            'top-left' floats the avatar onto the hero from the top-left.
+            'bottom-left' straddles avatar 50/50 across the hero/page edge.
 
+            Mobile container fix: on the default 'center' placement, the
+            outer white box (bg-white border shadow) is scoped to sm:+
+            so the mobile view shows the avatar + name cleanly against
+            the hero — no distracting box wrapping the avatar. */}
+        {(() => {
+          const hasContactForm = Boolean(
+            (p as unknown as { contact_form_enabled?: boolean }).contact_form_enabled
+            && (p as unknown as { contact_email?: string | null }).contact_email,
+          )
+          const renderRightSlot = () => {
+            if (hasContactForm) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => { setShowContactForm(true); setShowVisitUs(false); setShowReviews(false) }}
+                  aria-pressed={showContactForm}
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full shadow-sm active:scale-[0.96] transition"
+                  style={{ background: theme, color: themeInk }}
+                >
+                  <Mail className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  <span className="text-[11px] font-extrabold whitespace-nowrap">{t('contactUs')}</span>
+                </button>
+              )
+            }
+            if (homeServiceImage) {
+              return (
+                <div className="shrink-0 w-[94px] h-[94px] flex items-center justify-center">
+                  <img
+                    src={homeServiceImage}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              )
+            }
+            return (
+              <div
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
+                style={{ background: '#F3F4F6' }}
+              >
+                <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: themeIcon }} />
+                <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: themeIcon }}>
+                  {t('topRatedSeller')}
+                </span>
+              </div>
+            )
+          }
 
-            {/* Name + city + rating */}
+          const NameBlock = (
             <div className="min-w-0 flex-1">
               <h1 className="text-[16px] sm:text-[18px] font-black text-black truncate leading-tight flex items-center gap-1">
                 <span className="truncate">{p.display_name}</span>
@@ -576,6 +626,14 @@ export default function BeauticianProviderPage() {
                   aria-label={t('verifiedAria')}
                 />
               </h1>
+              {showUrlUnderAvatar && (
+                <a
+                  href={`https://kita2u.com/${p.slug}`}
+                  className="text-[12px] text-gray-600 font-bold hover:text-black truncate block mt-0.5"
+                >
+                  kita2u.com/{p.slug}
+                </a>
+              )}
               <p className="text-[12px] text-gray-500 truncate mt-0.5">
                 {p.city?.trim() || t('cityFallback')}
               </p>
@@ -594,61 +652,160 @@ export default function BeauticianProviderPage() {
                 </span>
               </div>
             </div>
+          )
 
-            {/* Top Rated Seller badge — flips to a brand-coloured
-                Contact Us button when the provider has opted into the
-                email contact form (mig 0137). Tapping it switches the
-                page's main content to the ContactForm panel, leaving
-                Visit Us untouched. When the beautician offers home /
-                hotel / villa visits AND her theme has a matching
-                illustration, the badge is replaced by a transparent
-                PNG stamp instead (decorative, no border / background). */}
-            {(() => {
-              const hasContactForm = Boolean(
-                (p as unknown as { contact_form_enabled?: boolean }).contact_form_enabled
-                && (p as unknown as { contact_email?: string | null }).contact_email,
-              )
-              if (hasContactForm) {
-                return (
-                  <button
-                    type="button"
-                    onClick={() => { setShowContactForm(true); setShowVisitUs(false); setShowReviews(false) }}
-                    aria-pressed={showContactForm}
-                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full shadow-sm active:scale-[0.96] transition"
-                    style={{ background: theme, color: themeInk }}
-                  >
-                    <Mail className="w-3.5 h-3.5" strokeWidth={2.5} />
-                    <span className="text-[11px] font-extrabold whitespace-nowrap">{t('contactUs')}</span>
-                  </button>
-                )
-              }
-              if (homeServiceImage) {
-                return (
-                  <div className="shrink-0 w-[94px] h-[94px] flex items-center justify-center">
-                    <img
-                      src={homeServiceImage}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-                )
-              }
-              return (
+          const Avatar = (size: number) => (
+            <AvatarFrame
+              src={p.profile_image_url ?? null}
+              alt={p.display_name}
+              size={size}
+              style={p.avatar_frame_style ?? 'none'}
+              themeColor={theme}
+              fallbackInitial={p.display_name?.[0]?.toUpperCase()}
+            />
+          )
+
+          if (profilePlacement === 'center') {
+            // Default — legacy card. The bg-white / border / shadow now
+            // only apply at sm:+ so on mobile the avatar reads against
+            // the hero directly. Padding also drops on mobile to remove
+            // the inner box feel.
+            return (
+              <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
                 <div
-                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full"
-                  style={{ background: '#F3F4F6' }}
+                  className="flex items-center gap-3 sm:bg-white sm:border sm:border-gray-200 sm:shadow-[0_10px_25px_rgba(0,0,0,0.15)] sm:p-3"
+                  style={{ borderRadius: 15 }}
                 >
-                  <Award className="w-3.5 h-3.5" strokeWidth={2.25} style={{ color: themeIcon }} />
-                  <span className="text-[11px] font-extrabold whitespace-nowrap" style={{ color: themeIcon }}>
-                    {t('topRatedSeller')}
-                  </span>
+                  {Avatar(64)}
+                  {NameBlock}
+                  {renderRightSlot()}
                 </div>
-              )
-            })()}
-          </div>
-        </div>
+              </div>
+            )
+          }
+
+          if (profilePlacement === 'top-left') {
+            // Avatar floats onto the hero at the top-left, ~60px in
+            // from each edge per the brief. Sits beside an inline
+            // name pill (white-glass background so it stays readable
+            // against any cover). The rating + right-slot move into a
+            // compact row below the hero on mobile.
+            return (
+              <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
+                <div
+                  className="absolute z-30"
+                  style={{ top: -96, left: 16 }}
+                >
+                  <div className="flex items-center gap-2">
+                    {Avatar(80)}
+                    <div
+                      className="rounded-full px-3 py-1.5 backdrop-blur-sm shadow-md"
+                      style={{ background: 'rgba(255,255,255,0.92)' }}
+                    >
+                      <h1 className="text-[14px] font-black text-black truncate leading-tight flex items-center gap-1 max-w-[180px]">
+                        <span className="truncate">{p.display_name}</span>
+                        <BadgeCheck
+                          className="w-3.5 h-3.5 shrink-0"
+                          strokeWidth={2.5}
+                          fill={theme}
+                          style={{ color: themeInk }}
+                          aria-label={t('verifiedAria')}
+                        />
+                      </h1>
+                      <div className="text-[11px] text-gray-600 truncate max-w-[180px]">
+                        {p.city?.trim() || t('cityFallback')}
+                      </div>
+                      {showUrlUnderAvatar && (
+                        <a
+                          href={`https://kita2u.com/${p.slug}`}
+                          className="text-[11px] text-gray-600 font-bold hover:text-black truncate block max-w-[180px]"
+                        >
+                          kita2u.com/{p.slug}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Rating + right-slot strip below the hero so the
+                    customer still sees the rating + Contact CTA. */}
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-1">
+                    <Star
+                      className="w-3.5 h-3.5 shrink-0"
+                      style={{ color: '#FACC15' }}
+                      fill="#FACC15"
+                      strokeWidth={0}
+                    />
+                    <span className="text-[12px] font-extrabold text-black">
+                      {p.rating != null && p.rating > 0 ? p.rating.toFixed(1) : '—'}
+                    </span>
+                    <span className="text-[11px] text-gray-500">
+                      ({p.rating_count ?? 0} {(p.rating_count ?? 0) === 1 ? t('reviewSingular') : t('reviewPlural')})
+                    </span>
+                  </div>
+                  {renderRightSlot()}
+                </div>
+              </div>
+            )
+          }
+
+          // bottom-left — avatar straddles 50/50 the hero/page edge.
+          // 96-112px avatar; centered vertically on the cover's bottom
+          // edge via absolute positioning. Name + city sit to the right.
+          return (
+            <div className="px-4 relative z-20" style={{ marginTop: 12 }}>
+              <div className="relative flex items-center gap-3" style={{ minHeight: 56 }}>
+                <div
+                  className="shrink-0"
+                  style={{
+                    marginTop: -56,
+                    marginBottom: -8,
+                  }}
+                >
+                  {Avatar(112)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-[16px] sm:text-[18px] font-black text-black truncate leading-tight flex items-center gap-1">
+                    <span className="truncate">{p.display_name}</span>
+                    <BadgeCheck
+                      className="w-4 h-4 shrink-0"
+                      strokeWidth={2.5}
+                      fill={theme}
+                      style={{ color: themeInk }}
+                      aria-label={t('verifiedAria')}
+                    />
+                  </h1>
+                  {showUrlUnderAvatar && (
+                    <a
+                      href={`https://kita2u.com/${p.slug}`}
+                      className="text-[12px] text-gray-600 font-bold hover:text-black truncate block mt-0.5"
+                    >
+                      kita2u.com/{p.slug}
+                    </a>
+                  )}
+                  <p className="text-[12px] text-gray-500 truncate mt-0.5">
+                    {p.city?.trim() || t('cityFallback')}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star
+                      className="w-3.5 h-3.5 shrink-0"
+                      style={{ color: '#FACC15' }}
+                      fill="#FACC15"
+                      strokeWidth={0}
+                    />
+                    <span className="text-[12px] font-extrabold text-black">
+                      {p.rating != null && p.rating > 0 ? p.rating.toFixed(1) : '—'}
+                    </span>
+                    <span className="text-[11px] text-gray-500">
+                      ({p.rating_count ?? 0} {(p.rating_count ?? 0) === 1 ? t('reviewSingular') : t('reviewPlural')})
+                    </span>
+                  </div>
+                </div>
+                {renderRightSlot()}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       <div className="px-4 pb-6 max-w-2xl mx-auto space-y-3 pt-3">
@@ -1756,13 +1913,30 @@ function HeroIcon({
 }
 
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, backgroundImageUrl }: { children: React.ReactNode; backgroundImageUrl?: string | null }) {
   // Solid white paints over the global PageBackground (which sits at
   // -z-10) so the courier scene doesn't show through here. min-h-[100dvh]
   // lets the page scroll naturally so panels like Visit Us / Reviews
   // can extend past the initial viewport.
+  //
+  // mig 0229 — when the beautician sets page_background_image_url, we
+  // stack an 85% white overlay over the image so foreground content
+  // stays readable. backgroundAttachment: fixed gives a parallax-ish
+  // feel without animation. Falls back to plain bg-white when unset.
+  const style: React.CSSProperties | undefined = backgroundImageUrl
+    ? {
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url(${backgroundImageUrl})`,
+        backgroundAttachment: 'fixed',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }
+    : undefined
   return (
-    <main className="relative min-h-[100dvh] bg-white text-ink">
+    <main
+      className={`relative min-h-[100dvh] text-ink ${backgroundImageUrl ? '' : 'bg-white'}`}
+      style={style}
+    >
       {/* Hide the floating dev-toolbar wrench on this page only — the
           page is meant to read as a polished customer-facing profile
           and the spanner clutters the corner. Scoped to mount lifetime. */}

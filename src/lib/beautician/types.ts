@@ -165,6 +165,13 @@ export type BeauticianProviderPublic = Pick<
   // until the correct ?p= is supplied. draft_password is NEVER sent
   // to the client — it lives in the DB row only.
   is_draft?: boolean | null
+  // mig 0229 — Free-tier visual ownership. Avatar placement on the
+  // hero, opt-in URL chip under the avatar, and an optional full-page
+  // background image (rendered with an 85% white overlay so foreground
+  // content stays readable). All three are Free-tier — no plan gate.
+  profile_placement?:         'center' | 'top-left' | 'bottom-left' | null
+  show_url_under_avatar?:     boolean | null
+  page_background_image_url?: string | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.

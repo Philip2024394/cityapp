@@ -71,6 +71,10 @@ const PUBLIC_COLS = [
   // renders a password prompt. draft_password is stripped from the
   // response before the row is returned (server-side gate below).
   'is_draft','draft_password',
+  // mig 0229 — Free-tier visual ownership. Avatar placement (center /
+  // top-left / bottom-left), opt-in kita2u.com/<slug> chip under the
+  // avatar, and an optional full-page background image. All Free.
+  'profile_placement','show_url_under_avatar','page_background_image_url',
 ].join(', ')
 
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
