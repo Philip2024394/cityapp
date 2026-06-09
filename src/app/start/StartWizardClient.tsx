@@ -21,15 +21,16 @@
 // purely funnels users into the existing vertical signup pages — those are
 // untouched.
 // ============================================================================
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, ChevronLeft, Check, AlertCircle,
 } from 'lucide-react'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
 import VerticalTilePicker from '@/components/start/VerticalTilePicker'
 import PhonePreview from '@/components/start/PhonePreview'
+import { HANDLE_RE } from '@/lib/handle/reserved'
 import { VERTICALS, findVertical } from './verticals'
 
 // 8 swatches — kept compact so the right column doesn't compete with the
@@ -50,12 +51,32 @@ type Step = 'pick' | 'customise' | 'confirm'
 
 export default function StartWizardClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep]                       = useState<Step>('pick')
   const [vertical, setVertical]               = useState<string | null>(null)
   const [displayName, setDisplayName]         = useState<string>('')
   const [themeColor, setThemeColor]           = useState<string>('#FACC15')
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
   const [error, setError]                     = useState<string | null>(null)
+  // Slug pre-filled from the landing hero's typed-handle entry pair.
+  // Stays empty when /start is opened without ?handle=. When set, the
+  // confirm step shows "Your page: kita2u.com/<slug>" and the handoff
+  // URL appends &slug=<handle> so the canonical vertical signup form
+  // can pre-populate the slug field.
+  const [prefilledSlug, setPrefilledSlug]     = useState<string>('')
+
+  // On mount: read ?handle= and, if well-shaped, seed both displayName
+  // (so step 2 has a sensible starting point) and prefilledSlug (so step
+  // 3 can show the kita2u.com URL and pass it through to the vertical
+  // signup form). Invalid / missing param → no-op.
+  useEffect(() => {
+    const raw = (searchParams.get('handle') || '').trim().toLowerCase()
+    if (!raw) return
+    if (!HANDLE_RE.test(raw) || raw.includes('--')) return
+    setPrefilledSlug(raw)
+    setDisplayName((curr) => curr || raw)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const picked = useMemo(() => findVertical(vertical), [vertical])
 
@@ -87,6 +108,11 @@ export default function StartWizardClient() {
     qs.set('display_name', displayName.trim())
     qs.set('theme_color',  themeColor)
     if (profileImageUrl) qs.set('profile_image_url', profileImageUrl)
+    // ?handle= from the landing hero rides through to the vertical
+    // signup form as &slug=. If that form already consumes a `slug`
+    // query param the user's chosen handle is auto-claimed; if not,
+    // it's a no-op until the form is taught the param.
+    if (prefilledSlug) qs.set('slug', prefilledSlug)
     router.push(`${picked.href}?${qs.toString()}`)
   }
 
@@ -141,6 +167,7 @@ export default function StartWizardClient() {
             displayName={displayName}
             themeColor={themeColor}
             profileImageUrl={profileImageUrl}
+            prefilledSlug={prefilledSlug}
             onBack={() => setStep('customise')}
             onContinue={handoffToCanonicalForm}
           />
@@ -421,6 +448,7 @@ function StepCustomise({
 function StepConfirm({
   vertical, verticalLabel, verticalHref,
   displayName, themeColor, profileImageUrl,
+  prefilledSlug,
   onBack, onContinue,
 }: {
   vertical: string
@@ -429,6 +457,7 @@ function StepConfirm({
   displayName: string
   themeColor: string
   profileImageUrl: string | null
+  prefilledSlug: string
   onBack: () => void
   onContinue: () => void
 }) {
@@ -452,6 +481,12 @@ function StepConfirm({
             <div className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500">
               Your page so far
             </div>
+            {prefilledSlug && (
+              <ReviewRow
+                label="Your page"
+                value={`kita2u.com/${prefilledSlug}`}
+              />
+            )}
             <ReviewRow label="Business type" value={verticalLabel} />
             <ReviewRow label="Business name" value={displayName || 'Not set'} />
             <ReviewRow

@@ -7,6 +7,7 @@ import {
   Scissors, Shirt, Sparkles as Spark, UtensilsCrossed, MapPin, Bike, Car, Hammer, Hand, Stethoscope, Check, X,
 } from 'lucide-react'
 import PlatformDisclaimer from '@/components/layout/PlatformDisclaimer'
+import HandleEntryHero from '@/components/landing/HandleEntryHero'
 import { logNav } from '@/lib/perf/navTiming'
 
 // ============================================================================
@@ -229,16 +230,14 @@ export default function LandingPage() {
             {t.lede}
           </p>
 
-          {/* CTA — full-width gold button drops users into the location
-              warm-up modal which routes to /explore. */}
-          <button
-            type="button"
-            onClick={handleEnterApp}
-            className="w-full min-h-[52px] rounded-2xl px-6 bg-gradient-to-r from-brand to-brand2 text-[#0A0A0A] font-extrabold text-[15px] hover:from-brand2 hover:to-brand active:scale-[0.99] transition shadow-[0_8px_22px_rgba(250,204,21,0.35)]"
-            aria-label={t.enter}
-          >
-            {t.enter}
-          </button>
+          {/* CTA — typed-handle entry pair (Linktree-style funnel). The
+              old "Start free →" button converted poorly because cold
+              traffic had nothing invested before the signup form opened.
+              Typing a handle and seeing it light up green flips the
+              visitor from browsing to committed in ~2 seconds. Submits
+              to /start?handle=<handle>; the wizard's StartWizardClient
+              picks up the param to pre-fill displayName + slug. */}
+          <HandleEntryHero locale={locale} />
 
           {/* Language picker — directly under the hero Enter button so
               the choice is visible before the user taps in. ID button
