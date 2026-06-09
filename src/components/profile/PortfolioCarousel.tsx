@@ -177,16 +177,38 @@ function PortfolioCard({
 }) {
   const price = priceLabel(photo.price_idr, currencySymbol)
   const badge = resolveBadge(photo.badge ?? null)
+  // First-class portfolio block: when an entry has BOTH before + after
+  // URLs, the card thumbnail renders an interactive BeforeAfterSlider
+  // instead of a static cover image. Single-side or no before/after
+  // falls back to `photo.url`.
+  const hasBefore  = Boolean(photo.before_image_url)
+  const hasAfter   = Boolean(photo.after_image_url)
+  const hasCompare = hasBefore && hasAfter
   return (
     <div className="w-[170px] shrink-0 snap-start rounded-xl overflow-hidden bg-white border border-gray-200 shadow-sm flex flex-col">
       <div className="relative">
-        <img
-          src={photo.url}
-          alt={photo.name || ''}
-          loading="lazy"
-          className="w-full h-[130px] object-cover bg-gray-100"
-          style={{ objectPosition: photo.object_position || 'center' }}
-        />
+        {hasCompare ? (
+          // Fixed-height wrapper preserves the existing 130px card slot
+          // even though the slider uses its own aspect ratio internally.
+          <div className="w-full h-[130px] overflow-hidden">
+            <BeforeAfterSlider
+              beforeUrl={photo.before_image_url ?? ''}
+              afterUrl={photo.after_image_url ?? ''}
+              altBefore={`${photo.name || ''} — before`}
+              altAfter={`${photo.name || ''} — after`}
+              themeColor={themeColor}
+              aspect="170 / 130"
+            />
+          </div>
+        ) : (
+          <img
+            src={photo.url}
+            alt={photo.name || ''}
+            loading="lazy"
+            className="w-full h-[130px] object-cover bg-gray-100"
+            style={{ objectPosition: photo.object_position || 'center' }}
+          />
+        )}
         {badge && (
           <>
             {/* Corner-anchored promo badge with running glow. The badge
@@ -307,7 +329,10 @@ export function PortfolioDetailPopup({
             <BeforeAfterSlider
               beforeUrl={photo.before_image_url ?? ''}
               afterUrl={photo.after_image_url ?? ''}
+              altBefore={`${photo.name || ''} — before`}
+              altAfter={`${photo.name || ''} — after`}
               themeColor={themeColor}
+              aspect="4 / 5"
             />
           ) : (
             <>

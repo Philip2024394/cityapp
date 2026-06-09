@@ -13,15 +13,29 @@ import { ArrowLeftRight } from 'lucide-react'
 // on the document during a drag so the user can drag outside the
 // container without losing the gesture, which is the common case when
 // pushing the handle all the way to either edge.
+//
+// Default aspect ratio is 4:3 — tall enough for face / eye / lash work
+// and wide enough for hair / nail. Callers can override via `aspect`.
+// The detail-popup view passes `4 / 5` to retain the older taller crop.
 
 export default function BeforeAfterSlider({
   beforeUrl,
   afterUrl,
   themeColor,
+  altBefore = 'Before',
+  altAfter  = 'After',
+  /** CSS aspect-ratio token (e.g. '4 / 3', '4 / 5', '1 / 1'). Defaults
+   *  4:3 — the portfolio-block default per Linktree-beat audit. */
+  aspect    = '4 / 3',
+  className = '',
 }: {
   beforeUrl:  string
   afterUrl:   string
   themeColor: string
+  altBefore?: string
+  altAfter?:  string
+  aspect?:    string
+  className?: string
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const draggingRef  = useRef<boolean>(false)
@@ -64,34 +78,66 @@ export default function BeforeAfterSlider({
     }
   }, [setClipFromClientX])
 
+  // Initial slide-in: left → 50% over ~400ms, respecting
+  // prefers-reduced-motion. We mutate the CSS variable directly so the
+  // container's clip + handle stay in sync without React state churn.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const reduced = typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduced) {
+      el.style.setProperty('--cr-clip', '50%')
+      return
+    }
+    el.style.setProperty('--cr-clip', '0%')
+    let rafId = 0
+    const start = performance.now()
+    const DURATION_MS = 400
+    function frame(now: number) {
+      if (!el) return
+      // Don't fight an active drag — bail out the moment the user grabs.
+      if (draggingRef.current) return
+      const t = Math.min(1, (now - start) / DURATION_MS)
+      // ease-out cubic so it lands gently at 50%.
+      const eased = 1 - Math.pow(1 - t, 3)
+      el.style.setProperty('--cr-clip', (eased * 50) + '%')
+      if (t < 1) rafId = requestAnimationFrame(frame)
+    }
+    rafId = requestAnimationFrame(frame)
+    return () => cancelAnimationFrame(rafId)
+  }, [beforeUrl, afterUrl])
+
   return (
     <div
       ref={containerRef}
       onPointerDown={onPointerDown}
-      className="relative w-full aspect-[4/5] overflow-hidden bg-gray-100 select-none touch-none cursor-ew-resize"
+      className={`relative w-full overflow-hidden bg-gray-100 select-none touch-none cursor-ew-resize ${className}`}
       style={{
-        // Default to 50/50 split. The handlers above keep this in sync.
-        ['--cr-clip' as any]: '50%',
+        // Default to 0/100 split so the slide-in animation has somewhere
+        // to travel from. The effect above interpolates to 50%.
+        ['--cr-clip' as any]: '0%',
+        aspectRatio: aspect,
         borderBottom: `3px solid ${themeColor}`,
       }}
     >
       {/* Layer 1 — AFTER image, full size. */}
       <img
         src={afterUrl}
-        alt="After"
+        alt={altAfter}
         draggable={false}
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
       />
       {/* Layer 2 — BEFORE image, clipped from the right by var(--cr-clip). */}
       <img
         src={beforeUrl}
-        alt="Before"
+        alt={altBefore}
         draggable={false}
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         style={{ clipPath: 'inset(0 calc(100% - var(--cr-clip)) 0 0)' }}
       />
 
-      {/* Corner labels. */}
+      {/* Corner labels — white text on translucent black per spec. */}
       <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white pointer-events-none"
            style={{ background: 'rgba(0,0,0,0.55)' }}>
         Before
