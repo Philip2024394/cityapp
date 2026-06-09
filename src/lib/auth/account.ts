@@ -12,6 +12,10 @@ import { getAdminSupabase } from '@/lib/supabase/admin'
 export type AccountType = 'personal' | 'rental_company'
 export type SubscriptionStatus = 'inactive' | 'active' | 'expired'
 export type SubscriptionPlan = 'monthly' | 'yearly' | null
+// mig 0223 — 3-tier billing plan that drives the Kita2u presentation
+// product (Free / Pro / Studio). Orthogonal to subscription_status, which
+// stays the rental-company / tour-guide entitlement signal.
+export type AccountPlan = 'free' | 'pro' | 'studio'
 
 export type UserAccount = {
   user_id: string
@@ -25,6 +29,8 @@ export type UserAccount = {
   tour_guide_started_at: string | null
   tour_guide_expires_at: string | null
   trusted: boolean
+  // mig 0223 — current billing tier on the presentation product.
+  plan: AccountPlan
 }
 
 const DEFAULT_PERSONAL: Omit<UserAccount, 'user_id'> = {
@@ -38,6 +44,8 @@ const DEFAULT_PERSONAL: Omit<UserAccount, 'user_id'> = {
   tour_guide_started_at: null,
   tour_guide_expires_at: null,
   trusted: false,
+  // Default matches the DB column default (mig 0223).
+  plan: 'free',
 }
 
 // Fetch the signed-in user's account row using the request's auth cookie.
@@ -51,7 +59,7 @@ export async function getMyAccount(): Promise<{ userId: string; account: UserAcc
 
   const { data } = await supabase
     .from('user_accounts')
-    .select('user_id, account_type, subscription_status, subscription_plan, subscription_started_at, subscription_expires_at, tour_guide_status, tour_guide_plan, tour_guide_started_at, tour_guide_expires_at, trusted')
+    .select('user_id, account_type, subscription_status, subscription_plan, subscription_started_at, subscription_expires_at, tour_guide_status, tour_guide_plan, tour_guide_started_at, tour_guide_expires_at, trusted, plan')
     .eq('user_id', user.id)
     .maybeSingle()
 

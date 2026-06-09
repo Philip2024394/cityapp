@@ -151,6 +151,10 @@ export type BeauticianProviderPublic = Pick<
   // scrollable modal triggered by the contact-section footer links.
   legal_terms?:   string | null
   legal_privacy?: string | null
+  // mig 0223 — owner's current Kita2u billing plan. Drives the
+  // "Made with Kita2u" footer badge (Free tier only). Server fills
+  // this in /api/beautician/[slug]/public; client never writes it.
+  owner_plan?: 'free' | 'pro' | 'studio' | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.

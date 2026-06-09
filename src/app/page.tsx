@@ -37,13 +37,16 @@ const STRINGS: Record<Locale, {
     h1Line1: 'Dibuat untuk',
     h1Line2: 'kreator.',
     lede: 'Pertumbuhan dari media sosial — tanpa platform raksasa mengambil keuntunganmu. Audiens, harga, dan pelanggan tetap milikmu, 24 jam sehari.',
-    enter: 'Masuk Aplikasi',
+    // 2026-06-09 — Free tier (mig 0223) is now the lead. Trial is an
+    // upgrade later, not the headline. Hero + final CTA both route to
+    // /signup so the first tap creates a Free account.
+    enter: 'Mulai gratis →',
   },
   en: {
     h1Line1: 'Built for',
     h1Line2: 'creators.',
     lede: 'Social media growth without the giants taking your profit. Your audience, your prices, your customers — kept forever, growing 24 hours a day.',
-    enter: 'Enter App',
+    enter: 'Start free →',
   },
 }
 
@@ -165,8 +168,11 @@ export default function LandingPage() {
   }, [])
 
   function handleEnterApp() {
-    logNav('landing:enter-app')
-    router.push('/explore')
+    // 2026-06-09 — Lead with Free signup (mig 0223). The hero + final
+    // CTAs now drop straight into /signup instead of /explore so the
+    // first action a cold visitor takes is creating their Free account.
+    logNav('landing:start-free')
+    router.push('/signup')
   }
 
   return (

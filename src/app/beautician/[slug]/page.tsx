@@ -37,6 +37,7 @@ import VendorCartSheet from '@/components/cart/VendorCartSheet'
 import VisitUsViaCityDriversCard from '@/components/providers/VisitUsViaCityDriversCard'
 import { bannerSrc } from '@/lib/banners/transform'
 import PoweredByKita2u from '@/components/kita/PoweredByKita2u'
+import MadeWithKita2uBadge from '@/components/branding/MadeWithKita2uBadge'
 import ProfileQaPanel from '@/components/addons/ProfileQaPanel'
 
 // Default theme accent — used when the beautician hasn't picked their
@@ -1204,6 +1205,13 @@ export default function BeauticianProviderPage() {
           add-on enabled AND has at least one Q&A item. Otherwise null. */}
       <div className="max-w-2xl mx-auto px-4">
         <ProfileQaPanel ownerUserId={p.owner_user_id ?? null} />
+      </div>
+      {/* mig 0223 — Free-tier viral footer badge. Only renders when the
+          owner is on the Free plan; paid tiers (pro/studio) return null
+          from the component. Sits above PoweredByKita2u so the badge is
+          the prominent footer mark on every Free profile. */}
+      <div className="mt-8 pb-12 flex justify-center">
+        <MadeWithKita2uBadge plan={p.owner_plan ?? 'free'} />
       </div>
       <PoweredByKita2u defaultVertical="beautician" />
     </Shell>

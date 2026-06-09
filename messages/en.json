@@ -1052,7 +1052,7 @@
   },
   "howItWorks": {
     "header": {
-      "startTrial": "Start free trial"
+      "startTrial": "Start free →"
     },
     "hero": {
       "line1": "The traffic is looking.",
@@ -1123,7 +1123,7 @@
       "bodyA": "Your customers are out there, looking. Five minutes is all you need to make sure they find ",
       "bodyStrong": "you",
       "bodyB": ".",
-      "startTrial": "Start 7-day free trial",
+      "startTrial": "Start free →",
       "seePlans": "See plans",
       "disclaimer": "No credit card required · Cancel in one tap from your dashboard side drawer"
     }

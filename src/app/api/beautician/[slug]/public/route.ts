@@ -88,5 +88,25 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
   }
   if (!data) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-  return NextResponse.json({ provider: data })
+
+  // mig 0223 — return the owner's current billing plan so the public
+  // profile page can decide whether to show the "Made with Kita2u" badge
+  // (Free tier only). Done as a second query instead of a join because
+  // beautician_providers references the owner by user_id (a column whose
+  // name we already alias to owner_user_id above) and the simpler 2-query
+  // path keeps the SELECT clause sane. Falls back to 'free' when the
+  // provider has no linked auth user (demo / mock rows like Ayu).
+  let owner_plan: 'free' | 'pro' | 'studio' = 'free'
+  const ownerUserId = (data as unknown as { owner_user_id?: string | null }).owner_user_id ?? null
+  if (ownerUserId) {
+    const { data: acct } = await admin
+      .from('user_accounts')
+      .select('plan')
+      .eq('user_id', ownerUserId)
+      .maybeSingle()
+    const p = (acct as { plan?: string } | null)?.plan
+    if (p === 'pro' || p === 'studio') owner_plan = p
+  }
+
+  return NextResponse.json({ provider: { ...(data as unknown as Record<string, unknown>), owner_plan } })
 }
