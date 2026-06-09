@@ -137,6 +137,14 @@ export default function LaundryDashboardPage() {
           {!editing ? <ReadOnly provider={provider} /> : <EditForm provider={provider} onSaved={reload} />}
         </section>
 
+        <a
+          href="/api/laundry/me/flyer"
+          download="kita2u-flyer.png"
+          className="block w-full text-center rounded-2xl bg-black hover:bg-gray-800 text-white px-4 py-3 text-[13px] font-extrabold transition"
+        >
+          Download flyer for WhatsApp Status
+        </a>
+        <p className="text-[11px] text-black/55 text-center -mt-2">1080×1920 PNG. Share to WhatsApp Status, TikTok, IG Stories.</p>
         <p className="text-[12px] text-black/60 text-center">
           Public profile: <a href={`/laundry/${provider.slug}`} target="_blank" rel="noopener" className="text-brand hover:underline">/laundry/{provider.slug}</a>
         </p>

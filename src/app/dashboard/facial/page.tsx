@@ -252,6 +252,20 @@ export default function FacialDashboardPage() {
               Open in new tab →
             </a>
           </div>
+          {/* WhatsApp Status flyer — 1080×1920 PNG generated server-side
+              from this profile's data. Auth-gated to the caller's own row. */}
+          <div className="pt-3 mt-1 border-t border-gray-100">
+            <a
+              href="/api/facial/me/flyer"
+              download="kita2u-flyer.png"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-black hover:bg-gray-800 text-white px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
+            >
+              Download flyer for WhatsApp Status
+            </a>
+            <p className="text-[11px] text-black/55 mt-2 leading-snug">
+              1080×1920 PNG. Share to WhatsApp Status, TikTok, Instagram Stories.
+            </p>
+          </div>
         </section>
 
         {/* Weekly opening hours — replaces the manual Online/Busy/Offline

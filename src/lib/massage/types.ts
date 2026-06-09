@@ -193,8 +193,26 @@ export type MassageProviderPublic = Pick<
   promo_text?:             string | null
   // busy_dates: ISO YYYY-MM-DD strings the therapist marked unavailable.
   busy_dates?:             string[] | null
-  // service_photos: Record<tier, photoUrl[]> for the per-service gallery.
-  service_photos?:         Record<string, string[]> | null
+  // service_photos: Record<tier, entry[]> for the per-service gallery.
+  // Legacy rows store bare URL strings; new rows may use the rich entry
+  // shape with optional before/after pairs. When BOTH before_image_url
+  // and after_image_url are set, the shared PortfolioCarousel renders
+  // BeforeAfterSlider instead of a static image — no per-vertical UI
+  // change beyond this type extension.
+  service_photos?:         Record<string, Array<
+    | string
+    | {
+        url:              string
+        name?:            string
+        description?:     string
+        price_idr?:       number | null
+        object_position?: string
+        /** Optional before/after pair. When BOTH are set, the carousel
+         *  renders BeforeAfterSlider instead of a static image. */
+        before_image_url?: string | null
+        after_image_url?:  string | null
+      }
+  >> | null
   // marketplace_categories: filter chip values the provider appears under.
   marketplace_categories?: string[] | null
   // mig 0228 — vendor-uploaded static QRIS image URL. When non-null,
