@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Camera, Sparkles, Palette, Link2, CheckCircle2, Clock, Copy } from 'lucide-react'
+import { ChevronRight, Camera, Sparkles, Palette, Link2, CheckCircle2, Clock, Copy, Download } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
@@ -243,6 +243,22 @@ export default function BeauticianDashboardPage() {
             >
               Open in new tab →
             </a>
+          </div>
+          {/* WhatsApp Status flyer — templated 1080×1920 PNG generated
+              server-side from this profile's data. Native <a download>
+              so the browser saves directly to the user's gallery. The
+              endpoint is auth-gated and locked to the caller's own row. */}
+          <div className="pt-3 mt-1 border-t border-gray-100">
+            <a
+              href="/api/beautician/me/flyer"
+              download="kita2u-flyer.png"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-black hover:bg-gray-800 text-white px-3 py-3 text-[13px] font-extrabold min-h-[44px] transition"
+            >
+              <Download size={16} /> Download flyer for WhatsApp Status
+            </a>
+            <p className="text-[11px] text-black/55 mt-2 leading-snug">
+              1080×1920 PNG. Share to WhatsApp Status, TikTok, Instagram Stories.
+            </p>
           </div>
         </section>
 
