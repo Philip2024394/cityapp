@@ -4,11 +4,18 @@
 // Live availability ping fired by the landing hero (HandleEntryHero) on every
 // keystroke (debounced 300ms client-side). Returns one of:
 //
-//   { available: true }                              200
-//   { available: false, reason: 'invalid' }          200 — bad shape
-//   { available: false, reason: 'reserved' }         200 — in the static set
-//   { available: false, reason: 'taken' }            200 — exists in any
-//                                                     <vertical>_providers
+//   { available: true }                                            200
+//   { available: false, reason: 'invalid' }                        200 — bad shape
+//   { available: false, reason: 'reserved' }                       200 — in the static set
+//   { available: false, reason: 'taken' }                          200 — exists in any
+//                                                                  <vertical>_providers
+//   { available: false, reason: 'premium', requiresPlan: 'pro' }   200 — short / vanity,
+//                                                                  Pro-plan upsell
+//
+// Evaluation order is invalid → reserved → taken → premium. "Taken" beats
+// "premium" deliberately: a premium-eligible slug that is already claimed
+// must read as TAKEN, since that's the more actionable explanation for the
+// visitor (the slug is gone, not gated).
 //
 // Performance budget: < 200ms. All provider-table lookups fire in parallel
 // via Promise.all, each one a `SELECT id` LIMIT 1 on the indexed `slug`
@@ -19,10 +26,12 @@
 // signup grabs the slug. Same reason `revalidate = 0`.
 //
 // 2026-06-09 — Initial ship as part of the typed-handle entry hero.
+// 2026-06-09 — Premium-handle Pro-plan upsell added (see premium.ts).
 // ============================================================================
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { HANDLE_RE, RESERVED_HANDLES } from '@/lib/handle/reserved'
+import { isPremiumHandle } from '@/lib/handle/premium'
 
 export const runtime = 'nodejs'
 export const revalidate = 0
@@ -55,10 +64,11 @@ const PROVIDER_TABLES = [
   'parcel_providers',
 ] as const
 
-type Reason = 'invalid' | 'reserved' | 'taken'
+type Reason = 'invalid' | 'reserved' | 'taken' | 'premium'
 type CheckResponse =
   | { available: true }
-  | { available: false; reason: Reason }
+  | { available: false; reason: Exclude<Reason, 'premium'> }
+  | { available: false; reason: 'premium'; requiresPlan: 'pro' }
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -89,9 +99,16 @@ export async function GET(req: Request) {
   // state.
   const admin = getAdminSupabase()
   if (!admin) {
-    // Service role missing → fail open (treat as available) and let the
-    // signup form's DB-side unique constraint catch the collision. Better
-    // than blocking the funnel on infra config.
+    // Service role missing → fail open BUT still surface the premium
+    // gate, since premium is a static rule independent of DB state. The
+    // signup form's unique constraint catches collisions on the
+    // available path.
+    if (isPremiumHandle(raw)) {
+      return NextResponse.json<CheckResponse>(
+        { available: false, reason: 'premium', requiresPlan: 'pro' },
+        { status: 200 },
+      )
+    }
     return NextResponse.json<CheckResponse>(
       { available: true },
       { status: 200 },
@@ -110,10 +127,26 @@ export async function GET(req: Request) {
   const results = await Promise.all(probes)
   const taken = results.some((r) => r.data !== null)
 
+  // 3a. Taken beats premium — a premium-eligible slug that's already
+  // claimed should read as "taken" (more actionable for the user).
+  if (taken) {
+    return NextResponse.json<CheckResponse>(
+      { available: false, reason: 'taken' },
+      { status: 200 },
+    )
+  }
+
+  // 4. Premium upsell — short or curated vanity handle, gate behind Pro.
+  if (isPremiumHandle(raw)) {
+    return NextResponse.json<CheckResponse>(
+      { available: false, reason: 'premium', requiresPlan: 'pro' },
+      { status: 200 },
+    )
+  }
+
+  // 5. Available.
   return NextResponse.json<CheckResponse>(
-    taken
-      ? { available: false, reason: 'taken' }
-      : { available: true },
+    { available: true },
     { status: 200 },
   )
 }

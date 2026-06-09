@@ -18,10 +18,13 @@
 //       checking  → spinner + "Checking…"
 //       available → green check + "Yours! Tap to claim."
 //       taken     → red X + suggestion line
-//       invalid   → red X + "Use 4-32 letters / numbers / dashes."
+//       invalid   → red X + "Use 1-32 letters / numbers / dashes."
 //       reserved  → red X + "That one is reserved — try another."
-//   * "Get my page →" CTA disabled until status === 'available'
-//   * On submit → router.push(`/start?handle=<handle>`)
+//       premium   → gold ✨ + "Premium handle — upgrade to Pro to claim."
+//   * "Get my page →" CTA disabled until status === 'available'; swaps to
+//     "Upgrade to Pro →" → /pricing when status === 'premium'
+//   * On submit → router.push(`/start?handle=<handle>`) (available) or
+//     /pricing (premium)
 //
 // Styling matches the existing hero — yellow gradient button, font weights,
 // max-w-md container — so it slots under the headline + lede without
@@ -40,11 +43,13 @@ type Status =
   | { kind: 'taken' }
   | { kind: 'invalid' }
   | { kind: 'reserved' }
+  | { kind: 'premium' }
 
 const STRINGS: Record<Locale, {
   prefix:      string
   placeholder: string
   cta:         string
+  ctaPremium:  string
   helper:      string
   checking:    string
   available:   string
@@ -52,30 +57,35 @@ const STRINGS: Record<Locale, {
   takenSep:    string
   invalid:     string
   reserved:    string
+  premium:     string
 }> = {
   id: {
     prefix:      'kita2u.com/',
     placeholder: 'usahakamu',
     cta:         'Ambil halaman saya →',
-    helper:      'Klaim handelmu — 4-32 huruf, angka, atau strip.',
+    ctaPremium:  'Lihat paket →',
+    helper:      'Klaim handelmu — 1-32 huruf, angka, atau strip.',
     checking:    'Mengecek…',
     available:   'Punyamu! Tap untuk klaim.',
     takenLead:   'Sudah dipakai — coba',
     takenSep:    'atau',
-    invalid:     'Gunakan 4-32 huruf / angka / strip.',
+    invalid:     'Gunakan 1-32 huruf / angka / strip.',
     reserved:    'Itu sudah dipesan — coba lainnya.',
+    premium:     'Nama premium — Upgrade ke Pro untuk klaim nama pendek & populer.',
   },
   en: {
     prefix:      'kita2u.com/',
     placeholder: 'yourbusiness',
     cta:         'Get my page →',
-    helper:      'Claim your handle — 4-32 letters, numbers, or dashes.',
+    ctaPremium:  'Upgrade to Pro →',
+    helper:      'Claim your handle — 1-32 letters, numbers, or dashes.',
     checking:    'Checking…',
     available:   'Yours! Tap to claim.',
     takenLead:   'Taken — try',
     takenSep:    'or',
-    invalid:     'Use 4-32 letters / numbers / dashes.',
+    invalid:     'Use 1-32 letters / numbers / dashes.',
     reserved:    'That one is reserved — try another.',
+    premium:     'Premium handle — Pro unlocks short and popular names.',
   },
 }
 
@@ -135,7 +145,7 @@ export default function HandleEntryHero({ locale }: { locale: Locale }) {
         cache:  'no-store',
       })
         .then((r) => r.json())
-        .then((j: { available: boolean; reason?: 'invalid' | 'reserved' | 'taken' }) => {
+        .then((j: { available: boolean; reason?: 'invalid' | 'reserved' | 'taken' | 'premium' }) => {
           if (ctrl.signal.aborted) return
           if (j.available) {
             setStatus({ kind: 'available' })
@@ -145,6 +155,7 @@ export default function HandleEntryHero({ locale }: { locale: Locale }) {
             case 'invalid':  setStatus({ kind: 'invalid' });  break
             case 'reserved': setStatus({ kind: 'reserved' }); break
             case 'taken':    setStatus({ kind: 'taken' });    break
+            case 'premium':  setStatus({ kind: 'premium' });  break
             default:         setStatus({ kind: 'invalid' })
           }
         })
@@ -162,13 +173,21 @@ export default function HandleEntryHero({ locale }: { locale: Locale }) {
   }, [handle])
 
   function submit() {
+    // Premium hands the visitor to /pricing — the lever that monetizes
+    // short/popular handles. Available continues into the signup funnel.
+    if (status.kind === 'premium') {
+      router.push('/pricing')
+      return
+    }
     if (status.kind !== 'available') return
     const trimmed = handle.trim()
     if (!trimmed) return
     router.push(`/start?handle=${encodeURIComponent(trimmed)}`)
   }
 
-  const ready = status.kind === 'available'
+  const ready    = status.kind === 'available'
+  const premium  = status.kind === 'premium'
+  const canClick = ready || premium
 
   return (
     <div className="space-y-2 pt-1">
@@ -194,7 +213,7 @@ export default function HandleEntryHero({ locale }: { locale: Locale }) {
             value={handle}
             onChange={(e) => setHandle(sanitise(e.target.value))}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && ready) {
+              if (e.key === 'Enter' && canClick) {
                 e.preventDefault()
                 submit()
               }
@@ -208,15 +227,17 @@ export default function HandleEntryHero({ locale }: { locale: Locale }) {
         <button
           type="button"
           onClick={submit}
-          disabled={!ready}
+          disabled={!canClick}
           className={`min-h-[52px] rounded-2xl px-5 sm:px-6 font-extrabold text-[14px] sm:text-[15px] whitespace-nowrap transition active:scale-[0.99] ${
             ready
               ? 'bg-gradient-to-r from-brand to-brand2 text-[#0A0A0A] shadow-[0_8px_22px_rgba(250,204,21,0.35)] hover:from-brand2 hover:to-brand cursor-pointer'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : premium
+                ? 'bg-[#0A0A0A] text-[#FACC15] shadow-[0_8px_22px_rgba(10,10,10,0.35)] hover:bg-gray-800 cursor-pointer'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
-          aria-disabled={!ready}
+          aria-disabled={!canClick}
         >
-          {t.cta}
+          {premium ? t.ctaPremium : t.cta}
         </button>
       </div>
 
@@ -268,6 +289,21 @@ function StatusLine({
       <>
         <X className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-600" strokeWidth={3} />
         <span className="text-rose-700">{t.reserved}</span>
+      </>
+    )
+  }
+  if (status.kind === 'premium') {
+    // Gold sparkle, not a red X — premium is an UPSELL, not an error.
+    // Keep amber-ink for visual brand match with the yellow gradient.
+    return (
+      <>
+        <span
+          aria-hidden
+          className="shrink-0 mt-0 leading-none text-[14px]"
+        >
+          ✨
+        </span>
+        <span className="text-amber-700">{t.premium}</span>
       </>
     )
   }

@@ -32,11 +32,16 @@ export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
   'kita2u', 'kita', 'citydrivers', 'cityriders', 'staff', 'team', 'official',
 ])
 
-/** Lowercase handle that matches `[a-z0-9][a-z0-9-]{2,30}[a-z0-9]`.
- *  Same shape Linktree uses — 4-32 chars, lowercase letters/digits/dashes,
- *  no leading/trailing dash, no consecutive dashes.
+/** Lowercase handle that matches `[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?`.
+ *  1-32 chars, lowercase letters/digits/dashes, no leading/trailing dash.
+ *
+ *  Length range widened from 4-32 → 1-32 on 2026-06-09 so that the
+ *  premium-handle gate (see src/lib/handle/premium.ts) can serve the
+ *  Pro-plan upgrade message for 1-3 char vanity handles instead of
+ *  bouncing them at the shape gate as "invalid." The premium decision
+ *  lives in /api/handle/check, not here.
  *
  *  Note: consecutive-dashes prevention is left to a separate
  *  `.includes('--')` check at the call site; the bracket class naturally
  *  allows `--` runs, so we don't try to express that purely with regex. */
-export const HANDLE_RE = /^[a-z0-9](?:[a-z0-9-]{2,30})[a-z0-9]$/
+export const HANDLE_RE = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/

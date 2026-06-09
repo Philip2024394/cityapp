@@ -322,6 +322,7 @@ function ProTier() {
 
       <FeatureLists
         included={[
+          'Premium short + popular handles (yoga, bali, sari, …)',
           'Everything in Free',
           'Unlimited portfolio photos',
           'Unlimited services + prices',
@@ -486,6 +487,7 @@ function ComparisonTable() {
     { label: 'Vertical templates',          free: '1',        pro: 'All 15',    studio: 'All 15' },
     { label: 'Custom theme',                free: '—',        pro: 'Yes',       studio: 'Yes' },
     { label: 'Custom domain',               free: '—',        pro: 'Yes',       studio: 'Yes' },
+    { label: 'Premium short + popular handles', free: '—',    pro: 'Yes',       studio: 'Yes' },
     { label: 'Pages per account',           free: '1',        pro: '1',         studio: '5' },
     { label: 'A/B testing',                 free: '—',        pro: '—',         studio: 'Yes' },
     { label: 'Analytics retention',         free: '28 days',  pro: '365 days',  studio: '365 days' },
