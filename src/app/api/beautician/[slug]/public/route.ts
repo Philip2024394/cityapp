@@ -67,9 +67,13 @@ const PUBLIC_COLS = [
   // mig 0224 — vendor-uploaded static QRIS image. Drives the
   // "Pay deposit via QRIS" block under the Contact CTA.
   'qr_payment_url',
+  // mig 0226 — Pro/Studio draft lock. When is_draft is true the page
+  // renders a password prompt. draft_password is stripped from the
+  // response before the row is returned (server-side gate below).
+  'is_draft','draft_password',
 ].join(', ')
 
-export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params
   if (!slug || !/^[a-z0-9_-]+$/.test(slug)) {
     return NextResponse.json({ error: 'invalid_slug' }, { status: 400 })
@@ -92,6 +96,34 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   }
   if (!data) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
+  // mig 0226 — draft lock gate. When is_draft is true we either return
+  // the full row (correct ?p=) or a minimal branded stub so the client
+  // can render a themed password prompt. 200 either way — 401 would
+  // block the page from rendering anything at all.
+  const row = data as unknown as Record<string, unknown>
+  if (row.is_draft === true) {
+    const { searchParams } = new URL(req.url)
+    const provided = searchParams.get('p') ?? ''
+    const expected = typeof row.draft_password === 'string' ? row.draft_password : ''
+    if (!expected || provided !== expected) {
+      return NextResponse.json({
+        provider: {
+          is_draft:          true,
+          slug:              row.slug,
+          theme_color:       row.theme_color ?? null,
+          button_text_color: row.button_text_color ?? null,
+          display_name:      null,
+        },
+        locked: true,
+      })
+    }
+    // Authorized — strip the password before returning the full row.
+    delete row.draft_password
+  } else {
+    // Non-draft rows shouldn't leak the column either, even if it's null.
+    delete row.draft_password
+  }
+
   // mig 0223 — return the owner's current billing plan so the public
   // profile page can decide whether to show the "Made with Kita2u" badge
   // (Free tier only). Done as a second query instead of a join because
@@ -100,7 +132,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   // path keeps the SELECT clause sane. Falls back to 'free' when the
   // provider has no linked auth user (demo / mock rows like Ayu).
   let owner_plan: 'free' | 'pro' | 'studio' = 'free'
-  const ownerUserId = (data as unknown as { owner_user_id?: string | null }).owner_user_id ?? null
+  const ownerUserId = (row as { owner_user_id?: string | null }).owner_user_id ?? null
   if (ownerUserId) {
     const { data: acct } = await admin
       .from('user_accounts')
@@ -111,5 +143,5 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     if (p === 'pro' || p === 'studio') owner_plan = p
   }
 
-  return NextResponse.json({ provider: { ...(data as unknown as Record<string, unknown>), owner_plan } })
+  return NextResponse.json({ provider: { ...row, owner_plan } })
 }

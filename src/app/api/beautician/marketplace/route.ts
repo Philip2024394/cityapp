@@ -49,6 +49,10 @@ export async function GET(req: Request) {
     .from('beautician_providers')
     .select(PUBLIC_COLS)
     .eq('status', 'active')
+    // mig 0226 — exclude draft-locked profiles from the marketplace so
+    // visitors don't stumble into a password prompt. The owner can still
+    // share the slug directly with photographers/team.
+    .or('is_draft.eq.false,is_draft.is.null')
     // Reals before mocks (is_mock asc), then newest first. Availability
     // rank is applied in JS below — Postgres text order would sort
     // alphabetically (busy < offline < online), surfacing busy first.

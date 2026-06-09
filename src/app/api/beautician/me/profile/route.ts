@@ -63,6 +63,12 @@ type Body = {
     description?: string
     price_idr?:   number | null
   }>>
+  // mig 0226 — Pro/Studio draft lock. Toggle is_draft to hide the
+  // profile behind a password (draft_password). Plain-text password
+  // by design — see project brief 10/12 (casual share-with-photographer
+  // moat, not security-critical).
+  is_draft?:       boolean
+  draft_password?: string | null
 }
 
 const SERVICES_OFFERED_ALLOWLIST = new Set([
@@ -420,6 +426,56 @@ export async function POST(req: Request) {
     } else {
       update.theme_color = body.theme_color.toUpperCase()
     }
+  }
+
+  // mig 0226 — draft lock. is_draft + draft_password move together so
+  // the DB check constraint (draft on => password non-empty) is
+  // satisfiable. When the caller turns draft OFF we also blank the
+  // password so it doesn't linger in the DB.
+  const draftFields: { is_draft?: boolean; draft_password?: string | null } = {}
+  if (body.is_draft !== undefined) {
+    if (typeof body.is_draft !== 'boolean') {
+      return NextResponse.json({ error: 'invalid_is_draft' }, { status: 400 })
+    }
+    draftFields.is_draft = body.is_draft
+  }
+  if (body.draft_password !== undefined) {
+    const raw = body.draft_password
+    if (raw === null) {
+      draftFields.draft_password = null
+    } else if (typeof raw !== 'string') {
+      return NextResponse.json({ error: 'invalid_draft_password' }, { status: 400 })
+    } else {
+      const trimmed = raw.trim()
+      if (trimmed.length === 0) {
+        draftFields.draft_password = null
+      } else if (trimmed.length > 200) {
+        return NextResponse.json({ error: 'draft_password_too_long' }, { status: 400 })
+      } else {
+        draftFields.draft_password = trimmed
+      }
+    }
+  }
+  // If the caller is turning draft ON, ensure a password is either being
+  // set in the same request OR already exists in the row — otherwise the
+  // DB constraint would 500 us. Cheap pre-check against the row.
+  if (draftFields.is_draft === true && draftFields.draft_password == null) {
+    const { data: existing } = await admin
+      .from('beautician_providers')
+      .select('draft_password')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    const existingPw = (existing as { draft_password?: string | null } | null)?.draft_password
+    if (!existingPw || !existingPw.trim()) {
+      return NextResponse.json({ error: 'draft_password_required' }, { status: 400 })
+    }
+  }
+  // When draft is being turned OFF, blank the password too.
+  if (draftFields.is_draft === false && draftFields.draft_password === undefined) {
+    draftFields.draft_password = null
+  }
+  if (Object.keys(draftFields).length > 0) {
+    Object.assign(update as Record<string, unknown>, draftFields)
   }
 
   if (Object.keys(update).length === 0) {

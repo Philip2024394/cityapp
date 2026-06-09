@@ -131,6 +131,15 @@ export default function BeauticianProviderPage() {
   const slug = String(params?.slug || '').toLowerCase()
   const [p, setP] = useState<BeauticianProviderPublic | null>(null)
   const [notFound, setNotFound] = useState(false)
+  // mig 0226 — draft lock state. `locked` is the server's signal that
+  // the profile is in draft mode and needs a password. `draftPassword`
+  // is what the visitor typed; once accepted we hold it in state so the
+  // re-fetched profile is the unlocked variant.
+  const [locked, setLocked] = useState(false)
+  const [draftPassword, setDraftPassword] = useState<string>('')
+  const [pwInput, setPwInput] = useState('')
+  const [pwError, setPwError] = useState(false)
+  const [pwSubmitting, setPwSubmitting] = useState(false)
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
@@ -187,13 +196,26 @@ export default function BeauticianProviderPage() {
 
   useEffect(() => {
     if (!slug || !/^[a-z0-9_-]+$/.test(slug)) { setNotFound(true); return }
-    fetch(`/api/beautician/${encodeURIComponent(slug)}/public`, { cache: 'no-store' })
+    // mig 0226 — if we have an accepted draft password in state, append
+    // it so subsequent re-fetches stay unlocked. First page-load runs
+    // with empty draftPassword, surfacing the locked stub for drafts.
+    const url = `/api/beautician/${encodeURIComponent(slug)}/public${
+      draftPassword ? `?p=${encodeURIComponent(draftPassword)}` : ''
+    }`
+    fetch(url, { cache: 'no-store' })
       .then((r) => r.ok ? r.json() : null)
-      .then((j: { provider?: BeauticianProviderPublic } | null) => {
-        if (j?.provider) setP(j.provider); else setNotFound(true)
+      .then((j: { provider?: BeauticianProviderPublic; locked?: boolean } | null) => {
+        if (!j?.provider) { setNotFound(true); return }
+        if (j.locked) {
+          setLocked(true)
+          setP(j.provider)
+        } else {
+          setLocked(false)
+          setP(j.provider)
+        }
       })
       .catch(() => setNotFound(true))
-  }, [slug])
+  }, [slug, draftPassword])
 
   useProfileViewTracker({ providerType: 'beautician', providerId: p?.id })
 
@@ -246,6 +268,90 @@ export default function BeauticianProviderPage() {
   }
   if (!p) {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">{t('loading')}</div></Shell>
+  }
+
+  // mig 0226 — draft lock prompt. p contains only {is_draft, slug,
+  // theme_color, button_text_color, display_name=null}. The gate
+  // borrows the row's brand colors so even the prompt feels like the
+  // beautician's page.
+  if (locked) {
+    const gateTheme = p.theme_color || DEFAULT_THEME
+    const gateInk   = p.button_text_color || '#FFFFFF'
+    return (
+      <Shell>
+        <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-sm bg-white rounded-3xl border border-gray-200 shadow-sm p-6 text-center">
+            <div
+              className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4"
+              style={{ background: gateTheme, color: gateInk }}
+            >
+              <Sparkles size={26} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-[20px] font-black text-black mb-1">This page is in draft</h1>
+            <p className="text-[13px] text-black/65 leading-snug mb-5">
+              The owner shared this with you for review. Enter the password to view.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (pwSubmitting) return
+                const candidate = pwInput.trim()
+                if (!candidate) { setPwError(true); return }
+                setPwSubmitting(true)
+                setPwError(false)
+                fetch(
+                  `/api/beautician/${encodeURIComponent(slug)}/public?p=${encodeURIComponent(candidate)}`,
+                  { cache: 'no-store' },
+                )
+                  .then((r) => r.ok ? r.json() : null)
+                  .then((j: { provider?: BeauticianProviderPublic; locked?: boolean } | null) => {
+                    if (!j?.provider) { setPwError(true); return }
+                    if (j.locked) {
+                      // Wrong password — server returned the locked stub again.
+                      setPwError(true)
+                      return
+                    }
+                    // Unlocked. Hold the password in state so future
+                    // re-fetches (reviews, profile-view tracker, etc.)
+                    // can pass it through if they need to.
+                    setDraftPassword(candidate)
+                    setLocked(false)
+                    setP(j.provider)
+                  })
+                  .catch(() => setPwError(true))
+                  .finally(() => setPwSubmitting(false))
+              }}
+              className="space-y-3"
+            >
+              <input
+                type="password"
+                autoFocus
+                value={pwInput}
+                onChange={(e) => { setPwInput(e.target.value); if (pwError) setPwError(false) }}
+                placeholder="Password"
+                className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-[14px] font-bold text-center placeholder:text-black/35 placeholder:font-normal focus:outline-none focus:bg-white ${pwError ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100'}`}
+                aria-label="Draft password"
+                aria-invalid={pwError}
+              />
+              {pwError && (
+                <p className="text-[12px] font-bold text-red-600">Wrong password. Try again.</p>
+              )}
+              <button
+                type="submit"
+                disabled={pwSubmitting}
+                className="w-full rounded-xl py-3 text-[14px] font-extrabold shadow-md active:scale-[0.98] transition disabled:opacity-60"
+                style={{ background: gateTheme, color: gateInk }}
+              >
+                {pwSubmitting ? 'Unlocking…' : 'Unlock'}
+              </button>
+            </form>
+            <p className="text-[11px] text-black/45 mt-4 leading-snug">
+              Powered by Kita2u — Pro/Studio draft sharing.
+            </p>
+          </div>
+        </div>
+      </Shell>
+    )
   }
 
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'

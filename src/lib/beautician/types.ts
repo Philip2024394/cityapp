@@ -160,6 +160,11 @@ export type BeauticianProviderPublic = Pick<
   // the Contact CTA. Kita2u never custodies funds — the customer
   // scans the merchant's own QR and pays direct.
   qr_payment_url?: string | null
+  // mig 0226 — Pro/Studio draft lock. When is_draft is true the public
+  // profile page renders a password gate (locked: true on the API)
+  // until the correct ?p= is supplied. draft_password is NEVER sent
+  // to the client — it lives in the DB row only.
+  is_draft?: boolean | null
   // mig 0074 — Per-service photo gallery (max 4 photos per service).
   // Each entry may be a plain URL (legacy) or a rich object with
   // optional name/description/start price for richer carousel cards.

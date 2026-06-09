@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal, Zap, UserCircle2 } from 'lucide-react'
+import { ChevronLeft, Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal, Zap, UserCircle2, Lock } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
@@ -50,6 +50,12 @@ type Extras = {
   // Button text color (also drives hero icon strokes on the public page).
   // Hex #RRGGBB — defaults to white when null.
   button_text_color?: string | null
+  // mig 0226 — Pro/Studio draft lock. is_draft hides the public profile
+  // behind draft_password (the visitor sees a branded password prompt).
+  // Plain-text password by design (casual share-with-photographer
+  // feature, not auth — see task 10/12 brief).
+  is_draft?:        boolean | null
+  draft_password?:  string | null
 }
 type FullProvider = BeauticianProvider & Extras
 
@@ -515,6 +521,19 @@ function BannerInlineControls({
         />
       </Section>
 
+      {/* mig 0226 — Draft mode (Pro/Studio share-with-team moat). Toggle
+          hides the public profile behind a password the beautician
+          shares with their photographer / team. NOT a subscription
+          paywall — that's `subscription_status`. Sits near the bottom
+          so casual editors never trip into it. */}
+      <Section title="Draft mode" icon={<Lock size={16} strokeWidth={2.5} />}>
+        <DraftModeControls
+          isDraft={Boolean(provider.is_draft)}
+          currentPassword={provider.draft_password ?? ''}
+          onSave={onSave}
+        />
+      </Section>
+
       {/* Quick links — services manager (carousel) and public preview. */}
       <Section title="More" icon={<MoreHorizontal size={16} strokeWidth={2.5} />}>
         <div className="grid grid-cols-2 gap-2">
@@ -565,6 +584,126 @@ function BannerInlineControls({
       <p className="text-[12px] text-black/55 text-center mt-1 leading-snug">
         Auto-save also runs in the background — your changes are saved as you type.
       </p>
+    </div>
+  )
+}
+
+// mig 0226 — Draft-lock control. Local toggle + password field, posts
+// to /api/beautician/me/profile when the beautician taps Save. We don't
+// auto-save here (unlike hero text) because flipping draft mode is
+// deliberate and the user wants explicit feedback.
+function DraftModeControls({
+  isDraft, currentPassword, onSave,
+}: {
+  isDraft:         boolean
+  currentPassword: string
+  onSave:          (patch: Partial<FullProvider>) => Promise<boolean> | boolean
+}) {
+  const [draftOn,  setDraftOn]  = useState(isDraft)
+  const [password, setPassword] = useState(currentPassword)
+  const [saving,   setSaving]   = useState(false)
+  const [savedFlash, setSavedFlash] = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
+
+  // Keep local state in sync if the parent reloads.
+  useEffect(() => { setDraftOn(isDraft) }, [isDraft])
+  useEffect(() => { setPassword(currentPassword) }, [currentPassword])
+
+  const dirty =
+    draftOn !== isDraft ||
+    (draftOn && password.trim() !== currentPassword.trim())
+
+  async function commit() {
+    setError(null)
+    if (draftOn && !password.trim()) {
+      setError('Password is required when draft mode is on.')
+      return
+    }
+    setSaving(true)
+    try {
+      const ok = await onSave({
+        is_draft:       draftOn,
+        // Send null on draft-off so the column is cleared; otherwise the
+        // new trimmed password (or unchanged if user didn't touch it).
+        draft_password: draftOn ? password.trim() : null,
+      })
+      if (ok) {
+        setSavedFlash(true)
+        setTimeout(() => setSavedFlash(false), 1500)
+      } else {
+        setError('Could not save. Try again.')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[12px] text-black/65 leading-snug">
+        Useful for sharing a work-in-progress version with photographers or your team.
+        The marketplace will still show your profile UNLESS your subscription_status is{' '}
+        <code className="text-[11px] font-mono bg-gray-100 rounded px-1 py-0.5">inactive</code>{' '}
+        — draft is for sharing, not hiding.
+      </p>
+
+      {/* Toggle row */}
+      <label className="flex items-start gap-3 rounded-xl bg-gray-50 border border-gray-200 p-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={draftOn}
+          onChange={(e) => setDraftOn(e.target.checked)}
+          className="mt-0.5 w-5 h-5 accent-pink-600 shrink-0"
+        />
+        <span className="flex-1 min-w-0">
+          <span className="block text-[13px] font-extrabold text-black leading-snug">
+            Hide my profile behind a password (draft)
+          </span>
+          <span className="block text-[12px] text-black/55 leading-snug mt-0.5">
+            Visitors see a password prompt instead of your profile until they enter the password below.
+          </span>
+        </span>
+      </label>
+
+      {/* Password input — only visible when toggle is on */}
+      {draftOn && (
+        <div className="space-y-1.5">
+          <label className="block text-[12px] font-extrabold uppercase tracking-wider text-black/70">
+            Draft password
+          </label>
+          <input
+            type="text"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); if (error) setError(null) }}
+            maxLength={200}
+            placeholder="e.g. preview123"
+            className="w-full rounded-xl bg-white border border-gray-200 px-3 py-2.5 text-[14px] font-bold focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100"
+          />
+          <p className="text-[11px] text-black/45 leading-snug">
+            Stored as plain text — this is a casual review password, not auth. Share it via WhatsApp or email.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <p className="text-[12px] font-bold text-red-600">{error}</p>
+      )}
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void commit()}
+          disabled={!dirty || saving}
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-black text-white px-4 py-2.5 text-[13px] font-extrabold disabled:opacity-50 active:scale-[0.98] transition min-h-[44px]"
+        >
+          {saving ? 'Saving…' : 'Save draft mode'}
+        </button>
+        {savedFlash && (
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">
+            ✓ Saved
+          </span>
+        )}
+      </div>
     </div>
   )
 }
