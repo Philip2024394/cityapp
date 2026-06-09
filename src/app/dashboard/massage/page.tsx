@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppNav from '@/components/layout/AppNav'
 import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
+import ProfileViewsChart from '@/components/dashboard/ProfileViewsChart'
 import AvailabilityDot from '@/components/massage/AvailabilityDot'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import ProfileImageUploader from '@/components/kyc/ProfileImageUploader'
@@ -39,6 +40,31 @@ export default function MassageDashboardPage() {
   }, [])
 
   useEffect(() => { reload() }, [reload])
+
+  // Task 12/12 — plan-gated profile-view analytics (Free=28d, Pro/Studio=365d).
+  const [analytics, setAnalytics] = useState<{
+    plan: 'free' | 'pro' | 'studio'
+    retentionDays: number
+    series: Array<{ day: string; views: number }>
+    totalViews: number
+  } | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await fetch('/api/massage/me/analytics', { cache: 'no-store' })
+        if (!r.ok) return
+        const j = await r.json() as {
+          plan: 'free' | 'pro' | 'studio'
+          retentionDays: number
+          series: Array<{ day: string; views: number }>
+          totalViews: number
+        }
+        if (!cancelled) setAnalytics(j)
+      } catch { /* analytics is best-effort */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   async function setAvailability(next: MassageAvailability) {
     if (!provider) return
@@ -87,6 +113,14 @@ export default function MassageDashboardPage() {
     <Shell>
       <div className="px-4 pt-6 pb-24 max-w-3xl mx-auto space-y-4">
         <PWAInstallCard />
+        {analytics && (
+          <ProfileViewsChart
+            series={analytics.series}
+            retentionDays={analytics.retentionDays}
+            plan={analytics.plan}
+            totalViews={analytics.totalViews}
+          />
+        )}
         <ProviderRenewBanner provider={provider} upgradeHref="/massage/upgrade" />
         {/* Header card */}
         <section className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">

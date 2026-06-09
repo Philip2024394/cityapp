@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ChevronRight, Camera, Sparkles, Palette, Link2, CheckCircle2, Clock, Copy } from 'lucide-react'
 import AppNav from '@/components/layout/AppNav'
 import PWAInstallCard from '@/components/dashboard/PWAInstallCard'
+import ProfileViewsChart from '@/components/dashboard/ProfileViewsChart'
 import ProviderRenewBanner from '@/components/upgrade/ProviderRenewBanner'
 import StatusPulse from '@/components/dashboard/StatusPulse'
 import WeeklyHoursEditor from '@/components/dashboard/WeeklyHoursEditor'
@@ -53,6 +54,31 @@ export default function FacialDashboardPage() {
     finally { setLoading(false) }
   }, [])
   useEffect(() => { void reload() }, [reload])
+
+  // Task 12/12 — plan-gated profile-view analytics (Free=28d, Pro/Studio=365d).
+  const [analytics, setAnalytics] = useState<{
+    plan: 'free' | 'pro' | 'studio'
+    retentionDays: number
+    series: Array<{ day: string; views: number }>
+    totalViews: number
+  } | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await fetch('/api/facial/me/analytics', { cache: 'no-store' })
+        if (!r.ok) return
+        const j = await r.json() as {
+          plan: 'free' | 'pro' | 'studio'
+          retentionDays: number
+          series: Array<{ day: string; views: number }>
+          totalViews: number
+        }
+        if (!cancelled) setAnalytics(j)
+      } catch { /* analytics is best-effort */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   async function setAvailability(next: FacialAvailability) {
     if (!provider) return
@@ -134,6 +160,14 @@ export default function FacialDashboardPage() {
     <Shell>
       <div className="px-4 pt-4 pb-32 max-w-lg mx-auto space-y-4">
         <PWAInstallCard />
+        {analytics && (
+          <ProfileViewsChart
+            series={analytics.series}
+            retentionDays={analytics.retentionDays}
+            plan={analytics.plan}
+            totalViews={analytics.totalViews}
+          />
+        )}
         {/* Greeting + progress */}
         <section className="rounded-3xl bg-white border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
