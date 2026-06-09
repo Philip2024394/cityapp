@@ -25,6 +25,15 @@ export const SUBSCRIPTION_MONTHLY_IDR = 38_000
 /** Yearly driver subscription price in IDR (≈ 23% off monthly × 12). */
 export const SUBSCRIPTION_YEARLY_IDR = 350_000
 
+/** Studio tier monthly price in IDR — multi-location / agency seat.
+ *  Founder direction 2026-06-09: positions Kita2u against Linktree's
+ *  Premium ($24/mo) for serious creators running multiple pages /
+ *  agencies. Presentation only — no DB schema yet. */
+export const STUDIO_MONTHLY_IDR = 149_000
+
+/** Studio tier yearly price in IDR (≈ 22% off monthly × 12). */
+export const STUDIO_YEARLY_IDR = 1_400_000
+
 /** Free trial length in days, applied when a creator completes onboarding.
  *  MUST equal the DB column default on `drivers.paid_until` (migration
  *  0222 sets that to `current_date + interval '7 days'`). If you change
