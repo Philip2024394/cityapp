@@ -19,7 +19,7 @@ import {
 //   2. Free for service-provider merchants (beautician, handyman, laundry,
 //      etc.) — premium add-ons priced separately
 //   3. CityDrivers driver subscription — Rp 38k/month or Rp 350k/year,
-//      30-day free trial, founder cohort lock at Rp 38k for life for the
+//      7-day free trial, founder cohort lock at Rp 38k for life for the
 //      first 1000 Indonesian drivers
 //   4. 0% commission — every flow is WhatsApp + cash/QRIS direct
 //   5. How to pay — QRIS in Indonesia + SEA partners, Stripe card for

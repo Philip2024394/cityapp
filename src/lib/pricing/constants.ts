@@ -9,10 +9,14 @@
 // "Rp 38K", landing said "7 days · Rp 38K". Misrepresentation under
 // Play subscription policy AND UU 8/1999 (consumer protection).
 //
-// Audit (2026-06-02): TRIAL_DAYS was 7 but mig 0174 set the DB default
-// to 30 — dashboard banner expired the trial on day 8 while the
-// marketplace kept the driver visible through day 30. Synced both to
-// 30 (the founder direction in mig 0174 header).
+// Audit (2026-06-09): the value drifted across surfaces — constants
+// + /pricing read 30, the landing pricing teaser + FAQ read 7, the new
+// /api/auth/signup beautician trial flow sets 7 days. Realigned to 7
+// everywhere (the canonical Kita2u positioning per founder direction
+// 2026-06-09 — "7 days free, cancel in one tap" is the landing
+// headline that converts cold traffic). Mig 0222 lands in the same
+// commit to flip `drivers.paid_until` default from 30 → 7 so the
+// marketplace gate and dashboard banner stay aligned.
 // ============================================================================
 
 /** Monthly driver subscription price in IDR. */
@@ -21,14 +25,14 @@ export const SUBSCRIPTION_MONTHLY_IDR = 38_000
 /** Yearly driver subscription price in IDR (≈ 23% off monthly × 12). */
 export const SUBSCRIPTION_YEARLY_IDR = 350_000
 
-/** Free trial length in days, applied when a driver completes onboarding.
+/** Free trial length in days, applied when a creator completes onboarding.
  *  MUST equal the DB column default on `drivers.paid_until` (migration
- *  0174 sets that to `current_date + interval '30 days'`). If you change
+ *  0222 sets that to `current_date + interval '7 days'`). If you change
  *  this, ship a follow-up migration that updates the column default in
  *  the same commit — otherwise the marketplace gate (paid_until) and the
  *  dashboard banner (trial_ends_at) will disagree about when the trial
- *  ended. 2026-06-02: synced to 30 to match mig 0174. */
-export const TRIAL_DAYS = 30
+ *  ended. 2026-06-09: synced to 7 to match the landing + signup API. */
+export const TRIAL_DAYS = 7
 
 /** Period extended per successful monthly renewal. */
 export const MONTHLY_PERIOD_DAYS = 30
