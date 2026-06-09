@@ -197,6 +197,16 @@ export type MassageProviderPublic = Pick<
   service_photos?:         Record<string, string[]> | null
   // marketplace_categories: filter chip values the provider appears under.
   marketplace_categories?: string[] | null
+  // mig 0228 — vendor-uploaded static QRIS image URL. When non-null,
+  // the public profile renders a "Pay deposit via QRIS" block under
+  // the Contact CTA. Kita2u never custodies funds — customer scans
+  // the merchant's own QR and pays direct.
+  qr_payment_url?: string | null
+  // mig 0228 — Pro/Studio draft lock. When is_draft is true the public
+  // profile page renders a password gate (locked: true on the API)
+  // until the correct ?p= is supplied. draft_password is NEVER sent
+  // to the client — it lives in the DB row only.
+  is_draft?:       boolean | null
 }
 
 export const AVAILABILITY_LABELS: Record<MassageAvailability, string> = {

@@ -2,11 +2,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal } from 'lucide-react'
+import { Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal, QrCode, Lock } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
 import ThemeColorPicker from '@/components/dashboard/ThemeColorPicker'
+import QrisUploaderCard from '@/components/dashboard/QrisUploaderCard'
+import DraftModeControlsCard from '@/components/dashboard/DraftModeControlsCard'
 import {
   HANDYMAN_BANNER_LIBRARY,
   HANDYMAN_BANNER_CATEGORIES,
@@ -60,6 +62,10 @@ type Extras = {
   theme_color?:     string | null
   hero_text?:       HandymanHeroText | null
   promo_text?:      string | null
+  // mig 0228 — QRIS + draft lock fields
+  qr_payment_url?:  string | null
+  is_draft?:        boolean | null
+  draft_password?:  string | null
   // service_photos is a FLAT JSONB array on handyman_providers (mig 0089),
   // unlike the beautician's keyed object. The handyman editor uses
   // HandymanServicePhotosEditor for this shape; this page only
@@ -414,6 +420,24 @@ function BannerInlineControls({
           value={provider.promo_text ?? ''}
           onChange={(v) => onSave({ promo_text: v || null })}
           themeColor={theme}
+        />
+      </Section>
+
+      {/* mig 0228 — QRIS checkout image. Renders the "Pay deposit via
+          QRIS" block on the public profile when set. */}
+      <Section title="QRIS payment" icon={<QrCode size={16} strokeWidth={2.5} />}>
+        <QrisUploaderCard apiBase="/api/handyman" accentHex={theme} />
+      </Section>
+
+      {/* mig 0228 — Draft mode. Hides the public profile behind a
+          password so the tukang can share work-in-progress with
+          their photographer / team. */}
+      <Section title="Draft mode" icon={<Lock size={16} strokeWidth={2.5} />}>
+        <DraftModeControlsCard
+          isDraft={Boolean(provider.is_draft)}
+          currentPassword={provider.draft_password ?? ''}
+          onSave={(patch) => onSave(patch as Partial<FullProvider>)}
+          accentHex={theme}
         />
       </Section>
 

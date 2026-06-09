@@ -60,9 +60,12 @@ const PUBLIC_COLS = [
   // above the contact form when faq_enabled is true. Terms / Privacy
   // surface as footer links + an in-page modal viewer.
   'faq_items','faq_enabled','legal_terms','legal_privacy',
+  // mig 0228 — vendor-uploaded static QRIS image + draft-lock fields.
+  'qr_payment_url',
+  'is_draft','draft_password',
 ].join(', ')
 
-export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params
   if (!slug || !/^[a-z0-9_-]+$/.test(slug)) {
     return NextResponse.json({ error: 'invalid_slug' }, { status: 400 })
@@ -84,5 +87,31 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
   }
   if (!data) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-  return NextResponse.json({ provider: data })
+
+  // mig 0228 — draft lock gate. When is_draft is true return a
+  // minimal branded stub until the correct ?p= is supplied. 200
+  // either way — 401 would block the page from rendering anything.
+  const row = data as unknown as Record<string, unknown>
+  if (row.is_draft === true) {
+    const { searchParams } = new URL(req.url)
+    const provided = searchParams.get('p') ?? ''
+    const expected = typeof row.draft_password === 'string' ? row.draft_password : ''
+    if (!expected || provided !== expected) {
+      return NextResponse.json({
+        provider: {
+          is_draft:          true,
+          slug:              row.slug,
+          theme_color:       row.theme_color ?? null,
+          button_text_color: row.button_text_color ?? null,
+          display_name:      null,
+        },
+        locked: true,
+      })
+    }
+    delete row.draft_password
+  } else {
+    delete row.draft_password
+  }
+
+  return NextResponse.json({ provider: row })
 }

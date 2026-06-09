@@ -28,6 +28,9 @@ export async function GET(req: Request) {
     .from('pet_providers')
     .select(PUBLIC_COLS)
     .eq('status', 'active')
+    // mig 0228 — exclude draft-locked profiles from the marketplace so
+    // visitors don't stumble into a password prompt.
+    .or('is_draft.eq.false,is_draft.is.null')
     .or('is_mock.eq.false,mock_hidden_at.is.null')
     .order('is_mock', { ascending: true })
     .order('created_at', { ascending: false })

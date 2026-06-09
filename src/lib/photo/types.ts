@@ -172,4 +172,14 @@ export type PhotoProviderPublic = Pick<
   has_physical_location?: boolean | null
   latitude?:             number | null
   longitude?:            number | null
+  // mig 0228 — vendor-uploaded static QRIS image URL. When non-null,
+  // the public profile renders a "Pay deposit via QRIS" block under
+  // the Contact CTA. Kita2u never custodies funds — customer scans
+  // the merchant's own QR and pays direct.
+  qr_payment_url?: string | null
+  // mig 0228 — Pro/Studio draft lock. When is_draft is true the public
+  // profile page renders a password gate (locked: true on the API)
+  // until the correct ?p= is supplied. draft_password is NEVER sent
+  // to the client — it lives in the DB row only.
+  is_draft?:       boolean | null
 }

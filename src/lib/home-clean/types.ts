@@ -83,6 +83,16 @@ export type HomeCleanProviderPublic = Pick<
   // dedicated migration, but if/when the column lands the public page
   // already renders icons for any value present.
   service_locations?: Array<'home' | 'hotel' | 'villa'> | null
+  // mig 0228 — vendor-uploaded static QRIS image URL. When non-null,
+  // the public profile renders a "Pay deposit via QRIS" block under
+  // the Contact CTA. Kita2u never custodies funds — customer scans
+  // the merchant's own QR and pays direct.
+  qr_payment_url?: string | null
+  // mig 0228 — Pro/Studio draft lock. When is_draft is true the public
+  // profile page renders a password gate (locked: true on the API)
+  // until the correct ?p= is supplied. draft_password is NEVER sent
+  // to the client — it lives in the DB row only.
+  is_draft?:       boolean | null
 }
 
 // mig 0123 — Home-clean service catalog. DB CHECK constraint mirrors this

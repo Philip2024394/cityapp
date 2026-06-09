@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, Check, Palette, Image as ImageIcon, Type, Megaphone, MoreHorizontal } from 'lucide-react'
 import { getBrowserSupabase } from '@/lib/supabase/client'
 import AppNav from '@/components/layout/AppNav'
+import { QrCode as QrCodeIcon228, Lock as LockIcon228 } from 'lucide-react'
+import QrisUploaderCard from '@/components/dashboard/QrisUploaderCard'
+import DraftModeControlsCard from '@/components/dashboard/DraftModeControlsCard'
 import BannerLibraryPicker from '@/components/dashboard/BannerLibraryPicker'
 import ThemeColorPicker from '@/components/dashboard/ThemeColorPicker'
 import {
@@ -393,6 +396,24 @@ function BannerInlineControls({
           value={provider.promo_text ?? ''}
           onChange={(v) => onSave({ promo_text: v || null })}
           themeColor={theme}
+        />
+      </Section>
+
+      {/* mig 0228 — QRIS checkout image. Renders the "Pay deposit via
+          QRIS" block on the public profile when set. */}
+      <Section title="QRIS payment" icon={<QrCodeIcon228 size={16} strokeWidth={2.5} />}>
+        <QrisUploaderCard apiBase="/api/home-clean" accentHex={theme} />
+      </Section>
+
+      {/* mig 0228 — Draft mode. Hides the public profile behind a
+          password so the vendor can share work-in-progress with
+          their photographer / team. */}
+      <Section title="Draft mode" icon={<LockIcon228 size={16} strokeWidth={2.5} />}>
+        <DraftModeControlsCard
+          isDraft={Boolean((provider as { is_draft?: boolean | null }).is_draft)}
+          currentPassword={(provider as { draft_password?: string | null }).draft_password ?? ''}
+          onSave={(patch) => onSave(patch as unknown as Partial<FullProvider>)}
+          accentHex={theme}
         />
       </Section>
 

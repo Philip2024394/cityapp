@@ -18,6 +18,8 @@ import VisitUsPanel, {
 } from '@/components/profile/VisitUsPanel'
 import VisitUsViaCityDriversCard from '@/components/providers/VisitUsViaCityDriversCard'
 import ContactBookingPopup from '@/components/profile/ContactBookingPopup'
+import QrisCheckoutBlock from '@/components/profile/QrisCheckoutBlock'
+import DraftPasswordGate from '@/components/profile/DraftPasswordGate'
 import { useProfileViewTracker } from '@/hooks/useProfileViewTracker'
 import { bannerSrc } from '@/lib/banners/transform'
 import { capturePartnerFromUrl, getStoredPartnerSlug } from '@/lib/partners/attribution'
@@ -84,6 +86,11 @@ export default function MassageProviderPage() {
   const slug = String(params?.slug || '').toLowerCase()
   const [p, setP] = useState<MassageProviderPublic | null>(null)
   const [notFound, setNotFound] = useState(false)
+  // mig 0228 — draft lock state. `locked` signals the API said this
+  // profile needs a password. `draftPassword` is what the visitor
+  // typed; held in state so re-fetches stay unlocked.
+  const [locked, setLocked] = useState(false)
+  const [draftPassword, setDraftPassword] = useState<string>('')
   const [partnerTag, setPartnerTag] = useState<string | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
@@ -119,13 +126,18 @@ export default function MassageProviderPage() {
 
   useEffect(() => {
     if (!slug || !/^[a-z0-9_-]+$/.test(slug)) { setNotFound(true); return }
-    fetch(`/api/massage/${encodeURIComponent(slug)}/public`, { cache: 'no-store' })
+    const url = `/api/massage/${encodeURIComponent(slug)}/public${
+      draftPassword ? `?p=${encodeURIComponent(draftPassword)}` : ''
+    }`
+    fetch(url, { cache: 'no-store' })
       .then((r) => r.ok ? r.json() : null)
-      .then((j: { provider?: MassageProviderPublic } | null) => {
-        if (j?.provider) setP(j.provider); else setNotFound(true)
+      .then((j: { provider?: MassageProviderPublic; locked?: boolean } | null) => {
+        if (!j?.provider) { setNotFound(true); return }
+        if (j.locked) { setLocked(true); setP(j.provider) }
+        else          { setLocked(false); setP(j.provider) }
       })
       .catch(() => setNotFound(true))
-  }, [slug])
+  }, [slug, draftPassword])
 
   useProfileViewTracker({ providerType: 'massage', providerId: p?.id })
 
@@ -157,6 +169,28 @@ export default function MassageProviderPage() {
   }
   if (!p) {
     return <Shell><div className="px-4 pt-12 text-ink/50 text-[13px]">Loading…</div></Shell>
+  }
+
+  // mig 0228 — draft lock prompt. The API returned only branding
+  // fields (theme_color, button_text_color, slug, is_draft, display_name=null).
+  if (locked) {
+    const gateTheme = p.theme_color || DEFAULT_THEME
+    const gateInk   = (p as unknown as { button_text_color?: string | null }).button_text_color || '#FFFFFF'
+    return (
+      <Shell>
+        <DraftPasswordGate
+          slug={slug}
+          themeColor={gateTheme}
+          buttonTextColor={gateInk}
+          fetchUrl={(pw) => `/api/massage/${encodeURIComponent(slug)}/public?p=${encodeURIComponent(pw)}`}
+          onUnlocked={(pw, prov) => {
+            setDraftPassword(pw)
+            setLocked(false)
+            setP(prov as MassageProviderPublic)
+          }}
+        />
+      </Shell>
+    )
   }
 
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://citydrivers.id'
@@ -707,6 +741,13 @@ export default function MassageProviderPage() {
             </button>
           )}
         </div>
+
+        {/* mig 0228 — QRIS checkout block. Renders only when the vendor
+            has uploaded a static QRIS image via the dashboard. */}
+        <QrisCheckoutBlock
+          qrUrl={(p as unknown as { qr_payment_url?: string | null }).qr_payment_url}
+          displayName={p.display_name}
+        />
           </>
         )}
 

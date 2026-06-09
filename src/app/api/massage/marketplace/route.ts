@@ -34,6 +34,9 @@ export async function GET(req: Request) {
     .from('massage_providers')
     .select(PUBLIC_COLS)
     .eq('status', 'active')
+    // mig 0228 — exclude draft-locked profiles from the marketplace so
+    // visitors don't stumble into a password prompt.
+    .or('is_draft.eq.false,is_draft.is.null')
     // Mocks are listed alongside reals to populate the marketplace at
     // launch; once a mock is hidden (real signup displaces it) we drop
     // it from the response. Reals ALWAYS render before mocks via the
