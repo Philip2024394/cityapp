@@ -37,9 +37,11 @@ const STRINGS: Record<Locale, {
     h1Line1: 'Dibuat untuk',
     h1Line2: 'kreator.',
     lede: 'Pertumbuhan dari media sosial — tanpa platform raksasa mengambil keuntunganmu. Audiens, harga, dan pelanggan tetap milikmu, 24 jam sehari.',
-    // 2026-06-09 — Free tier (mig 0223) is now the lead. Trial is an
-    // upgrade later, not the headline. Hero + final CTA both route to
-    // /signup so the first tap creates a Free account.
+    // 2026-06-09 — Vertical-first wizard (/start) is now the funnel
+    // entry. Linktree audit showed pick-your-business beats blank-link-
+    // editor as a step 1, so the hero + final CTA drop into /start
+    // instead of /signup. The wizard hands off to the canonical vertical
+    // signup form on step 3 with pre-filled query params.
     enter: 'Mulai gratis →',
   },
   en: {
@@ -168,11 +170,14 @@ export default function LandingPage() {
   }, [])
 
   function handleEnterApp() {
-    // 2026-06-09 — Lead with Free signup (mig 0223). The hero + final
-    // CTAs now drop straight into /signup instead of /explore so the
-    // first action a cold visitor takes is creating their Free account.
-    logNav('landing:start-free')
-    router.push('/signup')
+    // 2026-06-09 — Vertical-first wizard. /start opens the 3-step pick-
+    // your-business → photo+colour+name → handoff funnel. The wizard
+    // routes to /<vertical>/signup on step 3 with display_name /
+    // theme_color / profile_image_url pre-set as query params. /signup
+    // stays around as the generic CityDrivers + Kita2u host-aware form
+    // — DO NOT redirect it here per spec.
+    logNav('landing:start-wizard')
+    router.push('/start')
   }
 
   return (
